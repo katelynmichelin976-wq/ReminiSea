@@ -1,0 +1,4355 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="忆海拾光">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0ea5e9">
+<meta name="description" content="老年认知训练 — 看图识物">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>忆海拾光</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-touch-callout: none;   /* iOS 长按菜单 */
+  -webkit-user-select: none;     /* 文字选中 */
+  user-select: none;
+}
+/* 设置页输入框恢复文字选中和输入 */
+input[type=text], textarea { -webkit-user-select: text; user-select: text; }
+/* 图片禁止拖拽和长按保存 */
+img { -webkit-user-drag: none; pointer-events: none; }
+
+:root {
+  /* Ocean blue theme */
+  --ocean:      #0ea5e9;
+  --ocean-dk:   #0284c7;
+  --ocean-bg:   #f0f9ff;
+  --ocean-lt:   rgba(14,165,233,0.12);
+  --bg:         #f0f9ff;
+  --surf:       #ffffff;
+  --surf2:      #e0f2fe;
+  --text:       #0c2340;
+  --text2:      #4a7fa5;
+  --text3:      #93c5d9;
+  --bd:         rgba(14,165,233,0.15);
+  --bd2:        rgba(14,165,233,0.28);
+  --blue:       #0ea5e9;
+  --blue-bg:    #e0f2fe;
+  --blue-lt:    rgba(14,165,233,0.13);
+  --green:      #059669;
+  --green-bg:   #ecfdf5;
+  --green-bd:   #6ee7b7;
+  --diamond:    #0ea5e9;
+  --diamond2:   #bae6fd;
+  --r:          22px;
+  --rsm:        16px;
+  --sh:         0 1px 10px rgba(14,165,233,0.1), 0 3px 20px rgba(14,165,233,0.06);
+  /* Safe area — 集中定义，统一引用 */
+  --safe-top:    env(safe-area-inset-top, 44px);
+  --safe-bottom: env(safe-area-inset-bottom, 34px);
+}
+html.dark {
+  --ocean:      #38bdf8;
+  --ocean-dk:   #0ea5e9;
+  --ocean-bg:   #0c1e2e;
+  --bg:         #071520;
+  --surf:       #0d2035;
+  --surf2:      #112840;
+  --text:       #e0f2fe;
+  --text2:      #7ec8e3;
+  --text3:      #2d5a7a;
+  --bd:         rgba(56,189,248,0.12);
+  --bd2:        rgba(56,189,248,0.22);
+  --blue:       #38bdf8;
+  --blue-bg:    #112840;
+  --blue-lt:    rgba(56,189,248,0.15);
+  --green-bg:   #042014;
+  --green-bd:   #065f46;
+  --diamond:    #38bdf8;
+  --diamond2:   #0c4a6e;
+  --sh:         0 2px 20px rgba(0,0,0,0.5);
+}
+
+html {
+  height: -webkit-fill-available;
+}
+html, body { overflow:hidden; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;
+  -webkit-font-smoothing: antialiased;
+  height: 100dvh;
+  height: -webkit-fill-available;
+  position: relative;
+}
+
+/* ════════════════════════════════
+   SCREENS — stacked, shown by class
+   ════════════════════════════════ */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s, transform .25s;
+  transform: translateX(30px);
+}
+.screen.active {
+  opacity: 1; pointer-events: auto; transform: translateX(0);
+}
+.screen.exit-left {
+  opacity: 0; transform: translateX(-30px);
+}
+
+/* ════════════════════════════════
+   HOME SCREEN
+   ════════════════════════════════ */
+#screen-home { justify-content: flex-start; overflow: hidden; }
+
+.home-scroll {
+  flex: 1; width: 100%; max-width: 500px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 0 16px;
+  display: flex; flex-direction: column;
+}
+
+/* ── Ocean-blue top bar ── */
+.home-topbar {
+  width: 100%;
+  padding: calc(10px + var(--safe-top)) 16px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+  background: var(--bg);
+}
+.home-title {
+  font-size: 24px; font-weight: 800; letter-spacing: -.4px;
+  color: var(--ocean);
+}
+.home-title-wrap {
+  display: flex; align-items: baseline; gap: 6px;
+}
+.home-version {
+  font-size: 11px; font-weight: 600;
+  color: var(--text3); letter-spacing: .02em;
+  margin-bottom: 1px;
+}
+.home-refresh-btn {
+  background: none; border: none; cursor: pointer; padding: 3px;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--text3); display: flex; align-items: center;
+  border-radius: 6px;
+  transition: color .15s, transform .3s;
+  align-self: center;
+}
+.home-refresh-btn:active { color: var(--ocean); }
+.home-refresh-btn.spinning svg {
+  animation: spin360 .6s ease-out;
+}
+@keyframes spin360 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Right icon cluster */
+.home-icons {
+  display: flex; align-items: center; gap: 2px;
+}
+.home-icon-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border-radius: 100px;
+  background: none; border: none; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .15s;
+}
+.home-icon-btn:active { background: var(--surf2); }
+.home-icon-emoji { font-size: 18px; line-height: 1; }
+.home-icon-count {
+  font-size: 14px; font-weight: 800;
+  color: var(--ocean);
+}
+
+/* Gear button */
+.home-gear-btn {
+  padding: 6px 8px; border-radius: 100px;
+  background: none; border: none; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--text3);
+  display: flex; align-items: center;
+  transition: background .15s;
+}
+.home-gear-btn:active { background: var(--surf2); }
+
+.home-section { width: 100%; padding: 16px 0 0; flex: 1; display: flex; flex-direction: column; }
+
+/* Deck cards */
+.deck-grid {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 0;
+  background: var(--surf); border-radius: var(--r);
+  overflow: hidden; border: 1px solid var(--bd); box-shadow: var(--sh);
+}
+.deck-grid:empty, .deck-grid:has(.empty-state) {
+  background: none; border: none; box-shadow: none;
+}
+.deck-card {
+  background: var(--surf); cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: background .12s;
+  display: flex; align-items: center; padding: 20px 18px;
+  border-bottom: 0.5px solid var(--bd);
+}
+.deck-card:last-child { border-bottom: none; }
+.deck-card:active { background: var(--surf2); }
+.deck-card.selected { background: var(--blue-bg); }
+.deck-info { flex:1; min-width: 0; }
+.deck-name { font-size: 18px; font-weight: 600; color: var(--text); transition: color .15s; }
+.deck-card.selected .deck-name { color: var(--blue); }
+
+/* Due / New count columns */
+.deck-stats { display: flex; gap: 22px; align-items: center; flex-shrink: 0; }
+.deck-stat  { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 32px; }
+.deck-stat-num { font-size: 18px; font-weight: 700; line-height: 1; }
+.deck-stat-num.due   { color: var(--blue); }
+.deck-stat-num.new-c { color: var(--green); }
+.deck-stat-lbl { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; }
+
+/* Start footer — browse (secondary) + start (primary) */
+.home-footer {
+  width: 100%; max-width: 500px; flex-shrink: 0;
+  padding: 14px 16px calc(12px + var(--safe-bottom));
+  background: var(--bg);
+}
+.footer-btns {
+  display: flex; gap: 10px; align-items: stretch;
+}
+.browse-btn {
+  flex: 1;          /* 1/3 of total width (1 vs 2) */
+  height: 62px; border-radius: var(--r);
+  border: 2px solid var(--bd2);
+  background: var(--surf); color: var(--text2);
+  font-family: inherit; font-size: 16px; font-weight: 700;
+  cursor: pointer; outline: none;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: background .15s, transform .1s;
+}
+.browse-btn:active { transform: scale(.97); background: var(--surf2); }
+.start-btn {
+  flex: 2;          /* 2/3 of total width */
+  height: 62px; border-radius: var(--r); border: none;
+  background: var(--ocean); color: #fff;
+  font-family: inherit; font-size: 18px; font-weight: 800;
+  cursor: pointer; outline: none;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: transform .1s;
+  box-shadow: 0 4px 0 var(--ocean-dk);
+}
+.start-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ocean-dk); }
+
+/* 自制确认弹窗（替代 iOS PWA 下被屏蔽的 confirm()）*/
+.yh-dialog-mask {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  animation: toastIn .15s ease;
+}
+.yh-dialog {
+  background: var(--surf); border-radius: 18px;
+  padding: 24px 20px 16px;
+  width: 100%; max-width: 320px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+}
+.yh-dialog-msg {
+  font-size: 15px; font-weight: 500; color: var(--text);
+  line-height: 1.55; white-space: pre-line; margin-bottom: 20px;
+  text-align: center;
+}
+.yh-dialog-btns {
+  display: flex; gap: 10px;
+}
+.yh-dialog-btn {
+  flex: 1; height: 46px; border-radius: 12px;
+  font-family: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer; outline: none; border: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.yh-dialog-btn.cancel {
+  background: var(--surf2); color: var(--text2);
+}
+.yh-dialog-btn.confirm {
+  background: #e53e3e; color: #fff;
+}
+.debug-bar {
+  display: flex; gap: 8px; margin-top: 8px;
+}
+.debug-btn {
+  flex: 1; height: 40px; border-radius: var(--rsm);
+  border: 1.5px solid #f97316; background: transparent;
+  color: #f97316; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; outline: none;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: background .12s;
+}
+.debug-btn:active { background: rgba(249,115,22,.1); }
+
+/* ════════════════════════════════
+   QUIZ SCREEN
+   ════════════════════════════════ */
+#screen-quiz { overflow:hidden; }
+
+/* ── Top bar: back + progress ── */
+.bar {
+  width:100%; max-width:500px; flex-shrink:0;
+  display:flex; align-items:center; gap:12px;
+  padding: calc(10px + var(--safe-top)) 16px 12px;
+}
+.back-btn {
+  background:none; border:none; cursor:pointer; padding:4px;
+  -webkit-tap-highlight-color:transparent;
+  color:var(--text2); display:flex; align-items:center; flex-shrink:0;
+}
+.ptrack { flex:1; height:8px; background:var(--bd2); border-radius:4px; overflow:hidden; }
+.pfill  { height:100%; background:var(--ocean); border-radius:4px; transition:width .55s cubic-bezier(.4,0,.2,1); }
+/* Anki-style three-color counter */
+.srs-counter { display:flex; align-items:center; gap:3px; flex-shrink:0; }
+.srs-cnt     { font-size:14px; font-weight:800; min-width:16px; text-align:center; }
+.srs-cnt-new { color: var(--blue); }
+.srs-cnt-lrn { color: #e07b00; }
+.srs-cnt-rev { color: var(--green); }
+.srs-cnt-sep { font-size:12px; color:var(--text3); font-weight:500; }
+
+.gear-btn {
+  background:none; border:none; cursor:pointer; padding:4px;
+  -webkit-tap-highlight-color:transparent;
+  color:var(--text2); display:flex; align-items:center; flex-shrink:0;
+}
+
+/* ── Image zone: full-width square, NEVER changes size ── */
+.img-zone {
+  width:100%; max-width:500px; flex-shrink:0;
+  padding:0 16px;
+}
+.target-card-wrap {
+  width:100%; aspect-ratio:1/1;
+  position:relative;
+}
+
+/* ── Middle zone: shared by opts and answer-panel ── */
+.mid-zone {
+  flex:1; min-height:0;
+  width:100%; max-width:500px;
+  padding:0 16px;
+  display:flex; flex-direction:column;
+}
+
+/* legacy .content used for slide animation */
+.content {
+  flex:1; min-height:0;
+  width:100%; max-width:500px;
+  display:flex; flex-direction:column;
+  gap:10px;
+  transition:opacity .2s, transform .2s;
+}
+
+/* Image wrapper — same inset as mid-zone */
+.img-zone {
+  flex-shrink:0;
+  padding:0 16px;
+}
+
+/* Mid zone: fills everything between image and btm */
+.mid-zone {
+  flex:1; min-height:0;
+  padding:0 16px 8px;
+  display:flex; flex-direction:column;
+  justify-content:flex-end;
+}
+
+/* Target card — 1:1 square, capped height, always fixed */
+.target-card {
+  background:var(--surf2);
+  border-radius:var(--r);
+  border:1px solid var(--bd);
+  box-shadow:var(--sh);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; overflow:hidden; padding:0; position:relative;
+  width:100%; aspect-ratio:1/1;
+  max-height:44vh;
+}
+.target-card > .target-img { border-radius:var(--r); overflow:hidden; }
+.revealed .target-card { box-shadow:var(--sh); }
+
+.target-img {
+  width:100%; height:100%;
+  border-radius:var(--r);
+  background:var(--surf2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:clamp(80px, 25vh, 180px); line-height:1;
+  overflow:hidden;
+  animation:imgPop .38s cubic-bezier(.34,1.56,.64,1);
+}
+/* Real photo: fills square, cropped to center */
+.target-img img {
+  width:100%; height:100%;
+  object-fit:contain; object-position:center;
+  display:block; border-radius:var(--r);
+}
+@keyframes imgPop{from{transform:scale(.78);opacity:0}to{transform:scale(1);opacity:1}}
+.instr {
+  display:flex; align-items:center; justify-content:center;
+  gap:7px; transition:opacity .3s; flex-shrink:0; padding:2px 0;
+}
+.dots { display:flex; gap:4px; }
+.dot  { width:7px; height:7px; border-radius:50%; background:var(--ocean); animation:dp 1.5s ease-in-out infinite; }
+.dot:nth-child(2){animation-delay:.17s}.dot:nth-child(3){animation-delay:.34s}
+@keyframes dp{0%,70%,100%{transform:scale(.5);opacity:.3}35%{transform:scale(1);opacity:1}}
+.instr-txt { font-size:14px; color:var(--text2); font-weight:500; }
+
+/* Options zone — explicit height matching image; buttons fill it */
+.opts-zone {
+  width:100%; flex-shrink:0;
+  display:flex; flex-direction:column;
+  background:var(--surf); border-radius:var(--r);
+  border:1px solid var(--bd); padding:10px;
+  height:var(--opts-zone-h, auto);
+  user-select:none; -webkit-user-select:none;
+}
+.opts {
+  flex:1;
+  display:flex; flex-direction:column; gap:10px;
+}
+.opt {
+  flex:1; height:var(--opt-btn-h, auto);
+  background:#fff; border:2.5px solid var(--ocean);
+  border-radius:var(--rsm); cursor:pointer; outline:none;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color .18s, background .18s, transform .1s, opacity .2s;
+  user-select:none; -webkit-user-select:none;
+}
+.opt:active{ transform:scale(.97); background:var(--blue-bg); }
+.otxt {
+  font-size:var(--fs-opt, 26px); font-weight:700; letter-spacing:var(--ls-opt, .06em);
+  color:var(--text); text-align:center; line-height:1.3;
+  word-break:keep-all; transition:color .18s;
+  padding:0 16px;
+}
+
+/* Phrase input in settings */
+.phrase-input {
+  width:100%; padding:9px 12px;
+  border:1.5px solid var(--bd2); border-radius:10px;
+  background:var(--surf2); color:var(--text);
+  font-family:inherit; font-size:15px;
+  outline:none; transition:border-color .15s;
+}
+.phrase-input:focus { border-color:var(--ocean); }
+.rpl  { position:absolute; border-radius:50%; background:var(--blue-lt); transform:scale(0); animation:rout .5s ease-out forwards; pointer-events:none; }
+@keyframes rout{to{transform:scale(5);opacity:0}}
+.opt.sel { border-color:var(--ocean); background:var(--blue-bg); }
+.opt.sel .otxt { color:var(--ocean); }
+.opt.sel::after { content:''; position:absolute; inset:-3px; border-radius:calc(var(--rsm)+4px); border:2px solid var(--ocean); animation:blink 2s ease infinite; pointer-events:none; }
+@keyframes blink{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(1.02)}}
+.opt.correct { border-color:var(--green); background:var(--green-bg); }
+.opt.correct .otxt { color:var(--green); }
+.opt.correct::after { display:none; }
+.opt.wrong  { border-color:var(--bd2); background:var(--surf2); opacity:.35; }
+.opt.wrong::after { display:none; }
+.opt.dim    { opacity:.25; pointer-events:none; }
+.opt.dim::after { display:none; }
+
+/* Answer panel — fills mid-zone, same space as opts-zone */
+.answer-panel {
+  flex:1; min-height:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  background:var(--surf); border-radius:var(--r);
+  border:1px solid var(--bd); box-shadow:var(--sh);
+  padding:18px 20px 14px; overflow:hidden;
+  opacity:0; transform:scale(.96);
+  transition:opacity .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.answer-panel.show { opacity:1; transform:scale(1); }
+.answer-word {
+  font-size:var(--fs-ans, 48px); font-weight:800; letter-spacing:var(--ls-ans, -1px);
+  color:var(--text); line-height:1; text-align:center;
+  flex-shrink:0; margin-bottom:14px;
+}
+.answer-details {
+  width:100%; display:flex; flex-direction:column;
+  gap:7px; overflow:hidden; flex-shrink:1;
+}
+.detail-item {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:9px 13px; background:var(--surf2); border-radius:12px;
+  flex-shrink:0; opacity:0; transform:translateY(6px);
+  transition:opacity .3s, transform .3s;
+}
+.detail-item.show { opacity:1; transform:translateY(0); }
+.detail-dot { width:6px; height:6px; border-radius:50%; background:var(--ocean); flex-shrink:0; margin-top:8px; }
+.detail-txt { font-size:var(--fs-hint, 15px); font-weight:500; color:var(--text2); line-height:1.5; letter-spacing:var(--ls-hint, 0); }
+
+/* Bottom — collapses when nxtbtn hidden */
+.btm {
+  width:100%; max-width:500px; flex-shrink:0;
+  padding: 0 16px;
+  display:flex; flex-direction:column;
+}
+.btm:has(.nxtbtn.show) {
+  padding: 8px 16px calc(12px + var(--safe-bottom));
+}
+/* Fallback for Safari < 15.4 without :has */
+.btm.active {
+  padding: 8px 16px calc(12px + var(--safe-bottom));
+}
+/* Submit button — hidden (auto-submit replaces it) */
+.subbtn { display:none !important; }
+.ntip {
+  position:absolute; bottom:calc(100% + 9px); left:50%;
+  transform:translateX(-50%) scale(.9);
+  background:var(--text); color:var(--bg);
+  font-size:13px; font-weight:500; padding:8px 16px;
+  border-radius:11px; white-space:nowrap;
+  opacity:0; pointer-events:none;
+  transition:opacity .2s, transform .2s; z-index:20;
+}
+.ntip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--text); }
+.ntip.show { opacity:1; transform:translateX(-50%) scale(1); }
+@keyframes ndg{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.ndg{animation:ndg .32s ease}
+
+/* nxtbtn: hidden during quiz, shown after answer — no animation */
+.nxtbtn {
+  width:100%; height:66px; border-radius:var(--r); border:none;
+  background:var(--ocean); color:#fff;
+  font-family:inherit; font-size:var(--fs-btn, 20px); font-weight:800; letter-spacing:var(--ls-btn, 0);
+  cursor:pointer; outline:none;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  display:none; align-items:center; justify-content:center; gap:10px;
+  position:relative; overflow:hidden; flex-shrink:0;
+  box-shadow:0 4px 0 var(--ocean-dk);
+}
+.nxtbtn.show {
+  display:flex;
+}
+.nxtbtn:active { transform:translateY(2px); box-shadow:0 2px 0 var(--ocean-dk); }
+.nring-svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.nring-t { fill:none; stroke:transparent; stroke-width:3; }
+.nring-p { fill:none; stroke:transparent; stroke-width:3; stroke-linecap:round; }
+.nxtbtn.counting .nring-t { stroke:rgba(255,255,255,.14); }
+.nxtbtn.counting .nring-p { stroke:rgba(255,255,255,.72); }
+.nring-lbl { position:relative; z-index:1; }
+.nring-sec { position:relative; z-index:1; font-size:13px; font-weight:600; opacity:.6; min-width:16px; }
+
+/* Slide */
+.content { transition:opacity .2s, transform .2s; }
+.sout{opacity:0;transform:translateX(-22px)}
+.sin {opacity:0;transform:translateX(22px)}
+
+/* ════════════════════════════════
+   SETTINGS DRAWER — Tab layout
+   ════════════════════════════════ */
+.settings-overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,0); pointer-events:none;
+  transition:background .28s;
+}
+.settings-overlay.open { background:rgba(0,0,0,0.38); pointer-events:auto; }
+.settings-sheet {
+  position:absolute; bottom:0; left:50%;
+  transform:translateX(-50%) translateY(100%);
+  width:100%; max-width:500px;
+  background:var(--surf); border-radius:24px 24px 0 0;
+  border-top:0.5px solid var(--bd);
+  padding-bottom: calc(16px + var(--safe-bottom));
+  transition:transform .32s cubic-bezier(.32,1,.36,1);
+  display:flex; flex-direction:column;
+  max-height:90vh;
+}
+.settings-overlay.open .settings-sheet { transform:translateX(-50%) translateY(0); }
+.sheet-handle { width:36px; height:4px; border-radius:2px; background:var(--bd2); margin:12px auto 6px; flex-shrink:0; }
+/* Tab bar */
+.sheet-tabs {
+  display:flex; border-bottom:1px solid var(--bd);
+  flex-shrink:0; padding:0 8px;
+}
+.sheet-tab {
+  flex:1; text-align:center;
+  padding:9px 2px 8px;
+  font-size:12px; font-weight:600; color:var(--text3);
+  cursor:pointer; border-bottom:2px solid transparent;
+  transition:color .15s, border-color .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.sheet-tab.active { color:var(--ocean); border-bottom-color:var(--ocean); }
+/* Tab panels */
+.sheet-panels { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.sheet-panel { display:none; padding:0 0 24px; }
+.sheet-panel.active { display:block; }
+/* Rows */
+.sheet-section { padding:14px 20px 0; }
+.sheet-section-lbl { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; }
+.sheet-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:0.5px solid var(--bd); }
+.sheet-row:last-child { border-bottom:none; }
+.sheet-row-lbl { flex:1; font-size:15px; font-weight:500; color:var(--text); }
+.sheet-row-val { font-size:14px; font-weight:700; color:var(--blue); min-width:34px; text-align:right; }
+.sheet-row input[type=range] { width:120px; accent-color:var(--blue); cursor:pointer; }
+.stoggle { position:relative; width:44px; height:26px; flex-shrink:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.stoggle input { opacity:0; width:0; height:0; position:absolute; }
+.stoggle-track { position:absolute; inset:0; background:var(--bd2); border-radius:13px; transition:background .25s; }
+.stoggle input:checked + .stoggle-track { background:var(--blue); }
+.stoggle-thumb { position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.25); transition:transform .25s cubic-bezier(.34,1.56,.64,1); pointer-events:none; }
+.stoggle input:checked ~ .stoggle-thumb { transform:translateX(18px); }
+
+/* Confetti + jelly */
+#cc { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:999; }
+@keyframes jelly{0%,100%{transform:scale(1)}20%{transform:scale(1.14,.86)}40%{transform:scale(.89,1.11)}60%{transform:scale(1.06,.95)}80%{transform:scale(.98,1.02)}}
+.jly{animation:jelly .42s ease}
+
+/* Icon SVG helper */
+.ico { display:inline-flex; align-items:center; justify-content:center; }
+
+@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+/* 空状态 */
+.empty-state {
+  flex: 1;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding: 40px 24px; gap:12px; text-align:center;
+}
+.empty-state-icon { font-size:48px; line-height:1; }
+.empty-state-title { font-size:18px; font-weight:700; color:var(--text); }
+.empty-state-sub { font-size:14px; color:var(--text2); line-height:1.6; }
+
+/* 牌组删除按钮 */
+.deck-del-btn {
+  background:none; border:none; cursor:pointer; padding:6px;
+  color:var(--text3); border-radius:8px; flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+  transition:color .15s, background .15s;
+  display:flex; align-items:center;
+}
+.deck-del-btn:active { color:var(--red, #e53e3e); background:var(--surf2); }
+
+/* ════════════════════════════════
+   FINISH SCREEN
+   ════════════════════════════════ */
+#screen-finish { justify-content: center; align-items: center; }
+.finish-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px; padding: 32px 24px; width: 100%; max-width: 400px;
+}
+.finish-icon { font-size: 64px; line-height: 1; }
+.finish-title {
+  font-size: 26px; font-weight: 800; color: var(--ocean);
+  text-align: center;
+}
+.finish-stats {
+  display: flex; flex-direction: column; gap: 10px;
+  width: 100%; background: var(--surf);
+  border: 1px solid var(--bd); border-radius: var(--r);
+  padding: 18px 20px; box-shadow: var(--sh);
+}
+.finish-stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.finish-stat-lbl { font-size: 15px; color: var(--text2); font-weight: 500; }
+.finish-stat-val { font-size: 18px; font-weight: 800; color: var(--ocean); }
+.finish-stat-val.correct { color: var(--green); }
+.finish-stat-val.wrong   { color: #e07b00; }
+.finish-btn {
+  width: 100%; height: 62px; border-radius: var(--r); border: none;
+  background: var(--ocean); color: #fff;
+  font-family: inherit; font-size: 18px; font-weight: 800;
+  cursor: pointer; outline: none;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: transform .1s;
+  box-shadow: 0 4px 0 var(--ocean-dk);
+}
+.finish-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ocean-dk); }
+
+/* ════════════════════════════════
+   STATS SCREEN
+   ════════════════════════════════ */
+#screen-stats { justify-content: flex-start; overflow: hidden; align-items: center; }
+.stats-topbar {
+  width: 100%; max-width: 500px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(10px + var(--safe-top)) 16px 8px;
+}
+.stats-title { font-size: 17px; font-weight: 800; color: var(--ocean); }
+.stats-tabs {
+  width: 100%; max-width: 500px; flex-shrink: 0;
+  display: flex; border-bottom: 1px solid var(--bd);
+  padding: 0 16px;
+}
+.stats-tab {
+  flex: 1; text-align: center;
+  padding: 9px 4px 8px;
+  font-size: 13px; font-weight: 600; color: var(--text3);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.stats-tab.active { color: var(--ocean); border-bottom-color: var(--ocean); }
+.stats-body {
+  flex: 1; min-height: 0; width: 100%; max-width: 500px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.stats-panel { display: none; padding-bottom: calc(24px + var(--safe-bottom)); }
+.stats-panel.active { display: block; }
+.stats-section { padding: 14px 16px 0; }
+.stats-section-lbl { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+.stats-kpi-row {
+  display: flex; gap: 10px;
+}
+.stats-kpi {
+  flex: 1; background: var(--surf); border: 1px solid var(--bd);
+  border-radius: var(--rsm); padding: 12px 10px; text-align: center;
+  box-shadow: var(--sh);
+}
+.stats-kpi-num { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; }
+.stats-kpi-num.kpi-c { color: var(--green); }
+.stats-kpi-num.kpi-w { color: #e07b00; }
+.stats-kpi-num.kpi-b { color: var(--ocean); }
+.stats-kpi-lbl { font-size: 11px; font-weight: 600; color: var(--text3); margin-top: 4px; }
+/* Bar chart */
+.stats-chart-wrap {
+  background: var(--surf); border: 1px solid var(--bd);
+  border-radius: var(--rsm); padding: 12px 10px;
+  box-shadow: var(--sh);
+}
+.chart-bars { display: flex; align-items: flex-end; gap: 4px; height: 70px; }
+.chart-col  { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.chart-bar  { width: 100%; background: var(--ocean); border-radius: 3px 3px 0 0; min-height: 2px; transition: height .3s; }
+.chart-bar.empty { background: var(--bd2); }
+.chart-day  { font-size: 10px; color: var(--text3); font-weight: 600; }
+.chart-rate { font-size: 9px; color: var(--text3); }
+/* Stats rows */
+.stats-rows { display: flex; flex-direction: column; gap: 0;
+  background: var(--surf); border: 1px solid var(--bd);
+  border-radius: var(--rsm); overflow: hidden; box-shadow: var(--sh); }
+.stats-row {
+  display: flex; align-items: center; padding: 12px 14px;
+  border-bottom: 0.5px solid var(--bd); gap: 10px;
+}
+.stats-row:last-child { border-bottom: none; }
+.stats-row-lbl { flex: 1; font-size: 14px; color: var(--text2); font-weight: 500; }
+.stats-row-val { font-size: 15px; font-weight: 700; color: var(--text); }
+/* Deck overview */
+.deck-overview-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.deck-ov-item {
+  background: var(--surf); border: 1px solid var(--bd);
+  border-radius: var(--rsm); padding: 12px 8px; text-align: center;
+  box-shadow: var(--sh);
+}
+.deck-ov-num { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
+.deck-ov-lbl { font-size: 11px; font-weight: 600; color: var(--text3); margin-top: 4px; }
+/* Card filter */
+.stats-filter-bar {
+  display: flex; gap: 6px; padding: 12px 16px 8px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
+}
+.stats-filter-btn {
+  flex-shrink: 0; padding: 6px 14px; border-radius: 100px;
+  border: 1.5px solid var(--bd2); background: var(--surf);
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  color: var(--text2); cursor: pointer; outline: none;
+  -webkit-tap-highlight-color: transparent; transition: all .15s;
+}
+.stats-filter-btn.active { background: var(--ocean); border-color: var(--ocean); color: #fff; }
+/* Card list */
+.stats-card-list { padding: 0 16px 8px; display: flex; flex-direction: column; gap: 8px; }
+.scard {
+  background: var(--surf); border: 1px solid var(--bd);
+  border-radius: var(--rsm); padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--sh); transition: background .12s;
+}
+.scard:active { background: var(--surf2); }
+.scard-img { font-size: 28px; line-height: 1; flex-shrink: 0; width: 36px; text-align: center; }
+.scard-img img { width: 36px; height: 36px; object-fit: cover; border-radius: 6px; }
+.scard-info { flex: 1; min-width: 0; }
+.scard-name { font-size: 15px; font-weight: 700; color: var(--text); }
+.scard-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.scard-right { text-align: right; flex-shrink: 0; }
+.scard-due  { font-size: 12px; font-weight: 600; color: var(--text3); }
+.scard-lapse{ font-size: 12px; font-weight: 700; }
+.scard-lapse.warn { color: #e07b00; }
+.scard-lapse.danger { color: #e53e3e; }
+/* Status badges */
+.sbadge {
+  display: inline-block; padding: 2px 8px; border-radius: 100px;
+  font-size: 11px; font-weight: 700; letter-spacing: .02em;
+}
+.sbadge-new     { background: var(--surf2); color: var(--text3); }
+.sbadge-learn   { background: #fef3c7; color: #92400e; }
+.sbadge-inreview{ background: var(--blue-bg); color: var(--blue); }
+.sbadge-review  { background: var(--green-bg); color: var(--green); }
+.sbadge-relearn { background: #fee2e2; color: #b91c1c; }
+.sbadge-sus     { background: #fde8ff; color: #7c3aed; }
+html.dark .sbadge-learn   { background: #432e00; color: #fcd34d; }
+html.dark .sbadge-inreview{ background: #112840; color: #38bdf8; }
+html.dark .sbadge-review  { background: #042014; color: #6ee7b7; }
+html.dark .sbadge-relearn { background: #2d0707; color: #fca5a5; }
+html.dark .sbadge-sus     { background: #2e1147; color: #d8b4fe; }
+/* Trial list */
+.trial-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border-bottom: 0.5px solid var(--bd);
+}
+.trial-item:last-child { border-bottom: none; }
+.trial-rating {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; flex-shrink: 0;
+}
+.tr-good  { background: var(--green-bg); color: var(--green); }
+.tr-hard  { background: #fef3c7; color: #92400e; }
+.tr-again { background: #fee2e2; color: #b91c1c; }
+.tr-easy  { background: var(--blue-bg); color: var(--blue); }
+html.dark .tr-hard { background: #432e00; color: #fcd34d; }
+html.dark .tr-again { background: #2d0707; color: #fca5a5; }
+.trial-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
+.trial-time { font-size: 12px; color: var(--text3); flex-shrink: 0; }
+/* Card detail sheet */
+.card-detail-overlay {
+  position: absolute; inset: 0; z-index: 50;
+  background: rgba(0,0,0,0); pointer-events: none;
+  transition: background .25s;
+}
+.card-detail-overlay.open {
+  background: rgba(0,0,0,0.38); pointer-events: auto;
+}
+.card-detail-sheet {
+  position: absolute; bottom: 8px;
+  left: 50%; transform: translateX(-50%) translateY(100%);
+  width: calc(100% - 32px); max-width: 460px;
+  background: var(--surf); border-radius: 20px;
+  border: 0.5px solid var(--bd);
+  padding: 0 0 calc(16px + var(--safe-bottom));
+  transition: transform .3s cubic-bezier(.32,1,.36,1);
+  max-height: 75vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.card-detail-overlay.open .card-detail-sheet { transform: translateX(-50%) translateY(0); }
+.card-detail-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--bd2); margin: 10px auto 6px; }
+.card-detail-body { padding: 0 16px 8px; }
+.cdh { font-size: 12px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin: 14px 0 8px; }
+.cd-param-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 0.5px solid var(--bd); font-size: 14px; }
+.cd-param-row:last-child { border-bottom: none; }
+.cd-param-lbl { color: var(--text2); }
+.cd-param-val { font-weight: 700; color: var(--text); }
+.cd-hist-row  { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--bd); font-size: 13px; }
+.cd-hist-row:last-child { border-bottom: none; }
+.cd-hist-time { color: var(--text3); min-width: 72px; }
+.cd-hist-stage{ color: var(--text2); min-width: 40px; }
+.cd-hist-arrow{ color: var(--text3); }
+.cd-hist-result{ color: var(--text); font-weight: 600; flex: 1; }
+/* SRS preset buttons */
+.srs-preset-btn {
+  width: 100%; padding: 11px; border-radius: var(--rsm);
+  border: none; background: var(--ocean); color: #fff;
+  font-family: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer; outline: none;
+  -webkit-tap-highlight-color: transparent; transition: opacity .15s;
+}
+.srs-preset-btn:active { opacity: .8; }
+.srs-preset-btn--sec { background: var(--surf2); color: var(--text2); margin-top: 0; }
+</style>
+</head>
+<body>
+<canvas id="cc"></canvas>
+
+<!-- ══════════════ HOME SCREEN ══════════════ -->
+<div class="screen active" id="screen-home">
+
+  <div class="home-scroll">
+    <!-- Duolingo-style top bar -->
+    <div class="home-topbar">
+      <div class="home-title-wrap">
+        <span class="home-title">忆海拾光</span>
+        <span class="home-version">v4.3</span>
+        <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+        </button>
+      </div>
+      <div class="home-icons">
+        <!-- stats -->
+        <button class="home-gear-btn" onclick="openStats()" aria-label="统计">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+        </button>
+        <!-- import yhspack -->
+        <label class="home-gear-btn" style="cursor:pointer" aria-label="导入牌组" title="导入 .yhspack">
+          <input type="file" accept=".yhspack" style="display:none" onchange="importYhspack(this.files[0]).then(()=>this.value='')">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </label>
+        <!-- settings gear -->
+        <button class="home-gear-btn" onclick="openSettingsWithSrs()" aria-label="设置">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="home-section">
+      <div class="deck-grid" id="deck-grid">
+        <!-- rendered by JS from DECKS_META -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky footer: browse (secondary) + start (primary) -->
+  <div class="home-footer">
+    <div class="footer-btns">
+      <button class="browse-btn" onclick="startBrowse()">浏览</button>
+      <button class="start-btn"  onclick="startQuiz()">开始练习</button>
+    </div>
+    <!-- ▼ 测试工具（发布前移除）-->
+    <div class="debug-bar" id="debug-bar">
+      <button class="debug-btn" onclick="confirmResetDeck()">🗑 重置牌组</button>
+      <button class="debug-btn" onclick="advanceOneDay()">⏭ +1天</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════ QUIZ SCREEN ══════════════ -->
+<div class="screen" id="screen-quiz">
+
+  <!-- 1. Top bar: fixed -->
+  <div class="bar">
+    <button class="back-btn" onclick="goHome()" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <div class="ptrack"><div class="pfill" id="pfill" style="width:0%"></div></div>
+    <div class="srs-counter" id="srs-counter">
+      <span class="srs-cnt srs-cnt-new"  id="cnt-new">0</span>
+      <span class="srs-cnt-sep">+</span>
+      <span class="srs-cnt srs-cnt-lrn"  id="cnt-lrn">0</span>
+      <span class="srs-cnt-sep">+</span>
+      <span class="srs-cnt srs-cnt-rev"  id="cnt-rev">0</span>
+    </div>
+  </div>
+
+  <!-- wrapper for slide animation -->
+  <div class="content" id="content">
+
+    <!-- 2. Image zone: same inset as options below -->
+    <div class="img-zone">
+      <div class="target-card">
+        <div class="target-img" id="timg"></div>
+      </div>
+    </div>
+
+    <!-- 3. Middle zone: opts OR answer-panel, fills all remaining space -->
+    <div class="mid-zone">
+      <div class="opts-zone" id="opts-zone">
+        <div class="opts" id="opts"></div>
+      </div>
+      <div class="answer-panel" id="answer-panel">
+        <div class="answer-word" id="ans-word"></div>
+        <div class="answer-details" id="ans-details"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 4. Bottom: action buttons, fixed -->
+  <div class="btm">
+    <button class="subbtn" id="subbtn" ontouchstart="" onclick="onSubmit()">
+      <span id="sublbl">确认答案</span>
+      <div class="ntip" id="ntip">先选一个答案 👆</div>
+    </button>
+    <button class="nxtbtn" id="nxtbtn" ontouchstart="" onclick="onNext()">
+      <svg class="nring-svg" id="nrsvg"><rect class="nring-t" id="nrt" rx="20"/><rect class="nring-p" id="nrp" rx="20"/></svg>
+      <span class="nring-lbl" id="nxt-lbl">下一题</span>
+      <span class="nring-sec" id="nrsec"></span>
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════ FINISH SCREEN ══════════════ -->
+<div class="screen" id="screen-finish">
+  <div class="finish-wrap">
+    <div class="finish-icon">🎉</div>
+    <div class="finish-title">今天练习完成！</div>
+    <div class="finish-stats" id="finish-stats"></div>
+    <button class="finish-btn" onclick="goHome()">返回首页</button>
+  </div>
+</div>
+
+<!-- ══════════════ STATS SCREEN ══════════════ -->
+<div class="screen" id="screen-stats">
+  <div class="stats-topbar">
+    <button class="back-btn" onclick="goHome()" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="stats-title">统计</span>
+    <div style="width:30px"></div>
+  </div>
+
+  <!-- Sub-tabs -->
+  <div class="stats-tabs">
+    <div class="stats-tab active" onclick="switchStatsTab(0)">今日</div>
+    <div class="stats-tab" onclick="switchStatsTab(1)">牌组</div>
+    <div class="stats-tab" onclick="switchStatsTab(2)">卡片</div>
+    <div class="stats-tab" onclick="switchStatsTab(3)">记录</div>
+  </div>
+
+  <div class="stats-body">
+
+    <!-- Tab 0：今日概况 -->
+    <div class="stats-panel active" id="sp-0">
+      <div class="stats-section">
+        <div class="stats-kpi-row" id="st-kpi"></div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-section-lbl">近 7 天</div>
+        <div class="stats-chart-wrap" id="st-chart"></div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-section-lbl">本次 / 今日</div>
+        <div class="stats-rows" id="st-session"></div>
+      </div>
+    </div>
+
+    <!-- Tab 1：牌组概况 -->
+    <div class="stats-panel" id="sp-1">
+      <div class="stats-section" id="st-deck-overview"></div>
+      <div class="stats-section">
+        <div class="stats-section-lbl">未来 7 天到期预测</div>
+        <div class="stats-chart-wrap" id="st-forecast"></div>
+      </div>
+    </div>
+
+    <!-- Tab 2：卡片状态 -->
+    <div class="stats-panel" id="sp-2">
+      <div class="stats-filter-bar" id="st-card-filter">
+        <button class="stats-filter-btn active" data-f="all"      onclick="filterCards(this,'all')">全部</button>
+        <button class="stats-filter-btn"        data-f="sus"      onclick="filterCards(this,'sus')">待确认</button>
+        <button class="stats-filter-btn"        data-f="learn"    onclick="filterCards(this,'learn')">学习中</button>
+        <button class="stats-filter-btn"        data-f="inreview" onclick="filterCards(this,'inreview')">复习中</button>
+        <button class="stats-filter-btn"        data-f="review"   onclick="filterCards(this,'review')">已掌握</button>
+        <button class="stats-filter-btn"        data-f="new"      onclick="filterCards(this,'new')">待开始</button>
+      </div>
+      <div class="stats-card-list" id="st-card-list"></div>
+    </div>
+
+    <!-- Tab 3：练习记录 -->
+    <div class="stats-panel" id="sp-3">
+      <div class="stats-section">
+        <div class="stats-section-lbl">最近 100 条（7天内，不含步长内重现）</div>
+        <div class="stats-rows" id="st-trial-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 卡片详情面板（叠加在统计屏上） -->
+  <div class="card-detail-overlay" id="card-detail-overlay" onclick="closeCardDetail(event)">
+    <div class="card-detail-sheet" id="card-detail-sheet">
+      <div class="card-detail-handle"></div>
+      <div class="card-detail-body" id="card-detail-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SETTINGS DRAWER ══════════════ -->
+<div class="settings-overlay" id="settings-overlay" onclick="closeSettingsIfOutside(event)">
+  <div class="settings-sheet">
+    <div class="sheet-handle"></div>
+
+    <!-- Tab bar -->
+    <div class="sheet-tabs">
+      <div class="sheet-tab active" onclick="switchTab(0)">通用</div>
+      <div class="sheet-tab" onclick="switchTab(1)">语音</div>
+      <div class="sheet-tab" onclick="switchTab(2)">文字</div>
+      <div class="sheet-tab" onclick="switchTab(3)">SRS</div>
+    </div>
+
+    <div class="sheet-panels">
+
+      <!-- Tab 0: 通用 -->
+      <div class="sheet-panel active" id="tab-0">
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">显示</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">深色模式</span>
+            <label class="stoggle">
+              <input type="checkbox" id="dark-toggle" onchange="toggleTheme(this)">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
+        </div>
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">选项</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">选项数量</span>
+            <input type="range" min="2" max="4" value="3" step="1" id="opt-count" oninput="onOptCount(this.value)">
+            <span class="sheet-row-val" id="opt-count-val">3个</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">防误触延迟</span>
+            <input type="range" min="0" max="400" value="120" step="20" id="opt-touch-delay" oninput="onOptTouchDelayChange(this.value)">
+            <span class="sheet-row-val" id="opt-touch-delay-val">120ms</span>
+          </div>
+        </div>
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">节奏</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">练习倒计时</span>
+            <input type="range" min="0" max="15" value="6" step="1" id="dbg-ndur" oninput="onNdurChange(this.value)">
+            <span class="sheet-row-val" id="dbg-ndur-val">6s</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">浏览倒计时</span>
+            <input type="range" min="0" max="15" value="4" step="1" id="dbg-bdur" oninput="onBdurChange(this.value)">
+            <span class="sheet-row-val" id="dbg-bdur-val">4s</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">浏览答案显示延迟</span>
+            <input type="range" min="0" max="10" value="3" step="0.5" id="dbg-browse-ans-delay" oninput="onBrowseAnsDelayChange(this.value)">
+            <span class="sheet-row-val" id="dbg-browse-ans-delay-val">3s</span>
+          </div>
+        </div>
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">答对反馈</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">撒花动画</span>
+            <label class="stoggle">
+              <input type="checkbox" id="confetti-toggle" checked onchange="toggleConfetti(this)">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">回答正确提示</span>
+            <label class="stoggle">
+              <input type="checkbox" id="correct-hint-toggle" checked onchange="toggleCorrectHint(this)">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
+          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+            <span class="sheet-row-lbl">回答正确文案</span>
+            <input type="text" id="phrase-correct" class="phrase-input" value="回答正确" oninput="onPhraseChange('correct',this.value)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 1: 语音 -->
+      <div class="sheet-panel" id="tab-1">
+
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">答题提示</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">答题提示</span>
+            <label class="stoggle">
+              <input type="checkbox" id="quiz-prompt-toggle" checked onchange="toggleQuizPrompt(this)">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">答题提示延迟</span>
+            <input type="range" min="0.5" max="10" value="2" step="0.5" id="dbg-qpdelay" oninput="onQpDelayChange(this.value)">
+            <span class="sheet-row-val" id="dbg-qpdelay-val">2s</span>
+          </div>
+          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+            <span class="sheet-row-lbl">答题提示文案</span>
+            <input type="text" id="phrase-select" class="phrase-input" value="请选择答案" oninput="onPhraseChange('select',this.value)">
+          </div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">选项提示</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">选项提示</span>
+            <label class="stoggle">
+              <input type="checkbox" id="opt-hint-toggle" checked onchange="toggleOptHint(this)">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">选项提示延迟</span>
+            <input type="range" min="0.5" max="10" value="5" step="0.5" id="dbg-ohdelay" oninput="onOhDelayChange(this.value)">
+            <span class="sheet-row-val" id="dbg-ohdelay-val">5s</span>
+          </div>
+          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+            <span class="sheet-row-lbl">选项提示文案（{A}{B}{C}替换为选项，. 为停顿100ms）</span>
+            <input type="text" id="phrase-opt-hint" class="phrase-input" value="请在{A}.{B}.{C}中选择一个" oninput="onPhraseChange('optHint',this.value)">
+          </div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">答错提示</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">答错提示</span>
+            <label class="stoggle">
+              <input type="checkbox" id="wrong-hint-toggle" checked onchange="toggleWrongHint(this)">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
+          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+            <span class="sheet-row-lbl">答错提示文案</span>
+            <input type="text" id="phrase-wrong" class="phrase-input" value="不要着急，再试一次" oninput="onPhraseChange('wrong',this.value)">
+          </div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">答案播报</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">朗读物品提示</span>
+            <label class="stoggle">
+              <input type="checkbox" id="hint-toggle" checked onchange="toggleReadHint(this)">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">练习播报延迟</span>
+            <input type="range" min="0.5" max="3" value="1.2" step="0.1" id="dbg-delay" oninput="onDelayChange(this.value)">
+            <span class="sheet-row-val" id="dbg-delay-val">1.2s</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">浏览播报延迟</span>
+            <input type="range" min="0.5" max="3" value="1.2" step="0.1" id="dbg-browse-delay" oninput="onBrowseDelayChange(this.value)">
+            <span class="sheet-row-val" id="dbg-browse-delay-val">1.2s</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">语速</span>
+            <input type="range" min="0.5" max="2" value="0.85" step="0.05" id="tts-rate" oninput="onTtsRateChange(this.value)">
+            <span class="sheet-row-val" id="tts-rate-val">0.85</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">音调</span>
+            <input type="range" min="0.5" max="2" value="1" step="0.1" id="tts-pitch" oninput="onTtsPitchChange(this.value)">
+            <span class="sheet-row-val" id="tts-pitch-val">1.0</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">音色</span>
+            <select id="tts-voice" onchange="onTtsVoiceChange(this.value)"
+              style="flex:1;padding:6px 10px;border:1.5px solid var(--bd2);border-radius:10px;
+                     background:var(--surf2);color:var(--text);font-family:inherit;font-size:14px;
+                     outline:none;max-width:200px;">
+              <option value="">自动（中文优先）</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab 2: 文字 -->
+      <div class="sheet-panel" id="tab-2">
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">字号</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">选项</span>
+            <input type="range" min="18" max="36" value="26" step="1" id="fs-opt" oninput="onFsChange('opt',this.value)">
+            <span class="sheet-row-val" id="fs-opt-val">26</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">答案</span>
+            <input type="range" min="28" max="64" value="48" step="2" id="fs-ans" oninput="onFsChange('ans',this.value)">
+            <span class="sheet-row-val" id="fs-ans-val">48</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">提示</span>
+            <input type="range" min="12" max="24" value="15" step="1" id="fs-hint" oninput="onFsChange('hint',this.value)">
+            <span class="sheet-row-val" id="fs-hint-val">15</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">按钮</span>
+            <input type="range" min="14" max="28" value="20" step="1" id="fs-btn" oninput="onFsChange('btn',this.value)">
+            <span class="sheet-row-val" id="fs-btn-val">20</span>
+          </div>
+        </div>
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">字间距</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">选项</span>
+            <input type="range" min="0" max="12" value="2" step="1" id="ls-opt" oninput="onLsChange('opt',this.value)">
+            <span class="sheet-row-val" id="ls-opt-val">2px</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">答案</span>
+            <input type="range" min="-4" max="8" value="-1" step="1" id="ls-ans" oninput="onLsChange('ans',this.value)">
+            <span class="sheet-row-val" id="ls-ans-val">-1px</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">提示</span>
+            <input type="range" min="0" max="8" value="0" step="1" id="ls-hint" oninput="onLsChange('hint',this.value)">
+            <span class="sheet-row-val" id="ls-hint-val">0px</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">按钮</span>
+            <input type="range" min="0" max="8" value="0" step="1" id="ls-btn" oninput="onLsChange('btn',this.value)">
+            <span class="sheet-row-val" id="ls-btn-val">0px</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: SRS -->
+      <div class="sheet-panel" id="tab-3">
+
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">预设</div>
+          <div class="sheet-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:12px 0;">
+            <button class="srs-preset-btn" onclick="applySrsPreset('ad')">一键应用 AD 建议值</button>
+            <button class="srs-preset-btn srs-preset-btn--sec" onclick="applySrsPreset('default')">恢复 Anki 默认值</button>
+          </div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">新卡学习</div>
+          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;">
+            <span class="sheet-row-lbl" style="font-size:13px">学习步长（分钟，逗号分隔）</span>
+            <div style="display:flex;gap:8px;width:100%;align-items:center">
+              <input type="text" id="srs-learning-steps" class="phrase-input" style="flex:1"
+                placeholder="例：1, 10"
+                oninput="onSrsStepsInput('learning_steps',this.value)">
+              <span style="font-size:11px;color:var(--text3);flex-shrink:0" id="srs-learning-steps-hint"></span>
+            </div>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">毕业间隔（天）</span>
+            <input type="range" min="1" max="4" value="1" step="1" id="srs-graduating-interval" oninput="onSrsSlider('graduating_interval',this.value,this,'天')">
+            <span class="sheet-row-val" id="srs-graduating-interval-val">1天</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">简单间隔（天）</span>
+            <input type="range" min="1" max="7" value="2" step="1" id="srs-easy-interval" oninput="onSrsSlider('easy_interval',this.value,this,'天')">
+            <span class="sheet-row-val" id="srs-easy-interval-val">2天</span>
+          </div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">遗忘重学</div>
+          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;">
+            <span class="sheet-row-lbl" style="font-size:13px">重学步长（分钟，逗号分隔）</span>
+            <div style="display:flex;gap:8px;width:100%;align-items:center">
+              <input type="text" id="srs-relearning-steps" class="phrase-input" style="flex:1"
+                placeholder="例：10"
+                oninput="onSrsStepsInput('relearning_steps',this.value)">
+              <span style="font-size:11px;color:var(--text3);flex-shrink:0" id="srs-relearning-steps-hint"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">每日上限</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">每日新卡</span>
+            <input type="range" min="1" max="20" value="5" step="1" id="srs-new-per-day" oninput="onSrsSlider('new_cards_per_day',this.value,this,'张')">
+            <span class="sheet-row-val" id="srs-new-per-day-val">5张</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">每日复习上限</span>
+            <input type="range" min="10" max="200" value="50" step="10" id="srs-max-reviews" oninput="onSrsSlider('maximum_reviews_per_day',this.value,this,'张')">
+            <span class="sheet-row-val" id="srs-max-reviews-val">50张</span>
+          </div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">间隔控制</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">最大间隔（天）</span>
+            <input type="range" min="1" max="30" value="7" step="1" id="srs-max-interval" oninput="onSrsSlider('maximum_interval',this.value,this,'天')">
+            <span class="sheet-row-val" id="srs-max-interval-val">7天</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">初始易度</span>
+            <input type="range" min="1.3" max="3.0" value="1.3" step="0.1" id="srs-starting-ease" oninput="onSrsSlider('starting_ease',this.value,this,'',1)">
+            <span class="sheet-row-val" id="srs-starting-ease-val">1.3</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">全局间隔乘数</span>
+            <input type="range" min="0.5" max="1.5" value="0.8" step="0.05" id="srs-interval-modifier" oninput="onSrsSlider('interval_modifier',this.value,this,'',2)">
+            <span class="sheet-row-val" id="srs-interval-modifier-val">0.80</span>
+          </div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">失败保护</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">当日移出（连失次）</span>
+            <input type="range" min="2" max="8" value="3" step="1" id="srs-daily-remove" oninput="onSrsSlider('daily_remove_lapses',this.value,this,'次')">
+            <span class="sheet-row-val" id="srs-daily-remove-val">3次</span>
+          </div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">自动挂起（累计失败）</span>
+            <input type="range" min="3" max="20" value="8" step="1" id="srs-auto-suspend" oninput="onSrsSlider('auto_suspend_lapses',this.value,this,'次')">
+            <span class="sheet-row-val" id="srs-auto-suspend-val">8次</span>
+          </div>
+        </div>
+
+        <div class="sheet-section" style="padding-bottom:16px">
+          <div class="sheet-section-lbl">时长保护（练习模式）</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">提醒时长（分钟）</span>
+            <input type="range" min="5" max="60" value="20" step="5" id="srs-warn-duration" oninput="onSrsSlider('warn_duration_sec',this.value*60,this,'分',0,v=>v/60)">
+            <span class="sheet-row-val" id="srs-warn-duration-val">20分</span>
+          </div>
+        </div>
+
+        <div class="sheet-section" style="padding-bottom:16px">
+          <div class="sheet-section-lbl">提前出题窗口</div>
+          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;">
+            <span class="sheet-row-lbl" style="font-size:13px">Learn Ahead Limit（m / h）</span>
+            <div style="display:flex;gap:8px;width:100%;align-items:center">
+              <input type="text" id="srs-learn-ahead" class="phrase-input" style="flex:1"
+                placeholder="例：20m 或 1h"
+                oninput="onSrsLearnAheadInput(this.value)">
+              <span style="font-size:11px;color:var(--text3);flex-shrink:0" id="srs-learn-ahead-hint"></span>
+            </div>
+            <span style="font-size:11px;color:var(--text3);line-height:1.5">主队列做完后，due_ts 在此窗口内的学习卡才追加出题。超过窗口（如 1d 步骤）session 直接结束。Anki 默认 20m。</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /sheet-panels -->
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// v4.0  SRS 数据层
+// ════════════════════════════════════════════════════════════════
+
+// ── SRS 全局配置（Anki 命名对齐）────────────────────────────────
+const SRS_CONFIG = {
+  // 新卡学习
+  learning_steps          : [1, 10],      // 分钟；AD建议 [1,5,10,30]
+  graduating_interval     : 1,            // 天
+  easy_interval           : 2,            // 天
+
+  // 遗忘重学
+  relearning_steps        : [10],         // 分钟；AD建议 [10,60,180]
+  minimum_interval        : 1,            // 天
+
+  // lapse 后 review 间隔乘数（0.0 = 重置为 minimum_interval）
+  new_interval            : 0.0,
+
+  // 每日上限
+  new_cards_per_day               : 5,
+  maximum_reviews_per_day         : 50,
+  new_cards_ignore_review_limit   : false,
+
+  // 高级间隔控制
+  maximum_interval        : 36500,        // 天；AD建议 7
+  starting_ease           : 2.50,         // AD建议 1.30
+  easy_bonus              : 1.30,
+  interval_modifier       : 1.00,         // AD建议 0.80
+  hard_interval           : 1.20,
+
+  // 我们特有参数
+  ease_min                : 1.30,
+  hard_step_multiplier    : 1.0,          // AD建议 1.5
+
+  // T1→T7 过渡（Phase 2 启用）
+  t1_review_before_mix    : 2,
+  t1_mix_before_t7        : 2,
+
+  // 连续失败保护
+  daily_remove_lapses     : 3,            // 当日移出阈值
+  auto_suspend_lapses     : 8,            // 累计挂起阈值（使用 lapses_total）
+
+  // 自动前进（练习模式，对应现有 NDUR）
+  practice_advance_sec    : 6,            // 0 = 手动
+
+  // 统计记录
+  maximum_answer_seconds  : 60,
+
+  // 时长保护（仅练习模式）
+  idle_threshold_sec      : 120,
+  warn_duration_sec       : 1200,         // 20 分钟
+  warn_repeat_sec         : 600,
+  warn_mode               : 'warn',       // 'warn' | 'limit'
+
+  // 提前出题窗口（对应 Anki "Learn Ahead Limit"，秒）
+  // 主队列耗尽后，due_ts 在此窗口内的 learning 卡才追加出题
+  // 默认 1200s = 20 分钟，与 Anki 默认一致
+  learn_ahead_limit        : 1200,
+};
+
+// ── SRS_CONFIG 持久化覆盖（从 localStorage 恢复用户修改）─────────
+(function _loadSrsConfig() {
+  const NUM_KEYS = [
+    'graduating_interval','easy_interval','minimum_interval','new_interval',
+    'maximum_interval','starting_ease','easy_bonus','interval_modifier',
+    'hard_interval','ease_min','hard_step_multiplier',
+    't1_review_before_mix','t1_mix_before_t7',
+    'new_cards_per_day','maximum_reviews_per_day',
+    'daily_remove_lapses','auto_suspend_lapses',
+    'practice_advance_sec','maximum_answer_seconds',
+    'idle_threshold_sec','warn_duration_sec','warn_repeat_sec',
+    'learn_ahead_limit',
+  ];
+  const BOOL_KEYS = ['new_cards_ignore_review_limit'];
+  const STR_KEYS  = ['warn_mode'];
+  NUM_KEYS.forEach(k => {
+    const v = localStorage.getItem('srs_' + k);
+    if (v !== null) SRS_CONFIG[k] = parseFloat(v);
+  });
+  BOOL_KEYS.forEach(k => {
+    const v = localStorage.getItem('srs_' + k);
+    if (v !== null) SRS_CONFIG[k] = v === '1';
+  });
+  STR_KEYS.forEach(k => {
+    const v = localStorage.getItem('srs_' + k);
+    if (v !== null) SRS_CONFIG[k] = v;
+  });
+  // 数组字段（learning_steps / relearning_steps）
+  ['learning_steps','relearning_steps'].forEach(k => {
+    const v = localStorage.getItem('srs_' + k);
+    if (v) { try { SRS_CONFIG[k] = JSON.parse(v); } catch(e) {} }
+  });
+})();
+
+function saveSrsConfigKey(key, value) {
+  if (Array.isArray(value)) {
+    localStorage.setItem('srs_' + key, JSON.stringify(value));
+  } else if (typeof value === 'boolean') {
+    localStorage.setItem('srs_' + key, value ? '1' : '0');
+  } else {
+    localStorage.setItem('srs_' + key, String(value));
+  }
+  SRS_CONFIG[key] = value;
+}
+
+// ── 日期 / 时间工具函数（所有 SRS 日期操作必须经过这里）──────────
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function minsToTs(mins) {
+  return Math.round(mins * 60 * 1000);
+}
+
+// ── IndexedDB：yihai_srs（version 3）────────────────────────────
+const SRS_DB_NAME    = 'yihai_srs';
+const SRS_DB_VER     = 3;
+const CS_STORE       = 'card_states';
+const TRIAL_STORE    = 'trials';
+
+let _srsDb = null;
+
+function openSrsDb() {
+  if (_srsDb) return Promise.resolve(_srsDb);
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(SRS_DB_NAME, SRS_DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      // 废弃旧 store（card_type_states / pool）检测保留，不删除
+      if (!db.objectStoreNames.contains(CS_STORE)) {
+        db.createObjectStore(CS_STORE, { keyPath: 'state_key' });
+      }
+      if (!db.objectStoreNames.contains(TRIAL_STORE)) {
+        const ts = db.createObjectStore(TRIAL_STORE, { keyPath: 'trial_id' });
+        ts.createIndex('deck_key',   'deck_key');
+        ts.createIndex('timestamp',  'timestamp');
+        ts.createIndex('synced_at',  'synced_at');  // Phase 2：增量上传
+      }
+    };
+    req.onsuccess = e => { _srsDb = e.target.result; res(_srsDb); };
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+// ── CardState CRUD ───────────────────────────────────────────────
+function makeStateKey(deckKey, cardId) {
+  return `${deckKey}::${cardId}`;
+}
+
+function newCardState(deckKey, cardId) {
+  return {
+    state_key       : makeStateKey(deckKey, cardId),
+    card_id         : cardId,
+    deck_key        : deckKey,
+    srs_stage       : 'new',
+    interval        : 0,
+    ease_factor     : SRS_CONFIG.starting_ease,
+    due_date        : '',
+    due_ts          : 0,
+    step_index      : 0,
+    review_mode       : 'T1',
+    review_mode_count : 0,
+    lapses_streak   : 0,
+    lapses_total    : 0,
+    suspended         : false,
+    suspended_reason  : '',
+    updated_at      : Date.now(),
+  };
+}
+
+async function getCardState(deckKey, cardId) {
+  const db  = await openSrsDb();
+  const key = makeStateKey(deckKey, cardId);
+  return new Promise((res, rej) => {
+    const req = db.transaction(CS_STORE, 'readonly')
+                  .objectStore(CS_STORE).get(key);
+    req.onsuccess = e => res(e.target.result || null);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+async function saveCardState(state) {
+  state.updated_at = Date.now();
+  const db = await openSrsDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(CS_STORE, 'readwrite');
+    tx.objectStore(CS_STORE).put(state);
+    tx.oncomplete = res;
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
+
+async function getAllCardStates(deckKey) {
+  const db = await openSrsDb();
+  return new Promise((res, rej) => {
+    const req = db.transaction(CS_STORE, 'readonly')
+                  .objectStore(CS_STORE).getAll();
+    req.onsuccess = e => {
+      const all = e.target.result || [];
+      res(deckKey ? all.filter(s => s.deck_key === deckKey) : all);
+    };
+    req.onerror = e => rej(e.target.error);
+  });
+}
+
+// CardState 不存在时自动创建（getOrCreate）
+async function getOrCreateCardState(deckKey, cardId) {
+  let state = await getCardState(deckKey, cardId);
+  if (!state) {
+    state = newCardState(deckKey, cardId);
+    await saveCardState(state);
+  }
+  return state;
+}
+
+// ── TrialLog 写入 ────────────────────────────────────────────────
+async function writeTrialLog(entry) {
+  const db = await openSrsDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(TRIAL_STORE, 'readwrite');
+    tx.objectStore(TRIAL_STORE).put(entry);
+    tx.oncomplete = res;
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
+
+// 读取指定天数内的 TrialLog（按 timestamp 升序）
+async function getTrialLogs(deckKey, days) {
+  const db    = await openSrsDb();
+  const cutTs = days ? Date.now() - days * 86400 * 1000 : 0;
+  return new Promise((res, rej) => {
+    const req = db.transaction(TRIAL_STORE, 'readonly')
+                  .objectStore(TRIAL_STORE).getAll();
+    req.onsuccess = e => {
+      let rows = (e.target.result || [])
+        .filter(r => r.timestamp >= cutTs && !r._retrying);
+      if (deckKey) rows = rows.filter(r => r.deck_key === deckKey);
+      rows.sort((a, b) => a.timestamp - b.timestamp);
+      res(rows);
+    };
+    req.onerror = e => rej(e.target.error);
+  });
+}
+
+// ── SM-2 processAnswer 状态机 ────────────────────────────────────
+// rating: 'again' | 'hard' | 'good' | 'easy'
+// 返回更新后的 state（不自动保存，调用方负责 saveCardState）
+function processAnswer(state, rating, todayDateStr) {
+  const now    = Date.now();
+  const cfg    = SRS_CONFIG;
+  const today  = todayDateStr || todayStr();
+
+  function _graduate(isEasy) {
+    state.srs_stage         = 'review';
+    state.interval          = isEasy ? cfg.easy_interval : cfg.graduating_interval;
+    state.due_date          = addDays(today, state.interval);
+    state.due_ts            = 0;
+    state.step_index        = 0;
+    state.review_mode       = 'T1';
+    state.review_mode_count = 0;
+    // ease_factor 保持 starting_ease，learning 阶段挣扎不影响毕业值
+  }
+
+  function _advanceReviewMode() {
+    // Phase 2 启用；Phase 1 review_mode 始终维持 'T1'
+    // 此处仅递增计数，切换逻辑 Phase 2 接入
+    state.review_mode_count = (state.review_mode_count || 0) + 1;
+  }
+
+  if (state.srs_stage === 'new' || state.srs_stage === 'learning') {
+    const steps = cfg.learning_steps;
+    if (rating === 'again') {
+      state.srs_stage  = 'learning';
+      state.step_index = 0;
+      state.due_ts     = now + minsToTs(steps[0]);
+      state.lapses_streak++;
+      state.lapses_total++;
+    } else if (rating === 'hard') {
+      state.srs_stage = 'learning';
+      // step_index 不变，等待时间 = 当前步 × hard_step_multiplier
+      state.due_ts = now + minsToTs(steps[state.step_index] * cfg.hard_step_multiplier);
+    } else if (rating === 'good') {
+      state.lapses_streak = 0;
+      state.step_index++;
+      if (state.step_index >= steps.length) {
+        _graduate(false);
+      } else {
+        state.srs_stage = 'learning';
+        state.due_ts    = now + minsToTs(steps[state.step_index]);
+      }
+    } else if (rating === 'easy') {
+      state.lapses_streak = 0;
+      _graduate(true);
+    }
+
+  } else if (state.srs_stage === 'review') {
+    if (rating === 'again') {
+      state.lapses_streak++;
+      state.lapses_total++;
+      state.ease_factor = Math.max(cfg.ease_min, state.ease_factor - 0.20);
+      const rawInterval = Math.max(
+        cfg.minimum_interval,
+        Math.ceil(state.interval * cfg.new_interval * cfg.interval_modifier)
+      );
+      state.interval  = rawInterval;
+      state.srs_stage = 'relearning';
+      state.step_index = 0;
+      state.due_ts    = now + minsToTs(cfg.relearning_steps[0]);
+      state.due_date  = '';
+      // review_mode / review_mode_count 保留（重学完成后恢复）
+    } else if (rating === 'hard') {
+      state.ease_factor = Math.max(cfg.ease_min, state.ease_factor - 0.15);
+      state.interval = Math.max(
+        cfg.minimum_interval,
+        Math.ceil(state.interval * cfg.hard_interval * cfg.interval_modifier)
+      );
+      state.interval = Math.min(state.interval, cfg.maximum_interval);
+      state.due_date = addDays(today, state.interval);
+      state.due_ts   = 0;
+      _advanceReviewMode();
+    } else if (rating === 'good') {
+      state.lapses_streak = 0;
+      state.interval = Math.max(
+        cfg.minimum_interval,
+        Math.ceil(state.interval * state.ease_factor * cfg.interval_modifier)
+      );
+      state.interval = Math.min(state.interval, cfg.maximum_interval);
+      state.due_date = addDays(today, state.interval);
+      state.due_ts   = 0;
+      _advanceReviewMode();
+    } else if (rating === 'easy') {
+      state.ease_factor = Math.min(3.0, state.ease_factor + 0.15);
+      state.interval = Math.max(
+        cfg.minimum_interval,
+        Math.ceil(state.interval * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)
+      );
+      state.interval = Math.min(state.interval, cfg.maximum_interval);
+      state.due_date = addDays(today, state.interval);
+      state.due_ts   = 0;
+      _advanceReviewMode();
+    }
+
+  } else if (state.srs_stage === 'relearning') {
+    const steps = cfg.relearning_steps;
+    if (rating === 'again') {
+      state.step_index = 0;
+      state.due_ts     = now + minsToTs(steps[0]);
+      state.lapses_streak++;
+      state.lapses_total++;
+    } else if (rating === 'hard') {
+      state.due_ts = now + minsToTs(steps[state.step_index] * cfg.hard_step_multiplier);
+    } else {
+      // good / easy
+      state.lapses_streak = 0;
+      state.step_index++;
+      if (state.step_index >= steps.length) {
+        // 重新毕业：保持 lapse 后缩减的 interval 值
+        state.srs_stage  = 'review';
+        state.interval   = Math.max(cfg.minimum_interval, state.interval);
+        state.interval   = Math.min(state.interval, cfg.maximum_interval);
+        state.due_date   = addDays(today, state.interval);
+        state.due_ts     = 0;
+        state.step_index = 0;
+        // review_mode / review_mode_count 已保留，直接恢复
+      } else {
+        state.due_ts = now + minsToTs(steps[state.step_index]);
+      }
+    }
+  }
+
+  return state;
+}
+
+// ── DailyProgress ────────────────────────────────────────────────
+const LS_DAILY = 'yihai_daily_progress';
+
+function newDailyProgress() {
+  return {
+    date                 : todayStr(),
+    reviewed_today       : 0,
+    daily_new_today      : 0,
+    preview_cards_viewed : 0,
+    active_duration_sec  : 0,
+    last_card_ts         : null,
+  };
+}
+
+function getDailyProgress() {
+  try {
+    const raw = localStorage.getItem(LS_DAILY);
+    if (!raw) return newDailyProgress();
+    const dp = JSON.parse(raw);
+    if (dp.date !== todayStr()) return newDailyProgress();  // 新的一天，重置
+    return dp;
+  } catch(e) { return newDailyProgress(); }
+}
+
+function saveDailyProgress(dp) {
+  localStorage.setItem(LS_DAILY, JSON.stringify(dp));
+}
+
+// ── buildSessionQueue ────────────────────────────────────────────
+// 返回当日练习队列（card 对象列表，含 _srsState 字段）
+async function buildSessionQueue(deckKey) {
+  const cards  = DECKS[deckKey] || [];
+  const states = await getAllCardStates(deckKey);
+  const stateMap = {};
+  states.forEach(s => { stateMap[s.card_id] = s; });
+
+  // 确保每张卡都有 CardState
+  for (const card of cards) {
+    if (!stateMap[card.id]) {
+      const s = newCardState(deckKey, card.id);
+      await saveCardState(s);
+      stateMap[card.id] = s;
+    }
+  }
+
+  const dp  = getDailyProgress();
+  const now = Date.now();
+  const today = todayStr();
+
+  // 1. 到期 review 卡（due_date <= today），oldest first
+  const reviewDue = cards
+    .filter(c => {
+      const s = stateMap[c.id];
+      return s && s.srs_stage === 'review'
+        && !s.suspended
+        && !_dailyRemovedToday[s.state_key]
+        && s.due_date && s.due_date <= today;
+    })
+    .sort((a, b) => stateMap[a.id].due_date.localeCompare(stateMap[b.id].due_date));
+
+  // 2. 到期 relearning 卡（due_ts <= now）
+  const relearningDue = cards
+    .filter(c => {
+      const s = stateMap[c.id];
+      return s && s.srs_stage === 'relearning'
+        && !s.suspended
+        && !_dailyRemovedToday[s.state_key]
+        && s.due_ts && s.due_ts <= now;
+    })
+    .sort((a, b) => stateMap[a.id].due_ts - stateMap[b.id].due_ts);
+
+  // 3. 到期 learning 卡（due_ts <= now，包括 new 状态已经发过的）
+  const learningDue = cards
+    .filter(c => {
+      const s = stateMap[c.id];
+      return s && s.srs_stage === 'learning'
+        && !s.suspended
+        && !_dailyRemovedToday[s.state_key]
+        && s.due_ts && s.due_ts <= now;
+    })
+    .sort((a, b) => stateMap[a.id].due_ts - stateMap[b.id].due_ts);
+
+  // 已用 review 槽位（含当日已练的 learning/relearning/review）
+  const usedReview = dp.reviewed_today;
+  const reviewSlots = SRS_CONFIG.maximum_reviews_per_day - usedReview;
+
+  // 合并主队列（review + relearning + learning），按槽位上限截取
+  const mainQueue = [...reviewDue, ...relearningDue, ...learningDue]
+    .slice(0, Math.max(0, reviewSlots));
+
+  // 4. 新卡：受两个上限约束
+  let newSlots;
+  if (SRS_CONFIG.new_cards_ignore_review_limit) {
+    newSlots = SRS_CONFIG.new_cards_per_day - dp.daily_new_today;
+  } else {
+    const remaining = SRS_CONFIG.maximum_reviews_per_day - usedReview - mainQueue.length;
+    newSlots = Math.min(
+      SRS_CONFIG.new_cards_per_day - dp.daily_new_today,
+      Math.max(0, remaining)
+    );
+  }
+
+  const newCards = cards
+    .filter(c => {
+      const s = stateMap[c.id];
+      return s && s.srs_stage === 'new' && !s.suspended;
+    })
+    .slice(0, Math.max(0, newSlots));
+
+  // 组装完整队列，附上 _srsState
+  const queue = [...mainQueue, ...newCards].map(card => {
+    const { options, correct } = buildOptions(card, cards);
+    return { ...card, options, correct, _srsState: stateMap[card.id] };
+  });
+
+  return queue;
+}
+
+// ── 获取 learning/relearning 未到期卡（用于主队列耗尽后追加）──────
+async function getPendingLearningCards(deckKey) {
+  const cards  = DECKS[deckKey] || [];
+  const states = await getAllCardStates(deckKey);
+  const stateMap = {};
+  states.forEach(s => { stateMap[s.card_id] = s; });
+
+  const windowTs = Date.now() + SRS_CONFIG.learn_ahead_limit * 1000;
+
+  return cards
+    .filter(c => {
+      const s = stateMap[c.id];
+      return s && (s.srs_stage === 'learning' || s.srs_stage === 'relearning')
+        && !s.suspended
+        && !_dailyRemovedToday[s.state_key]
+        && s.due_ts && s.due_ts > Date.now()
+        && s.due_ts <= windowTs;
+    })
+    .sort((a, b) => stateMap[a.id].due_ts - stateMap[b.id].due_ts)
+    .map(card => {
+      const { options, correct } = buildOptions(card, cards);
+      return { ...card, options, correct, _srsState: stateMap[card.id] };
+    });
+}
+
+// ── 首页 deck stats（读真实 CardState）───────────────────────────
+async function getDeckStatsSrs(deckKey) {
+  const states = await getAllCardStates(deckKey);
+  const today  = todayStr();
+  const now    = Date.now();
+  let due = 0, newC = 0, done = 0;
+  states.forEach(s => {
+    if (s.suspended) return;
+    if (s.srs_stage === 'new') { newC++; return; }
+    if (s.srs_stage === 'review' && s.due_date && s.due_date <= today) { due++; return; }
+    if ((s.srs_stage === 'learning' || s.srs_stage === 'relearning') && s.due_ts && s.due_ts <= now) { due++; return; }
+  });
+  const dp = getDailyProgress();
+  done = dp.reviewed_today;
+  return { due, new: newC, done };
+}
+
+// ── 云端同步预埋：device_id ──────────────────────────────────────
+function getOrCreateDeviceId() {
+  let id = localStorage.getItem('yihai_device_id');
+  if (!id) {
+    id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem('yihai_device_id', id);
+  }
+  return id;
+}
+getOrCreateDeviceId();  // App 启动时立即生成
+
+// ════════════════════════════════════════════════════════════════
+// 以下为原有代码（未修改）
+// ════════════════════════════════════════════════════════════════
+
+// ── 导入牌组存储（localStorage + 内存）─────────────────────────
+// 内部卡片格式：{ id, img, name, options:[4项], correct:0-3, details:[] }
+// options 和 correct 在 getDeck() 时动态生成，img 为 blob URL
+
+const DECKS = {};        // key → cards[]，运行时填充
+let DECKS_META = [];     // [{ key, name }]，运行时从 localStorage 恢复
+
+// 备用词库：牌组卡片不足4张时补充干扰项
+const FALLBACK_WORDS = ['苹果','香蕉','椅子','水壶','钥匙','手机','眼镜','雨伞','毛巾','牙刷',
+  '西瓜','胡萝卜','土豆','玉米','火车','汽车','飞机','冰箱','电视','桌子'];
+
+// 内置测试牌组（Emoji 图片，无需导入，始终存在）
+const BUILTIN_KEY = '__builtin_test__';
+const BUILTIN_DECK = [
+  { id:'b01', name:'苹果',   img:'🍎', audioUrl:'', details:['红红的，圆圆的，很甜', '水果，可以直接吃'] },
+  { id:'b02', name:'香蕉',   img:'🍌', audioUrl:'', details:['黄色弯弯的', '剥皮吃，软软的很甜'] },
+  { id:'b03', name:'椅子',   img:'🪑', audioUrl:'', details:['有靠背，用来坐的', '吃饭的时候要坐椅子'] },
+  { id:'b04', name:'水壶',   img:'🫖', audioUrl:'', details:['用来烧水的', '热水壶，水开了再喝'] },
+  { id:'b05', name:'钥匙',   img:'🔑', audioUrl:'', details:['用来开门的', '出门一定要带好钥匙'] },
+  { id:'b06', name:'手机',   img:'📱', audioUrl:'', details:['可以打电话，也可以看视频', '充电才能用'] },
+  { id:'b07', name:'眼镜',   img:'👓', audioUrl:'', details:['戴上可以看清楚', '近视的人需要戴'] },
+  { id:'b08', name:'雨伞',   img:'☂️', audioUrl:'', details:['下雨天撑伞，能挡雨', '出门看天气'] },
+  { id:'b09', name:'毛巾',   img:'🧣', audioUrl:'', details:['用来擦脸擦手的', '洗完脸用它擦干'] },
+  { id:'b10', name:'牙刷',   img:'🪥', audioUrl:'', details:['用来刷牙的', '每天早晚都要用'] },
+  { id:'b11', name:'西瓜',   img:'🍉', audioUrl:'', details:['绿色大大的，红色的瓤', '夏天吃很解渴'] },
+  { id:'b12', name:'胡萝卜', img:'🥕', audioUrl:'', details:['橙色长长的，营养很好', '可以生吃也可以炒着吃'] },
+  { id:'b13', name:'土豆',   img:'🥔', audioUrl:'', details:['黄褐色圆圆的', '炒着吃，也能做土豆泥'] },
+  { id:'b14', name:'玉米',   img:'🌽', audioUrl:'', details:['黄色长长的，一粒一粒的', '可以煮着吃'] },
+  { id:'b15', name:'火车',   img:'🚂', audioUrl:'', details:['在铁轨上跑的', '可以去很远的地方'] },
+  { id:'b16', name:'汽车',   img:'🚗', audioUrl:'', details:['四个轮子，坐车出门', '需要驾照才能开'] },
+  { id:'b17', name:'飞机',   img:'✈️', audioUrl:'', details:['在天上飞的', '去很远的地方要坐飞机'] },
+  { id:'b18', name:'冰箱',   img:'🧊', audioUrl:'', details:['放食物保鲜的', '冷冷的，食物放进去不容易坏'] },
+  { id:'b19', name:'电视',   img:'📺', audioUrl:'', details:['看节目用的', '新闻电视剧都能看'] },
+  { id:'b20', name:'桌子',   img:'🍽️', audioUrl:'', details:['吃饭放东西用的', '有四条腿，饭菜放桌上'] },
+];
+
+// 运行时生成 options + correct（始终生成4个选项供 OPT_COUNT 取用）
+// 返回 { options:[{name,cardId}], correct:0 }
+function buildOptions(card, allCards) {
+  // 从同牌组构建带 id 的候选池
+  const pool = allCards
+    .filter(c => c.id !== card.id)
+    .map(c => ({ name: c.name, cardId: c.id }));
+  // Fisher-Yates shuffle
+  for (let k = pool.length - 1; k > 0; k--) {
+    const r = Math.floor(Math.random() * (k + 1));
+    [pool[k], pool[r]] = [pool[r], pool[k]];
+  }
+  // 同牌组不足3个时从备用词库补充（无 id，用 null）
+  if (pool.length < 3) {
+    FALLBACK_WORDS.forEach(w => {
+      if (pool.length >= 3) return;
+      if (!pool.find(p => p.name === w) && w !== card.name)
+        pool.push({ name: w, cardId: null });
+    });
+  }
+  const distractors = pool.slice(0, 3);
+  const options = [{ name: card.name, cardId: card.id }, ...distractors];
+  return { options, correct: 0 };
+}
+
+function getDeck(key) {
+  const raw = DECKS[key] || [];
+  return raw.map(card => {
+    const { options, correct } = buildOptions(card, raw);
+    return { ...card, options, correct };
+  });
+}
+
+// ── localStorage 持久化 ──────────────────────────────────────────
+const LS_INDEX = 'yihai_decks_index';
+const LS_DECK_PREFIX = 'yihai_deck_';
+
+function saveDeckIndex() {
+  localStorage.setItem(LS_INDEX, JSON.stringify(
+    DECKS_META.filter(m => !m.builtin)  // 内置牌组不存
+  ));
+}
+function saveDeckCards(key, cards) {
+  const slim = cards.map(c => ({ id: c.id, name: c.name }));
+  localStorage.setItem(LS_DECK_PREFIX + key, JSON.stringify(slim));
+}
+
+// ── IndexedDB 媒体缓存 ───────────────────────────────────────────
+const IDB_NAME = 'yihai_media', IDB_VER = 1, IDB_STORE = 'blobs';
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VER);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE);
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function saveMedia(key, blob) {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(blob, key);
+    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+  });
+}
+async function loadMedia(key) {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).get(key);
+    req.onsuccess = e => res(e.target.result || null);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function deleteMediaForDeck(deckKey) {
+  const db = await openDB();
+  const allKeys = await new Promise((res, rej) => {
+    const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).getAllKeys();
+    req.onsuccess = e => res(e.target.result); req.onerror = e => rej(e.target.error);
+  });
+  const tx = db.transaction(IDB_STORE, 'readwrite');
+  const st = tx.objectStore(IDB_STORE);
+  allKeys.filter(k => k.startsWith(deckKey + '_')).forEach(k => st.delete(k));
+  return new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = e => rej(e.target.error); });
+}
+
+async function restoreDecks() {
+  try {
+    const idx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
+    DECKS_META = idx;
+    for (const { key } of idx) {
+      const raw = JSON.parse(localStorage.getItem(LS_DECK_PREFIX + key) || '[]');
+      const cards = [];
+      for (const c of raw) {
+        const card = { ...c, img: '', audioUrl: '', details: [] };
+        // 从 IndexedDB 恢复图片
+        const imgBlob = await loadMedia(`${key}_${c.id}_img`).catch(() => null);
+        if (imgBlob) card.img = URL.createObjectURL(imgBlob);
+        // 从 IndexedDB 恢复录音
+        const audBlob = await loadMedia(`${key}_${c.id}_aud`).catch(() => null);
+        if (audBlob) card.audioUrl = URL.createObjectURL(audBlob);
+        cards.push(card);
+      }
+      DECKS[key] = cards;
+    }
+  } catch(e) { console.warn('restoreDecks failed', e); }
+  // 始终注入内置测试牌组
+  DECKS[BUILTIN_KEY] = BUILTIN_DECK;
+  if (!DECKS_META.find(m => m.key === BUILTIN_KEY)) {
+    DECKS_META.push({ key: BUILTIN_KEY, name: '🧪 测试牌组', builtin: true });
+  }
+}
+
+// ── .yhspack 导入 ────────────────────────────────────────────────
+function ldScript(src) {
+  return new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+async function importYhspack(file) {
+  try {
+    await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+
+    const jsonFile = zip.file('deck.json');
+    if (!jsonFile) { alert('格式错误：未找到 deck.json'); return; }
+    const deckData = JSON.parse(await jsonFile.async('string'));
+    const deck = deckData.deck;
+    if (!deck || !deck.cards) { alert('格式错误：deck.cards 不存在'); return; }
+
+    const key = deck.id || ('deck_' + Date.now());
+    const name = deck.name || file.name.replace('.yhspack','');
+    const cards = [];
+
+    for (let i = 0; i < deck.cards.length; i++) {
+      const c = deck.cards[i];
+      if (!c.name) continue;
+      const card = { id: c.id || String(i), name: c.name, img: '', audioUrl: '', details: [] };
+
+      // 图片
+      if (c.image) {
+        const imgFile = zip.file(c.image);
+        if (imgFile) {
+          const buf = await imgFile.async('arraybuffer');
+          const blob = new Blob([buf], { type: 'image/jpeg' });
+          card.img = URL.createObjectURL(blob);
+          await saveMedia(`${key}_${card.id}_img`, blob).catch(() => {});
+        }
+      }
+
+      // 录音
+      if (c.audio) {
+        const audFile = zip.file(c.audio);
+        if (audFile) {
+          const buf = await audFile.async('arraybuffer');
+          const ext = (c.audio.split('.').pop() || 'm4a').toLowerCase();
+          const mime = {'m4a':'audio/mp4','mp4':'audio/mp4','mp3':'audio/mpeg',
+                        'ogg':'audio/ogg','webm':'audio/webm','aac':'audio/aac'}[ext] || 'audio/mp4';
+          const blob = new Blob([buf], { type: mime });
+          card.audioUrl = URL.createObjectURL(blob);
+          await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
+        }
+      }
+
+      cards.push(card);
+    }
+
+    if (!cards.length) { alert('未找到有效卡片'); return; }
+
+    // 写入内存
+    DECKS[key] = cards;
+    // 更新或追加 meta
+    const existing = DECKS_META.findIndex(m => m.key === key);
+    if (existing >= 0) DECKS_META[existing] = { key, name };
+    else DECKS_META.push({ key, name });
+
+    // 持久化（只存 id+name，blob URL 不存）
+    saveDeckIndex();
+    saveDeckCards(key, cards);
+
+    // 刷新首页列表，选中刚导入的牌组
+    renderDeckList();
+    updateDeckStats();
+    const el = document.querySelector(`.deck-card[data-deck="${key}"]`);
+    if (el) selectDeck(el);
+
+    showImportToast(name, cards.length);
+  } catch(e) {
+    alert('导入失败：' + e.message);
+    console.error(e);
+  }
+}
+
+function showImportToast(name, count) {
+  const t = document.createElement('div');
+  t.textContent = `✓ 已导入「${name}」${count} 张`;
+  t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
+    transform:translateX(-50%);background:var(--text);color:var(--bg);
+    padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
+    z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+
+// ── Session state ──────────────────────────────────────────────
+let currentDeck = null;
+let currentMode = 'quiz';
+let Qs = [];
+let qIdx = 0, sel = null, revealed = false, wrongCount = 0;
+let nRaf = null, nStart = null;
+let NDUR = 6000;       // 练习模式倒计时（毫秒），0=手动
+let BDUR = 4000;       // 浏览模式倒计时（毫秒），0=手动
+let SPEAK_DELAY        = 1200; // 练习答案播报延迟（毫秒）
+let BROWSE_SPEAK_DELAY = 1200; // 浏览答案播报延迟（毫秒）
+
+// 答题提示
+let QUIZ_PROMPT_ON   = true;    // 答题提示开关
+let QUIZ_PROMPT_DELAY = 2000;   // 答题提示延迟（毫秒）
+let PHRASE_SELECT    = '请选择答案'; // 答题提示文案
+
+// 选项提示
+let OPT_HINT_ON      = true;    // 选项提示开关
+let OPT_HINT_DELAY   = 5000;    // 选项提示延迟（毫秒）
+let PHRASE_OPT_HINT  = '请在{A}.{B}.{C}中选择一个'; // 选项提示文案，. 为停顿符（一个.=400ms）
+
+// 答错提示
+let WRONG_HINT_ON    = true;    // 答错提示开关
+let PHRASE_WRONG     = '不要着急，再试一次'; // 答错提示文案
+
+// 朗读物品提示
+let READ_HINT        = true;    // 朗读物品提示开关（浏览/练习均受控）
+
+// TTS 音色参数
+let TTS_RATE         = 0.85;    // 语速
+let TTS_PITCH        = 1.0;     // 音调
+let TTS_VOICE_NAME   = '';      // 音色名称，空=自动选中文音色
+
+let OPT_COUNT = 3;
+let OPT_TOUCH_DELAY = 120; // 防误触：手指按住至少多少ms才算有效点击（毫秒）
+let currentAudio = null;
+
+// 浏览模式答案显示延迟
+let BROWSE_ANSWER_DELAY = 3000; // 毫秒
+
+// 答对反馈
+let CONFETTI_ON       = true;   // 撒花动画开关
+let CORRECT_HINT_ON   = true;   // 回答正确语音开关
+let PHRASE_CORRECT    = '回答正确'; // 回答正确文案
+
+// 进入题目时的语音计时器
+let tQuizPromptTimer = null;
+let tOptHintTimer    = null;
+let tAnswerTimer     = null;  // 答案播报延迟 timer
+let sessionId        = 0;     // 每次进入练习页自增，语音链检查id终止跨页面播报
+let _lastSrsWrite    = Promise.resolve(); // 最近一次 _writeSrs 的 Promise，用于等待写完
+
+// ── 练习模式 SRS 状态 ──────────────────────────────────────────
+let _cardStartTs     = 0;     // 当前卡片显示时间戳（response_time 计算用）
+let _cardAnswerRating = null; // 本题最终评分（'again'|'hard'|'good'|'easy'）
+let _sessionId       = '';    // 本次 session 唯一 ID（TrialLog 用）
+let _sessionCorrect  = 0;     // 本次 session 答对数
+let _sessionWrong    = 0;     // 本次 session 答错数
+let _sessionTotal    = 0;     // 本次 session 已完成题数（不含 _retrying）
+let _dailyRemovedToday = {};  // { deckKey::cardId: true } 当日保护移出的卡
+// 活跃时长计算
+let _sessionActiveSec = 0;
+let _lastCardTs       = null;
+let _warnedThisSession = false;
+let _pendingStop      = false;
+// 待写入 SRS 的 attempt 信息（onSel 记录，revealAnswer 写入）
+let _pendingAttempt   = null; // { attemptNumber, isCorrect, distractorId }
+
+// ── Home nav ───────────────────────────────────────────────────
+function selectDeck(el) {
+  warmupSpeech();
+  document.querySelectorAll('.deck-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  currentDeck = el.dataset.deck;
+}
+
+function deleteDeck(e, key) {
+  e.stopPropagation();
+  const meta = DECKS_META.find(m => m.key === key);
+  if (!meta || meta.builtin) return;
+  if (!confirm(`删除牌组「${meta.name}」？`)) return;
+  delete DECKS[key];
+  DECKS_META = DECKS_META.filter(m => m.key !== key);
+  localStorage.removeItem(LS_DECK_PREFIX + key);
+  saveDeckIndex();
+  deleteMediaForDeck(key).catch(() => {});
+  if (currentDeck === key) currentDeck = null;
+  renderDeckList();
+  updateDeckStats();
+}
+// ── getDeckStats：同步占位，updateDeckStats 异步覆盖 ─────────
+function getDeckStats(key) {
+  if (key === 'random') return { due: null, new: null };
+  return { due: '…', new: '…', done: '…' };
+}
+
+
+function startBrowse() {
+  if (!currentDeck) return;
+  warmupSpeech();
+  _launch('browse');
+}
+function startQuiz() {
+  if (!currentDeck) return;
+  warmupSpeech();
+  _launch('quiz');
+}
+// ── WakeLock 防锁屏 ────────────────────────────────────────────
+let wakeLock = null;
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+  } catch(e) { /* 不支持或被拒绝，静默处理 */ }
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().catch(()=>{}); wakeLock = null; }
+}
+// 页面重新可见时（从后台切回）重新申请
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && document.getElementById('screen-quiz').classList.contains('active')) {
+    requestWakeLock();
+  } else if (document.visibilityState === 'hidden') {
+    releaseWakeLock();
+  }
+});
+
+function _launch(mode) {
+  sessionId++;
+  currentMode = mode;
+  qIdx = 0;
+  document.getElementById('nxt-lbl').textContent = mode === 'browse' ? '下一张' : '下一题';
+
+  if (mode === 'browse') {
+    // 浏览模式：原有逻辑，完全不改
+    Qs = getDeck(currentDeck).map(q => ({ ...q, browse: true }));
+    showScreen('screen-quiz');
+    requestWakeLock();
+    render();
+  } else {
+    // 练习模式：使用 SRS 队列
+    _sessionId       = 'sess_' + Date.now();
+    _sessionCorrect  = 0;
+    _sessionWrong    = 0;
+    _sessionTotal    = 0;
+    _sessionActiveSec = 0;
+    _lastCardTs       = null;
+    _warnedThisSession = false;
+    _pendingStop      = false;
+    _cardAnswerRating = null;
+    _pendingAttempt   = null;
+
+    showScreen('screen-quiz');
+    requestWakeLock();
+
+    // 异步拉取 SRS 队列
+    buildSessionQueue(currentDeck).then(queue => {
+      if (queue.length === 0) {
+        // 今日已完成或无可练习卡片
+        showFinish();
+        return;
+      }
+      Qs = queue;
+      qIdx = 0;
+      render();
+    }).catch(err => {
+      console.error('buildSessionQueue error', err);
+      // 降级：用原来的随机顺序
+      Qs = getDeck(currentDeck);
+      render();
+    });
+  }
+}
+function goHome() {
+  sessionId++;
+  stopNRing(); stopAllPromptTimers();
+  speechSynthesis.cancel();
+  releaseWakeLock();
+  // 等待最后一次 SRS 写入完成，再刷新首页数字
+  _lastSrsWrite.finally(() => {
+    renderDeckList();
+    updateDeckStats();
+  });
+  showScreen('screen-home');
+}
+
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active', 'exit-left');
+    if (s.id !== id) s.classList.add('exit-left');
+  });
+  document.getElementById(id).classList.add('active');
+  document.getElementById(id).classList.remove('exit-left');
+}
+
+// ── Prompt timers ──────────────────────────────────────────────
+function clearPromptTimers() {
+  if (tQuizPromptTimer) { clearTimeout(tQuizPromptTimer); tQuizPromptTimer = null; }
+  if (tOptHintTimer)    { clearTimeout(tOptHintTimer);    tOptHintTimer    = null; }
+  if (tAnswerTimer)     { clearTimeout(tAnswerTimer);     tAnswerTimer     = null; }
+}
+function stopAllPromptTimers() {
+  clearPromptTimers();
+  speechSynthesis.cancel();
+}
+
+// 进入题目后启动语音提示序列
+function startCardPrompts(pickedOpts) {
+  clearPromptTimers();
+  // 第一阶段：答题提示
+  tQuizPromptTimer = setTimeout(() => {
+    tQuizPromptTimer = null;
+    if (QUIZ_PROMPT_ON) speak(PHRASE_SELECT);
+    // 第二阶段：选项提示（在答题提示延迟基础上再等OPT_HINT_DELAY）
+    tOptHintTimer = setTimeout(() => {
+      tOptHintTimer = null;
+      if (OPT_HINT_ON && pickedOpts && pickedOpts.length) {
+        speakOptHint(pickedOpts);
+      }
+    }, OPT_HINT_DELAY);
+  }, QUIZ_PROMPT_DELAY);
+}
+
+// ── Audio ──────────────────────────────────────────────────────
+let ac = null;
+function getAC() {
+  if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function tone(t) {
+  const a = getAC(), now = a.currentTime;
+  const n = (f,st,d,v,w) => {
+    const o=a.createOscillator(),g=a.createGain();
+    o.connect(g);g.connect(a.destination);
+    o.type=w||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(v||.2,st);g.gain.exponentialRampToValueAtTime(.001,st+d);
+    o.start(st);o.stop(st+d+.01);
+  };
+  if (t==='sel')  { n(900,now,.05,.2);n(1200,now+.04,.07,.14); }
+  if (t==='ok')   { [[523,0],[659,.1],[784,.2],[1047,.32],[1319,.45]].forEach(([f,d])=>n(f,now+d,.18,.22)); }
+  if (t==='clk')  { n(780,now,.06,.18); }
+  if (t==='next') { n(880,now,.05,.15);n(1100,now+.06,.08,.11); }
+}
+
+// ── Speech ─────────────────────────────────────────────────────
+let voices = [];
+let speechReady = false;
+
+function loadVoices() {
+  const v = speechSynthesis.getVoices();
+  if (v.length) voices = v;
+}
+loadVoices();
+if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
+  speechSynthesis.onvoiceschanged = () => { loadVoices(); populateVoiceList(); };
+}
+
+// iOS: warm up speech engine on first user gesture
+// Call this inside any click/touch handler before the first real speak
+function warmupSpeech() {
+  if (speechReady) return;
+  speechReady = true;
+  // 解锁 TTS 引擎
+  const utt = new SpeechSynthesisUtterance('');
+  utt.volume = 0;
+  speechSynthesis.speak(utt);
+  // 解锁 Audio 播放权限（iOS 需要在用户手势内创建并 play 一次）
+  try {
+    const a = new Audio();
+    a.play().catch(() => {});
+  } catch(e) {}
+  setTimeout(() => { loadVoices(); }, 300);
+}
+
+function pickVoice() {
+  if (!voices.length) loadVoices();
+  // 优先使用用户指定的音色
+  if (TTS_VOICE_NAME) {
+    const named = voices.find(v => v.name === TTS_VOICE_NAME);
+    if (named) return named;
+  }
+  return voices.find(v => v.lang === 'zh-CN')
+      || voices.find(v => v.lang === 'zh-TW')
+      || voices.find(v => v.lang.startsWith('zh'))
+      || (voices.length ? voices[0] : null);
+}
+
+function speak(text, delay = 0, onend = null) {
+  speechSynthesis.cancel();
+  const go = () => {
+    if (!voices.length) loadVoices();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = 'zh-CN';
+    utt.rate = TTS_RATE;
+    utt.pitch = TTS_PITCH;
+    utt.volume = 1;
+    const v = pickVoice();
+    if (v) utt.voice = v;
+    if (onend) utt.onend = onend;
+    speechSynthesis.speak(utt);
+    setTimeout(() => {
+      if (speechSynthesis.paused) speechSynthesis.resume();
+    }, 250);
+  };
+  if (delay > 0) setTimeout(go, delay);
+  else go();
+}
+
+// 播放答案语音：优先录音，无录音降级 TTS
+function playAnswer(q, onend) {
+  if (q.audioUrl) {
+    setTimeout(() => {
+      const audio = new Audio(q.audioUrl);
+      currentAudio = audio;
+      if (onend) audio.onended = () => { currentAudio = null; onend(); };
+      audio.onerror = () => { currentAudio = null; speakDirect(q.name, onend); };
+      audio.play().catch(() => { currentAudio = null; speakDirect(q.name, onend); });
+    }, 80);
+  } else {
+    speakDirect(q.name, onend);
+  }
+}
+
+// speak 不带 cancel，避免打断刚恢复的引擎
+function speakDirect(text, onend) {
+  if (!voices.length) loadVoices();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'zh-CN'; utt.rate = TTS_RATE; utt.pitch = TTS_PITCH; utt.volume = 1;
+  const v = pickVoice(); if (v) utt.voice = v;
+  if (onend) utt.onend = onend;
+  speechSynthesis.speak(utt);
+  setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
+}
+function speakSequence(items, onDone, pause = 350, sid = sessionId) {
+  if (sid !== sessionId) return;  // session已切换，终止
+  if (!items || items.length === 0) { if (onDone) onDone(); return; }
+  const [first, ...rest] = items;
+  speak(first, 0, () => {
+    if (rest.length > 0) setTimeout(() => speakSequence(rest, onDone, pause, sid), pause);
+    else { setTimeout(() => { if (onDone && sid === sessionId) onDone(); }, pause); }
+  });
+}
+
+// 选项提示：把文案中的{A}{B}{C}{D}替换为实际选项后依次播报
+// 选项提示：解析文案中的 {A}{B}{C} 和停顿符 .（一个.=400ms）
+// 示例文案：请在{A}.{B}.{C}中选择一个
+function speakOptHint(opts) {
+  if (!opts || !opts.length) return;
+  const labels = ['A','B','C','D'];
+  const PAUSE_MS = 100; // 每个 . 的停顿时长
+
+  // 第一步：把通配符替换为实际选项文字
+  let text = PHRASE_OPT_HINT;
+  opts.forEach((opt, i) => {
+    if (i < labels.length) text = text.replace(`{${labels[i]}}`, opt);
+  });
+  // 移除未被替换的多余通配符
+  text = text.replace(/\{[A-D]\}/g, '');
+
+  // 第二步：按停顿符 . 拆分成片段
+  const parts = [];
+  const re = /([^.]+)|(\.+)/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m[1]) {
+      const t = m[1].trim();
+      if (t) parts.push({ type: 'text', val: t });
+    } else if (m[2]) {
+      parts.push({ type: 'pause', ms: m[2].length * PAUSE_MS });
+    }
+  }
+
+  // 第三步：顺序播报，pause 片段用 setTimeout 插入停顿
+  const sid = sessionId;
+  function playParts(arr) {
+    if (sid !== sessionId) return;  // session已切换，终止
+    if (!arr.length) return;
+    const [head, ...tail] = arr;
+    if (head.type === 'pause') {
+      setTimeout(() => playParts(tail), head.ms);
+    } else {
+      speakDirect(head.val, () => playParts(tail));
+    }
+  }
+  playParts(parts);
+}
+
+// ── Anki 三色计数器（新卡蓝 + 学习中橙 + 复习绿）────────────────
+function updateSrsCounter() {
+  if (currentMode === 'browse') return;
+  const now = Date.now();
+  const today = todayStr();
+  let newC = 0, lrnC = 0, revC = 0;
+
+  // 从剩余队列统计（qIdx 之后的卡，含当前卡）
+  for (let i = qIdx; i < Qs.length; i++) {
+    const s = Qs[i]._srsState;
+    if (!s) continue;
+    if (s.srs_stage === 'new')                              newC++;
+    else if (s.srs_stage === 'learning' || s.srs_stage === 'relearning') lrnC++;
+    else if (s.srs_stage === 'review')                      revC++;
+  }
+
+  const elNew = document.getElementById('cnt-new');
+  const elLrn = document.getElementById('cnt-lrn');
+  const elRev = document.getElementById('cnt-rev');
+  if (elNew) elNew.textContent = newC;
+  if (elLrn) elLrn.textContent = lrnC;
+  if (elRev) elRev.textContent = revC;
+}
+function render() {
+  const q = Qs[qIdx];
+  sel = null; revealed = false; wrongCount = 0;
+  _cardAnswerRating = null; _pendingAttempt = null;
+  _cardStartTs = Date.now();   // 记录卡片显示时间，用于 response_time_ms
+  updateSrsCounter();
+
+  // 立即清除上一张的答案状态，防止浏览模式翻页闪现
+  document.getElementById('answer-panel').className = 'answer-panel';
+  document.getElementById('content').classList.remove('revealed');
+  document.querySelectorAll('.detail-item').forEach(el => el.classList.remove('show'));
+
+  document.getElementById('pfill').style.width = `${(qIdx / Qs.length) * 100}%`;
+
+  const timg = document.getElementById('timg');
+  timg.style.animation='none'; void timg.offsetWidth; timg.style.animation='';
+  // img 字段：URL（blob/http/data）用 <img>，Emoji 或空值用 textContent
+  const imgSrc = q.img || '';
+  if (imgSrc.length > 4) {
+    timg.innerHTML = `<img src="${imgSrc}" alt="${q.name}" onerror="this.parentNode.textContent='🖼️'">`;
+  } else {
+    timg.textContent = imgSrc;
+  }
+
+  // Browse mode: skip options, auto-reveal
+  if (q.browse) {
+    document.getElementById('opts-zone').style.display = 'none';
+    document.getElementById('content').classList.remove('revealed');
+    document.getElementById('answer-panel').className = 'answer-panel';
+    document.getElementById('subbtn').className = 'subbtn gone';
+    revealBrowse(q);
+    return;
+  }
+
+  const opts = document.getElementById('opts');
+  opts.innerHTML = '';
+
+  // Pick OPT_COUNT options, always including the correct one
+  // options 格式：[{name, cardId}]
+  const allOpts = q.options.map((o, i) => ({ name: o.name, cardId: o.cardId, i }));
+  const correct = allOpts[q.correct];
+  const distractors = allOpts.filter(o => o.i !== q.correct);
+  const picked = distractors.sort(() => Math.random() - .5).slice(0, OPT_COUNT - 1);
+  picked.push(correct);
+  picked.sort(() => Math.random() - .5);
+
+  picked.forEach(({ name, cardId, i }) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.dataset.idx    = i;
+    btn.dataset.cardId = cardId || '';   // TrialLog distractor_chosen 用
+    btn.innerHTML = `<div class="otxt">${name}</div>`;
+
+    // 防误触：touchstart 记录按下时间，touchend 判断是否达到阈值
+    let touchStart = 0;
+    btn.addEventListener('touchstart', () => { touchStart = Date.now(); }, { passive: true });
+    btn.addEventListener('touchend', e => {
+      if (Date.now() - touchStart >= OPT_TOUCH_DELAY) onSel(e, i, btn);
+    });
+    // PC 鼠标点击正常触发（无防误触需求）
+    btn.addEventListener('mouseup', e => { if (!('ontouchstart' in window)) onSel(e, i, btn); });
+
+    opts.appendChild(btn);
+  });
+
+  document.getElementById('opts-zone').style.display = '';
+  document.getElementById('content').classList.remove('revealed');
+  document.getElementById('answer-panel').className = 'answer-panel';
+  const _nb=document.getElementById('nxtbtn'); _nb.className='nxtbtn'; document.querySelector('.btm').classList.remove('active'); stopNRing();
+
+  // 选项区固定高度
+  requestAnimationFrame(() => {
+    const gap = 10, pad = 16, n = OPT_COUNT;
+    const btnH = 72;
+    const zoneH = btnH * n + gap * (n - 1) + pad;
+    document.documentElement.style.setProperty('--opts-zone-h', `${zoneH}px`);
+    document.documentElement.style.setProperty('--opt-btn-h', `${btnH}px`);
+  });
+
+  stopAllPromptTimers();
+  // 传入实际显示的选项文字，供选项提示使用
+  const pickedTexts = picked.map(({ name }) => name);
+  startCardPrompts(pickedTexts);
+}
+
+function revealBrowse(q) {
+  const answerName = q.name || (q.options[q.correct] && q.options[q.correct].name) || '';
+  const hints = READ_HINT && q.details && q.details.length ? q.details : [];
+  const sid = sessionId;
+
+  // 下一张按钮立即显示
+  const nb0 = document.getElementById('nxtbtn');
+  nb0.classList.add('show');
+  document.querySelector('.btm').classList.add('active');
+
+  // 答案面板预填充但不显示
+  document.getElementById('answer-panel').className = 'answer-panel';
+  document.getElementById('ans-word').textContent = answerName;
+  document.getElementById('ans-word').className = 'answer-word';
+  const detailsEl = document.getElementById('ans-details');
+  detailsEl.innerHTML = '';
+  (q.details||[]).forEach((txt, i) => {
+    const item = document.createElement('div');
+    item.className = 'detail-item';
+    item.innerHTML = `<div class="detail-dot"></div><div class="detail-txt">${txt}</div>`;
+    detailsEl.appendChild(item);
+  });
+
+  tAnswerTimer = setTimeout(() => {
+    tAnswerTimer = null;
+    if (sid !== sessionId) return;
+
+    // 语音开始播放的同时，启动文字显示计时
+    setTimeout(() => {
+      if (sid !== sessionId) return;
+      const ap = document.getElementById('answer-panel');
+      ap.style.transition = '';  // 恢复transition，让show动画正常播放
+      document.getElementById('content').classList.add('revealed');
+      ap.classList.add('show');
+      document.querySelectorAll('.detail-item').forEach((item, i) => {
+        setTimeout(() => item.classList.add('show'), 100 + i * 120);
+      });
+    }, BROWSE_ANSWER_DELAY);
+
+    // 语音播完后启动倒计时
+    const startCountdown = () => { if (sid === sessionId) startNRing(); };
+    if (hints.length) {
+      playAnswer(q, () => {
+        if (sid !== sessionId) return;
+        speakSequence(hints, startCountdown, 400, sid);
+      });
+    } else {
+      playAnswer(q, () => { if (sid === sessionId) startCountdown(); });
+    }
+  }, BROWSE_SPEAK_DELAY);
+}
+
+// ── Select ─────────────────────────────────────────────────────
+function onSel(e, idx, btn) {
+  if (revealed) return;
+
+  // ripple
+  const r = document.createElement('span');
+  const d = Math.max(btn.offsetWidth, btn.offsetHeight);
+  const rc = btn.getBoundingClientRect();
+  r.className='rpl';
+  r.style.cssText=`width:${d}px;height:${d}px;left:${(e.touches?.[0]?.clientX??e.clientX)-rc.left-d/2}px;top:${(e.touches?.[0]?.clientY??e.clientY)-rc.top-d/2}px`;
+  btn.appendChild(r); r.addEventListener('animationend',()=>r.remove());
+
+  document.querySelectorAll('.opt').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel'); sel = idx; tone('sel');
+  stopAllPromptTimers();
+
+  const q = Qs[qIdx];
+  if (idx === q.correct) {
+    // ── 答对 ──────────────────────────────────────────────────
+    tone('ok');
+    if (CONFETTI_ON) setTimeout(spawnConfetti, 100);
+    if (CORRECT_HINT_ON) setTimeout(() => speakDirect(PHRASE_CORRECT, null), 300);
+
+    // T1 评分映射：第1次正确→Good，第2次正确（第1次答错过）→Hard
+    if (currentMode !== 'browse' && q._srsState) {
+      const rating = wrongCount === 0 ? 'good' : 'hard';
+      _cardAnswerRating = rating;
+      _pendingAttempt = {
+        attemptNumber : wrongCount + 1,
+        isCorrect     : true,
+        distractorId  : null,
+      };
+    }
+    revealAnswer();
+  } else {
+    // ── 答错 ──────────────────────────────────────────────────
+    wrongCount++;
+    if (wrongCount === 1) {
+      // 记录本次误选的 card id（供 TrialLog distractor_chosen 字段）
+      if (currentMode !== 'browse' && q._srsState) {
+        _pendingAttempt = {
+          attemptNumber : 1,
+          isCorrect     : false,
+          distractorId  : btn.dataset.cardId || null,
+        };
+      }
+      btn.style.pointerEvents = 'none';
+      sel = null;
+      requestAnimationFrame(() => {
+        btn.style.transition = 'opacity .3s, transform .3s';
+        btn.style.opacity = '0';
+        btn.style.transform = 'scale(.9)';
+        setTimeout(() => btn.remove(), 300);
+      });
+      if (WRONG_HINT_ON) speak(PHRASE_WRONG);
+    } else {
+      // 第二次答错 → Again
+      if (currentMode !== 'browse' && q._srsState) {
+        _cardAnswerRating = 'again';
+        _pendingAttempt = {
+          attemptNumber : 2,
+          isCorrect     : false,
+          distractorId  : btn.dataset.cardId || null,
+        };
+      }
+      revealAnswer();
+    }
+  }
+}
+
+// ── Submit ─────────────────────────────────────────────────────
+function onSubmit() {
+  if (revealed) return;
+  if (sel===null) {
+    const sb=document.getElementById('subbtn');
+    sb.classList.remove('ndg'); void sb.offsetWidth; sb.classList.add('ndg');
+    sb.addEventListener('animationend',()=>sb.classList.remove('ndg'),{once:true});
+    document.getElementById('ntip').classList.add('show');
+    setTimeout(()=>document.getElementById('ntip').classList.remove('show'),2000);
+    tone('clk'); return;
+  }
+  revealAnswer();
+}
+
+// ── Reveal ─────────────────────────────────────────────────────
+function revealAnswer() {
+  revealed=true; stopAllPromptTimers();
+  const q=Qs[qIdx], isOk=sel===q.correct;
+  const answerName = q.name || (q.options[q.correct] && q.options[q.correct].name) || '';
+
+  document.getElementById('opts-zone').style.display='none';
+  document.getElementById('content').classList.add('revealed');
+  const panel=document.getElementById('answer-panel');
+  document.getElementById('ans-word').textContent=answerName;
+  document.getElementById('ans-word').className='answer-word';
+  const detailsEl=document.getElementById('ans-details');
+  detailsEl.innerHTML='';
+  (q.details||[]).forEach((txt,i)=>{
+    const item=document.createElement('div');
+    item.className='detail-item';
+    item.innerHTML=`<div class="detail-dot"></div><div class="detail-txt">${txt}</div>`;
+    detailsEl.appendChild(item);
+    setTimeout(()=>item.classList.add('show'), 350+i*120);
+  });
+  setTimeout(()=>{
+    panel.style.transition = '';  // 恢复transition
+    panel.classList.add('show');
+  },30);
+
+  if (isOk) { /* tone and confetti now in onSel */ }
+
+  document.getElementById('subbtn').classList.add('gone');
+
+  const hints = READ_HINT && q.details && q.details.length ? q.details : [];
+
+  // show next button immediately, clickable now
+  const nb2 = document.getElementById('nxtbtn');
+  nb2.classList.add('show');
+  document.querySelector('.btm').classList.add('active');
+
+  // 答案播报延迟后播放，优先录音，无录音用 TTS
+  tAnswerTimer = setTimeout(() => {
+    tAnswerTimer = null;
+    const sid = sessionId;
+    const startCountdown = () => { if (sid === sessionId) startNRing(); };
+
+    // 答案名称播完后：播 details → 倒计时
+    const afterAnswer = () => {
+      if (sid !== sessionId) return;
+      if (hints.length) {
+        setTimeout(() => speakSequence(hints, startCountdown, 400, sid), 200);
+      } else {
+        startCountdown();
+      }
+    };
+
+    playAnswer(q, afterAnswer);
+  }, SPEAK_DELAY);
+
+  // ── SRS 写入（练习模式）──────────────────────────────────────
+  if (currentMode !== 'browse' && q._srsState) {
+    const rating = _cardAnswerRating || 'good';
+    _lastSrsWrite = _writeSrs(q, rating, _pendingAttempt).catch(e => console.warn('_writeSrs error', e));
+    _cardAnswerRating = null;
+    _pendingAttempt   = null;
+  }
+}
+
+// ── Next ───────────────────────────────────────────────────────
+async function onNext() {
+  stopNRing(); stopAllPromptTimers(); stopCelebration();
+  speechSynthesis.cancel();
+  if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
+  tone('next');
+  // 立即清除答案面板，禁止transition防止淡出期间闪现新内容
+  const _ap = document.getElementById('answer-panel');
+  _ap.style.transition = 'none';
+  _ap.className = 'answer-panel';
+  document.getElementById('content').classList.remove('revealed');
+
+  // ── 练习模式：检查 _pendingStop，以及是否还有下一题 ──────────
+  if (currentMode !== 'browse') {
+    // 时长保护：limit 模式下当前卡答完后强制停止
+    if (_pendingStop) { showFinish(); return; }
+
+    const nextIdx = qIdx + 1;
+    if (nextIdx >= Qs.length) {
+      // 主队列耗尽 → 检查是否有未到期 learning 卡可追加
+      try {
+        const pending = await getPendingLearningCards(currentDeck);
+        if (pending.length > 0) {
+          // 追加到队列末尾，继续出题（步长时间压缩，可接受近似）
+          Qs = Qs.concat(pending);
+        } else {
+          // 无任何卡片 → session 结束
+          showFinish();
+          return;
+        }
+      } catch(e) {
+        showFinish();
+        return;
+      }
+    }
+  }
+
+  qIdx = currentMode === 'browse'
+    ? (qIdx + 1) % Qs.length
+    : qIdx + 1;
+
+  const ct = document.getElementById('content');
+  ct.classList.add('sout');
+  setTimeout(() => {
+    render();
+    ct.classList.remove('sout'); ct.classList.add('sin');
+    void ct.offsetWidth; ct.classList.remove('sin');
+  }, 200);
+}
+
+// ── SRS 写入（练习模式专用）───────────────────────────────────
+async function _writeSrs(q, rating, attempt) {
+  const deckKey = currentDeck;
+  const state   = q._srsState;
+  if (!state) return;
+
+  // 活跃时长记录（在 SRS 更新之前）
+  recordCardTime();
+
+  // 当日移出保护：lapses_streak 已达阈值，今天跳过此卡（任何评分）
+  const stateKey = state.state_key;
+  if (_dailyRemovedToday[stateKey]) return;
+
+  // SM-2 状态快照（写入 TrialLog 用）
+  const stageBefore     = state.srs_stage;
+  const intervalBefore  = state.interval;
+  const easeBefore      = state.ease_factor;
+  const lapsesStreakBefore = state.lapses_streak;
+  const lapsesBefore    = state.lapses_total;
+
+  // 更新 CardState
+  const newState = processAnswer(state, rating, todayStr());
+  await saveCardState(newState);
+
+  // 更新内存中的 _srsState（供后续答题参考）
+  q._srsState = newState;
+
+  // 当日移出保护：连续失败达到 daily_remove_lapses
+  if (newState.lapses_streak >= SRS_CONFIG.daily_remove_lapses) {
+    _dailyRemovedToday[stateKey] = true;
+  }
+
+  // 自动挂起：lapses_total 达到 auto_suspend_lapses
+  if (!newState.suspended && newState.lapses_total >= SRS_CONFIG.auto_suspend_lapses) {
+    newState.suspended        = true;
+    newState.suspended_reason = 'auto';
+    await saveCardState(newState);
+  }
+
+  // DailyProgress 更新
+  // Phase 1: buildSessionQueue 每张卡只入队一次，无步长内重现，_retrying 始终 false
+  const isRetrying = false;
+  const dp2 = getDailyProgress();
+  dp2.reviewed_today++;
+  if (stageBefore === 'new') dp2.daily_new_today++;
+  saveDailyProgress(dp2);
+
+  // 统计
+  if (attempt && !isRetrying) {
+    _sessionTotal++;
+    if (attempt.isCorrect) _sessionCorrect++;
+    else _sessionWrong++;
+  }
+
+  // TrialLog 写入
+  const now = Date.now();
+  const responseMs = Math.min(
+    now - _cardStartTs,
+    SRS_CONFIG.maximum_answer_seconds * 1000
+  );
+
+  // options_shown：当前题目展示的所有选项 cardId
+  const optEls = document.querySelectorAll('.opt[data-card-id]');
+  const optionsShown = Array.from(optEls).map(el => el.dataset.cardId);
+
+  const trialId = 'trial_' + now + '_' + Math.random().toString(36).slice(2, 6);
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+
+  await writeTrialLog({
+    trial_id             : trialId,
+    card_id              : q.id,
+    deck_key             : deckKey,
+    session_id           : _sessionId,
+
+    question_type        : 'T1',
+    rating               : rating,
+    is_correct           : attempt ? attempt.isCorrect : (rating !== 'again'),
+
+    attempt_number       : attempt ? attempt.attemptNumber : 1,
+    options_shown        : optionsShown,
+    correct_option       : q.id,
+    distractor_chosen    : attempt ? attempt.distractorId : null,
+    distractor_same_cat  : null,   // Phase 2：需要卡片 category 字段
+
+    srs_stage_before     : stageBefore,
+    interval_before      : intervalBefore,
+    ease_before          : easeBefore,
+    lapses_streak_before : lapsesStreakBefore,
+    lapses_total_before  : lapsesBefore,
+    review_mode_before   : state.review_mode || 'T1',
+
+    response_time_ms     : responseMs,
+    active_gap_ms        : null,   // Phase 2
+
+    session_mode         : 'practice',
+    time_of_day          : timeOfDay,
+    timestamp            : now,
+
+    synced_at            : null,   // Phase 2 云端上传时填写
+    _retrying            : isRetrying,
+    _warmup              : false,
+    _mix_observe         : false,
+  });
+}
+
+// ── 完成界面 ──────────────────────────────────────────────────
+function showFinish() {
+  sessionId++;
+  stopNRing(); stopAllPromptTimers(); stopCelebration();
+  speechSynthesis.cancel();
+  releaseWakeLock();
+
+  const dp = getDailyProgress();
+  const total   = _sessionTotal;
+  const correct = _sessionCorrect;
+  const wrong   = _sessionWrong;
+  const rate    = total > 0 ? Math.round(correct / total * 100) : null;
+
+  const el = document.getElementById('finish-stats');
+  el.innerHTML = `
+    <div class="finish-stat-row">
+      <span class="finish-stat-lbl">本次练习</span>
+      <span class="finish-stat-val">${total} 张</span>
+    </div>
+    <div class="finish-stat-row">
+      <span class="finish-stat-lbl">答对</span>
+      <span class="finish-stat-val correct">${correct}</span>
+    </div>
+    <div class="finish-stat-row">
+      <span class="finish-stat-lbl">答错</span>
+      <span class="finish-stat-val wrong">${wrong}</span>
+    </div>
+    <div class="finish-stat-row">
+      <span class="finish-stat-lbl">正确率</span>
+      <span class="finish-stat-val">${rate !== null ? rate + '%' : '—'}</span>
+    </div>
+    <div class="finish-stat-row">
+      <span class="finish-stat-lbl">今日累计</span>
+      <span class="finish-stat-val">${dp.reviewed_today} 张</span>
+    </div>`;
+
+  showScreen('screen-finish');
+}
+
+// ── 活跃时长记录（练习模式）──────────────────────────────────
+function recordCardTime() {
+  if (currentMode === 'browse') return;
+  const now = Date.now();
+  if (_lastCardTs) {
+    const gap = (now - _lastCardTs) / 1000;
+    if (gap <= SRS_CONFIG.idle_threshold_sec) {
+      _sessionActiveSec += gap;
+      const dp = getDailyProgress();
+      dp.active_duration_sec = (dp.active_duration_sec || 0) + gap;
+      saveDailyProgress(dp);
+    }
+  }
+  _lastCardTs = now;
+  _checkDurationWarning();
+}
+
+function _checkDurationWarning() {
+  if (!SRS_CONFIG.warn_duration_sec) return;
+  if (_sessionActiveSec < SRS_CONFIG.warn_duration_sec) return;
+  if (_warnedThisSession) return;
+  _warnedThisSession = true;
+  if (SRS_CONFIG.warn_mode === 'limit') {
+    _pendingStop = true;
+  } else {
+    showRestToast();
+  }
+  setTimeout(() => { _warnedThisSession = false; }, SRS_CONFIG.warn_repeat_sec * 1000);
+}
+
+function showRestToast() {
+  const t = document.createElement('div');
+  t.textContent = '已练习 20 分钟，可以休息一下 😊';
+  t.style.cssText = `position:fixed;bottom:calc(120px + var(--safe-bottom));left:50%;
+    transform:translateX(-50%);background:var(--text);color:var(--bg);
+    padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
+    z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── visibilitychange：切后台时重置 idle 计时，避免虚报活跃时长 ──
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    _lastCardTs = null;
+  }
+});
+
+// ── Next ring ──────────────────────────────────────────────────
+function startNRing() {
+  const dur = currentMode === 'browse' ? BDUR : NDUR;
+  if (dur === 0) return;  // 0 = 手动模式，不启动倒计时
+  requestAnimationFrame(() => {
+    const btn=document.getElementById('nxtbtn'),svg=document.getElementById('nrsvg');
+    const nrt=document.getElementById('nrt'),nrp=document.getElementById('nrp'),sec=document.getElementById('nrsec');
+    const w=btn.offsetWidth,h=btn.offsetHeight,pad=2;
+    if (!w || !h) return;
+    btn.classList.add('counting');
+    svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+    [nrt,nrp].forEach(el=>{el.setAttribute('x',pad);el.setAttribute('y',pad);el.setAttribute('width',w-pad*2);el.setAttribute('height',h-pad*2);el.setAttribute('rx',20);});
+    const r=20,perim=2*((w-2*r)+(h-2*r))+2*Math.PI*r;
+    nrt.style.strokeDasharray=perim;nrt.style.strokeDashoffset=0;
+    nrp.style.strokeDasharray=perim;nrp.style.strokeDashoffset=perim;
+    nStart=performance.now();
+    function tick(now){
+      const el=now-nStart,p=Math.min(el/dur,1);
+      nrp.style.strokeDashoffset=perim*(1-p);
+      const rem=Math.ceil((dur-el)/1000);
+      sec.textContent=rem>0?rem:'';
+      if(p<1){nRaf=requestAnimationFrame(tick);}
+      else{sec.textContent='';onNext();}
+    }
+    nRaf=requestAnimationFrame(tick);
+  });
+}
+function stopNRing(){
+  if(nRaf){cancelAnimationFrame(nRaf);nRaf=null;}
+  const btn=document.getElementById('nxtbtn');
+  if(btn) btn.classList.remove('counting');
+  const nrp=document.getElementById('nrp');
+  const nrt=document.getElementById('nrt');
+  const sec=document.getElementById('nrsec');
+  if(nrp){ nrp.style.strokeDasharray=''; nrp.style.strokeDashoffset=''; }
+  if(nrt){ nrt.style.strokeDasharray=''; nrt.style.strokeDashoffset=''; }
+  if(sec) sec.textContent='';
+}
+
+// ── Celebration animations ─────────────────────────────────────
+let cRaf = null;
+
+function stopCelebration() {
+  if (cRaf) { cancelAnimationFrame(cRaf); cRaf = null; }
+  const cv = document.getElementById('cc');
+  if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+}
+
+function spawnConfetti() {
+  const cv = document.getElementById('cc'), ctx = cv.getContext('2d');
+  stopCelebration();
+  cv.width = window.innerWidth; cv.height = window.innerHeight;
+  const cols = ['#1d4ed8','#15803d','#f59e0b','#be185d','#7c3aed','#0891b2'];
+  const ps = Array.from({length: 60}, () => ({
+    x: Math.random() * cv.width, y: -12 - Math.random() * 40,
+    vx: (Math.random() - .5) * 5, vy: Math.random() * 2.5 + 1.5,
+    color: cols[Math.floor(Math.random() * cols.length)],
+    w: Math.random() * 8 + 4, h: Math.random() * 4 + 3,
+    rot: Math.random() * 360, rs: (Math.random() - .5) * 7, wb: Math.random() * 3
+  }));
+  let f = 0;
+  (function draw() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    let alive = false;
+    ps.forEach(p => {
+      p.x += p.vx + Math.sin(f * .05 + p.wb) * .3;
+      p.y += p.vy; p.vy += .06; p.rot += p.rs;
+      if (p.y < cv.height + 20) alive = true;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - p.y / (cv.height * 1.1));
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    f++;
+    if (alive) cRaf = requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, cv.width, cv.height);
+  })();
+}
+
+// ── Force refresh (PWA) ───────────────────────────────────────
+function forceRefresh() {
+  const btn = document.querySelector('.home-refresh-btn');
+  if (btn) {
+    btn.classList.add('spinning');
+    btn.addEventListener('animationend', () => btn.classList.remove('spinning'), { once: true });
+  }
+  // Clear caches if Service Worker available, then reload
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      Promise.all(regs.map(r => r.unregister())).then(() => {
+        if ('caches' in window) {
+          caches.keys().then(keys =>
+            Promise.all(keys.map(k => caches.delete(k)))
+          ).then(() => location.reload(true));
+        } else { location.reload(true); }
+      });
+    });
+  } else {
+    setTimeout(() => location.reload(true), 400);
+  }
+}
+
+function onFsChange(key, v) {
+  document.documentElement.style.setProperty(`--fs-${key}`, `${v}px`);
+  document.getElementById(`fs-${key}-val`).textContent = v;
+  localStorage.setItem(`fs-${key}`, v);
+}
+function onLsChange(key, v) {
+  document.documentElement.style.setProperty(`--ls-${key}`, `${v}px`);
+  document.getElementById(`ls-${key}-val`).textContent = `${v}px`;
+  localStorage.setItem(`ls-${key}`, v);
+}
+
+function toggleReadHint(cb) {
+  READ_HINT = cb.checked;
+  localStorage.setItem('readHint', READ_HINT ? '1' : '0');
+}
+function toggleQuizPrompt(cb) {
+  QUIZ_PROMPT_ON = cb.checked;
+  localStorage.setItem('quizPromptOn', QUIZ_PROMPT_ON ? '1' : '0');
+}
+function toggleOptHint(cb) {
+  OPT_HINT_ON = cb.checked;
+  localStorage.setItem('optHintOn', OPT_HINT_ON ? '1' : '0');
+}
+function toggleWrongHint(cb) {
+  WRONG_HINT_ON = cb.checked;
+  localStorage.setItem('wrongHintOn', WRONG_HINT_ON ? '1' : '0');
+}
+
+function onBrowseAnsDelayChange(v) {
+  BROWSE_ANSWER_DELAY = parseFloat(v) * 1000;
+  document.getElementById('dbg-browse-ans-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
+  localStorage.setItem('browseAnsDelay', v);
+}
+function toggleConfetti(cb) {
+  CONFETTI_ON = cb.checked;
+  localStorage.setItem('confettiOn', CONFETTI_ON ? '1' : '0');
+}
+function toggleCorrectHint(cb) {
+  CORRECT_HINT_ON = cb.checked;
+  localStorage.setItem('correctHintOn', CORRECT_HINT_ON ? '1' : '0');
+}
+
+function onPhraseChange(key, val) {
+  const normalize = s => s.replace(/。/g, '.');
+  if (key === 'select')  { PHRASE_SELECT   = normalize(val) || '请选择答案';              localStorage.setItem('phraseSelect',  PHRASE_SELECT); }
+  if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || '不要着急，再试一次';       localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
+  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || '请在{A}.{B}.{C}中选择一个'; localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
+  if (key === 'correct') { PHRASE_CORRECT  = val || '回答正确';                           localStorage.setItem('phraseCorrect', PHRASE_CORRECT); }
+}
+
+function onQpDelayChange(v) {
+  QUIZ_PROMPT_DELAY = parseFloat(v) * 1000;
+  document.getElementById('dbg-qpdelay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
+  localStorage.setItem('quizPromptDelay', v);
+}
+function onOhDelayChange(v) {
+  OPT_HINT_DELAY = parseFloat(v) * 1000;
+  document.getElementById('dbg-ohdelay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
+  localStorage.setItem('optHintDelay', v);
+}
+function onDelayChange(v) {
+  SPEAK_DELAY = parseFloat(v) * 1000;
+  document.getElementById('dbg-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
+  localStorage.setItem('delay', v);
+}
+function onBrowseDelayChange(v) {
+  BROWSE_SPEAK_DELAY = parseFloat(v) * 1000;
+  document.getElementById('dbg-browse-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
+  localStorage.setItem('browseDelay', v);
+}
+
+function onTtsRateChange(v) {
+  TTS_RATE = parseFloat(v);
+  document.getElementById('tts-rate-val').textContent = parseFloat(v).toFixed(2);
+  localStorage.setItem('ttsRate', v);
+}
+function onTtsPitchChange(v) {
+  TTS_PITCH = parseFloat(v);
+  document.getElementById('tts-pitch-val').textContent = parseFloat(v).toFixed(1);
+  localStorage.setItem('ttsPitch', v);
+}
+function onTtsVoiceChange(name) {
+  TTS_VOICE_NAME = name;
+  localStorage.setItem('ttsVoiceName', name);
+}
+
+// 填充音色下拉列表（中文优先，其余附后）
+function populateVoiceList() {
+  const sel = document.getElementById('tts-voice');
+  if (!sel) return;
+  if (!voices.length) loadVoices();
+  const zhVoices = voices.filter(v => v.lang.startsWith('zh'));
+  const otherVoices = voices.filter(v => !v.lang.startsWith('zh'));
+  sel.innerHTML = '<option value="">自动（中文优先）</option>';
+  [...zhVoices, ...otherVoices].forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.name;
+    opt.textContent = `${v.name} (${v.lang})`;
+    if (v.name === TTS_VOICE_NAME) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function onOptTouchDelayChange(v) {
+  OPT_TOUCH_DELAY = parseInt(v);
+  document.getElementById('opt-touch-delay-val').textContent = `${v}ms`;
+  localStorage.setItem('optTouchDelay', v);
+}
+
+function onOptCount(v) {
+  OPT_COUNT = parseInt(v);
+  document.getElementById('opt-count-val').textContent = `${v}个`;
+  localStorage.setItem('optCount', v);
+}
+function onNdurChange(v) {
+  NDUR = parseFloat(v) * 1000;
+  document.getElementById('dbg-ndur-val').textContent = v === '0' ? '手动' : `${v}s`;
+  localStorage.setItem('ndur', v);
+}
+function onBdurChange(v) {
+  BDUR = parseFloat(v) * 1000;
+  document.getElementById('dbg-bdur-val').textContent = v === '0' ? '手动' : `${v}s`;
+  localStorage.setItem('bdur', v);
+}
+
+function loadSettings() {
+  // 朗读物品提示
+  const rh = localStorage.getItem('readHint');
+  if (rh !== null) READ_HINT = rh === '1';
+
+  // 答题提示
+  const quizPromptOn = localStorage.getItem('quizPromptOn');
+  if (quizPromptOn !== null) QUIZ_PROMPT_ON = quizPromptOn === '1';
+  const qpDelay = localStorage.getItem('quizPromptDelay');
+  if (qpDelay) QUIZ_PROMPT_DELAY = parseFloat(qpDelay) * 1000;
+  const ps = localStorage.getItem('phraseSelect');
+  if (ps) PHRASE_SELECT = ps;
+
+  // 选项提示
+  const optHintOn = localStorage.getItem('optHintOn');
+  if (optHintOn !== null) OPT_HINT_ON = optHintOn === '1';
+  const ohDelay = localStorage.getItem('optHintDelay');
+  if (ohDelay) OPT_HINT_DELAY = parseFloat(ohDelay) * 1000;
+  const phraseOptHint = localStorage.getItem('phraseOptHint');
+  if (phraseOptHint) PHRASE_OPT_HINT = phraseOptHint;
+
+  // 答错提示
+  const wrongHintOn = localStorage.getItem('wrongHintOn');
+  if (wrongHintOn !== null) WRONG_HINT_ON = wrongHintOn === '1';
+  const pw = localStorage.getItem('phraseWrong');
+  if (pw) PHRASE_WRONG = pw;
+
+  // 浏览答案延迟 / 答对反馈
+  const browseAnsDelay = localStorage.getItem('browseAnsDelay');
+  if (browseAnsDelay) BROWSE_ANSWER_DELAY = parseFloat(browseAnsDelay) * 1000;
+  const confettiOn = localStorage.getItem('confettiOn');
+  if (confettiOn !== null) CONFETTI_ON = confettiOn === '1';
+  const correctHintOn = localStorage.getItem('correctHintOn');
+  if (correctHintOn !== null) CORRECT_HINT_ON = correctHintOn === '1';
+  const phraseCorrect = localStorage.getItem('phraseCorrect');
+  if (phraseCorrect) PHRASE_CORRECT = phraseCorrect;
+
+  // TTS 音色参数
+  const ttsRate = localStorage.getItem('ttsRate');
+  if (ttsRate) TTS_RATE = parseFloat(ttsRate);
+  const ttsPitch = localStorage.getItem('ttsPitch');
+  if (ttsPitch) TTS_PITCH = parseFloat(ttsPitch);
+  const ttsVoiceName = localStorage.getItem('ttsVoiceName');
+  if (ttsVoiceName !== null) TTS_VOICE_NAME = ttsVoiceName;
+
+  // 答案播报延迟
+  const delay = localStorage.getItem('delay');
+  if (delay) SPEAK_DELAY = parseFloat(delay) * 1000;
+  const browseDelay = localStorage.getItem('browseDelay');
+  if (browseDelay) BROWSE_SPEAK_DELAY = parseFloat(browseDelay) * 1000;
+
+  // 选项数量 / 倒计时 / 防误触
+  const oc = localStorage.getItem('optCount');
+  if (oc) OPT_COUNT = parseInt(oc);
+  const otd = localStorage.getItem('optTouchDelay');
+  if (otd !== null) OPT_TOUCH_DELAY = parseInt(otd);
+  const ndur = localStorage.getItem('ndur');
+  // NDUR 优先用 localStorage，其次跟随 SRS_CONFIG.practice_advance_sec
+  if (ndur) NDUR = parseFloat(ndur) * 1000;
+  else NDUR = SRS_CONFIG.practice_advance_sec * 1000;
+  const bdur = localStorage.getItem('bdur');
+  if (bdur) BDUR = parseFloat(bdur) * 1000;
+
+  // Restore CSS variables
+  const cssVars = [
+    {k:'fs-opt', def:'26'}, {k:'fs-ans', def:'48'},
+    {k:'fs-hint', def:'15'}, {k:'fs-btn', def:'20'},
+    {k:'ls-opt', def:'2'}, {k:'ls-ans', def:'-1'},
+    {k:'ls-hint', def:'0'}, {k:'ls-btn', def:'0'},
+  ];
+  cssVars.forEach(({k, def}) => {
+    const v = localStorage.getItem(k) || def;
+    document.documentElement.style.setProperty(`--${k}`, `${v}px`);
+  });
+
+  window.addEventListener('load', () => {
+    // 开关同步
+    const htEl = document.getElementById('hint-toggle');
+    if (htEl) htEl.checked = READ_HINT;
+    const qptEl = document.getElementById('quiz-prompt-toggle');
+    if (qptEl) qptEl.checked = QUIZ_PROMPT_ON;
+    const ohtEl = document.getElementById('opt-hint-toggle');
+    if (ohtEl) ohtEl.checked = OPT_HINT_ON;
+    const whtEl = document.getElementById('wrong-hint-toggle');
+    if (whtEl) whtEl.checked = WRONG_HINT_ON;
+
+    // 文案同步
+    const ps2 = document.getElementById('phrase-select');
+    if (ps2) ps2.value = PHRASE_SELECT;
+    const pw2 = document.getElementById('phrase-wrong');
+    if (pw2) pw2.value = PHRASE_WRONG;
+    const pohEl = document.getElementById('phrase-opt-hint');
+    if (pohEl) pohEl.value = PHRASE_OPT_HINT;
+
+    // 浏览答案延迟 / 答对反馈
+    const badEl = document.getElementById('dbg-browse-ans-delay');
+    if (badEl && browseAnsDelay) { badEl.value = browseAnsDelay; document.getElementById('dbg-browse-ans-delay-val').textContent = `${parseFloat(browseAnsDelay).toFixed(1)}s`; }
+    const cfEl = document.getElementById('confetti-toggle');
+    if (cfEl) cfEl.checked = CONFETTI_ON;
+    const chEl = document.getElementById('correct-hint-toggle');
+    if (chEl) chEl.checked = CORRECT_HINT_ON;
+    const pcEl = document.getElementById('phrase-correct');
+    if (pcEl) pcEl.value = PHRASE_CORRECT;
+
+    // TTS 参数同步
+    const rateEl = document.getElementById('tts-rate');
+    if (rateEl) { rateEl.value = TTS_RATE; document.getElementById('tts-rate-val').textContent = TTS_RATE.toFixed(2); }
+    const pitchEl = document.getElementById('tts-pitch');
+    if (pitchEl) { pitchEl.value = TTS_PITCH; document.getElementById('tts-pitch-val').textContent = TTS_PITCH.toFixed(1); }
+    // 音色列表在语音列表加载后填充
+    populateVoiceList();
+
+    // 选项数量
+    const ocEl = document.getElementById('opt-count');
+    if (ocEl) { ocEl.value = OPT_COUNT; document.getElementById('opt-count-val').textContent = `${OPT_COUNT}个`; }
+    const otdEl = document.getElementById('opt-touch-delay');
+    if (otdEl) { otdEl.value = OPT_TOUCH_DELAY; document.getElementById('opt-touch-delay-val').textContent = `${OPT_TOUCH_DELAY}ms`; }
+
+    // 延迟滑块同步
+    const qpdEl = document.getElementById('dbg-qpdelay');
+    if (qpdEl && qpDelay) { qpdEl.value = qpDelay; document.getElementById('dbg-qpdelay-val').textContent = `${parseFloat(qpDelay).toFixed(1)}s`; }
+    const ohdEl = document.getElementById('dbg-ohdelay');
+    if (ohdEl && ohDelay) { ohdEl.value = ohDelay; document.getElementById('dbg-ohdelay-val').textContent = `${parseFloat(ohDelay).toFixed(1)}s`; }
+    const dlEl = document.getElementById('dbg-delay');
+    if (dlEl && delay) { dlEl.value = delay; document.getElementById('dbg-delay-val').textContent = `${parseFloat(delay).toFixed(1)}s`; }
+    const bdlEl = document.getElementById('dbg-browse-delay');
+    if (bdlEl && browseDelay) { bdlEl.value = browseDelay; document.getElementById('dbg-browse-delay-val').textContent = `${parseFloat(browseDelay).toFixed(1)}s`; }
+    const ndurEl = document.getElementById('dbg-ndur');
+    if (ndurEl && ndur) { ndurEl.value = ndur; document.getElementById('dbg-ndur-val').textContent = ndur === '0' ? '手动' : `${ndur}s`; }
+    const bdurEl = document.getElementById('dbg-bdur');
+    if (bdurEl && bdur) { bdurEl.value = bdur; document.getElementById('dbg-bdur-val').textContent = bdur === '0' ? '手动' : `${bdur}s`; }
+
+    // CSS var 滑块同步
+    [
+      {id:'fs-opt',suf:'',def:'26'},{id:'fs-ans',suf:'',def:'48'},
+      {id:'fs-hint',suf:'',def:'15'},{id:'fs-btn',suf:'',def:'20'},
+      {id:'ls-opt',suf:'px',def:'2'},{id:'ls-ans',suf:'px',def:'-1'},
+      {id:'ls-hint',suf:'px',def:'0'},{id:'ls-btn',suf:'px',def:'0'},
+    ].forEach(({id,suf,def})=>{
+      const el=document.getElementById(id);
+      const val=document.getElementById(`${id}-val`);
+      const v=localStorage.getItem(id)||def;
+      if(el) el.value=v;
+      if(val) val.textContent=`${v}${suf}`;
+    });
+  });
+}
+loadSettings();
+
+// ── Settings ───────────────────────────────────────────────────
+function switchTab(n) {
+  document.querySelectorAll('.sheet-tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.sheet-panel').forEach((p,i)=>p.classList.toggle('active',i===n));
+}
+function openSettings(){
+  document.getElementById('settings-overlay').classList.add('open');
+  // 每次打开时刷新音色列表，确保 iOS 语音包加载后能显示
+  populateVoiceList();
+}
+function closeSettings(){ document.getElementById('settings-overlay').classList.remove('open'); }
+function closeSettingsIfOutside(e){ if(e.target===document.getElementById('settings-overlay'))closeSettings(); }
+
+// ── Theme ──────────────────────────────────────────────────────
+function toggleTheme(checkbox){
+  const isDark=checkbox?checkbox.checked:!document.documentElement.classList.contains('dark');
+  document.documentElement.classList.toggle('dark',isDark);
+  localStorage.setItem('theme',isDark?'dark':'light');
+  const tog=document.getElementById('dark-toggle');if(tog)tog.checked=isDark;
+}
+(function(){
+  const s=localStorage.getItem('theme'),sys=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark=s?s==='dark':sys;
+  if(isDark)document.documentElement.classList.add('dark');
+  window.addEventListener('load', async () => {
+    const tog=document.getElementById('dark-toggle');if(tog)tog.checked=isDark;
+    await restoreDecks();
+    // 初始选中第一个有卡片的牌组
+    if (!currentDeck && DECKS_META.length) {
+      currentDeck = DECKS_META[0].key;
+    }
+    renderDeckList();
+    updateDeckStats();
+    });
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v4.3  统计屏 + SRS 设置 Tab + 首页第三列
+// ════════════════════════════════════════════════════════════════
+
+// ── 统计屏导航 ────────────────────────────────────────────────
+function openStats() {
+  _statsAllStates = [];   // 清空缓存，强制从 IndexedDB 重新读取
+  // 等待最后一次 SRS 写入完成，确保读到最新状态
+  _lastSrsWrite.finally(() => {
+    switchStatsTab(0);
+    showScreen('screen-stats');
+  });
+}
+
+let _statsCurrentFilter = 'all';
+let _statsAllStates = [];
+
+function switchStatsTab(n) {
+  document.querySelectorAll('.stats-tab').forEach((t, i) => t.classList.toggle('active', i === n));
+  document.querySelectorAll('.stats-panel').forEach((p, i) => p.classList.toggle('active', i === n));
+  if      (n === 0) renderStatsToday();
+  else if (n === 1) renderStatsDeck();
+  else if (n === 2) renderStatsCards();
+  else if (n === 3) renderStatsTrials();
+}
+
+// ── Tab 0：今日概况 ───────────────────────────────────────────
+async function renderStatsToday() {
+  const dp     = getDailyProgress();
+  // 今天的 TrialLog（getTrialLogs 已过滤 _retrying）
+  const trials = await getTrialLogs(null, 1);
+  const corr   = trials.filter(t => t.is_correct).length;
+  const wrong  = trials.filter(t => !t.is_correct).length;
+  const total  = corr + wrong;
+  const rate   = total > 0 ? Math.round(corr / total * 100) : null;
+
+  // 今日累计 = 今天练习的唯一卡片数（同一张卡步长内多次答题只算1张）
+  const uniqueToday = new Set(trials.map(t => t.card_id)).size;
+
+  // KPI 卡片
+  document.getElementById('st-kpi').innerHTML = `
+    <div class="stats-kpi"><div class="stats-kpi-num kpi-b">${uniqueToday}</div><div class="stats-kpi-lbl">今日卡片</div></div>
+    <div class="stats-kpi"><div class="stats-kpi-num kpi-c">${corr}</div><div class="stats-kpi-lbl">答对</div></div>
+    <div class="stats-kpi"><div class="stats-kpi-num kpi-w">${wrong}</div><div class="stats-kpi-lbl">答错</div></div>
+    <div class="stats-kpi"><div class="stats-kpi-num">${rate !== null ? rate + '%' : '—'}</div><div class="stats-kpi-lbl">正确率</div></div>`;
+
+  // 近7天柱状图（每天唯一卡片数）
+  const week7 = await getTrialLogs(null, 7);
+  const dayMap = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(todayStr(), -i);
+    dayMap[d] = { cards: new Set(), corr: 0, total: 0 };
+  }
+  week7.forEach(t => {
+    const d  = new Date(t.timestamp);
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (dayMap[ds]) {
+      dayMap[ds].cards.add(t.card_id);
+      dayMap[ds].total++;
+      if (t.is_correct) dayMap[ds].corr++;
+    }
+  });
+  const days   = Object.entries(dayMap);
+  const maxCnt = Math.max(...days.map(([,v]) => v.cards.size), 1);
+  const labels = ['日','一','二','三','四','五','六'];
+  const chartHtml = `<div class="chart-bars">${days.map(([d, v]) => {
+    const cnt = v.cards.size;
+    const pct = Math.round(cnt / maxCnt * 100);
+    const dow = labels[new Date(d + 'T00:00:00').getDay()];
+    const rateStr = v.total > 0 ? Math.round(v.corr / v.total * 100) + '%' : '';
+    return `<div class="chart-col">
+      <div class="chart-bar${cnt===0?' empty':''}" style="height:${Math.max(pct,3)}%"></div>
+      <div class="chart-day">${dow}</div>
+      <div class="chart-rate">${rateStr}</div>
+    </div>`;
+  }).join('')}</div>`;
+  document.getElementById('st-chart').innerHTML = chartHtml;
+
+  // 本次 / 今日
+  const totalSec = dp.active_duration_sec || 0;
+  const durStr   = totalSec < 60
+    ? `${Math.round(totalSec)} 秒`
+    : `${Math.floor(totalSec / 60)} 分 ${Math.round(totalSec % 60)} 秒`;
+  const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
+  document.getElementById('st-session').innerHTML = `
+    <div class="stats-row"><span class="stats-row-lbl">本次练习</span><span class="stats-row-val">${_sessionTotal} 张</span></div>
+    <div class="stats-row"><span class="stats-row-lbl">今日卡片（唯一）</span><span class="stats-row-val">${uniqueToday} 张</span></div>
+    <div class="stats-row"><span class="stats-row-lbl">今日活跃时长</span><span class="stats-row-val">${durStr}</span></div>
+    <div class="stats-row"><span class="stats-row-lbl">今日引入新卡</span><span class="stats-row-val">${dp.daily_new_today}</span></div>
+    <div class="stats-row" style="cursor:pointer" onclick="switchStatsTab(2);filterCards(document.querySelector('[data-f=sus]'),'sus')">
+      <span class="stats-row-lbl">待确认（自动挂起）</span><span class="stats-row-val" style="color:${sus>0?'#7c3aed':'var(--text)'}">${sus}</span>
+    </div>`;
+}
+
+// ── Tab 1：牌组概况 ───────────────────────────────────────────
+async function renderStatsDeck() {
+  const key    = currentDeck;
+  const states = await getAllCardStates(key);
+  const today  = todayStr();
+  const now    = Date.now();
+
+  let newC = 0, learning = 0, review = 0, relearning = 0, sus = 0, total = 0;
+  states.forEach(s => {
+    total++;
+    if (s.suspended)               { sus++;       return; }
+    if (s.srs_stage === 'new')     { newC++;      return; }
+    if (s.srs_stage === 'learning')  learning++;
+    if (s.srs_stage === 'review')    review++;
+    if (s.srs_stage === 'relearning') relearning++;
+  });
+  const mastered = states.filter(s => s.srs_stage === 'review' && s.interval >= SRS_CONFIG.maximum_interval && !s.suspended).length;
+
+  // 连续练习天数（streak）
+  const trials7 = await getTrialLogs(key, 90);
+  const daysSet = new Set(trials7.map(t => {
+    const d = new Date(t.timestamp);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }));
+  let streak = 0, cur = todayStr();
+  while (daysSet.has(cur)) { streak++; cur = addDays(cur, -1); }
+
+  document.getElementById('st-deck-overview').innerHTML = `
+    <div class="deck-overview-grid">
+      <div class="deck-ov-item"><div class="deck-ov-num">${total}</div><div class="deck-ov-lbl">总卡片</div></div>
+      <div class="deck-ov-item"><div class="deck-ov-num" style="color:var(--green)">${mastered}</div><div class="deck-ov-lbl">已掌握</div></div>
+      <div class="deck-ov-item"><div class="deck-ov-num" style="color:var(--ocean)">${learning + relearning}</div><div class="deck-ov-lbl">学习中</div></div>
+      <div class="deck-ov-item"><div class="deck-ov-num">${newC}</div><div class="deck-ov-lbl">待开始</div></div>
+      <div class="deck-ov-item"><div class="deck-ov-num" style="color:#7c3aed">${sus}</div><div class="deck-ov-lbl">暂停</div></div>
+      <div class="deck-ov-item"><div class="deck-ov-num" style="color:var(--ocean)">${streak}</div><div class="deck-ov-lbl">连续天数</div></div>
+    </div>`;
+
+  // 未来7天到期预测
+  const forecast = {};
+  for (let i = 0; i < 7; i++) forecast[addDays(today, i)] = 0;
+  states.filter(s => s.srs_stage === 'review' && s.due_date && !s.suspended).forEach(s => {
+    if (forecast[s.due_date] !== undefined) forecast[s.due_date]++;
+  });
+  const fcDays   = Object.entries(forecast);
+  const fcMax    = Math.max(...fcDays.map(([,v]) => v), 1);
+  const lbls     = ['日','一','二','三','四','五','六'];
+  document.getElementById('st-forecast').innerHTML = `<div class="chart-bars">${
+    fcDays.map(([d, v]) => {
+      const pct = Math.round(v / fcMax * 100);
+      const dow = lbls[new Date(d + 'T00:00:00').getDay()];
+      return `<div class="chart-col">
+        <div class="chart-bar${v===0?' empty':''}" style="height:${Math.max(pct,3)}%"></div>
+        <div class="chart-day">${dow}</div>
+        <div class="chart-rate">${v > 0 ? v : ''}</div>
+      </div>`;
+    }).join('')
+  }</div>`;
+}
+
+// ── Tab 2：卡片状态 ────────────────────────────────────────────
+async function renderStatsCards(filter) {
+  if (filter) _statsCurrentFilter = filter;
+  _statsAllStates = await getAllCardStates(currentDeck);
+  const cards     = DECKS[currentDeck] || [];
+  const cardMap   = {};
+  cards.forEach(c => { cardMap[c.id] = c; });
+  const today = todayStr();
+  const now   = Date.now();
+
+  let filtered = _statsAllStates;
+  const masteredThreshold = SRS_CONFIG.maximum_interval;
+  if (_statsCurrentFilter === 'sus')      filtered = filtered.filter(s => s.suspended);
+  if (_statsCurrentFilter === 'learn')    filtered = filtered.filter(s => (s.srs_stage === 'learning' || s.srs_stage === 'relearning') && !s.suspended);
+  if (_statsCurrentFilter === 'inreview') filtered = filtered.filter(s => s.srs_stage === 'review' && s.interval < masteredThreshold && !s.suspended);
+  if (_statsCurrentFilter === 'review')   filtered = filtered.filter(s => s.srs_stage === 'review' && s.interval >= masteredThreshold && !s.suspended);
+  if (_statsCurrentFilter === 'new')      filtered = filtered.filter(s => s.srs_stage === 'new' && !s.suspended);
+
+  const listEl = document.getElementById('st-card-list');
+  if (!filtered.length) { listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:14px">暂无卡片</div>'; return; }
+
+  listEl.innerHTML = filtered.map(s => {
+    const c = cardMap[s.card_id] || {};
+    const imgHtml = c.img && c.img.length > 4
+      ? `<img src="${c.img}" alt="">`
+      : `<span>${c.img || '🃏'}</span>`;
+
+    // 状态标签（review 阶段按 interval 区分：< maximum_interval=复习中，>= 已掌握）
+    const _thresh = SRS_CONFIG.maximum_interval;
+    let badge = '';
+    if (s.suspended)                     badge = '<span class="sbadge sbadge-sus">待确认</span>';
+    else if (s.srs_stage==='new')        badge = '<span class="sbadge sbadge-new">待开始</span>';
+    else if (s.srs_stage==='learning')   badge = '<span class="sbadge sbadge-learn">学习中</span>';
+    else if (s.srs_stage==='relearning') badge = '<span class="sbadge sbadge-relearn">重学中</span>';
+    else if (s.srs_stage==='review')     badge = s.interval >= _thresh
+      ? '<span class="sbadge sbadge-review">已掌握</span>'
+      : '<span class="sbadge sbadge-inreview">复习中</span>';
+
+    // 下次复习
+    let dueStr = '';
+    if (s.srs_stage === 'review' && s.due_date) {
+      dueStr = s.due_date <= today ? '今日待练' : s.due_date.slice(5).replace('-','/');
+    } else if ((s.srs_stage==='learning'||s.srs_stage==='relearning') && s.due_ts) {
+      const mins = Math.round((s.due_ts - now) / 60000);
+      dueStr = mins <= 0 ? '待出题' : mins < 60 ? `${mins}分后` : `${Math.round(mins/60)}时后`;
+    }
+
+    // lapses 颜色
+    const ls = s.lapses_streak || 0;
+    const lsClass = ls >= SRS_CONFIG.daily_remove_lapses ? 'danger' : ls > 0 ? 'warn' : '';
+    const lsHtml  = ls > 0 ? `<div class="scard-lapse ${lsClass}">连失${ls}</div>` : '';
+
+    return `<div class="scard" onclick="openCardDetail('${s.state_key}')">
+      <div class="scard-img">${imgHtml}</div>
+      <div class="scard-info">
+        <div class="scard-name">${c.name || s.card_id}</div>
+        <div class="scard-meta">${badge}${s.srs_stage==='review'?` · 间隔${s.interval}天 · ef${s.ease_factor.toFixed(1)}`:''}</div>
+      </div>
+      <div class="scard-right">
+        <div class="scard-due">${dueStr}</div>
+        ${lsHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterCards(btn, filter) {
+  document.querySelectorAll('.stats-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderStatsCards(filter);
+}
+
+// ── Tab 3：练习记录 ────────────────────────────────────────────
+async function renderStatsTrials() {
+  const trials = await getTrialLogs(currentDeck, 7);
+  // getTrialLogs 已过滤 _retrying，升序排列；取最新100条倒序展示
+  const recent = [...trials].reverse().slice(0, 100);
+  const cards  = DECKS[currentDeck] || [];
+  const cardMap = {};
+  cards.forEach(c => { cardMap[c.id] = c; });
+
+  const RLBL = { again:'重来', hard:'困难', good:'良好', easy:'容易' };
+  const RCLS = { again:'tr-again', hard:'tr-hard', good:'tr-good', easy:'tr-easy' };
+
+  const listEl = document.getElementById('st-trial-list');
+  if (!recent.length) {
+    listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:14px">暂无记录</div>';
+    return;
+  }
+  listEl.innerHTML = `<div class="stats-rows">${recent.map(t => {
+    const c    = cardMap[t.card_id] || {};
+    const name = c.name || t.card_id;
+    const d    = new Date(t.timestamp);
+    const timeStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const detailKey = t.card_id ? (currentDeck + '::' + t.card_id) : '';
+    return `<div class="trial-item" onclick="openCardDetail('${detailKey}')">
+      <div class="trial-rating ${RCLS[t.rating]||'tr-good'}">${RLBL[t.rating]||t.rating}</div>
+      <div class="trial-name">${name}</div>
+      <div class="trial-time">${timeStr}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ── 卡片详情面板 ───────────────────────────────────────────────
+async function openCardDetail(stateKey) {
+  if (!stateKey) return;
+  const overlay = document.getElementById('card-detail-overlay');
+  const body    = document.getElementById('card-detail-body');
+
+  // 读 CardState
+  const parts = stateKey.split('::');
+  const deckKey = parts[0], cardId = parts[1];
+  const state = await getCardState(deckKey, cardId);
+  if (!state) return;
+
+  const cards   = DECKS[deckKey] || [];
+  const card    = cards.find(c => c.id === cardId) || {};
+  const today   = todayStr();
+  const now     = Date.now();
+
+  // 阶段显示
+  const STAGE_LBL = { new:'待开始', learning:'学习中', review:'复习', relearning:'重学中' };
+  // 下次预测（显示计算过程方便调试）
+  function predict(rating) {
+    const s = JSON.parse(JSON.stringify(state));
+    const ns = processAnswer(s, rating, today);
+    if (ns.srs_stage === 'review') {
+      return `${ns.interval}天后（${addDays(today, ns.interval).slice(5).replace('-','/')}）`;
+    }
+    if (ns.due_ts) {
+      const m = Math.round((ns.due_ts - Date.now()) / 60000);
+      return m < 60 ? `${m}分钟后` : `${Math.round(m/60)}小时后`;
+    }
+    return '—';
+  }
+
+  // 调试：直接计算显示
+  const _dbgIv = state.interval, _dbgEf = state.ease_factor;
+  const _dbgGood = state.srs_stage==='review'
+    ? Math.min(SRS_CONFIG.maximum_interval, Math.max(1, Math.ceil(_dbgIv * _dbgEf * SRS_CONFIG.interval_modifier)))
+    : null;
+  const _dbgHard = state.srs_stage==='review'
+    ? Math.min(SRS_CONFIG.maximum_interval, Math.max(1, Math.ceil(_dbgIv * SRS_CONFIG.hard_interval * SRS_CONFIG.interval_modifier)))
+    : null;
+  const _dbgInfo = state.srs_stage==='review'
+    ? `iv=${_dbgIv} ef=${_dbgEf.toFixed(2)} im=${SRS_CONFIG.interval_modifier} → G=${_dbgGood} H=${_dbgHard}`
+    : '';
+
+  // 答题历史
+  const trials = await getTrialLogs(null, 7);
+  const hist   = trials.filter(t => t.card_id === cardId).slice(-8);
+  const RLBL   = { again:'重来', hard:'困难', good:'良好', easy:'容易' };
+  const RCLS   = { again:'tr-again', hard:'tr-hard', good:'tr-good', easy:'tr-easy' };
+
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:4px 0 12px">
+      ${card.img && card.img.length > 4
+        ? `<img src="${card.img}" style="width:48px;height:48px;object-fit:cover;border-radius:10px">`
+        : `<span style="font-size:36px">${card.img||'🃏'}</span>`}
+      <div>
+        <div style="font-size:20px;font-weight:800;color:var(--text)">${card.name||cardId}</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:2px">${STAGE_LBL[state.srs_stage]||state.srs_stage}${state.suspended?' · 已挂起':''}</div>
+      </div>
+    </div>
+
+    <div class="cdh">当前参数</div>
+    <div class="cd-param-row"><span class="cd-param-lbl">复习间隔</span><span class="cd-param-val">${state.srs_stage==='review'?state.interval+'天':'—'}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">易度因子</span><span class="cd-param-val" style="color:${state.ease_factor<=1.5?'#e07b00':'var(--text)'}">${state.ease_factor.toFixed(2)}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">连续失败</span><span class="cd-param-val" style="color:${state.lapses_streak>=SRS_CONFIG.daily_remove_lapses?'#e53e3e':state.lapses_streak>0?'#e07b00':'var(--text)'}">${state.lapses_streak}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">累计失败</span><span class="cd-param-val">${state.lapses_total}</span></div>
+
+    ${state.srs_stage==='review'?`
+    <div class="cdh">如果今天答题</div>
+    <div style="font-size:11px;color:var(--text3);padding:4px 0 8px;font-family:monospace">${_dbgInfo}</div>
+    <div class="cd-param-row"><span class="cd-param-lbl">良好</span><span class="cd-param-val">${predict('good')}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">困难</span><span class="cd-param-val">${predict('hard')}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">重来</span><span class="cd-param-val">${predict('again')}</span></div>
+    `:''}
+
+    ${state.suspended?`
+    <div class="cdh">挂起操作</div>
+    <div style="display:flex;gap:8px;padding:8px 0 4px">
+      <button onclick="unsuspendCard('${stateKey}','reset')" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--ocean);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">初始化为新卡</button>
+      <button onclick="unsuspendCard('${stateKey}','resume')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--bd2);background:var(--surf);color:var(--text2);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">忽略继续</button>
+    </div>`:''}
+
+    <div class="cdh">卡片操作</div>
+    <div style="display:flex;gap:8px;padding:8px 0 4px">
+      <button onclick="confirmResetCard('${stateKey}')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #f97316;background:transparent;color:#f97316;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">⟳ 初始化为新卡</button>
+    </div>
+    ${hist.length?`
+    <div class="cdh">答题历史（近7天）</div>
+    ${hist.reverse().map(t => {
+      const d = new Date(t.timestamp);
+      const ts = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const stageStr = STAGE_LBL[t.srs_stage_before] || t.srs_stage_before || '';
+      let resultStr = '';
+      if (t.rating === 'again')                           resultStr = '退回重学';
+      else if (t.srs_stage_before === 'review' && t.interval_before)
+                                                          resultStr = `→ 间隔 ${t.interval_before} 天`;
+      else                                                resultStr = '→ 推进';
+      return `<div class="cd-hist-row">
+        <span class="cd-hist-time">${ts}</span>
+        <span class="cd-hist-stage" style="font-size:11px">${stageStr}</span>
+        <span class="trial-rating ${RCLS[t.rating]||''}" style="width:32px;height:20px;border-radius:5px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${RLBL[t.rating]||t.rating}</span>
+        <span class="cd-hist-result">${resultStr}</span>
+      </div>`;
+    }).join('')}`:''}`;
+
+  overlay.classList.add('open');
+}
+
+function closeCardDetail(e) {
+  if (e && e.target !== document.getElementById('card-detail-overlay')) return;
+  document.getElementById('card-detail-overlay').classList.remove('open');
+}
+
+async function confirmResetCard(stateKey) {
+  const parts = stateKey.split('::');
+  const state = await getCardState(parts[0], parts[1]);
+  if (!state) return;
+  const cards = DECKS[parts[0]] || [];
+  const card  = cards.find(c => c.id === parts[1]);
+  const name  = card ? card.name : parts[1];
+  const ok = await showConfirmDialog(`将「${name}」初始化为新卡？\n\nSRS 进度、间隔、易度因子、失败次数全部清零。`);
+  if (!ok) return;
+  await unsuspendCard(stateKey, 'reset');
+}
+
+async function unsuspendCard(stateKey, action) {
+  const parts   = stateKey.split('::');
+  const deckKey = parts[0], cardId = parts[1];
+  const state   = await getCardState(deckKey, cardId);
+  if (!state) return;
+
+  if (action === 'reset') {
+    // 用 newCardState 重建完整初始状态，不留任何历史字段
+    const fresh = newCardState(deckKey, cardId);
+    await saveCardState(fresh);
+  } else {
+    // 仅解除挂起，保留所有 SRS 进度
+    state.suspended        = false;
+    state.suspended_reason = '';
+    await saveCardState(state);
+  }
+
+  document.getElementById('card-detail-overlay').classList.remove('open');
+  renderStatsCards();
+}
+
+// ── SRS 设置 Tab ─────────────────────────────────────────────
+function onSrsSlider(key, rawVal, el, suffix, decimals, displayTransform) {
+  const numVal = parseFloat(rawVal);
+  saveSrsConfigKey(key, numVal);
+  const dispVal = displayTransform ? displayTransform(numVal) : numVal;
+  const formatted = decimals !== undefined ? Number(dispVal).toFixed(decimals) : Math.round(dispVal);
+  document.getElementById(el.id + '-val').textContent = formatted + suffix;
+}
+
+// 学习/重学步长输入（逗号分隔的分钟数数组）
+function onSrsStepsInput(key, raw) {
+  // 解析每段：纯数字=分钟，支持 m/h/d（大小写不敏感）
+  // 例：1m 10m 1h 1d → [1, 10, 60, 1440]
+  const nums = raw.split(',').map(s => {
+    const t = s.trim().toLowerCase();
+    if (!t) return NaN;
+    const match = t.match(/^([\d.]+)\s*([mhd]?)$/);
+    if (!match) return NaN;
+    const n = parseFloat(match[1]);
+    const unit = match[2] || 'm';
+    if (unit === 'm') return n;
+    if (unit === 'h') return n * 60;
+    if (unit === 'd') return n * 1440;
+    return NaN;
+  }).filter(n => !isNaN(n) && n > 0);
+
+  if (!nums.length) return;
+  saveSrsConfigKey(key, nums);
+
+  // hint：把分钟数转回易读格式显示（小写单位）
+  const hintId = key === 'learning_steps' ? 'srs-learning-steps-hint' : 'srs-relearning-steps-hint';
+  const hintEl = document.getElementById(hintId);
+  if (hintEl) {
+    const labels = nums.map(n => {
+      if (n >= 1440 && n % 1440 === 0) return (n / 1440) + 'd';
+      if (n >= 60   && n % 60   === 0) return (n / 60)   + 'h';
+      return n + 'm';
+    });
+    hintEl.textContent = labels.join(' · ');
+  }
+}
+
+// Learn Ahead Limit 输入（m / h，存储为秒）
+function onSrsLearnAheadInput(raw) {
+  const t = raw.trim().toLowerCase();
+  const match = t.match(/^([\d.]+)\s*([mh]?)$/);
+  if (!match) return;
+  const n    = parseFloat(match[1]);
+  const unit = match[2] || 'm';
+  const secs = unit === 'h' ? n * 3600 : n * 60;
+  if (isNaN(secs) || secs <= 0) return;
+  saveSrsConfigKey('learn_ahead_limit', secs);
+  const hintEl = document.getElementById('srs-learn-ahead-hint');
+  if (hintEl) hintEl.textContent = secsToLabel(secs);
+}
+
+function secsToLabel(secs) {
+  if (secs >= 3600 && secs % 3600 === 0) return (secs / 3600) + 'h';
+  return Math.round(secs / 60) + 'm';
+}
+
+// AD 建议值 / Anki 默认值
+const SRS_PRESETS = {
+  ad: {
+    learning_steps       : [1, 5, 10, 30],
+    relearning_steps     : [10, 60, 180],
+    maximum_interval     : 7,
+    starting_ease        : 1.30,
+    interval_modifier    : 0.80,
+    hard_step_multiplier : 1.5,
+    new_cards_per_day    : 5,
+    maximum_reviews_per_day: 20,
+    daily_remove_lapses  : 3,
+    auto_suspend_lapses  : 8,
+    warn_duration_sec    : 1200,
+    learn_ahead_limit     : 1200,
+  },
+  default: {
+    learning_steps       : [1, 10],
+    relearning_steps     : [10],
+    maximum_interval     : 36500,
+    starting_ease        : 2.50,
+    interval_modifier    : 1.00,
+    hard_step_multiplier : 1.0,
+    new_cards_per_day    : 5,
+    maximum_reviews_per_day: 50,
+    daily_remove_lapses  : 3,
+    auto_suspend_lapses  : 8,
+    warn_duration_sec    : 1200,
+    learn_ahead_limit     : 1200,
+  },
+};
+
+function applySrsPreset(name) {
+  const p = SRS_PRESETS[name];
+  if (!p) return;
+  Object.entries(p).forEach(([k, v]) => saveSrsConfigKey(k, v));
+  syncSrsSettingsUI();
+  const label = name === 'ad' ? 'AD建议值' : 'Anki默认值';
+  showToastMsg(`✓ 已应用${label}`);
+}
+
+function syncSrsSettingsUI() {
+  const cfg = SRS_CONFIG;
+
+  // 步骤输入框（数组转逗号分隔字符串，单位智能选择）
+  function minsToLabel(n) {
+    if (n >= 1440 && n % 1440 === 0) return (n / 1440) + 'd';
+    if (n >= 60   && n % 60   === 0) return (n / 60)   + 'h';
+    return n + 'm';
+  }
+  const lsEl = document.getElementById('srs-learning-steps');
+  if (lsEl) {
+    lsEl.value = cfg.learning_steps.map(minsToLabel).join(', ');
+    const lh = document.getElementById('srs-learning-steps-hint');
+    if (lh) lh.textContent = cfg.learning_steps.map(minsToLabel).join(' · ');
+  }
+  const rlsEl = document.getElementById('srs-relearning-steps');
+  if (rlsEl) {
+    rlsEl.value = cfg.relearning_steps.map(minsToLabel).join(', ');
+    const rlh = document.getElementById('srs-relearning-steps-hint');
+    if (rlh) rlh.textContent = cfg.relearning_steps.map(minsToLabel).join(' · ');
+  }
+
+  const set = (id, val, suf, dec, transform) => {
+    const el  = document.getElementById(id);
+    const vel = document.getElementById(id + '-val');
+    if (!el || !vel) return;
+    const dv = transform ? transform(val) : val;
+    el.value = transform ? dv : val;
+    const fmt = dec !== undefined ? Number(dv).toFixed(dec) : Math.round(dv);
+    vel.textContent = fmt + (suf || '');
+  };
+  set('srs-graduating-interval',   cfg.graduating_interval,        '天');
+  set('srs-easy-interval',         cfg.easy_interval,              '天');
+  set('srs-new-per-day',           cfg.new_cards_per_day,          '张');
+  set('srs-max-reviews',           cfg.maximum_reviews_per_day,    '张');
+  set('srs-max-interval',          Math.min(cfg.maximum_interval, 30), '天');
+  set('srs-starting-ease',         cfg.starting_ease,              '',  1);
+  set('srs-interval-modifier',     cfg.interval_modifier,          '',  2);
+  set('srs-daily-remove',          cfg.daily_remove_lapses,        '次');
+  set('srs-auto-suspend',          cfg.auto_suspend_lapses,        '次');
+  set('srs-warn-duration',         cfg.warn_duration_sec,          '分', 0, v => v / 60);
+
+  // learn_ahead_limit（文本输入框）
+  const laEl = document.getElementById('srs-learn-ahead');
+  if (laEl) {
+    laEl.value = secsToLabel(cfg.learn_ahead_limit);
+    const laH = document.getElementById('srs-learn-ahead-hint');
+    if (laH) laH.textContent = secsToLabel(cfg.learn_ahead_limit);
+  }
+}
+
+// SRS Tab 打开时同步一次（通过修改 openSettings 调用链实现）
+function openSettingsWithSrs() {
+  document.getElementById('settings-overlay').classList.add('open');
+  populateVoiceList();
+  syncSrsSettingsUI();
+}
+
+// ── 首页第三列（今日完成）─────────────────────────────────────
+function renderDeckList() {
+  const grid = document.getElementById('deck-grid');
+  if (!DECKS_META.length) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">📂</div>
+      <div class="empty-state-title">还没有牌组</div>
+      <div class="empty-state-sub">点右上角 ↑ 导入 .yhspack 文件<br>开始练习</div>
+    </div>`;
+    currentDeck = null;
+    return;
+  }
+  if (!currentDeck || !DECKS_META.find(m => m.key === currentDeck)) {
+    currentDeck = DECKS_META[0].key;
+  }
+  grid.innerHTML = DECKS_META.map(m => {
+    const stats  = getDeckStats(m.key);
+    const dueVal  = stats.due;
+    const newVal  = stats.new;
+    const delBtn = m.builtin ? '' : `
+      <button class="deck-del-btn" onclick="deleteDeck(event,'${m.key}')" aria-label="删除">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+        </svg>
+      </button>`;
+    return `<div class="deck-card${m.key === currentDeck ? ' selected' : ''}" data-deck="${m.key}" onclick="selectDeck(this)">
+      <div class="deck-info"><div class="deck-name">${m.name}</div></div>
+      <div class="deck-stats">
+        <div class="deck-stat"><span class="deck-stat-num due"  data-deck="${m.key}">${dueVal}</span><span class="deck-stat-lbl">到期</span></div>
+        <div class="deck-stat"><span class="deck-stat-num new-c" data-deck="${m.key}">${newVal}</span><span class="deck-stat-lbl">新卡</span></div>
+      </div>
+      ${delBtn}
+    </div>`;
+  }).join('');
+}
+
+// updateDeckStats：刷新到期和新卡两列
+async function updateDeckStats() {
+  for (const m of DECKS_META) {
+    if (m.key === 'random') continue;
+    try {
+      const stats = await getDeckStatsSrs(m.key);
+      const dueEl = document.querySelector(`.deck-stat-num.due[data-deck="${m.key}"]`);
+      const newEl = document.querySelector(`.deck-stat-num.new-c[data-deck="${m.key}"]`);
+      if (dueEl) dueEl.textContent = stats.due > 0 ? String(stats.due) : '0';
+      if (newEl) newEl.textContent = stats.new > 0 ? String(stats.new) : '0';
+    } catch(e) { console.warn('updateDeckStats error', m.key, e); }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// 测试工具（发布前移除）
+// ════════════════════════════════════════════════════════════════
+
+// 重置牌组：清空选中牌组所有 CardState + 全部 TrialLog + DailyProgress
+async function confirmResetDeck() {
+  if (!currentDeck) { showToastMsg('请先选择一个牌组'); return; }
+  const meta = DECKS_META.find(m => m.key === currentDeck);
+  const name = meta ? meta.name : currentDeck;
+
+  // iOS PWA 下 confirm() 可能被屏蔽，用自制弹窗
+  const ok = await showConfirmDialog(`重置「${name}」？\n\n将清除所有 SRS 进度和练习记录，不可撤销。`);
+  if (!ok) return;
+
+  // 1. 等待任何正在飞行的 SRS 写入完成，避免竞争
+  try { await _lastSrsWrite; } catch(e) {}
+
+  const db = await openSrsDb();
+
+  // 2. 读取当前所有 CardState（确保拿到最新数据）
+  const states = await getAllCardStates(currentDeck);
+  const stateCount = states.length;
+
+  // 3. 逐条删除 CardState（每条单独 request，同一 transaction）
+  if (stateCount > 0) {
+    await new Promise((res, rej) => {
+      const tx = db.transaction(CS_STORE, 'readwrite');
+      const st = tx.objectStore(CS_STORE);
+      states.forEach(s => st.delete(s.state_key));
+      tx.oncomplete = res;
+      tx.onerror   = e => rej(e.target.error);
+      tx.onabort   = e => rej(new Error('transaction aborted'));
+    });
+  }
+
+  // 4. 清空全部 TrialLog
+  await new Promise((res, rej) => {
+    const tx = db.transaction(TRIAL_STORE, 'readwrite');
+    tx.objectStore(TRIAL_STORE).clear();
+    tx.oncomplete = res;
+    tx.onerror   = e => rej(e.target.error);
+  });
+
+  // 5. 清空 DailyProgress
+  localStorage.removeItem(LS_DAILY);
+
+  // 6. 重置内存状态
+  _lastSrsWrite    = Promise.resolve();
+  _sessionTotal    = 0;
+  _sessionCorrect  = 0;
+  _sessionWrong    = 0;
+  _dailyRemovedToday = {};
+  _statsAllStates  = [];
+
+  // 7. 验证：重新读取确认已清空
+  const remaining = await getAllCardStates(currentDeck);
+
+  renderDeckList();
+  updateDeckStats();
+
+  if (remaining.length === 0) {
+    showToastMsg(`✓ 已重置「${name}」：清空 ${stateCount} 张卡的 SRS 进度`);
+  } else {
+    showToastMsg(`⚠️ 重置不完整：仍剩 ${remaining.length} 条，请再试一次`);
+  }
+}
+
+// 模拟过了一天：所有 review 卡 due_date -1天，learning/relearning due_ts -24h
+async function advanceOneDay() {
+  if (!currentDeck) { alert('请先选择一个牌组'); return; }
+  const states = await getAllCardStates(currentDeck);
+  const db     = await openSrsDb();
+  const tx     = db.transaction(CS_STORE, 'readwrite');
+  const store  = tx.objectStore(CS_STORE);
+  const MS_PER_DAY = 86400 * 1000;
+
+  states.forEach(s => {
+    if (s.srs_stage === 'review' && s.due_date) {
+      s.due_date   = addDays(s.due_date, -1);
+      s.interval   = Math.max(1, (s.interval || 1) - 1);  // 同步缩短间隔，保持一致
+      s.updated_at = Date.now();
+      store.put(s);
+    }
+    if ((s.srs_stage === 'learning' || s.srs_stage === 'relearning') && s.due_ts) {
+      s.due_ts     = Math.max(0, s.due_ts - MS_PER_DAY);
+      s.updated_at = Date.now();
+      store.put(s);
+    }
+  });
+
+  await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = e => rej(e.target.error); });
+
+  // DailyProgress 重置（模拟新的一天）
+  localStorage.removeItem(LS_DAILY);
+  _dailyRemovedToday = {};
+  _statsAllStates = [];
+
+  renderDeckList();
+  updateDeckStats();
+  showToastMsg('⏭ 已模拟推进1天');
+}
+
+// ── 自制确认弹窗（替代 iOS PWA 被屏蔽的 confirm）─────────────
+function showConfirmDialog(msg) {
+  return new Promise(resolve => {
+    const mask = document.createElement('div');
+    mask.className = 'yh-dialog-mask';
+    mask.innerHTML = `
+      <div class="yh-dialog">
+        <div class="yh-dialog-msg">${msg.replace(/</g,'&lt;')}</div>
+        <div class="yh-dialog-btns">
+          <button class="yh-dialog-btn cancel" id="yh-dlg-no">取消</button>
+          <button class="yh-dialog-btn confirm" id="yh-dlg-yes">确认</button>
+        </div>
+      </div>`;
+    document.body.appendChild(mask);
+    const close = ok => { mask.remove(); resolve(ok); };
+    mask.querySelector('#yh-dlg-yes').onclick = () => close(true);
+    mask.querySelector('#yh-dlg-no').onclick  = () => close(false);
+    mask.onclick = e => { if (e.target === mask) close(false); };
+  });
+}
+
+// ── Toast 通用工具 ─────────────────────────────────────────────
+function showToastMsg(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
+    transform:translateX(-50%);background:var(--text);color:var(--bg);
+    padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
+    z-index:9999;white-space:nowrap;animation:toastIn .3s ease`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// Service Worker 暂未启用（GitHub Pages App-Bound Domain 限制）
+// 待绑定独立域名后恢复
+
+// 禁止长按右键菜单
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+</script>
+</body>
+</html>

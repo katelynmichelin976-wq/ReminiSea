@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="牌组管理">
+<meta name="theme-color" content="#7A5C3E">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>忆海拾光 · 牌组管理</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<style>
+:root{
+  --cream:#FAF7F2;--warm:#F0EBE1;--border:#DDD5C8;--text:#2C2416;--muted:#8A7F72;
+  --accent:#7A5C3E;--accent-l:#C4A882;--accent-bg:#F5EFE8;
+  --green:#4A7C59;--green-l:#EAF3EE;
+  --red:#9B3A2A;--red-l:#FAEAE7;
+  --blue:#2D5F8A;--blue-l:#E8F1F8;
+  --orange:#C26E2A;--orange-l:#FCF3E8;
+  --sh:0 1px 4px rgba(44,36,22,.07),0 4px 16px rgba(44,36,22,.06);
+  --sh-lg:0 12px 32px rgba(44,36,22,.12);
+  --radius:14px;
+  --fs:15px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+button:active:not(:disabled){transform:scale(0.96);opacity:.85}
+body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
+
+/* header */
+.app-header{background:var(--accent);color:#FAF7F2;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.hd-left{display:flex;align-items:center;gap:8px;}
+.app-header-title{font-size:18px;font-weight:700;letter-spacing:.5px}
+.hd-right{font-size:11px;opacity:.7;text-align:right;line-height:1.4}
+
+/* step bar */
+.steps{display:flex;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.step{flex:1;padding:10px 4px;text-align:center;font-size:10px;color:var(--muted);cursor:pointer;position:relative;border-left:1px solid var(--border);}
+.step:first-child{border-left:none;}
+.step.active{color:var(--accent);font-weight:600}
+.step.active::after{content:'';position:absolute;bottom:0;left:15%;right:15%;height:2px;background:var(--accent);border-radius:2px}
+.step.done{color:var(--green)}
+.step .sn{display:block;font-size:16px;font-weight:800;margin-bottom:2px;line-height:1}
+
+/* main */
+.main{max-width:640px;margin:0 auto;padding:20px 16px 120px}
+.panel{display:none}.panel.active{display:block;animation:slideUp .35s cubic-bezier(.16,1,.3,1)}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* common */
+.f-label{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:5px}
+.f-input{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:var(--fs);font-family:inherit;background:var(--cream);color:var(--text);width:100%;transition:.15s}
+.f-input:focus{outline:none;border-color:var(--accent);background:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-size:14px;cursor:pointer;font-family:inherit;transition:.15s;text-decoration:none}
+.btn:hover{background:var(--warm)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{opacity:.9}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.btn.sm{padding:5px 10px;font-size:11px;gap:3px}
+.chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:var(--warm);color:var(--muted)}
+.chip.green{background:var(--green-l);color:var(--green)}
+.chip.blue{background:var(--blue-l);color:var(--blue)}
+.chip.red{background:var(--red-l);color:var(--red)}
+.chip.orange{background:var(--orange-l);color:var(--orange)}
+
+/* cards */
+.card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--sh)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.card-title{font-size:15px;font-weight:600}
+.card-meta{font-size:11px;color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spacer{flex:1}
+
+/* toast */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;opacity:0;pointer-events:none;transition:opacity .25s;max-width:90vw;text-align:center}
+.toast.show{opacity:1;pointer-events:auto}
+.toast.err{background:var(--red)}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal-box{background:#fff;border-radius:var(--radius);padding:24px;max-width:400px;width:calc(100% - 32px);box-shadow:var(--sh-lg)}
+.modal-box h3{font-size:17px;margin-bottom:8px}
+.modal-box p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px}
+
+/* progress */
+.progress-bar{height:4px;background:var(--warm);border-radius:2px;overflow:hidden;margin:8px 0}
+.progress-bar.fill{height:100%;background:var(--accent);transition:width .3s;border-radius:2px}
+
+/* table */
+.tbl{border-collapse:collapse;width:100%;font-size:12px}
+.tbl th{text-align:left;padding:8px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.tbl td{padding:8px 6px;border-bottom:1px solid var(--border)}
+.tbl tr:hover td{background:var(--accent-bg)}
+.tbl .cb{width:28px;text-align:center}
+
+/* upload zone */
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:32px 16px;text-align:center;cursor:pointer;transition:.15s;background:var(--warm);position:relative}
+.upload-zone:hover{border-color:var(--accent);background:var(--accent-bg)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-zone .up-ico{font-size:36px;display:block;margin-bottom:8px}
+.upload-zone .up-text{font-size:14px;color:var(--text);font-weight:500}
+.upload-zone .up-hint{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* diff table */
+.diff-row{padding:6px 0;display:flex;align-items:center;gap:8px;font-size:12px}
+.diff-row .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.diff-row .dot.new{background:var(--green)}
+.diff-row .dot.conflict{background:var(--orange)}
+.diff-row .dot.same{background:var(--muted)}
+
+/* preview card */
+.pv-card{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;background:var(--cream);margin:4px 0}
+.pv-card .thumb{width:40px;height:40px;border-radius:6px;object-fit:cover;background:var(--warm);flex-shrink:0}
+.pv-card .thumb.placeholder{display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--muted)}
+.pv-card .pv-info{flex:1;min-width:0}
+.pv-card .pv-name{font-size:13px;font-weight:500}
+.pv-card .pv-meta{font-size:10px;color:var(--muted)}
+
+/* organize panel */
+.org-layout{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.org-layout{grid-template-columns:1fr}}
+.org-col{border:1.5px solid var(--border);border-radius:var(--radius);background:#fff;overflow:hidden}
+.org-col-hd{background:var(--warm);padding:10px 12px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.org-col-body{max-height:480px;overflow-y:auto;padding:8px}
+.org-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:12px;transition:.1s;margin:2px 0}
+.org-item:hover{background:var(--accent-bg)}
+.org-item.sel{background:var(--accent-bg);outline:2px solid var(--accent);outline-offset:-2px}
+.org-item .oi-ico{width:28px;height:28px;border-radius:5px;object-fit:cover;background:var(--warm);flex-shrink:0}
+.org-item .oi-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.org-add-btn{display:block;width:100%;padding:8px;background:var(--accent-bg);border:1px dashed var(--accent);border-radius:8px;text-align:center;font-size:12px;color:var(--accent);cursor:pointer;margin-top:8px;font-family:inherit}
+
+/* filter bar */
+.filter-bar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.filter-bar .f-input{width:auto;min-width:140px;font-size:12px;padding:6px 10px}
+
+/* card detail overlay */
+.detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:150;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.detail-overlay.show{opacity:1;pointer-events:auto}
+.detail-card{background:#fff;border-radius:var(--radius) var(--radius) 0 0;padding:20px;max-width:500px;width:100%;max-height:70vh;overflow-y:auto;box-shadow:var(--sh-lg)}
+.detail-card .dc-img{width:100%;max-height:240px;object-fit:contain;border-radius:8px;background:var(--warm);margin-bottom:12px}
+.detail-card audio{width:100%;margin-bottom:8px}
+
+/* empty state */
+.empty{text-align:center;padding:32px 16px;color:var(--muted)}
+.empty .emp-ico{font-size:40px;display:block;margin-bottom:10px}
+
+/* bottom bar */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:12px 16px 20px;display:flex;gap:10px;justify-content:center;z-index:50;box-shadow:0 -2px 12px rgba(0,0,0,.04)}
+.bottom-bar .btn{min-width:80px}
+
+/* merge dialog */
+.merge-options{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.merge-opt{border:1.5px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:.15s}
+.merge-opt.sel{border-color:var(--accent);background:var(--accent-bg)}
+.merge-opt .mo-title{font-size:14px;font-weight:600;margin-bottom:3px}
+.merge-opt .mo-desc{font-size:11px;color:var(--muted);line-height:1.4}
+</style>
+</head>
+<body>
+
+<!-- header -->
+<div class="app-header">
+  <div class="hd-left">
+    <span style="font-size:22px">🃏</span>
+    <div>
+      <div class="app-header-title">忆海拾光 · 牌组管理</div>
+    </div>
+  </div>
+  <div class="hd-right" id="hd-status">未连接</div>
+</div>
+
+<!-- step bar -->
+<div class="steps">
+  <div class="step active" data-step="0" onclick="goStep(0)"><span class="sn">①</span>登录</div>
+  <div class="step" data-step="1" onclick="goStep(1)"><span class="sn">②</span>上传</div>
+  <div class="step" data-step="2" onclick="goStep(2)"><span class="sn">③</span>整理</div>
+  <div class="step" data-step="3" onclick="goStep(3)"><span class="sn">④</span>导出</div>
+</div>
+
+<!-- main -->
+<div class="main">
+
+  <!-- PANEL 0: login -->
+  <div class="panel active" id="pnl-0">
+    <div style="text-align:center;padding:40px 0">
+      <div id="login-icon" style="font-size:48px;margin-bottom:16px">☁️</div>
+      <h2 style="font-size:18px;margin-bottom:8px" id="login-title">连接服务器</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px" id="login-desc">正在自动登录...</p>
+      <div id="login-spinner" style="width:36px;height:36px;border:3px solid var(--warm);border-top-color:var(--accent);border-radius:50%;margin:0 auto;animation:spin .8s linear infinite"></div>
+      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+      <div id="login-error" style="display:none;margin-top:16px">
+        <p style="color:var(--red);font-size:13px;margin-bottom:12px">登录失败，请检查网络后重试</p>
+        <button class="btn primary" onclick="doLogin()">重新连接</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 1: upload -->
+  <div class="panel" id="pnl-1">
+    <h3 style="font-size:16px;margin-bottom:16px">上传 .yhspack 到卡池</h3>
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" accept=".yhspack" onchange="onFilePicked(this.files[0])" id="up-file">
+      <span class="up-ico">📦</span>
+      <span class="up-text">点击选择 .yhspack 文件</span>
+      <span class="up-hint">制卡工具导出的牌组包</span>
+    </div>
+    <div id="upload-preview" style="display:none;margin-top:16px"></div>
+  </div>
+
+  <!-- PANEL 2: organize -->
+  <div class="panel" id="pnl-2">
+    <h3 style="font-size:16px;margin-bottom:4px">整理卡池 → 创建牌组</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">将卡池中的卡片组织到不同牌组中</p>
+
+    <div class="filter-bar">
+      <input class="f-input" placeholder="🔍 搜索卡片..." id="org-search" oninput="renderOrgPanel()">
+      <select class="f-input" id="org-filter" onchange="renderOrgPanel()" style="font-size:12px;padding:6px 8px">
+        <option value="">全部来源</option>
+      </select>
+    </div>
+
+    <div class="org-layout">
+      <div class="org-col" id="org-pool-col">
+        <div class="org-col-hd">卡池 <span style="font-weight:400;color:var(--muted);font-size:11px" id="org-pool-count">0张</span></div>
+        <div class="org-col-body" id="org-pool-list"><div class="empty"><span class="emp-ico">📭</span>暂无卡片</div></div>
+        <button class="org-add-btn" onclick="batchAddToDeck()">→ 添加到选中牌组</button>
+      </div>
+      <div class="org-col" id="org-deck-col">
+        <div class="org-col-hd">
+          牌组
+          <button class="btn sm primary" onclick="showCreateDeckDialog()">+ 新建</button>
+        </div>
+        <div class="org-col-body" id="org-deck-list"><div class="empty"><span class="emp-ico">📋</span>暂无牌组</div></div>
+      </div>
+    </div>
+
+    <!-- deck edit view (hidden by default) -->
+    <div id="deck-edit-view" style="display:none;margin-top:12px"></div>
+  </div>
+
+  <!-- PANEL 3: export -->
+  <div class="panel" id="pnl-3">
+    <h3 style="font-size:16px;margin-bottom:16px">导出 .yhspack</h3>
+    <div id="export-list"></div>
+    <div id="export-actions" style="display:none;margin-top:16px">
+      <button class="btn primary" onclick="doExport()" id="btn-export">📦 导出选中牌组</button>
+      <p style="font-size:11px;color:var(--muted);margin-top:6px" id="export-hint"></p>
+    </div>
+  </div>
+
+</div>
+
+<!-- bottom bar -->
+<div class="bottom-bar" id="bottom-bar">
+  <button class="btn" onclick="prevStep()" id="btn-prev" disabled>← 上一步</button>
+  <button class="btn primary" onclick="nextStep()" id="btn-next" disabled>下一步 →</button>
+</div>
+
+<!-- toast -->
+<div class="toast" id="toast"></div>
+
+<!-- modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<!-- card detail overlay -->
+<div class="detail-overlay" id="detail-overlay">
+  <div class="detail-card" id="detail-card"></div>
+</div>
+
+<!-- JSZip CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+// ═══════════════════════════════════════════
+// 配置
+// ═══════════════════════════════════════════
+const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
+const AUTH_EMAIL = 'zyhacl@gmail.com';
+const AUTH_PASSWORD = '667788';
+const STORAGE_BUCKET = 'ReminiSea';
+
+// ═══════════════════════════════════════════
+// 全局状态
+// ═══════════════════════════════════════════
+let _sb = null;           // Supabase client
+let currentStep = 0;
+let currentParsed = null; // 当前解析的 .yhspack 数据
+let currentFile = null;   // 当前选中的文件
+let poolCards = [];       // 卡池缓存
+let serverDecks = [];     // 服务端牌组缓存
+let deckCardsMap = {};    // { deckId: [cardIds] } 缓存
+let selPoolCards = {};    // 选中的卡池卡片 { cardId: true }
+let selDeckId = null;     // 当前选中的牌组
+let mergeStrategy = 'keep_both'; // 合并策略
+let exportSelected = {};  // 导出勾选 { deckId: true }
+
+// ═══════════════════════════════════════════
+// 工具函数
+// ═══════════════════════════════════════════
+function simpleHash(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = Math.imul(31, h) + s.charCodeAt(i) | 0; }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+function $(id) { return document.getElementById(id); }
+function qs(sel) { return document.querySelector(sel); }
+
+function showToast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  clearTimeout(t._t); t._t = setTimeout(() => { t.className = 'toast'; }, 2500);
+}
+
+function showModal(title, body, actions) {
+  const mb = $('modal-box');
+  mb.innerHTML = '<h3>' + title + '</h3><div>' + body + '</div><div class="modal-actions">' +
+    actions.map((a, i) => '<button class="btn' + (a.primary ? ' primary' : '') + (a.danger ? ' danger' : '') +
+      '" data-mai="' + i + '">' + a.label + '</button>').join('') + '</div>';
+  $('modal-overlay').classList.add('show');
+  mb.querySelectorAll('[data-mai]').forEach(b => {
+    b.onclick = () => { closeModal(); const a = actions[+b.dataset.mai]; if (a.fn) a.fn(); };
+  });
+}
+
+function closeModal() { $('modal-overlay').classList.remove('show'); }
+
+// ═══════════════════════════════════════════
+// 步骤导航
+// ═══════════════════════════════════════════
+
+function goStep(n) {
+  if (!_sb && n > 0) { showToast('请先登录', true); return; }
+  currentStep = n;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  $('pnl-' + n).classList.add('active');
+  document.querySelectorAll('.step').forEach(s => { s.classList.remove('active'); if (+s.dataset.step === n) s.classList.add('active'); });
+  $('btn-prev').disabled = n === 0;
+  $('btn-next').disabled = n === 3;
+  updateStatus();
+  if (n === 2) refreshOrgPanel();
+  if (n === 3) refreshExportPanel();
+}
+
+function prevStep() { if (currentStep > 0) goStep(currentStep - 1); }
+function nextStep() { if (currentStep < 3) goStep(currentStep + 1); }
+
+function updateStatus() {
+  const st = $('hd-status');
+  if (!_sb) { st.textContent = '未连接'; return; }
+  st.innerHTML = '已连接<br>卡池 ' + poolCards.length + ' 张 · 牌组 ' + serverDecks.length + ' 组';
+}
+
+// ═══════════════════════════════════════════
+// Supabase Auth
+// ═══════════════════════════════════════════
+
+async function doLogin() {
+  $('login-spinner').style.display = 'block';
+  $('login-error').style.display = 'none';
+  $('login-title').textContent = '正在连接...';
+  $('login-desc').textContent = '验证身份中';
+
+  try {
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await _sb.auth.signInWithPassword({ email: AUTH_EMAIL, password: AUTH_PASSWORD });
+    if (error) throw error;
+
+    $('login-icon').textContent = '✅';
+    $('login-title').textContent = '已连接';
+    $('login-desc').textContent = data.user.email;
+    $('login-spinner').style.display = 'none';
+    $('btn-next').disabled = false;
+
+    // 预加载数据
+    await Promise.all([loadPoolCards(), loadServerDecks()]);
+    updateStatus();
+    showToast('已连接 · 卡池 ' + poolCards.length + ' 张 · 牌组 ' + serverDecks.length + ' 组');
+
+  } catch(e) {
+    $('login-spinner').style.display = 'none';
+    $('login-error').style.display = 'block';
+    $('login-icon').textContent = '❌';
+    $('login-title').textContent = '连接失败';
+    $('login-desc').textContent = e.message || '未知错误';
+    console.error('Login error:', e);
+  }
+}
+
+// ═══════════════════════════════════════════
+// 数据加载
+// ═══════════════════════════════════════════
+
+async function loadPoolCards() {
+  const { data, error } = await _sb.from('cards_pool').select('*').order('created_at', { ascending: false });
+  if (!error) poolCards = data;
+}
+
+async function loadServerDecks() {
+  const { data, error } = await _sb.from('server_decks').select('*').order('name');
+  if (!error) serverDecks = data;
+}
+
+async function loadDeckCards(deckId) {
+  const { data, error } = await _sb.from('server_deck_cards').select('*').eq('deck_id', deckId).order('sort_order');
+  if (!error) deckCardsMap[deckId] = data;
+  return deckCardsMap[deckId] || [];
+}
+
+// ═══════════════════════════════════════════
+// PANEL 1: 上传 + 合并
+// ═══════════════════════════════════════════
+
+async function onFilePicked(file) {
+  if (!file) return;
+  currentFile = file;
+  try {
+    // 解压 .yhspack
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const jsonFile = zip.file('deck.json');
+    if (!jsonFile) { showToast('无效的 .yhspack：缺少 deck.json', true); return; }
+
+    const deckData = JSON.parse(await jsonFile.async('string'));
+    const deck = deckData.deck;
+    if (!deck || !deck.cards) { showToast('deck.json 格式错误', true); return; }
+
+    const cardData = [];
+    for (const c of deck.cards) {
+      let imgBlob = null, audBlob = null;
+      if (c.image) {
+        const f = zip.file(c.image);
+        if (f) imgBlob = await f.async('blob');
+      }
+      if (c.audio) {
+        const f = zip.file(c.audio);
+        if (f) audBlob = await f.async('blob');
+      }
+      cardData.push({
+        card_id: c.id || simpleHash(deck.name + '::' + c.name),
+        card_name: c.name,
+        imgBlob: imgBlob,
+        audBlob: audBlob,
+        hasImg: !!imgBlob,
+        hasAud: !!audBlob
+      });
+    }
+
+    currentParsed = { deck: deck, cards: cardData, fileName: file.name };
+
+    // 检查同名牌组
+    const { data: existing } = await _sb.from('cards_pool').select('card_id,card_name,image_url,audio_url').eq('deck_name', deck.name);
+
+    const hasConflict = existing && existing.length > 0;
+    const existingMap = {};
+    if (hasConflict) existing.forEach(c => { existingMap[c.card_id] = c; });
+
+    // 渲染预览
+    let html = '<div class="card"><div class="card-header"><span class="card-title">📋 ' + esc(deck.name) + '</span><span class="card-meta">' + cardData.length + ' 张卡 · ' + esc(file.name) + '</span></div>';
+
+    if (hasConflict) {
+      const newOnly = cardData.filter(c => !existingMap[c.card_id]).length;
+      const conflict = cardData.filter(c => existingMap[c.card_id]).length;
+      html += '<div style="margin:12px 0;padding:12px;background:var(--orange-l);border-radius:8px;font-size:12px">';
+      html += '⚠️ 服务器已存在同名卡组「<b>' + esc(deck.name) + '</b>」（已有 ' + existing.length + ' 张卡）<br>';
+      html += '本次上传：' + cardData.length + ' 张（新增 ' + newOnly + ' 张，冲突 ' + conflict + ' 张）';
+      html += '</div>';
+
+      html += '<div class="f-label">合并策略</div><div class="merge-options">';
+      const opts = [
+        ['keep_both', '保留两者', '同名卡片均保留，后续手动去重（推荐）'],
+        ['local_first', '本地优先', '用上传的卡片覆盖服务器同名卡'],
+        ['server_first', '服务器优先', '保留服务器同名卡，只追加新卡']
+      ];
+      opts.forEach(o => {
+        html += '<div class="merge-opt' + (mergeStrategy === o[0] ? ' sel' : '') + '" onclick="setMerge(\'' + o[0] + '\',this)"><div class="mo-title">' + o[1] + '</div><div class="mo-desc">' + o[2] + '</div></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="padding:8px;background:var(--green-l);border-radius:8px;font-size:12px;margin:8px 0">✅ 新牌组，无冲突</div>';
+    }
+
+    // 卡片预览表
+    html += '<table class="tbl" style="margin-top:10px"><thead><tr><th>#</th><th>卡名</th><th>图片</th><th>录音</th><th>' + (hasConflict ? '状态' : '') + '</th></tr></thead><tbody>';
+    cardData.forEach((c, i) => {
+      const exists = existingMap[c.card_id];
+      let status = '';
+      if (hasConflict) {
+        if (exists) {
+          status = exists.image_url ? '🟡同名' : '🔴缺图';
+        } else {
+          status = '🟢新增';
+        }
+      }
+      html += '<tr><td>' + (i + 1) + '</td><td>' + esc(c.card_name) + '</td><td>' + (c.hasImg ? '✅' : '❌') + '</td><td>' + (c.hasAud ? '✅' : '❌') + '</td>' + (hasConflict ? '<td style="font-size:11px">' + status + '</td>' : '') + '</tr>';
+    });
+    html += '</tbody></table>';
+
+    html += '<div style="margin-top:14px;display:flex;gap:8px"><button class="btn primary" onclick="doUpload()">📤 上传到服务器</button></div>';
+    html += '</div>';
+
+    $('upload-preview').innerHTML = html;
+    $('upload-preview').style.display = 'block';
+
+  } catch(e) {
+    showToast('解析失败：' + e.message, true);
+    console.error(e);
+  }
+}
+
+function setMerge(s, el) {
+  mergeStrategy = s;
+  el.parentElement.querySelectorAll('.merge-opt').forEach(m => m.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+async function doUpload() {
+  if (!currentParsed) return;
+  const { deck, cards, fileName } = currentParsed;
+  const btnEl = document.activeElement;
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '上传中...'; }
+
+  try {
+    let added = 0, skipped = 0;
+
+    for (const card of cards) {
+      // 检查是否已存在
+      const { data: existing } = await _sb.from('cards_pool').select('id').eq('card_id', card.card_id).eq('deck_name', deck.name).maybeSingle();
+
+      if (existing && mergeStrategy === 'server_first') { skipped++; continue; }
+
+      // 上传媒体文件到 Storage
+      let image_url = null, audio_url = null;
+      // 用 deck.id（纯ASCII）作为Storage路径，避免中文字符编码问题
+      const folderPath = deck.id || 'deck_' + Date.now();
+      if (card.imgBlob) {
+        const imgExt = card.imgBlob.type.includes('png') ? '.png' : '.jpg';
+        const imgPath = folderPath + '/' + card.card_id + (mergeStrategy === 'keep_both' && existing ? '_' + Date.now() : '') + imgExt;
+        const { error: e } = await _sb.storage.from(STORAGE_BUCKET).upload(imgPath, card.imgBlob, { upsert: mergeStrategy === 'local_first' });
+        if (e) { console.warn('Image upload failed:', imgPath, e.message); showToast('图片上传失败: ' + card.card_name + ' - ' + e.message, true); }
+        else image_url = imgPath;
+      }
+      if (card.audBlob) {
+        const audExt = card.audBlob.type.includes('mp4') || card.audBlob.type.includes('m4a') ? '.m4a' : card.audBlob.type.includes('webm') ? '.webm' : '.m4a';
+        const audPath = folderPath + '/' + card.card_id + (mergeStrategy === 'keep_both' && existing ? '_' + Date.now() : '') + audExt;
+        const { error: e } = await _sb.storage.from(STORAGE_BUCKET).upload(audPath, card.audBlob, { upsert: mergeStrategy === 'local_first' });
+        if (e) { console.warn('Audio upload failed:', audPath, e.message); }
+        else audio_url = audPath;
+      }
+
+      if (existing && mergeStrategy === 'local_first') {
+        // 更新现有记录
+        await _sb.from('cards_pool').update({
+          card_name: card.card_name,
+          image_url: image_url || existing.image_url,
+          audio_url: audio_url || existing.audio_url,
+          source_file: fileName,
+          updated_at: new Date().toISOString()
+        }).eq('id', existing.id);
+        added++;
+      } else if (mergeStrategy === 'keep_both') {
+        // 插入新行（允许重复 card_id）
+        await _sb.from('cards_pool').insert({
+          card_id: card.card_id,
+          card_name: card.card_name,
+          deck_name: deck.name,
+          source_file: fileName,
+          image_url: image_url,
+          audio_url: audio_url
+        });
+        added++;
+      } else if (!existing) {
+        // 新卡，直接插入
+        await _sb.from('cards_pool').insert({
+          card_id: card.card_id,
+          card_name: card.card_name,
+          deck_name: deck.name,
+          source_file: fileName,
+          image_url: image_url,
+          audio_url: audio_url
+        });
+        added++;
+      }
+    }
+
+    // 记录上传日志
+    await _sb.from('upload_log').insert({
+      source_file: fileName,
+      deck_name: deck.name,
+      card_count: cards.length,
+      merge_rule: mergeStrategy,
+      cards_added: added,
+      cards_skipped: skipped
+    });
+
+    await loadPoolCards();
+    updateStatus();
+    showToast('上传完成：新增 ' + added + ' 张' + (skipped > 0 ? '，跳过 ' + skipped + ' 张' : ''));
+
+    // 清理预览
+    $('upload-preview').style.display = 'none';
+    $('up-file').value = '';
+    currentParsed = null;
+    currentFile = null;
+
+  } catch(e) {
+    showToast('上传失败：' + e.message, true);
+    console.error(e);
+  } finally {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '📤 上传到服务器'; }
+  }
+}
+
+// ═══════════════════════════════════════════
+// PANEL 2: 整理面板
+// ═══════════════════════════════════════════
+
+async function refreshOrgPanel() {
+  await Promise.all([loadPoolCards(), loadServerDecks()]);
+  // 更新来源筛选
+  const sources = [...new Set(poolCards.map(c => c.deck_name))];
+  const sel = $('org-filter');
+  const curVal = sel.value;
+  sel.innerHTML = '<option value="">全部来源</option>' + sources.map(s => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('');
+  sel.value = curVal;
+
+  // 更新卡池计数
+  $('org-pool-count').textContent = poolCards.length + '张';
+
+  selPoolCards = {};
+  selDeckId = null;
+  renderOrgPanel();
+}
+
+function renderOrgPanel() {
+  renderPoolList();
+  renderDeckList();
+}
+
+function renderPoolList() {
+  const search = ($('org-search').value || '').toLowerCase();
+  const filter = $('org-filter').value;
+
+  let filtered = poolCards;
+  if (filter) filtered = filtered.filter(c => c.deck_name === filter);
+  if (search) filtered = filtered.filter(c => c.card_name.toLowerCase().includes(search) || c.card_id.toLowerCase().includes(search));
+
+  if (filtered.length === 0) {
+    $('org-pool-list').innerHTML = '<div class="empty"><span class="emp-ico">📭</span>无匹配卡片</div>';
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(c => {
+    const isSel = selPoolCards[c.card_id];
+    html += '<div class="org-item' + (isSel ? ' sel' : '') + '" onclick="togglePoolCard(\'' + c.card_id + '\', this)">';
+    html += '<span style="width:20px;text-align:center;font-size:11px;color:' + (isSel ? 'var(--accent)' : 'var(--muted)') + '">' + (isSel ? '✓' : '○') + '</span>';
+    html += '<span class="oi-name" style="font-size:13px">' + esc(c.card_name) + '</span>';
+    html += '<span class="chip" style="font-size:9px">' + esc(c.deck_name) + '</span>';
+    html += '</div>';
+  });
+  $('org-pool-list').innerHTML = html;
+}
+
+function togglePoolCard(cardId, el) {
+  if (selPoolCards[cardId]) { delete selPoolCards[cardId]; }
+  else { selPoolCards[cardId] = true; }
+  renderPoolList();
+}
+
+async function renderDeckList() {
+  if (serverDecks.length === 0) {
+    $('org-deck-list').innerHTML = '<div class="empty"><span class="emp-ico">📋</span>暂无牌组<br><small>点击「+ 新建」创建</small></div>';
+    return;
+  }
+
+  let html = '';
+  for (const d of serverDecks) {
+    const isSel = selDeckId === d.id;
+    html += '<div class="org-item' + (isSel ? ' sel' : '') + '" onclick="selectDeck(\'' + d.id + '\')" style="font-weight:' + (isSel ? '600' : '400') + '">';
+    html += '<span style="font-size:15px;width:20px;text-align:center">' + (isSel ? '📂' : '📁') + '</span>';
+    html += '<span class="oi-name" style="font-size:13px">' + esc(d.name) + '</span>';
+    html += '<span class="chip green" style="font-size:9px">' + (d.card_count || 0) + '张</span>';
+    html += '</div>';
+  }
+  $('org-deck-list').innerHTML = html;
+}
+
+function selectDeck(deckId) {
+  selDeckId = deckId;
+  selPoolCards = {};
+  renderOrgPanel();
+}
+
+async function showCreateDeckDialog() {
+  showModal('新建牌组',
+    '<label class="f-label">牌组名称</label><input class="f-input" id="new-deck-name" placeholder="例如：水果">',
+    [{
+      label: '取消', fn: () => {}
+    }, {
+      label: '创建', primary: true, fn: async () => {
+        const name = $('new-deck-name').value.trim();
+        if (!name) { showToast('请输入名称', true); return; }
+        const id = simpleHash(name);
+        const { error } = await _sb.from('server_decks').insert({ id: id, name: name });
+        if (error) { showToast('创建失败：' + error.message, true); return; }
+        await loadServerDecks();
+        selDeckId = id;
+        renderOrgPanel();
+        showToast('已创建牌组「' + name + '」');
+      }
+    }]
+  );
+}
+
+async function batchAddToDeck() {
+  const cardIds = Object.keys(selPoolCards);
+  if (!cardIds.length) { showToast('请先在卡池中选择卡片', true); return; }
+  if (!selDeckId) { showToast('请先在右侧选择目标牌组', true); return; }
+
+  const deck = serverDecks.find(d => d.id === selDeckId);
+  showModal('添加到牌组',
+    '<p>将 <b>' + cardIds.length + '</b> 张卡片添加到 <b>' + esc(deck.name) + '</b>？</p>',
+    [{
+      label: '取消', fn: () => {}
+    }, {
+      label: '确认添加', primary: true, fn: async () => {
+        const existing = await loadDeckCards(selDeckId);
+        const existIds = new Set(existing.map(r => r.card_id));
+        const toAdd = cardIds.filter(id => !existIds.has(id));
+
+        if (toAdd.length === 0) { showToast('所选卡片已在牌组中', true); return; }
+
+        const rows = toAdd.map((id, i) => ({
+          deck_id: selDeckId,
+          card_id: id,
+          sort_order: existing.length + i
+        }));
+
+        const { error } = await _sb.from('server_deck_cards').insert(rows);
+        if (error) { showToast('添加失败：' + error.message, true); return; }
+
+        // 更新牌组计数
+        await _sb.from('server_decks').update({ card_count: existing.length + toAdd.length, updated_at: new Date().toISOString() }).eq('id', selDeckId);
+
+        await loadServerDecks();
+        selPoolCards = {};
+        renderOrgPanel();
+        showToast('已添加 ' + toAdd.length + ' 张卡片');
+      }
+    }]
+  );
+}
+
+// ═══════════════════════════════════════════
+// PANEL 3: 导出
+// ═══════════════════════════════════════════
+
+async function refreshExportPanel() {
+  await loadServerDecks();
+  // 加载每个牌组的卡片
+  for (const d of serverDecks) {
+    await loadDeckCards(d.id);
+  }
+
+  if (serverDecks.length === 0) {
+    $('export-list').innerHTML = '<div class="empty"><span class="emp-ico">📋</span>暂无牌组可导出<br><small>先在整理面板中创建牌组</small></div>';
+    $('export-actions').style.display = 'none';
+    return;
+  }
+
+  exportSelected = {};
+  serverDecks.forEach(d => { exportSelected[d.id] = true; });
+
+  let html = '';
+  serverDecks.forEach(d => {
+    const cardIds = (deckCardsMap[d.id] || []).map(r => r.card_id);
+    html += '<div class="card"><div class="card-header"><span class="card-title">📦 ' + esc(d.name) + '</span><span class="card-meta">' + cardIds.length + ' 张卡</span></div>';
+    html += '<label style="font-size:13px;cursor:pointer"><input type="checkbox" checked onchange="exportSelected[\'' + d.id + '\']=this.checked;refreshExportUI()"> 导出此牌组</label>';
+    html += '</div>';
+  });
+  $('export-list').innerHTML = html;
+  $('export-actions').style.display = 'block';
+  refreshExportUI();
+}
+
+function refreshExportUI() {
+  const count = Object.values(exportSelected).filter(Boolean).length;
+  $('btn-export').textContent = '📦 导出选中牌组 (' + count + ' 组)';
+  $('btn-export').disabled = count === 0;
+  $('export-hint').textContent = '将生成 ' + count + ' 个 .yhspack 文件，可在训练端手动导入';
+}
+
+async function doExport() {
+  const toExport = serverDecks.filter(d => exportSelected[d.id]);
+  if (!toExport.length) { showToast('请选择要导出的牌组', true); return; }
+
+  const btnEl = $('btn-export');
+  btnEl.disabled = true;
+  btnEl.textContent = '打包中...';
+
+  try {
+    for (const deck of toExport) {
+      const cardRefs = deckCardsMap[deck.id] || [];
+      const cardIds = cardRefs.map(r => r.card_id);
+
+      // 从 cards_pool 获取卡片数据
+      const cards = [];
+      for (const cid of cardIds) {
+        const { data } = await _sb.from('cards_pool').select('*').eq('card_id', cid).limit(1);
+        if (data && data.length > 0) {
+          cards.push(data[0]);
+        }
+      }
+
+      // 构建 deck.json
+      const deckJson = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        deck: {
+          id: deck.id,
+          name: deck.name,
+          cards: cards.map(c => ({
+            id: c.card_id,
+            name: c.card_name,
+            ...(c.image_url ? { image: 'media/' + c.card_id + '.jpg' } : {}),
+            ...(c.audio_url ? { audio: 'media/' + c.card_id + (c.audio_url.endsWith('.m4a') ? '.m4a' : '.webm') } : {})
+          }))
+        }
+      };
+
+      const zip = new JSZip();
+      zip.file('deck.json', JSON.stringify(deckJson, null, 2));
+
+      // 下载媒体文件并加入 ZIP
+      const mediaFolder = zip.folder('media');
+      for (const c of cards) {
+        if (c.image_url) {
+          try {
+            const { data } = await _sb.storage.from(STORAGE_BUCKET).download(c.image_url);
+            if (data) {
+              const ext = c.image_url.split('.').pop() || 'jpg';
+              mediaFolder.file(c.card_id + '.' + ext, data);
+            }
+          } catch(e) { console.warn('下载图片失败：' + c.image_url, e); }
+        }
+        if (c.audio_url) {
+          try {
+            const { data } = await _sb.storage.from(STORAGE_BUCKET).download(c.audio_url);
+            if (data) {
+              const ext = c.audio_url.split('.').pop() || 'm4a';
+              mediaFolder.file(c.card_id + '.' + ext, data);
+            }
+          } catch(e) { console.warn('下载录音失败：' + c.audio_url, e); }
+        }
+      }
+
+      // 生成并下载
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = deck.name + '.yhspack';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+
+      await new Promise(r => setTimeout(r, 300)); // 给浏览器一些时间
+    }
+
+    showToast('导出完成：' + toExport.length + ' 个文件');
+
+  } catch(e) {
+    showToast('导出失败：' + e.message, true);
+    console.error(e);
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = '📦 导出选中牌组 (' + toExport.length + ' 组)';
+  }
+}
+
+// ═══════════════════════════════════════════
+// 辅助函数
+// ═══════════════════════════════════════════
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ═══════════════════════════════════════════
+// 初始化
+// ═══════════════════════════════════════════
+window.addEventListener('load', () => {
+  doLogin();
+});
+</script>

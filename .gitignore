@@ -1,0 +1,16 @@
+# Test artifacts
+yihai_app_test.js
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Supabase
+.env

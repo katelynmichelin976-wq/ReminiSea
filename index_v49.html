@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="忆海拾光">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#7A5C3E">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>忆海拾光 · 制卡工具</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<style>
+:root{
+  --cream:#FAF7F2;--warm:#F0EBE1;--border:#DDD5C8;--text:#2C2416;--muted:#8A7F72;
+  --accent:#7A5C3E;--accent-l:#C4A882;--accent-bg:#F5EFE8;
+  --green:#4A7C59;--green-l:#EAF3EE;
+  --red:#9B3A2A;--red-l:#FAEAE7;
+  --blue:#2D5F8A;--blue-l:#E8F1F8;
+  --sh:0 1px 4px rgba(44,36,22,.07),0 4px 16px rgba(44,36,22,.06);
+  --sh-lg:0 12px 32px rgba(44,36,22,.12);
+  --radius:14px;
+  --sh2:0 2px 8px rgba(44,36,22,.1),0 8px 24px rgba(44,36,22,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+button:active:not(:disabled){transform:scale(0.96);opacity:.85;}
+.mode-card:active:not(.off){transform:scale(0.98);}
+body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
+
+/* ── 页头 ── */
+.app-header{background:var(--accent);color:#FAF7F2;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}.hd-left{display:flex;align-items:center;gap:8px;}
+.app-header-title{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;font-size:18px;font-weight:700;letter-spacing:.5px}
+.app-header-sub{font-size:11px;opacity:.6;margin-top:2px}
+
+/* ── 步骤条 ── */
+.steps{display:flex;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.step{flex:1;padding:10px 4px;text-align:center;font-size:11px;color:var(--muted);cursor:pointer;position:relative}
+.step+.step{border-left:1px solid var(--border)}
+.step.active{color:var(--accent);font-weight:600}
+.step.active::after{content:'';position:absolute;bottom:0;left:15%;right:15%;height:2px;background:var(--accent);border-radius:2px}
+.step.done{color:var(--green)}
+.step .sn{display:block;font-size:16px;font-weight:800;margin-bottom:1px;line-height:1}
+
+/* ── 主容器 ── */
+.main{max-width:640px;margin:0 auto;padding:20px 16px 120px}
+.panel{display:none}.panel.active{display:block;animation:slideUp .35s cubic-bezier(.16,1,.3,1)}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ════════════════════════════
+   STEP 0：选择模式
+════════════════════════════ */
+.mode-wrap{display:flex;flex-direction:column;gap:14px;margin-bottom:28px}
+.mode-card{background:#fff;border:2px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:border-color .15s,background .15s}
+.mode-card.sel{border-color:var(--accent);background:var(--accent-bg)}
+.mode-card.off{opacity:.45;pointer-events:none}
+.mc-hd{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+.mc-ico{width:34px;height:34px;border-radius:9px;background:var(--warm);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.mode-card.sel .mc-ico{background:var(--accent);color:#fff;}
+.mc-ttl{font-size:15px;font-weight:600;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif}
+.mc-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.f-label{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:5px}
+.f-input{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:15px;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:var(--cream);color:var(--text);width:100%;transition:.15s}
+.f-input:focus{outline:none;border-color:var(--accent);background:#fff}
+.imp-btn{display:flex;align-items:center;gap:8px;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);color:var(--text);font-size:13px;cursor:pointer;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;position:relative;overflow:hidden;width:100%;transition:.15s}
+.imp-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px}
+.imp-btn.ok{border-color:var(--green);background:var(--green-l);color:var(--green);font-weight:500}
+.imp-st{font-size:12px;color:var(--muted);margin-top:6px;min-height:18px}
+.imp-st.ok{color:var(--green)}
+.imp-st.err{color:var(--red)}
+
+/* ════════════════════════════
+   STEP 1：编辑卡片
+════════════════════════════ */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.deck-tag{background:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 13px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.deck-tag b{color:var(--text);font-weight:600}
+.q-ctl{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.q-ctl input[type=range]{width:64px;accent-color:var(--accent)}
+.q-ctl b{min-width:34px;color:var(--accent);font-weight:600}
+
+#card-list{display:flex;flex-direction:column;gap:8px}
+
+/* ── 卡片容器 ── */
+.ci{background:#fff;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--sh);transition:border-color .2s,box-shadow .2s}
+.ci.editing{border-color:var(--accent);box-shadow:var(--sh2)}
+
+/* ── 折叠行 ── */
+.crow{display:grid;grid-template-columns:26px 1fr 48px 48px 48px;gap:6px;align-items:center;padding:11px 12px;min-height:56px;}
+.cidx{width:24px;height:24px;border-radius:50%;background:var(--warm);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0}
+.ci.editing .cidx{background:var(--accent);border-color:var(--accent);color:#fff}
+.ci.editing .cthumb{display:none;}.ci.editing .cname{visibility:hidden;}
+.ci.editing .crow{grid-template-columns:26px 1fr 48px 48px !important;}
+.cname{font-size:15px;font-weight:600;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cname.empty{color:var(--muted);font-style:italic;font-weight:400;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;font-size:13px}
+
+/* 缩略图：无图片时纯色方块，无图标 */
+.cthumb{width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--warm);border:1px solid var(--border)}
+.cthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.cthumb.empty{background:var(--warm)}
+
+/* 文字操作按钮 */
+.ca{padding:5px 8px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:var(--blue-l);font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;border-radius:6px;color:var(--blue);text-align:center}
+.ca.del{background:var(--red-l);color:var(--red);}
+.ca:disabled{color:var(--muted);cursor:default}
+
+/* ── 展开编辑区 ── */
+.cedit{display:none;border-top:1px solid var(--border);background:var(--accent-bg);padding:14px 12px 0}
+.ci.editing .cedit{display:block}
+
+.es{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.elabel{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.ename{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:16px;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;font-weight:600;background:#fff;color:var(--text);width:100%}
+.f-input::placeholder,.ename::placeholder{font-weight:400;color:var(--muted);}
+.ename:focus{outline:none;border-color:var(--accent)}
+
+/* 图片编辑 */
+.img-row{display:flex;align-items:flex-start;gap:12px}
+/* 大预览：无图片时纯灰色方块+提示文字，无emoji */
+.img-big{width:84px;height:84px;border-radius:10px;border:1.5px solid var(--border);flex-shrink:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--warm)}
+.img-big img{width:100%;height:100%;object-fit:cover;display:block}
+.img-big.clickable{cursor:pointer;}
+.img-big.clickable:hover{border-color:var(--accent);background:var(--accent-bg);}
+.img-big-hint{font-size:10px;color:var(--muted);text-align:center;padding:0 6px;line-height:1.4}
+.img-right{display:flex;flex-direction:column;gap:6px;flex:1}
+.img-pick{padding:10px 14px;border:1.5px dashed var(--border);border-radius:8px;background:#fff;color:var(--accent);font-size:13px;font-weight:500;cursor:pointer;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;position:relative;overflow:hidden;text-align:center;transition:.15s}
+.img-pick input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:16px}
+.img-pick.ok{border-style:solid;border-color:var(--green);color:var(--green)}
+.img-sz{font-size:11px;color:var(--muted)}
+
+/* 录音区 */
+.rec-box{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px}
+.rec-box.ok{border-color:var(--green);background:var(--green-l)}
+.rec-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border:1.5px solid var(--accent);border-radius:8px;background:#fff;color:var(--accent);font-size:14px;font-weight:500;cursor:pointer;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif}
+.rec-btn.go{background:var(--red);border-color:var(--red);color:#fff;animation:recpulse 1.5s infinite}
+.rec-del{margin-top:6px;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid var(--red);border-radius:7px;background:#fff;color:var(--red);font-size:12px;font-weight:500;cursor:pointer;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;}
+.rec-del:active{opacity:.7;transform:scale(0.97);}
+@keyframes recpulse{0%{box-shadow:0 0 0 0 rgba(155,58,42,.45)}70%{box-shadow:0 0 0 12px rgba(155,58,42,0)}100%{box-shadow:0 0 0 0 rgba(155,58,42,0)}}
+.rec-st{font-size:12px;color:var(--muted);margin-top:7px}
+.rec-st.ok{color:var(--green);font-weight:500}
+.rec-play{margin-top:8px;display:none}
+.rec-play audio{width:100%;height:36px}
+
+/* 编辑区底部按钮 */
+.edit-foot{display:flex;gap:10px;padding:12px 0 14px;border-top:1px solid var(--border);margin-top:4px}
+.ef-cancel{flex:1;padding:10px;border:1.5px solid var(--border);border-radius:9px;background:#fff;color:var(--muted);font-size:14px;cursor:pointer;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;font-weight:500}
+.ef-save{flex:2;padding:10px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-size:14px;cursor:pointer;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;font-weight:500}
+
+.add-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:13px;border:2px dashed var(--border);border-radius:12px;background:transparent;color:var(--muted);font-size:14px;cursor:pointer;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;margin-top:4px}
+.add-btn:active{background:var(--warm)}
+
+/* ── 底部操作栏 ── */
+.bot{display:flex;align-items:center;gap:10px;margin-top:22px;position:sticky;bottom:16px;z-index:90;}
+.sp{flex:1}
+.btn{padding:11px 22px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;display:inline-flex;align-items:center;gap:6px}
+.btn-p{background:var(--accent);color:#fff;flex:1;justify-content:center;}
+.btn-p:disabled{background:#C8C0B5;cursor:not-allowed}
+.btn-g{background:var(--green);color:#fff;flex:1;justify-content:center;}
+.btn-g:disabled{background:#C8C0B5;cursor:not-allowed}
+.btn-s{background:#fff;color:var(--text);border:1.5px solid var(--border);padding:11px 20px;}
+
+/* ════════════════════════════
+   STEP 2：预览
+════════════════════════════ */
+.pmeta{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 15px;margin-bottom:14px;display:flex;gap:18px;flex-wrap:wrap}
+.pm{display:flex;flex-direction:column;gap:2px}
+.pml{font-size:10px;color:var(--muted);font-weight:500}
+.pmv{font-size:14px;font-weight:600}
+.plist{display:flex;flex-direction:column;gap:8px}
+.pi{background:#fff;border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;gap:10px;align-items:center;box-shadow:var(--sh)}
+.pithumb{width:50px;height:50px;border-radius:8px;border:1px solid var(--border);flex-shrink:0;overflow:hidden;background:var(--warm);display:flex;align-items:center;justify-content:center}
+.pithumb img{width:100%;height:100%;object-fit:cover}
+.piinfo{flex:1;min-width:0}
+.piname{font-size:16px;font-weight:700;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;margin-bottom:4px}
+.pitags{display:flex;gap:5px;flex-wrap:wrap}
+.ptag{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--warm);border:1px solid var(--border);color:var(--muted)}
+.ptag.ok{background:var(--green-l);border-color:#a8cdb5;color:var(--green)}
+
+/* ════════════════════════════
+   STEP 3：结果
+════════════════════════════ */
+.rcard{background:#fff;border:1px solid var(--border);border-radius:14px;padding:30px 22px;text-align:center;box-shadow:var(--sh)}
+.rico{font-size:46px;margin-bottom:12px}
+.rtitle{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px}
+.rdetail{font-size:13px;color:var(--muted);line-height:2;margin-bottom:20px}
+.rbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
+.howto{background:var(--warm);border-radius:10px;padding:13px 15px;text-align:left;font-size:12px;color:var(--muted);line-height:2.2}
+.howto b{color:var(--text)}
+
+.err{background:var(--red-l);border:1px solid #e0a090;border-radius:8px;padding:10px 13px;font-size:13px;color:var(--red);display:none;margin-top:10px}
+.err.show{display:block}
+
+@keyframes twinkle{
+  0%,100%{opacity:.9;}
+  50%{opacity:.15;}
+}
+.star{opacity:.9;}
+.s1{animation:twinkle 2.8s ease-in-out infinite;}
+.s2{animation:twinkle 3.5s ease-in-out infinite .6s;}
+.s3{animation:twinkle 2.2s ease-in-out infinite 1.1s;}
+.s4{animation:twinkle 4.0s ease-in-out infinite .3s;}
+.s5{animation:twinkle 3.1s ease-in-out infinite 1.8s;}
+.s6{animation:twinkle 2.5s ease-in-out infinite .9s;}
+.s7{animation:twinkle 3.8s ease-in-out infinite .2s;}
+.s8{animation:twinkle 2.9s ease-in-out infinite 1.4s;}
+.s9{animation:twinkle 4.2s ease-in-out infinite .5s;}
+
+@keyframes riseA1{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+@keyframes riseA2{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+.waveA1{animation:riseA1 2.8s ease-in-out infinite;transform-origin:center;}
+.waveA2{animation:riseA2 2.8s ease-in-out infinite .5s;transform-origin:center;}
+</style>
+</head>
+<body>
+
+
+
+<div class="app-header">
+  <div class="hd-left">
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- 星空 -->
+    <circle class="star s1" cx="18" cy="6" r="1.2" fill="#FAF7F2"/>
+    <circle class="star s2" cx="9" cy="9" r="0.9" fill="#FAF7F2"/>
+    <circle class="star s3" cx="27" cy="8" r="1.0" fill="#FAF7F2"/>
+    <circle class="star s4" cx="5"  cy="5" r="0.6" fill="#FAF7F2"/>
+    <circle class="star s5" cx="31" cy="5" r="0.7" fill="#FAF7F2"/>
+    <circle class="star s6" cx="14" cy="3" r="0.5" fill="#FAF7F2"/>
+    <circle class="star s7" cx="24" cy="13" r="0.7" fill="#FAF7F2"/>
+    <circle class="star s8" cx="7"  cy="15" r="0.5" fill="#FAF7F2"/>
+    <!-- 四芒星（最亮的一颗）-->
+    <path class="star s9" d="M18 2 L18.5 5.5 L22 6 L18.5 6.5 L18 10 L17.5 6.5 L14 6 L17.5 5.5 Z" fill="#FAF7F2"/>
+    <!-- 海浪 -->
+    <path class="waveA1" d="M3 24 Q7 19 11 24 Q15 29 19 24 Q23 19 27 24 Q31 29 33 24" stroke="#FAF7F2" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.85"/>
+    <path class="waveA2" d="M3 28 Q7 23 11 28 Q15 33 19 28 Q23 23 27 28 Q31 33 33 28" stroke="#FAF7F2" stroke-width="0.8" stroke-linecap="round" fill="none" opacity="0.45"/>
+  </svg>
+  <div>
+    <div class="app-header-title">忆海拾光 <span id="ver-label" style="font-size:11px;font-weight:400;opacity:.6;margin-left:3px"></span></div>
+    <div class="app-header-sub">制卡工具 · 拍照 · 录音 · 生成 Anki 牌组</div>
+  </div>
+  </div>
+  <button onclick="location.reload(true)" title="刷新获取最新版本" style="background:transparent;border:1.5px solid rgba(250,247,242,.4);color:#FAF7F2;border-radius:8px;width:34px;height:34px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">↻</button>
+</div>
+
+<div class="steps">
+  <div class="step active" id="st0"><span class="sn">1</span>选择</div>
+  <div class="step" id="st1"><span class="sn">2</span>编辑</div>
+  <div class="step" id="st2"><span class="sn">3</span>预览</div>
+  <div class="step" id="st3"><span class="sn">4</span>完成</div>
+</div>
+
+<div class="main">
+
+<!-- ── P0 选择模式 ── -->
+<div class="panel active" id="p0">
+  <div class="mode-wrap">
+
+    <div class="mode-card" id="mc-new" onclick="selMode('new')">
+      <div class="mc-hd">
+        <div class="mc-ico">📝</div>
+        <div><div class="mc-ttl">新建牌组</div><div class="mc-sub">从头开始制作新卡片</div></div>
+      </div>
+      <div class="f-label">牌组名称</div>
+      <input class="f-input" id="dk-name" type="text" placeholder="例：妈妈的日常物品"
+        onclick="event.stopPropagation();selMode('new')"
+        oninput="chkP0()">
+    </div>
+
+    <div class="mode-card" id="mc-imp" onclick="selMode('import')">
+      <div class="mc-hd">
+        <div class="mc-ico">📂</div>
+        <div><div class="mc-ttl">导入牌组</div><div class="mc-sub">载入 .apkg 或 .yhspack 继续编辑</div></div>
+      </div>
+      <input type="file" id="apkg-input" accept=".apkg,.yhspack" style="display:none" onchange="doImport(event)">
+      <div class="imp-st" id="imp-st" style="font-size:13px;color:var(--muted);margin-top:4px">点击此处选择 .apkg 或 .yhspack 文件</div>
+    </div>
+
+  </div>
+  <div class="bot">
+    <button class="btn btn-p" id="btn-p0" onclick="goStep(1)" disabled>开始制作 →</button>
+  </div>
+</div>
+
+<!-- ── P1 编辑卡片 ── -->
+<div class="panel" id="p1">
+  <div class="toolbar">
+    <div class="deck-tag">🗂 <b id="dk-display"></b></div>
+    <div class="q-ctl">
+      压缩质量：<input type="range" id="qslider" min="70" max="95" value="92" oninput="updQ(this.value)">
+      <b id="qlabel">92%</b>
+    </div>
+  </div>
+  <div id="card-list"></div>
+  <button class="add-btn" onclick="addCard()">＋ 添加卡片</button>
+  <div id="p1-hint" style="display:none;text-align:center;font-size:12px;color:var(--red);padding:6px 0 2px;"></div>
+  <div class="bot">
+    <button class="btn btn-s" onclick="goStep(0)">返回</button>
+    <button class="btn btn-p" id="btn-p1" onclick="goStep(2)" disabled>检查预览 →</button>
+  </div>
+</div>
+
+<!-- ── P2 预览 ── -->
+<div class="panel" id="p2">
+  <div class="pmeta" id="pmeta"></div>
+  <div class="plist" id="plist"></div>
+  <div class="err" id="p2err"></div>
+  <div class="bot">
+    <button class="btn btn-s" onclick="goStep(1)">返回修改</button>
+    <button class="btn btn-s" id="btn-yhspack-p2" onclick="exportYhspack(this)" style="border-color:var(--blue);color:var(--blue)">⬇ .yhspack</button>
+    <button class="btn btn-g" id="btn-gen" onclick="doBuild()">✦ 生成牌组</button>
+  </div>
+</div>
+
+<!-- ── P3 结果 ── -->
+<div class="panel" id="p3">
+  <div class="rcard">
+    <div class="rico">✅</div>
+    <div class="rtitle">牌组生成成功！</div>
+    <div class="rdetail" id="rdetail"></div>
+    <div class="rbtns">
+      <button class="btn btn-g" onclick="dlApkg()">⬇ 下载 .apkg</button>
+      <button class="btn btn-s" onclick="tryReset()">重新制作</button>
+    </div>
+    <div class="rbtns" style="margin-top:10px">
+      <button class="btn btn-s" id="btn-yhspack" onclick="exportYhspack(this)" style="width:100%;border-color:var(--blue);color:var(--blue)">⬇ 导出 .yhspack（训练App用）</button>
+    </div>
+    <div class="howto">
+      <b>iPhone 导入：</b>点下载 → 弹出菜单选"在 Anki 中打开"<br>
+      <b>电脑导入：</b>Anki → 文件 → 导入
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════
+// 全局状态
+// ═══════════════════════════════════════════
+let mode=null, deckName='', cards=[], apkgBlob=null, apkgDownloaded=false;
+let activeRec=null;   // {mediaRecorder, cardId}
+let editingId=null;   // 当前展开编辑的卡片id
+let editSnap=null;    // 编辑前的快照，用于取消
+
+// ═══════════════════════════════════════════
+// 工具
+// ═══════════════════════════════════════════
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtKB=kb=>kb>=1024?(kb/1024).toFixed(1)+'MB':kb+'KB';
+const getQ=()=>parseInt(document.getElementById('qslider').value)/100;
+function updQ(v){document.getElementById('qlabel').textContent=v+'%';}
+function ldScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)){res();return;}
+    const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  });
+}
+function snapCard(c){return JSON.parse(JSON.stringify({...c,imageBlob:null,audioBlob:null,_imgBlob:c.imageBlob,_audBlob:c.audioBlob}));}
+
+// ═══════════════════════════════════════════
+// 步骤导航
+// ═══════════════════════════════════════════
+function tryReset(){
+  if(apkgBlob && !apkgDownloaded){
+    if(!confirm('牌组还未下载，确定要放弃吗？')) return;
+  }
+  resetAll();
+  goStep(0);
+}
+function resetAll(){
+  cards=[];deckName='';mode=null;editingId=null;editSnap=null;apkgBlob=null;apkgDownloaded=false;
+  document.getElementById('dk-name').value='';
+  document.getElementById('imp-st').textContent='点击此处选择 .apkg 文件';
+  document.getElementById('mc-new').classList.remove('sel');
+  document.getElementById('mc-imp').classList.remove('sel');
+  chkP0();
+}
+function goStep(n){
+  if(n===1) renderList();
+  if(n===2) renderPreview();
+  document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n));
+  ['st0','st1','st2','st3'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.classList.toggle('active',i===n);
+    el.classList.toggle('done',i<n);
+  });
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════
+// P0：模式选择
+// ═══════════════════════════════════════════
+function selMode(m){
+  mode=m;
+  document.getElementById('mc-new').classList.toggle('sel',m==='new');
+  document.getElementById('mc-imp').classList.toggle('sel',m==='import');
+  if(m==='new'){
+    document.getElementById('dk-name')?.focus();
+  } else if(m==='import'){
+    document.getElementById('apkg-input')?.click();
+  }
+  chkP0();
+}
+function chkP0(){
+  const nameOk=mode==='new'&&document.getElementById('dk-name').value.trim().length>0;
+  const impOk=mode==='import'&&cards.length>0;
+  document.getElementById('btn-p0').disabled=!(nameOk||impOk);
+  if(mode==='new') deckName=document.getElementById('dk-name').value.trim();
+}
+
+// ── 导入入口（路由到对应解析函数）──────────────
+async function doImport(e){
+  const file=e.target.files[0];if(!file)return;
+  if(file.name.toLowerCase().endsWith('.yhspack')){
+    await doImportYhspack(file);
+  } else {
+    await doImportApkg(file);
+  }
+}
+
+// ── 导入 .yhspack ────────────────────────────
+async function doImportYhspack(file){
+  const st=document.getElementById('imp-st');
+  st.textContent='解析中…';st.className='imp-st';
+  try{
+    await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    const zip=await JSZip.loadAsync(await file.arrayBuffer());
+
+    // 读 deck.json
+    const jsonFile=zip.file('deck.json');
+    if(!jsonFile){st.textContent='格式错误：未找到 deck.json';st.className='imp-st err';return;}
+    const deckData=JSON.parse(await jsonFile.async('string'));
+    const deck=deckData.deck;
+    if(!deck||!deck.cards){st.textContent='格式错误：deck.cards 不存在';st.className='imp-st err';return;}
+
+    deckName=deck.name||file.name.replace('.yhspack','');
+    const imported=[];
+
+    for(let i=0;i<deck.cards.length;i++){
+      const c=deck.cards[i];
+      if(!c.name)continue;
+      const card={
+        id:Date.now()*1000+Math.floor(Math.random()*999),
+        name:c.name,_seq:i,
+        imageDataUrl:null,imageBlob:null,imageSizeKB:null,origKB:null,
+        audioBlob:null,audioName:null,audioDataUrl:null,audioExt:'m4a'
+      };
+
+      // 图片
+      if(c.image){
+        const imgFile=zip.file(c.image);
+        if(imgFile){
+          const buf=await imgFile.async('arraybuffer');
+          const blob=new Blob([buf],{type:'image/jpeg'});
+          card.imageBlob=blob;
+          card.imageDataUrl=await blobToUrl(blob);
+          card.imageSizeKB=Math.round(blob.size/1024);
+          card.origKB=card.imageSizeKB;
+        }
+      }
+
+      // 录音
+      if(c.audio){
+        const audFile=zip.file(c.audio);
+        if(audFile){
+          const buf=await audFile.async('arraybuffer');
+          const ext=(c.audio.split('.').pop()||'m4a').toLowerCase();
+          const mime={'m4a':'audio/mp4','mp4':'audio/mp4','mp3':'audio/mpeg',
+                      'ogg':'audio/ogg','webm':'audio/webm','aac':'audio/aac'}[ext]||'audio/mp4';
+          const blob=new Blob([buf],{type:mime});
+          card.audioBlob=blob;
+          card.audioName=c.audio.split('/').pop();
+          card.audioExt=ext;
+          card.audioDataUrl=URL.createObjectURL(blob);
+        }
+      }
+
+      imported.push(card);
+    }
+
+    if(!imported.length){st.textContent='未找到有效卡片';st.className='imp-st err';return;}
+    cards=imported;
+    selMode('import');
+    st.textContent=`✓ 解析完成：${imported.length} 张，牌组「${deckName}」`;
+    st.className='imp-st ok';
+    chkP0();
+  }catch(err){
+    st.textContent='解析失败：'+err.message;st.className='imp-st err';
+    console.error(err);
+  }
+}
+
+// ── 导入 .apkg ──────────────────────────────
+async function doImportApkg(file){
+  const st=document.getElementById('imp-st');
+  st.textContent='解析中…';st.className='imp-st';
+  try{
+    await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    if(!window.SQL){
+      await ldScript('https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.min.js');
+      window.SQL=await initSqlJs({locateFile:f=>'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/'+f});
+    }
+    const zip=await JSZip.loadAsync(await file.arrayBuffer());
+    const mediaIdx=JSON.parse(await zip.file('media').async('string'));
+    const nameToIdx={};
+    Object.entries(mediaIdx).forEach(([i,n])=>nameToIdx[n]=i);
+    const db=new SQL.Database(new Uint8Array(await zip.file('collection.anki2').async('arraybuffer')));
+    // 读牌组名
+    const cr=db.exec('SELECT decks FROM col LIMIT 1');
+    if(cr.length){
+      const dks=Object.values(JSON.parse(cr[0].values[0][0])).filter(d=>d.id!==1&&d.name!=='Default');
+      deckName=dks.length?dks[0].name:file.name.replace('.apkg','');
+    }
+    const nr=db.exec('SELECT flds FROM notes ORDER BY id ASC');
+    const SEP='\x1f';
+    const imported=[];
+    for(const row of nr[0]?.values||[]){
+      const flds=row[0].split(SEP);
+      const name=(flds[1]||'').trim();
+      if(!name)continue;
+      // 序号在 flds[3]
+      const seq=flds[3]?parseInt(flds[3]):9999;
+      const card={id:Date.now()*1000+Math.floor(Math.random()*999),name,_seq:seq,
+        imageDataUrl:null,imageBlob:null,imageSizeKB:null,origKB:null,
+        audioBlob:null,audioName:null,audioDataUrl:null,audioExt:'m4a'};
+      // 图片
+      const im=flds[0].match(/src="([^"]+\.(jpg|jpeg|png|gif|webp))"/i);
+      if(im){const zi=nameToIdx[im[1]];if(zi!=null){
+        const buf=await zip.file(zi).async('arraybuffer');
+        const blob=new Blob([buf],{type:'image/jpeg'});
+        card.imageBlob=blob;card.imageDataUrl=await blobToUrl(blob);
+        card.imageSizeKB=Math.round(blob.size/1024);card.origKB=card.imageSizeKB;
+      }}
+      // 录音
+      const sm=(flds[2]||'').match(/\[sound:([^\]]+)\]/);
+      if(sm){const zi=nameToIdx[sm[1]];if(zi!=null){
+        const buf=await zip.file(zi).async('arraybuffer');
+        const ext=sm[1].split('.').pop().toLowerCase();
+        const mime={'m4a':'audio/mp4','mp4':'audio/mp4','mp3':'audio/mpeg',
+                    'ogg':'audio/ogg','webm':'audio/webm','aac':'audio/aac'}[ext]||'audio/mp4';
+        const blob=new Blob([buf],{type:mime});
+        card.audioBlob=blob;card.audioName=sm[1];card.audioExt=ext;
+        card.audioDataUrl=URL.createObjectURL(blob);
+      }}
+      imported.push(card);
+    }
+    db.close();
+    if(!imported.length){st.textContent='未找到有效卡片';st.className='imp-st err';return;}
+    imported.sort((a,b)=>(a._seq||9999)-(b._seq||9999));
+    cards=imported;
+    selMode('import');
+    st.textContent=`✓ 解析完成：${imported.length} 张，牌组「${deckName}」`;
+    st.className='imp-st ok';
+    chkP0();
+  }catch(err){
+    st.textContent='解析失败：'+err.message;st.className='imp-st err';
+    console.error(err);
+  }
+}
+function blobToUrl(b){return new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsDataURL(b);});}
+
+// ═══════════════════════════════════════════
+// P1：编辑卡片
+// ═══════════════════════════════════════════
+function addCard(){
+  const id=Date.now()*1000+Math.floor(Math.random()*999);
+  cards.push({id,name:'',imageDataUrl:null,imageBlob:null,imageSizeKB:null,origKB:null,
+    audioBlob:null,audioName:null,audioDataUrl:null,audioExt:'m4a'});
+  openEdit(id);
+  renderList();
+  // iOS Safari 要求 focus() 在用户手势的同步调用栈内，不能走 setTimeout
+  const inp=document.querySelector('#ci-'+id+' .ename');
+  if(inp) inp.focus();
+  // scroll 可以异步
+  setTimeout(()=>{
+    document.getElementById('ci-'+id)?.scrollIntoView({behavior:'smooth',block:'center'});
+  },80);
+}
+
+function removeCard(id){
+  if(!confirm('删除这张卡片？'))return;
+  if(editingId===id){editingId=null;editSnap=null;}
+  cards=cards.filter(c=>String(c.id)!==String(id));
+  renderList();
+}
+
+function openEdit(id){
+  editingId=id;
+  // 保存快照
+  const c=cards.find(c=>String(c.id)===String(id));
+  if(c) editSnap={...c};
+}
+
+function cancelEdit(){
+  // 恢复快照
+  if(editSnap){
+    const idx=cards.findIndex(c=>String(c.id)===String(editingId));
+    if(idx>=0) cards[idx]={...editSnap};
+  }
+  editingId=null;editSnap=null;
+  renderList();
+}
+
+function saveEdit(){
+  const card=cards.find(c=>String(c.id)===String(editingId));
+  if(!card) return;
+
+  // 校验名称
+  const nameEl=document.querySelector('#ci-'+editingId+' .ename');
+  if(!card.name.trim()){
+    if(nameEl){
+      nameEl.style.borderColor='var(--red)';
+      nameEl.placeholder='请填写卡片名称';
+      nameEl.focus();
+    }
+    showEditErr(editingId,'请填写卡片名称');
+    return;
+  }
+
+  // 校验图片
+  if(!card.imageBlob){
+    const ipEl=document.getElementById('ip-'+editingId);
+    if(ipEl) ipEl.style.borderColor='var(--red)';
+    showEditErr(editingId,'请上传图片后再保存');
+    return;
+  }
+
+  // 通过：清除错误状态，保存
+  clearEditErr(editingId);
+  editingId=null;editSnap=null;
+  renderList();
+}
+
+function delAudio(cardId){
+  const card=cards.find(c=>String(c.id)===String(cardId));
+  if(!card) return;
+  card.audioBlob=null;card.audioName=null;card.audioDataUrl=null;card.audioExt='m4a';
+  if(activeRec&&activeRec.cardId===String(cardId)&&activeRec.mr.state==='recording'){
+    activeRec.mr.stop();
+  }
+  renderList();
+}
+
+function tryResolveErr(cardId){
+  const card=cards.find(c=>String(c.id)===String(cardId));
+  if(!card) return;
+  if(card.name.trim()&&card.imageBlob){
+    clearEditErr(cardId);
+  }
+}
+
+function showEditErr(cardId,msg){
+  let el=document.getElementById('edit-err-'+cardId);
+  if(!el){
+    el=document.createElement('div');
+    el.id='edit-err-'+cardId;
+    el.style.cssText='color:var(--red);font-size:12px;padding:4px 0 8px;font-weight:500;';
+    const foot=document.querySelector('#ci-'+cardId+' .edit-foot');
+    if(foot) foot.parentNode.insertBefore(el,foot);
+  }
+  el.textContent='⚠ '+msg;
+}
+
+function clearEditErr(cardId){
+  const el=document.getElementById('edit-err-'+cardId);
+  if(el) el.remove();
+  const nameEl=document.querySelector('#ci-'+cardId+' .ename');
+  if(nameEl) nameEl.style.borderColor='';
+  const ipEl=document.getElementById('ip-'+cardId);
+  if(ipEl) ipEl.style.borderColor='';
+}
+
+function chkP1(){
+  const incomplete=cards.filter(c=>!c.name.trim()||!c.imageBlob);
+  const ok=cards.length>0&&incomplete.length===0;
+  document.getElementById('btn-p1').disabled=!ok;
+  const hint=document.getElementById('p1-hint');
+  if(hint){
+    if(!ok&&cards.length>0){
+      const n=incomplete.length;
+      hint.textContent=`还有 ${n} 张卡片未填写名称或上传图片`;
+      hint.style.display='block';
+    } else {
+      hint.style.display='none';
+    }
+  }
+}
+
+// ── 渲染列表 ──────────────────────────────
+function renderList(){
+  document.getElementById('dk-display').textContent=deckName;
+  const list=document.getElementById('card-list');
+  list.innerHTML='';
+  cards.forEach((card,idx)=>{
+    const isEd=String(editingId)===String(card.id);
+    const div=document.createElement('div');
+    div.className='ci'+(isEd?' editing':'');
+    div.id='ci-'+card.id;
+
+    // 缩略图
+    const thumbHtml=card.imageDataUrl
+      ?`<div class="cthumb"><img src="${card.imageDataUrl}"></div>`
+      :`<div class="cthumb empty"></div>`;
+
+    div.innerHTML=`
+      <div class="crow">
+        <div class="cidx">${idx+1}</div>
+        <div class="${card.name?'cname':'cname empty'}">${esc(card.name)||'未命名卡片...'}</div>
+        ${thumbHtml}
+        <button class="ca" onclick="toggleEdit('${card.id}')" ${isEd?'disabled':''}>编辑</button>
+        <button class="ca del" onclick="removeCard('${card.id}')">删除</button>
+      </div>
+      <div class="cedit" id="ed-${card.id}">${isEd?buildEdit(card):''}</div>`;
+
+    list.appendChild(div);
+  });
+  chkP1();
+}
+
+function toggleEdit(id){
+  if(String(editingId)===String(id)){cancelEdit();return;}
+  // 若有正在录音，先停
+  if(activeRec&&activeRec.mr.state==='recording') activeRec.mr.stop();
+  openEdit(id);
+  renderList();
+  setTimeout(()=>{
+    document.getElementById('ci-'+id)?.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },60);
+}
+
+function buildEdit(card){
+  const hasImg=!!card.imageDataUrl;
+  const hasAud=!!card.audioBlob;
+  const camSvg=`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>`;
+  return `
+    <div class="es">
+      <div class="elabel">卡片名称</div>
+      <input class="ename" type="text" placeholder="例：苹果、我的水杯"
+        value="${esc(card.name)}"
+        oninput="updField('${card.id}','name',this.value);this.style.borderColor='';tryResolveErr('${card.id}')">
+    </div>
+    <div class="es">
+      <div class="elabel">图片展示</div>
+      <div class="img-row">
+        <div class="img-big ${hasImg?'':'clickable'}" id="ib-${card.id}" ${hasImg?'':` onclick="document.querySelector('#ip-${card.id} input').click()"`}>
+          ${hasImg?`<img src="${card.imageDataUrl}">`:camSvg}
+        </div>
+        <div class="img-right">
+          <div class="img-pick ${hasImg?'ok':''}" id="ip-${card.id}">
+            ${hasImg?'重新拍照 / 选图':'拍照 / 选图'}
+            <input type="file" accept="image/*" onchange="handleImg(event,'${card.id}')">
+          </div>
+          <div class="img-sz" id="isz-${card.id}">${hasImg?`已压缩 ${card.imageSizeKB}KB（原 ${card.origKB}KB）`:''}</div>
+        </div>
+      </div>
+    </div>
+    <div class="es">
+      <div class="elabel">语音提示</div>
+      <div class="rec-box ${hasAud?'ok':''}" id="ra-${card.id}">
+        <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
+          <button class="rec-btn" id="recbtn-${card.id}" onclick="toggleRec('${card.id}')">
+            ${hasAud?'🎙 重新录音':'🎙 开始录音'}
+          </button>
+          ${hasAud?`<button class="rec-del" onclick="delAudio('${card.id}')">✕ 删除录音</button>`:''}
+        </div>
+        <div class="rec-st ${hasAud?'ok':''}" id="recst-${card.id}">
+          ${hasAud?`✓ 录音完成（${card.audioExt}）`:'点击录制真人发音'}
+        </div>
+        <div class="rec-play" id="recpl-${card.id}" style="${hasAud?'display:block':''}">
+          ${hasAud?`<audio controls src="${card.audioDataUrl}"></audio>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="edit-foot">
+      <button class="ef-save" onclick="saveEdit()">确定并保存</button>
+    </div>`;
+}
+function updField(id,field,val){
+  const c=cards.find(c=>String(c.id)===String(id));
+  if(c){
+    c[field]=val;
+    // 同步折叠行名称，不重渲染
+    const nm=document.querySelector(`#ci-${id} .cname`);
+    if(nm){nm.textContent=val||'未填名称';nm.className=val?'cname':'cname empty';}
+    chkP1();
+  }
+}
+
+// ── 图片处理 ──────────────────────────────
+async function handleImg(e,cardId){
+  const file=e.target.files[0];if(!file)return;
+  const card=cards.find(c=>String(c.id)===String(cardId));
+  const r=await compressImg(file,getQ());
+  card.imageDataUrl=r.dataUrl;card.imageBlob=r.blob;card.imageSizeKB=r.sizeKB;card.origKB=r.origKB;
+  // 更新编辑区局部UI
+  const ib=document.getElementById('ib-'+cardId);
+  if(ib) ib.innerHTML=`<img src="${r.dataUrl}">`;
+  const ip=document.getElementById('ip-'+cardId);
+  if(ip){ip.className='img-pick ok';ip.style.borderColor='';ip.childNodes[0].textContent='重新拍照 / 选图';}
+  const isz=document.getElementById('isz-'+cardId);
+  if(isz) isz.textContent=`已压缩 ${r.sizeKB}KB（原 ${r.origKB}KB）`;
+  // 更新折叠行缩略图
+  const ct=document.querySelector(`#ci-${cardId} .cthumb`);
+  if(ct){ct.className='cthumb';ct.innerHTML=`<img src="${r.dataUrl}">`;}
+  tryResolveErr(cardId);
+  chkP1();
+}
+
+function compressImg(file,q){
+  return new Promise(res=>{
+    const fr=new FileReader();
+    fr.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const sc=Math.min(1,1600/Math.max(img.width,img.height));
+        const w=Math.round(img.width*sc),h=Math.round(img.height*sc);
+        const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+        const ctx=cv.getContext('2d');
+        ctx.fillStyle='#FFF';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+        cv.toBlob(blob=>{
+          const fr2=new FileReader();
+          fr2.onload=ev=>res({dataUrl:ev.target.result,blob,
+            sizeKB:Math.round(blob.size/1024),origKB:Math.round(file.size/1024)});
+          fr2.readAsDataURL(blob);
+        },'image/jpeg',q);
+      };
+      img.src=e.target.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+// ── 录音 ──────────────────────────────────
+async function toggleRec(cardId){
+  const card=cards.find(c=>String(c.id)===String(cardId));
+
+  // ── 停止当前录音 ──
+  if(activeRec&&activeRec.mr.state==='recording'){
+    activeRec.mr.stop();
+    return;
+  }
+
+  // ── 申请麦克风 ──
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}
+  catch{
+    // 直接更新 DOM，此时卡片编辑区仍在
+    const st=document.getElementById('recst-'+cardId);
+    if(st) st.textContent='⚠ 请在设置中允许麦克风权限';
+    return;
+  }
+
+  const chunks=[];
+  let mimeType='audio/mp4',ext='m4a';
+  if(!MediaRecorder.isTypeSupported('audio/mp4')){
+    if(MediaRecorder.isTypeSupported('audio/aac')){mimeType='audio/aac';ext='aac';}
+    else if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus')){mimeType='audio/webm;codecs=opus';ext='webm';}
+    else if(MediaRecorder.isTypeSupported('audio/webm')){mimeType='audio/webm';ext='webm';}
+    else{mimeType='';ext='m4a';}
+  }
+
+  let mr;
+  try{mr=new MediaRecorder(stream,mimeType?{mimeType}:{});}
+  catch{mr=new MediaRecorder(stream);}
+  activeRec={mr,cardId};
+
+  mr.ondataavailable=e=>{if(e.data&&e.data.size>0)chunks.push(e.data);};
+
+  mr.onstop=()=>{
+    stream.getTracks().forEach(t=>t.stop());
+    activeRec=null;
+    const blob=new Blob(chunks,{type:mr.mimeType||'audio/mp4'});
+    const actualExt=mr.mimeType.includes('webm')?'webm':mr.mimeType.includes('ogg')?'ogg':'m4a';
+    const url=URL.createObjectURL(blob);
+    // 更新数据
+    card.audioBlob=blob;
+    card.audioName=`录音.${actualExt}`;
+    card.audioExt=actualExt;
+    card.audioDataUrl=url;
+    // 数据驱动重渲染，彻底避免 DOM 引用失效
+    renderList();
+    // renderList 后 editingId 仍有效，卡片会保持展开状态
+  };
+
+  mr.start(100);
+
+  // 立即更新录音中状态（此时 DOM 还在）
+  const btn=document.getElementById('recbtn-'+cardId);
+  const st=document.getElementById('recst-'+cardId);
+  if(btn){btn.className='rec-btn go';btn.textContent='⏹ 停止录音';}
+  if(st){st.textContent='🔴 录音中… 说完点停止';st.className='rec-st';}
+}
+
+// ═══════════════════════════════════════════
+// P2：预览
+// ═══════════════════════════════════════════
+function renderPreview(){
+  let ti=0,ts=0;
+  cards.forEach(c=>{if(c.imageSizeKB)ti+=c.imageSizeKB;if(c.audioBlob)ts+=Math.round(c.audioBlob.size/1024);});
+  document.getElementById('pmeta').innerHTML=`
+    <div class="pm"><div class="pml">牌组名称</div><div class="pmv">${esc(deckName)}</div></div>
+    <div class="pm"><div class="pml">卡片数量</div><div class="pmv">${cards.length} 张</div></div>
+    <div class="pm"><div class="pml">图片大小</div><div class="pmv">${fmtKB(ti)}</div></div>
+    <div class="pm"><div class="pml">录音大小</div><div class="pmv">${fmtKB(ts)}</div></div>`;
+  const pl=document.getElementById('plist');pl.innerHTML='';
+  cards.forEach(card=>{
+    const th=card.imageDataUrl
+      ?`<div class="pithumb"><img src="${card.imageDataUrl}"></div>`
+      :`<div class="pithumb"></div>`;
+    const sndtag=card.audioBlob
+      ?`<span class="ptag ok">🔊 有录音</span>`
+      :`<span class="ptag">无录音（TTS）</span>`;
+    const d=document.createElement('div');d.className='pi';
+    d.innerHTML=`${th}<div class="piinfo">
+      <div class="piname">${esc(card.name)}</div>
+      <div class="pitags"><span class="ptag ok">📷 ${card.imageSizeKB}KB</span>${sndtag}</div>
+    </div><div style="font-size:18px">✓</div>`;
+    pl.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════
+// 生成 .apkg
+// ═══════════════════════════════════════════
+async function doBuild(){
+  const btn=document.getElementById('btn-gen');
+  btn.textContent='生成中…';btn.disabled=true;
+  try{
+    if(!window.SQL){
+      await ldScript('https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.min.js');
+      window.SQL=await initSqlJs({locateFile:f=>'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/'+f});
+    }
+    await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    apkgBlob=await genApkg();
+    let ti=0,ts=0;
+    cards.forEach(c=>{if(c.imageSizeKB)ti+=c.imageSizeKB;if(c.audioBlob)ts+=Math.round(c.audioBlob.size/1024);});
+    const choiceCount=cards.length>=4?cards.length:0;
+    const modeDesc=choiceCount
+      ?'翻牌 '+cards.length+' 题 ＋ 四选一 '+choiceCount+' 题'
+      :'翻牌 '+cards.length+' 题（卡片不足4张，仅翻牌模式）';
+    document.getElementById('rdetail').innerHTML=
+      '牌组：<b>'+esc(deckName)+'</b><br>'+modeDesc+'<br>图片 '+fmtKB(ti)+' ｜ 录音 '+fmtKB(ts);
+    goStep(3);
+  }catch(err){
+    const eb=document.getElementById('p2err');eb.textContent='生成失败：'+err.message;eb.classList.add('show');
+    console.error(err);
+  }finally{btn.textContent='✦ 生成牌组';btn.disabled=false;}
+}
+
+function dlApkg(){
+  apkgDownloaded=true;
+  if(!apkgBlob)return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(apkgBlob);
+  a.download=deckName+'.apkg';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+async function exportYhspack(btnEl){
+  const btn=btnEl||document.getElementById('btn-yhspack');
+  if(!btn)return;
+  const origText=btn.textContent;
+  btn.textContent='导出中…';btn.disabled=true;
+  try{
+    await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+
+    // 纯JS hash，file:// 协议可用
+    const simpleHash=s=>{
+      let h=0;
+      for(let i=0;i<s.length;i++){h=Math.imul(31,h)+s.charCodeAt(i)|0;}
+      return (h>>>0).toString(16).padStart(8,'0');
+    };
+
+    const deckId=simpleHash(deckName);
+    const zip=new JSZip();
+    const jsonCards=[];
+
+    for(const c of cards){
+      const cardId=simpleHash(deckName+'::'+c.name);
+      const card={id:cardId, name:c.name};
+
+      // 图片：优先用 imageBlob（原始二进制，体积最小）
+      if(c.imageBlob){
+        const ext='jpg';
+        const path=`media/${cardId}.${ext}`;
+        zip.file(path, await c.imageBlob.arrayBuffer());
+        card.image=path;
+      }
+
+      // 录音：优先用 audioBlob
+      if(c.audioBlob){
+        const ext=c.audioExt||'m4a';
+        const path=`media/${cardId}.${ext}`;
+        zip.file(path, await c.audioBlob.arrayBuffer());
+        card.audio=path;
+      }
+
+      jsonCards.push(card);
+    }
+
+    const deckJson={
+      version:'1.0',
+      exportedAt:new Date().toISOString(),
+      deck:{
+        id:deckId,
+        name:deckName,
+        cards:jsonCards
+      }
+    };
+    zip.file('deck.json', JSON.stringify(deckJson, null, 2));
+
+    const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=deckName+'.yhspack';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }catch(err){
+    alert('导出失败：'+err.message);
+    console.error(err);
+  }finally{
+    btn.textContent=origText;btn.disabled=false;
+  }
+}
+
+async function genApkg(){
+  const sha1=async s=>{const b=await crypto.subtle.digest('SHA-1',new TextEncoder().encode(s));return parseInt(Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,12),16)%9007199254740991;};
+  // v36：新MID（妈妈生日+制作年2026），新增D1/D2/D3三个干扰项字段，双模板
+  const MID=1948020902026,DID=1731234567941;
+  const now=Math.floor(Date.now()/1000),SEP='\x1f';
+  const hasChoice=cards.length>=4; // ≥4张才生成四选一模板
+
+  const midx={},mfiles=[];let mi=0;
+  for(const c of cards){
+    const fnHash=await sha1(deckName+'::'+c.name);
+    const fnBase=String(fnHash).slice(-8);
+    if(c.imageBlob){
+      const fn=`img_${fnBase}.jpg`;c._img=fn;midx[String(mi)]=fn;
+      mfiles.push({i:mi,buf:await c.imageBlob.arrayBuffer()});mi++;
+    }else c._img=null;
+    if(c.audioBlob){
+      const fn=`snd_${fnBase}.${c.audioExt||'m4a'}`;c._snd=fn;midx[String(mi)]=fn;
+      mfiles.push({i:mi,buf:await c.audioBlob.arrayBuffer()});mi++;
+    }else c._snd=null;
+  }
+
+  // ── 为每张卡片预计算3个干扰项（打包时写死，Anki模板JS每次随机打乱顺序）
+  const allNames=cards.map(c=>c.name);
+  function pickDistractors(idx){
+    const pool=allNames.filter((_,j)=>j!==idx);
+    // Fisher-Yates shuffle，取前3
+    for(let k=pool.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[pool[k],pool[r]]=[pool[r],pool[k]];}
+    return pool.slice(0,3);
+  }
+
+  const css=`.card{font-family:'PingFang SC','Heiti SC','Microsoft YaHei',sans-serif;text-align:center;background:#FFF!important;color:#111!important;padding:0;margin:0}.night_mode .card{background:#FFF!important;color:#111!important}.iw{width:96%;margin:10px auto 0;position:relative;padding-top:96%;border-radius:16px;overflow:hidden;background:#F5F5F5;display:block;margin-left:auto;margin-right:auto}.iw img{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;height:100%;object-fit:contain}.qh{font-size:20px;color:#888;letter-spacing:5px;margin:12px 0 6px;font-weight:600}.dv{border:none;border-top:2px solid #EEE;margin:8px 20px 0}.showansbtn{display:inline-block;margin:8px auto 16px;padding:14px 36px;background:#7A5C3E;color:#FFF;font-size:18px;font-weight:600;border-radius:14px;letter-spacing:1px;}.an{font-size:64px;font-weight:700;color:#111!important;letter-spacing:8px;margin:14px 0 20px;line-height:1.2}.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 16px 6px;}.cb{padding:10px 8px;border:2px solid #DDD;border-radius:14px;background:#FFF;font-size:22px;font-weight:700;font-family:'PingFang SC','Heiti SC','Microsoft YaHei',sans-serif;cursor:pointer;letter-spacing:2px;transition:background .15s,border-color .15s;-webkit-tap-highlight-color:transparent;}.cb:active{transform:scale(0.96);}.cb.correct{background:#EAF3EE!important;border-color:#4A7C59!important;color:#4A7C59!important;}.cb.wrong{background:#FAEAE7!important;border-color:#9B3A2A!important;color:#9B3A2A!important;}.ch-hint{font-size:13px;color:#AAA;margin:4px 0 10px;}`;
+
+  // ── 翻牌模板（原有，不变）
+  const qfmt='<div class="iw">{{Front}}</div><p class="qh">这 是 什 么 ？</p><div class="showansbtn">👆 点击查看答案</div>';
+  const afmt='<div class="iw">{{Front}}</div><hr class="dv">{{Audio}}{{^Audio}}{{tts zh_CN:Name}}{{/Audio}}<p class="an">{{Name}}</p>';
+
+  // ── 四选一模板正面：JS每次打乱4个选项，点击高亮正确答案+TTS朗读
+  const qfmt2=`<div class=\"iw\">{{Front}}</div><p class=\"qh\">请 选 出 正 确 答 案</p><div id=\"_opts\" style=\"display:none\"><span>{{Name}}</span><span>{{D1}}</span><span>{{D2}}</span><span>{{D3}}</span></div><div class=\"choices\" id=\"cbox\" style=\"position:relative;z-index:10000\"></div><div id=\"_showbtn\" style=\"display:none;text-align:center;margin:10px 0 6px\"><div class=\"showansbtn\" onclick=\"this.parentNode.dataset.done=1;document.getElementById(\'cbox\').dataset.done=1;\">👆 点击查看答案</div></div><div id=\"_mask\" style=\"position:fixed;inset:0;z-index:9999;background:transparent\"></div><script>(function(){var spans=document.getElementById(\"_opts\").querySelectorAll(\"span\");var opts=Array.from(spans).map(function(s){return s.textContent;});for(var k=opts.length-1;k>-1;k--){var r=Math.floor(Math.random()*(k+1));var t=opts[k];opts[k]=opts[r];opts[r]=t;}if(opts[0]===ans){var ri=Math.floor(Math.random()*3)+1;var t=opts[0];opts[0]=opts[ri];opts[ri]=t;}var box=document.getElementById(\"cbox\");opts.forEach(function(o){var b=document.createElement(\"button\");b.className=\"cb\";b.textContent=o;b.onclick=function(){if(box.dataset.done)return;box.querySelectorAll(\".cb\").forEach(function(btn){btn.style.borderColor=\"\";btn.style.borderWidth=\"\";});this.style.borderColor=\"#7A5C3E\";this.style.borderWidth=\"3px\";document.getElementById(\"_showbtn\").style.display=\"block\";};box.appendChild(b);});})();<\/script>`
+  // 四选一背面：展示正确答案+TTS（照护者评分用）
+  const afmt2='<div class="iw">{{Front}}</div><hr class="dv">{{Audio}}{{^Audio}}{{tts zh_CN:Name}}{{/Audio}}<p class="an">{{Name}}</p>';
+
+  // ── 模板列表：翻牌固定有，四选一按卡片数决定
+   // 模板固定两套保证MID结构一致，避免重复导入时报模板缺失
+  const tmpls=[
+    {name:'四选一',ord:0,qfmt:qfmt2,afmt:afmt2,bqfmt:'',bafmt:'',did:null,bfont:'',bsize:0},
+    {name:'翻牌',  ord:1,qfmt,afmt,bqfmt:'',bafmt:'',did:null,bfont:'',bsize:0}
+  ];
+
+  // ── 字段定义：原4个+新增D1/D2/D3
+  const flds=[
+    {name:'Front',ord:0,sticky:false,rtl:false,font:'Arial',size:20,media:[]},
+    {name:'Name', ord:1,sticky:false,rtl:false,font:'Arial',size:20,media:[]},
+    {name:'Audio',ord:2,sticky:false,rtl:false,font:'Arial',size:20,media:[]},
+    {name:'Seq',  ord:3,sticky:false,rtl:false,font:'Arial',size:20,media:[]},
+    {name:'D1',   ord:4,sticky:false,rtl:false,font:'Arial',size:20,media:[]},
+    {name:'D2',   ord:5,sticky:false,rtl:false,font:'Arial',size:20,media:[]},
+    {name:'D3',   ord:6,sticky:false,rtl:false,font:'Arial',size:20,media:[]}
+  ];
+
+  const mo={[MID]:{id:MID,name:'认知训练卡片',type:0,mod:now,usn:-1,sortf:0,did:null,
+    tmpls,flds,css,latexPre:'',latexPost:'',tags:[],vers:[]}};
+  const do_={[DID]:{id:DID,name:deckName,desc:'',extendRev:50,usn:-1,
+    collapsed:false,browserCollapsed:false,newToday:[0,0],revToday:[0,0],lrnToday:[0,0],timeToday:[0,0],dyn:0,conf:1,mod:now},
+    '1':{id:1,name:'Default',conf:1,extendRev:50,usn:0,collapsed:false,browserCollapsed:false,
+         newToday:[0,0],revToday:[0,0],lrnToday:[0,0],timeToday:[0,0],dyn:0,mod:now}};
+  const dc={'1':{id:1,name:'Default',replayq:true,
+    lapse:{leechFails:8,minInt:1,delays:[10],leechAction:0,mult:0},
+    rev:{perDay:100,fuzz:.05,ivlFct:1,maxIvl:36500,ease4:1.3,bury:true,minSpace:1},
+    timer:0,maxTaken:60,usn:0,
+    new:{perDay:5,delays:[1,10],separate:true,ints:[1,4,7],initialFactor:2500,bury:true,order:1},
+    mod:now,autoplay:true}};
+  const co={nextPos:1,estTimes:true,activeDecks:[1],sortType:'noteFld',timeLim:0,
+    sortBackwards:false,addToCur:true,curDeck:1,newBury:true,newSpread:0,
+    dueCounts:true,curModel:String(MID),collapseTime:1200};
+
+  const db=new SQL.Database();
+  db.run(`CREATE TABLE col(id integer primary key,crt integer not null,mod integer not null,scm integer not null,ver integer not null,dty integer not null,usn integer not null,ls integer not null,conf text not null,models text not null,decks text not null,dconf text not null,tags text not null)`);
+  db.run(`CREATE TABLE notes(id integer primary key,guid text not null,mid integer not null,mod integer not null,usn integer not null,tags text not null,flds text not null,sfld text not null,csum integer not null,flags integer not null,data text not null)`);
+  db.run(`CREATE TABLE cards(id integer primary key,nid integer not null,did integer not null,ord integer not null,mod integer not null,usn integer not null,type integer not null,queue integer not null,due integer not null,ivl integer not null,factor integer not null,reps integer not null,lapses integer not null,left integer not null,odue integer not null,odid integer not null,flags integer not null,data text not null)`);
+  db.run(`CREATE TABLE revlog(id integer primary key,cid integer not null,usn integer not null,ease integer not null,ivl integer not null,lastIvl integer not null,factor integer not null,time integer not null,type integer not null)`);
+  db.run(`CREATE TABLE graves(usn integer not null,oid integer not null,type integer not null)`);
+  db.run('INSERT INTO col VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',[1,now,now,now*1000,11,0,-1,0,
+    JSON.stringify(co),JSON.stringify(mo),JSON.stringify(do_),JSON.stringify(dc),'{}']);
+
+  for(let i=0;i<cards.length;i++){
+    const c=cards[i];
+    const noteKey=deckName+'::'+c.name;
+    const nid=await sha1(noteKey);
+    // 翻牌卡cid用ord=0，四选一用ord=1，两个cid都要唯一且稳定
+    const cid0=(nid*100+i*2)%9007199254740991;
+    const cid1=(nid*100+i*2+1)%9007199254740991;
+    const _chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let _n=nid,guidStr='';
+    for(let _i=0;_i<10;_i++){guidStr=_chars[_n%62]+guidStr;_n=Math.floor(_n/62);}
+    const front=c._img?`<img src="${c._img}">`:'';
+    const audio=c._snd?`[sound:${c._snd}]`:'';
+    const seq=String(i+1).padStart(4,'0');
+    const dist=hasChoice?pickDistractors(i):['','',''];
+    // 7个字段：Front SEP Name SEP Audio SEP Seq SEP D1 SEP D2 SEP D3
+    const flds_str=front+SEP+c.name+SEP+audio+SEP+seq+SEP+dist[0]+SEP+dist[1]+SEP+dist[2];
+    const cs=await sha1(front||c.name);
+    db.run('INSERT OR REPLACE INTO notes VALUES(?,?,?,?,?,?,?,?,?,?,?)',[nid,guidStr,MID,now,-1,'',flds_str,front||c.name,cs,0,'']);
+    // 翻牌卡（ord=0）每张都生成
+    // 四选一ord=0先出(due小)，翻牌ord=1后出(due大)
+    if(hasChoice){
+      db.run('INSERT OR REPLACE INTO cards VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',[cid1,nid,DID,0,now,-1,0,0,i+1,0,0,0,0,0,0,0,0,'']);
+    }
+    db.run('INSERT OR REPLACE INTO cards VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',[cid0,nid,DID,1,now,-1,0,0,cards.length+i+1,0,0,0,0,0,0,0,0,'']);
+  }
+
+  const dbb=db.export();db.close();
+  const zip=new JSZip();
+  zip.file('collection.anki2',dbb);
+  zip.file('media',JSON.stringify(midx));
+  for(const{i,buf}of mfiles)zip.file(String(i),buf);
+  return await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+}
+</script>
+
+
+
+
+
+<script>
+const VERSION = 'v49';
+document.addEventListener('DOMContentLoaded',()=>{
+  const el=document.getElementById('ver-label');
+  if(el) el.textContent=VERSION;
+});
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/anki-maker/sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
