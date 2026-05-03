@@ -335,6 +335,49 @@ _sb = null;
 check('7.6 退出登录后不可同步', canSync(_syncEnabled, _sb), false);
 
 // ═══════════════════════════════════════════════
+// SUITE 8 — audioMimeFromUrl（MIME 类型推导）
+// ═══════════════════════════════════════════════
+section('SUITE 8 — audioMimeFromUrl 音频 MIME 推导');
+
+function audioMimeFromUrl(url) {
+  var ext = (url || '').split('.').pop().toLowerCase();
+  return ({ m4a:'audio/mp4', mp4:'audio/mp4', mp3:'audio/mpeg',
+            ogg:'audio/ogg', webm:'audio/webm', aac:'audio/aac',
+            wav:'audio/wav' })[ext] || 'audio/mp4';
+}
+
+// 8.1 标准扩展名
+check('8.1 m4a', audioMimeFromUrl('card.m4a'), 'audio/mp4');
+check('8.2 mp4', audioMimeFromUrl('card.mp4'), 'audio/mp4');
+check('8.3 mp3', audioMimeFromUrl('card.mp3'), 'audio/mpeg');
+check('8.4 ogg', audioMimeFromUrl('card.ogg'), 'audio/ogg');
+check('8.5 webm', audioMimeFromUrl('card.webm'), 'audio/webm');
+check('8.6 aac', audioMimeFromUrl('card.aac'), 'audio/aac');
+check('8.7 wav', audioMimeFromUrl('card.wav'), 'audio/wav');
+
+// 8.2 全路径
+check('8.8 含路径', audioMimeFromUrl('deck_abc/c01.m4a'), 'audio/mp4');
+check('8.9 含路径 mp3', audioMimeFromUrl('deck_abc/c01.mp3'), 'audio/mpeg');
+
+// 8.3 大写扩展名 → 小写归一
+check('8.10 .M4A', audioMimeFromUrl('card.M4A'), 'audio/mp4');
+check('8.11 混合大小写 .Mp3', audioMimeFromUrl('card.Mp3'), 'audio/mpeg');
+
+// 8.4 无扩展名 / 未知扩展名 → 默认 audio/mp4
+check('8.12 无扩展名', audioMimeFromUrl('card'), 'audio/mp4');
+check('8.13 未知 .xyz', audioMimeFromUrl('card.xyz'), 'audio/mp4');
+
+// 8.5 边界情况
+check('8.14 null → 默认', audioMimeFromUrl(null), 'audio/mp4');
+check('8.15 undefined → 默认', audioMimeFromUrl(undefined), 'audio/mp4');
+check('8.16 空字符串 → 默认', audioMimeFromUrl(''), 'audio/mp4');
+check('8.17 末尾有点', audioMimeFromUrl('card.'), 'audio/mp4');
+
+// 8.6 Storage 路径（Supabase 实际格式）
+check('8.18 Storage .m4a', audioMimeFromUrl('ReminiSea/deck_id/c01.m4a'), 'audio/mp4');
+check('8.19 Storage .aac', audioMimeFromUrl('ReminiSea/deck_id/c01.aac'), 'audio/aac');
+
+// ═══════════════════════════════════════════════
 // 结果汇总
 // ═══════════════════════════════════════════════
 console.log(`\n${'═'.repeat(60)}`);
