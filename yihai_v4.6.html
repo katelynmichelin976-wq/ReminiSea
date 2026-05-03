@@ -1687,6 +1687,8 @@ async function doCloudLogin() {
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     console.log('[sync] logged in:', _cloudUserEmail);
     updateCloudTabUI();
+    // 登录后补传离线期间的数据
+    syncPendingData().catch(e => console.warn('[sync] login backfill error:', e.message));
   } catch(e) {
     _syncEnabled = false;
     if (msgEl) { msgEl.style.display = ''; msgEl.textContent = '登录失败：' + e.message; msgEl.style.color = '#9B3A2A'; }
@@ -1735,7 +1737,13 @@ async function syncTrialLog(entry) {
       review_mode_before: entry.review_mode_before,
       timestamp: entry.timestamp
     });
-    if (error) console.warn('[sync] trial upload failed:', error.message);
+    if (error) { console.warn('[sync] trial upload failed:', error.message); return; }
+    // 标记已同步（写回 IndexedDB，供断线补传判断）
+    entry.synced_at = Date.now();
+    const db = await openSrsDb();
+    const tx = db.transaction(TRIAL_STORE, 'readwrite');
+    tx.objectStore(TRIAL_STORE).put(entry);
+    tx.onerror = e => console.warn('[sync] trial synced_at writeback failed');
   } catch(e) { console.warn('[sync] trial upload error:', e.message); }
 }
 
@@ -1825,6 +1833,36 @@ async function syncCardStatesFromCloud(deckKey) {
     console.warn('[sync] card states download error:', e.message);
     return 0;
   }
+}
+
+// 断线补传：将未同步的 TrialLog + 最新 CardState 推送至云端
+async function syncPendingData(deckKey) {
+  if (!_syncEnabled || !_sb) return;
+  try {
+    const db = await openSrsDb();
+
+    // 1. 补传未同步的 TrialLog（无 synced_at 的记录）
+    const allTrials = await new Promise((res, rej) => {
+      const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
+      req.onsuccess = e => res(e.target.result || []);
+      req.onerror   = e => rej(e.target.error);
+    });
+    const pending = allTrials.filter(t => !t.synced_at);
+    for (const t of pending) {
+      try { await syncTrialLog(t); } catch(e) { console.warn('[sync] backfill trial skip:', t.trial_id); }
+    }
+
+    // 2. 补传当前牌组所有 CardState（upsert，安全重传）
+    if (deckKey) {
+      const states = await getAllCardStates(deckKey);
+      for (const s of states) {
+        try { await syncCardState(s); } catch(e) { /* 单个失败不影响其他 */ }
+      }
+      if (pending.length > 0 || states.length > 0) {
+        console.log(`[sync] backfilled ${pending.length} trials + ${states.length} card states for ${deckKey}`);
+      }
+    }
+  } catch(e) { console.warn('[sync] backfill error:', e.message); }
 }
 
 function openSrsDb() {
@@ -2120,8 +2158,9 @@ function saveDailyProgress(dp) {
 // ── buildSessionQueue ────────────────────────────────────────────
 // 返回当日练习队列（card 对象列表，含 _srsState 字段）
 async function buildSessionQueue(deckKey) {
-  // 练习启动前：从云端拉取其他设备的 SRS 进度并合并
+  // 练习启动前：补传离线期间的未同步数据，再拉取云端进度
   if (_syncEnabled) {
+    try { await syncPendingData(deckKey); } catch(e) { console.warn('[sync] pre-quiz backfill error:', e.message); }
     try { await syncCardStatesFromCloud(deckKey); } catch(e) { console.warn('[sync] pre-quiz sync error:', e.message); }
   }
 
@@ -2910,16 +2949,14 @@ function speak(text, delay = 0, onend = null) {
 }
 
 // 播放答案语音：优先录音，无录音降级 TTS
-function playAnswer(q, onend) {
+// preAudio: 由调用方在用户手势内预先创建 Audio（iOS 兼容：避免 gesture 丢失）
+function playAnswer(q, onend, preAudio) {
   if (q.audioUrl) {
-    const audio = new Audio(q.audioUrl);
+    const audio = preAudio || new Audio(q.audioUrl);
     currentAudio = audio;
     if (onend) audio.onended = () => { currentAudio = null; onend(); };
-    audio.onerror = () => { currentAudio = null; fallback(); };
-    audio.play().catch(() => { currentAudio = null; fallback(); });
-    function fallback() {
-      speakDirect(q.name, onend);
-    }
+    audio.onerror = () => { currentAudio = null; speakDirect(q.name, onend); };
+    audio.play().catch(() => { currentAudio = null; speakDirect(q.name, onend); });
   } else {
     speakDirect(q.name, onend);
   }
@@ -3120,6 +3157,9 @@ function revealBrowse(q) {
     detailsEl.appendChild(item);
   });
 
+  // iOS 兼容：在用户手势内预先创建 Audio 元素
+  const _preAudio = q.audioUrl ? new Audio(q.audioUrl) : null;
+
   tAnswerTimer = setTimeout(() => {
     tAnswerTimer = null;
     if (sid !== sessionId) return;
@@ -3142,9 +3182,9 @@ function revealBrowse(q) {
       playAnswer(q, () => {
         if (sid !== sessionId) return;
         speakSequence(hints, startCountdown, 400, sid);
-      });
+      }, _preAudio);
     } else {
-      playAnswer(q, () => { if (sid === sessionId) startCountdown(); });
+      playAnswer(q, () => { if (sid === sessionId) startCountdown(); }, _preAudio);
     }
   }, BROWSE_SPEAK_DELAY);
 }
@@ -3269,6 +3309,9 @@ function revealAnswer() {
   nb2.classList.add('show');
   document.querySelector('.btm').classList.add('active');
 
+  // iOS 兼容：在用户手势内预先创建 Audio 元素
+  const _preAudio = q.audioUrl ? new Audio(q.audioUrl) : null;
+
   // 答案播报延迟后播放，优先录音，无录音用 TTS
   tAnswerTimer = setTimeout(() => {
     tAnswerTimer = null;
@@ -3285,7 +3328,7 @@ function revealAnswer() {
       }
     };
 
-    playAnswer(q, afterAnswer);
+    playAnswer(q, afterAnswer, _preAudio);
   }, SPEAK_DELAY);
 
   // ── SRS 写入（练习模式）──────────────────────────────────────
