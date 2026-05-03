@@ -2906,10 +2906,20 @@ function warmupSpeech() {
   const utt = new SpeechSynthesisUtterance('');
   utt.volume = 0;
   speechSynthesis.speak(utt);
-  // 解锁 Audio 播放权限（iOS 需要在用户手势内创建并 play 一次）
+  // 解锁 Audio 播放权限（iOS 需要 gesture 内产生一次真实音频上下文）
   try {
-    const a = new Audio();
-    a.play().catch(() => {});
+    var actx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = actx.createOscillator();
+    var gain = actx.createGain();
+    gain.gain.value = 0.001;
+    osc.connect(gain);
+    gain.connect(actx.destination);
+    osc.start(0);
+    osc.stop(0.001);
+    // 部分 iOS 版本还需要 HTMLAudioElement play 一次
+    var a = new Audio();
+    a.volume = 0;
+    a.play().catch(function(){});
   } catch(e) {}
   setTimeout(() => { loadVoices(); }, 300);
 }
@@ -4012,6 +4022,13 @@ function escAttr(s) {
   return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function audioMimeFromUrl(url) {
+  var ext = (url || '').split('.').pop().toLowerCase();
+  return ({ m4a:'audio/mp4', mp4:'audio/mp4', mp3:'audio/mpeg',
+            ogg:'audio/ogg', webm:'audio/webm', aac:'audio/aac',
+            wav:'audio/wav' })[ext] || 'audio/mp4';
+}
+
 async function downloadDeckFromCloud(deckId, deckName, btnEl) {
   if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '下载中...'; }
@@ -4081,7 +4098,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl) {
         try {
           const { data: audData, error: audErr } = await _sb.storage.from('ReminiSea').download(c.audio_url);
           if (!audErr && audData) {
-            const blob = new Blob([audData], { type: 'audio/mp4' });
+            const blob = new Blob([audData], { type: audioMimeFromUrl(c.audio_url) });
             card.audioUrl = URL.createObjectURL(blob);
             await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
           }
@@ -4165,7 +4182,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl) {
       try {
         const { data, error } = await _sb.storage.from('ReminiSea').download(audioUrl);
         if (!error && data) {
-          const blob = new Blob([data], { type: 'audio/mp4' });
+          const blob = new Blob([data], { type: audioMimeFromUrl(audioUrl) });
           audioUrlBlob = URL.createObjectURL(blob);
           await saveMedia(`${localKey}_${cardId}_aud`, blob).catch(() => {});
         }
