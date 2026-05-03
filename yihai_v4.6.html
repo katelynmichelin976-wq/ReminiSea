@@ -1876,6 +1876,41 @@ async function syncPendingData(deckKey) {
   } catch(e) { console.warn('[sync] backfill error:', e.message); }
 }
 
+// 练习完成后集中补传：当前 session 未上传记录 + 最多 10 条旧记录 + 拉取云端进度
+async function backfillAfterPractice(deckKey) {
+  if (!_syncEnabled || !_sb) return;
+  try {
+    const db = await openSrsDb();
+    const allTrials = await new Promise((res, rej) => {
+      const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
+      req.onsuccess = e => res(e.target.result || []);
+      req.onerror   = e => rej(e.target.error);
+    });
+    const pending = allTrials.filter(t => !t.synced_at);
+
+    // 当前 session 的未同步记录（练习中网络差没传上去的）
+    const currentUnsynced = pending.filter(t => String(t.session_id) === String(sessionId - 1));
+    // 历史遗留未同步记录，最多 10 条
+    const oldUnsynced = pending.filter(t => String(t.session_id) !== String(sessionId - 1)).slice(0, 10);
+
+    const toSync = currentUnsynced.concat(oldUnsynced);
+    for (const t of toSync) {
+      try { await syncTrialLog(t); } catch(e) { /* skip */ }
+    }
+
+    // 上传当前牌组所有 CardState
+    if (deckKey) {
+      const states = await getAllCardStates(deckKey);
+      for (const s of states) {
+        try { await syncCardState(s); } catch(e) { /* skip */ }
+      }
+    }
+
+    // 拉取云端 CardState（跨设备同步）
+    syncCardStatesFromCloud(deckKey).catch(function(e) { console.warn('[sync] post-practice cloud pull:', e.message); });
+  } catch(e) { console.warn('[sync] post-practice backfill:', e.message); }
+}
+
 function openSrsDb() {
   if (_srsDb) return Promise.resolve(_srsDb);
   return new Promise((res, rej) => {
@@ -2169,12 +2204,7 @@ function saveDailyProgress(dp) {
 // ── buildSessionQueue ────────────────────────────────────────────
 // 返回当日练习队列（card 对象列表，含 _srsState 字段）
 async function buildSessionQueue(deckKey) {
-  // 练习启动前：后台补传 + 拉取云端进度（不阻塞队列构建）
-  if (_syncEnabled) {
-    syncPendingData(deckKey).catch(function(e) { console.warn('[sync] pre-quiz backfill:', e.message); });
-    syncCardStatesFromCloud(deckKey).catch(function(e) { console.warn('[sync] pre-quiz cloud sync:', e.message); });
-  }
-
+  // 练习启动完全不碰网络，用本地数据直接构建队列
   const cards  = DECKS[deckKey] || [];
   const states = await getAllCardStates(deckKey);
   const stateMap = {};
@@ -3351,12 +3381,6 @@ function revealAnswer() {
     _lastSrsWrite = _writeSrs(q, rating, _pendingAttempt).catch(e => console.warn('_writeSrs error', e));
     _cardAnswerRating = null;
     _pendingAttempt   = null;
-    // 练习中网络恢复时补传尚未同步的数据
-    if (_syncEnabled) {
-      _lastSrsWrite = _lastSrsWrite.then(function() {
-        syncPendingData(currentDeck).catch(function(e) { console.warn('[sync] post-answer backfill:', e.message); });
-      });
-    }
   }
 }
 
@@ -3556,6 +3580,11 @@ function showFinish() {
     </div>`;
 
   showScreen('screen-finish');
+
+  // 练习完成后集中补传（不阻塞，用户在看完成界面）
+  if (_syncEnabled && currentDeck) {
+    backfillAfterPractice(currentDeck).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
+  }
 }
 
 // ── 活跃时长记录（练习模式）──────────────────────────────────
