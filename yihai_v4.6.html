@@ -3347,6 +3347,12 @@ function revealAnswer() {
     _lastSrsWrite = _writeSrs(q, rating, _pendingAttempt).catch(e => console.warn('_writeSrs error', e));
     _cardAnswerRating = null;
     _pendingAttempt   = null;
+    // 练习中网络恢复时补传尚未同步的数据
+    if (_syncEnabled) {
+      _lastSrsWrite = _lastSrsWrite.then(function() {
+        syncPendingData(currentDeck).catch(function(e) { console.warn('[sync] post-answer backfill:', e.message); });
+      });
+    }
   }
 }
 
