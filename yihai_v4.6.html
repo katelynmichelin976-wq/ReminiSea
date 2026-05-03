@@ -1876,38 +1876,29 @@ async function syncPendingData(deckKey) {
   } catch(e) { console.warn('[sync] backfill error:', e.message); }
 }
 
-// 练习完成后集中补传：当前 session 未上传记录 + 最多 10 条旧记录 + 拉取云端进度
+// 练习完成后集中补传当前牌组全部未同步数据
 async function backfillAfterPractice(deckKey) {
   if (!_syncEnabled || !_sb) return;
   try {
     const db = await openSrsDb();
+
+    // 补传所有未同步的 TrialLog（当天量不大，最多 ~50 条）
     const allTrials = await new Promise((res, rej) => {
       const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
       req.onsuccess = e => res(e.target.result || []);
       req.onerror   = e => rej(e.target.error);
     });
-    const pending = allTrials.filter(t => !t.synced_at);
-
-    // 当前 session 的未同步记录（练习中网络差没传上去的）
-    const currentUnsynced = pending.filter(t => String(t.session_id) === String(sessionId - 1));
-    // 历史遗留未同步记录，最多 10 条
-    const oldUnsynced = pending.filter(t => String(t.session_id) !== String(sessionId - 1)).slice(0, 10);
-
-    const toSync = currentUnsynced.concat(oldUnsynced);
-    for (const t of toSync) {
-      try { await syncTrialLog(t); } catch(e) { /* skip */ }
+    for (const t of allTrials) {
+      if (!t.synced_at) try { await syncTrialLog(t); } catch(e) { /* skip */ }
     }
 
-    // 上传当前牌组所有 CardState
+    // 上传当前牌组所有 CardState（upsert 安全）
     if (deckKey) {
       const states = await getAllCardStates(deckKey);
       for (const s of states) {
         try { await syncCardState(s); } catch(e) { /* skip */ }
       }
     }
-
-    // 拉取云端 CardState（跨设备同步）
-    syncCardStatesFromCloud(deckKey).catch(function(e) { console.warn('[sync] post-practice cloud pull:', e.message); });
   } catch(e) { console.warn('[sync] post-practice backfill:', e.message); }
 }
 
