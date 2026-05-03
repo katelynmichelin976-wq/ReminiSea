@@ -1451,8 +1451,20 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             <div class="sheet-section-lbl">同步账户</div>
             <div class="sheet-row">
               <span class="sheet-row-lbl" id="cloud-user-email"></span>
-              <button style="padding:4px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--surf);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit"
-                onclick="doCloudLogout()">退出</button>
+              <div style="display:flex;gap:6px">
+                <button style="padding:4px 10px;border:1px solid var(--blue);border-radius:6px;background:var(--blue-lt);color:var(--blue);font-size:11px;cursor:pointer;font-family:inherit"
+                  onclick="syncAll(currentDeck).catch(function(e){console.warn(e)});showCloudToast('同步中...')">🔄 同步</button>
+                <button style="padding:4px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--surf);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit"
+                  onclick="doCloudLogout()">退出</button>
+              </div>
+            </div>
+            <div class="sheet-row" style="margin-top:6px">
+              <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px">
+                <input type="checkbox" id="realtime-upload-toggle"
+                  onchange="_realtimeUpload=this.checked;localStorage.setItem('yihai_realtime_upload',_realtimeUpload)"
+                  style="accent-color:var(--blue)">
+                学习中实时上传（关闭后仅打开/前台/练习完成时同步，更省电）
+              </label>
             </div>
           </div>
           <div class="sheet-section">
@@ -1632,6 +1644,7 @@ let _syncEnabled = false;
 let _deviceId = null;
 let _lastOrphans = [];    // 媒体清理：暂存最近一次扫描的孤立 key
 let _cloudUserEmail = '';
+var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // 学习中实时上传开关
 
 // 启动时尝试恢复已有会话
 async function restoreCloudSession() {
@@ -1876,13 +1889,11 @@ async function syncPendingData(deckKey) {
   } catch(e) { console.warn('[sync] backfill error:', e.message); }
 }
 
-// 练习完成后集中补传当前牌组全部未同步数据
-async function backfillAfterPractice(deckKey) {
-  if (!_syncEnabled || !_sb) return;
+// 完整双向同步：上传所有未同步数据 → 下载云端 CardState 合并
+async function syncAll(deckKey) {
+  if (!_syncEnabled || !_sb || !deckKey) return;
   try {
     const db = await openSrsDb();
-
-    // 补传所有未同步的 TrialLog（当天量不大，最多 ~50 条）
     const allTrials = await new Promise((res, rej) => {
       const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
       req.onsuccess = e => res(e.target.result || []);
@@ -1891,15 +1902,18 @@ async function backfillAfterPractice(deckKey) {
     for (const t of allTrials) {
       if (!t.synced_at) try { await syncTrialLog(t); } catch(e) { /* skip */ }
     }
-
-    // 上传当前牌组所有 CardState（upsert 安全）
-    if (deckKey) {
-      const states = await getAllCardStates(deckKey);
-      for (const s of states) {
-        try { await syncCardState(s); } catch(e) { /* skip */ }
-      }
+    const states = await getAllCardStates(deckKey);
+    for (const s of states) {
+      try { await syncCardState(s); } catch(e) { /* skip */ }
     }
-  } catch(e) { console.warn('[sync] post-practice backfill:', e.message); }
+    await syncCardStatesFromCloud(deckKey);
+  } catch(e) { console.warn('[sync] syncAll error:', e.message); }
+}
+
+// 练习完成后集中补传（仅上传，不下拉）
+function backfillAfterPractice(deckKey) {
+  if (!_syncEnabled || !_sb || !deckKey) return;
+  syncAll(deckKey).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
 }
 
 function openSrsDb() {
@@ -1967,7 +1981,7 @@ async function saveCardState(state) {
   return new Promise((res, rej) => {
     const tx = db.transaction(CS_STORE, 'readwrite');
     tx.objectStore(CS_STORE).put(state);
-    tx.oncomplete = () => { syncCardState(state); res(); };
+    tx.oncomplete = () => { if (_realtimeUpload) syncCardState(state); res(); };
     tx.onerror    = e => rej(e.target.error);
   });
 }
@@ -2012,7 +2026,7 @@ async function writeTrialLog(entry) {
   return new Promise((res, rej) => {
     const tx = db.transaction(TRIAL_STORE, 'readwrite');
     tx.objectStore(TRIAL_STORE).put(entry);
-    tx.oncomplete = () => { syncTrialLog(entry); res(); };
+    tx.oncomplete = () => { if (_realtimeUpload) syncTrialLog(entry); res(); };
     tx.onerror    = e => rej(e.target.error);
   });
 }
@@ -4396,14 +4410,25 @@ function toggleTheme(checkbox){
   if(isDark)document.documentElement.classList.add('dark');
   window.addEventListener('load', async () => {
     const tog=document.getElementById('dark-toggle');if(tog)tog.checked=isDark;
+    var rtTog=document.getElementById('realtime-upload-toggle');if(rtTog)rtTog.checked=_realtimeUpload;
     await restoreDecks();
-    restoreCloudSession();  // 尝试恢复已有会话，fire-and-forget
+    var sessionPromise = restoreCloudSession();  // 尝试恢复已有会话
     // 初始选中第一个有卡片的牌组
     if (!currentDeck && DECKS_META.length) {
       currentDeck = DECKS_META[0].key;
     }
     renderDeckList();
     updateDeckStats();
+    // Anki 风格：页面加载后自动同步（不阻塞，用户可立即操作）
+    sessionPromise.then(function() {
+      if (_syncEnabled && currentDeck) syncAll(currentDeck).catch(function(){});
+    });
+    // Anki 风格：切回前台时自动同步
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && _syncEnabled && currentDeck) {
+        syncAll(currentDeck).catch(function(){});
+      }
+    });
     });
 })();
 
