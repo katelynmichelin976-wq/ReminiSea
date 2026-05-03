@@ -233,6 +233,108 @@ const cardD = { id: 'd', _imgUrl: 'old/img.jpg' };
 check('5.6 服务器移除图不覆盖', !needImgDownload(cardD, ''), true);
 
 // ═══════════════════════════════════════════════
+// SUITE 6 — 离线数据断线补传筛选逻辑
+// ═══════════════════════════════════════════════
+section('SUITE 6 — syncPendingData 未同步 Trial 筛选');
+
+function getPendingTrials(allTrials) {
+  return (allTrials || []).filter(t => !t.synced_at);
+}
+
+// 6.1 无 synced_at → pending
+const t1 = { trial_id: 't1', card_id: 'c1', rating: 'good' };
+check('6.1 无 synced_at 标记为待补传', getPendingTrials([t1]).length, 1);
+
+// 6.2 有 synced_at → 跳过
+const t2 = { trial_id: 't2', card_id: 'c2', rating: 'good', synced_at: 1715000000000 };
+check('6.2 有 synced_at 不重复上传', getPendingTrials([t2]).length, 0);
+
+// 6.3 混合列表：过滤正确
+const trials = [
+  { trial_id: 'a', synced_at: 1715000000000 },
+  { trial_id: 'b' },
+  { trial_id: 'c', synced_at: 1715000000000 },
+  { trial_id: 'd' },
+];
+check('6.3 混合列表正确过滤', getPendingTrials(trials).length, 2);
+check('6.3 只保留未同步', getPendingTrials(trials).map(t => t.trial_id).sort().join(','), 'b,d');
+
+// 6.4 全部已同步 → 空结果
+const allSynced = [{ trial_id: 'x', synced_at: 1 }, { trial_id: 'y', synced_at: 2 }];
+check('6.4 全已同步返回空数组', getPendingTrials(allSynced).length, 0);
+
+// 6.5 全部未同步 → 全部返回
+const noneSynced = [{ trial_id: 'p' }, { trial_id: 'q' }];
+check('6.5 全未同步全部返回', getPendingTrials(noneSynced).length, 2);
+
+// 6.6 空列表 → 空数组
+check('6.6 空列表', getPendingTrials([]).length, 0);
+
+// 6.7 undefined/null → 空数组
+check('6.7 null 保护', getPendingTrials(null).length, 0);
+check('6.7 undefined 保护', getPendingTrials(undefined).length, 0);
+
+// 6.8 模拟离线补传后的效果：syncTrialLog 写入 synced_at 后不再被选中
+const afterUpload = { trial_id: 'offline_1', card_id: 'c1', synced_at: Date.now() };
+check('6.8 补传后不被重复选中', getPendingTrials([afterUpload]).length, 0);
+
+// ═══════════════════════════════════════════════
+// SUITE 7 — 云端会话持久化检测逻辑
+// ═══════════════════════════════════════════════
+section('SUITE 7 — 会话恢复逻辑 + Sync 门禁');
+
+// 模拟 restoreCloudSession 的核心判定
+function detectSession(data, error) {
+  if (error) return false;
+  return !!(data && data.session);
+}
+// 模拟 sync 函数的门禁条件 if (!_syncEnabled || !_sb) return;
+function canSync(syncEnabled, sb) {
+  return syncEnabled && !!sb;
+}
+
+// 7.1 有效 session → 在线
+const validSession = { session: { user: { email: 'test@example.com' } } };
+const noSession = { session: null };
+
+check('7.1 有 session 判定为已登录', detectSession(validSession, null), true);
+check('7.1 无 session 判定为离线',  detectSession(noSession, null), false);
+
+// 7.2 异常情况
+check('7.2 报错视为离线', detectSession(null, new Error('fail')), false);
+check('7.2 null data 离线', detectSession(null, null), false);
+check('7.2 undefined data 离线', detectSession(undefined, null), false);
+
+// 7.3 Sync 门禁：_syncEnabled + _sb 双条件
+const sbClient = {};
+check('7.3 已登录+已初始化 → 可同步', canSync(true, sbClient), true);
+check('7.3 未登录 → 不可同步', canSync(false, sbClient), false);
+check('7.3 客户端未初始化 → 不可同步', canSync(true, null), false);
+check('7.3 双重否定 → 不可同步', canSync(false, null), false);
+
+// 7.4 恢复场景：_syncEnabled = true 后持久保持（页面不重载不变）
+// 模拟 PWA 后台恢复：变量不变
+let _syncEnabled = true;
+let _sb = sbClient;
+check('7.4 PWA 后台恢复后状态保持', canSync(_syncEnabled, _sb), true);
+// 模拟 token 过期但 SDK 自动刷新：_sb 仍然有效
+check('7.4 token 刷新不影响门禁', canSync(_syncEnabled, _sb), true);
+
+// 7.5 页面重载场景：restoreCloudSession 异步完成前
+// 模拟恢复前初始态：_syncEnabled = false, _sb 已创建
+const _sbCreated = sbClient;
+_syncEnabled = false;
+check('7.5 重载后恢复完成前不可同步', canSync(_syncEnabled, _sbCreated), false);
+// 模拟恢复完成后
+_syncEnabled = true;
+check('7.5 恢复完成后可同步', canSync(_syncEnabled, _sbCreated), true);
+
+// 7.6 退出登录后：_syncEnabled=false, _sb=null
+_syncEnabled = false;
+_sb = null;
+check('7.6 退出登录后不可同步', canSync(_syncEnabled, _sb), false);
+
+// ═══════════════════════════════════════════════
 // 结果汇总
 // ═══════════════════════════════════════════════
 console.log(`\n${'═'.repeat(60)}`);
