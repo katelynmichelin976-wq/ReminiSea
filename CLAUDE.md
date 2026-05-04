@@ -67,7 +67,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | File | Purpose |
 |------|---------|
-| `yihai_v4.4.html` | Main training app (single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.7.html` | Main training app (single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.6.html` | v4.6 (previous version, kept for reference) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) |
 | `srs_test.js` | Node.js SRS unit tests (67 test cases, 59 pass + 8 pre-existing date-offset failures) |
 | `yihai_v4.4_test.js` | Node.js unit tests for v4.4 additions: simpleHash, escAttr, data format, sync URL logic (55 tests) |
@@ -77,6 +78,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `忆海拾光_训练App_README.md` | Full version history, data formats, architecture docs |
 | `忆海拾光_训练App发布检查清单.md` | Release checklist — execute before every release |
 | `00_新会话入口.md` | Session context recovery document for resuming work across conversations |
+| `yihai_开发问答.md` | Development Q&A — records of user questions and implementation decisions during development |
+| `yihai_实现说明.md` | Implementation manual — cross-module design, sync timing, voice system, stats definitions |
 
 ## Development Commands
 

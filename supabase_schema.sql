@@ -79,6 +79,9 @@ create table if not exists sync_trials (
   lapses_streak_before integer,
   lapses_total_before  integer,
   review_mode_before  text,
+  srs_stage_after     text,
+  interval_after      integer,
+  ease_after          real,
   timestamp           bigint not null,
   synced_at           timestamptz default now(),
   created_at          timestamptz default now()
