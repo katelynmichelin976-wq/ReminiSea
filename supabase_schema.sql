@@ -90,6 +90,12 @@ create table if not exists sync_trials (
 create index if not exists idx_sync_trials_device on sync_trials(device_id);
 create index if not exists idx_sync_trials_timestamp on sync_trials(timestamp);
 
+-- ═══════════════════════════════════════════
+-- 已删除的遗留表（v4.7 清理）
+-- card_srs_state, sync_session, training_records
+-- 这三张表是早期遗留，RLS 策略为 USING(true)，已删除
+-- ═══════════════════════════════════════════
+
 -- 6. 训练端同步 — SRS 状态
 create table if not exists sync_card_states (
   id            bigint generated always as identity primary key,
