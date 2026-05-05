@@ -147,3 +147,22 @@ create policy "authenticated_access" on sync_trials
 
 create policy "authenticated_access" on sync_card_states
   for all using (auth.role() = 'authenticated');
+
+-- ═══════════════════════════════════════════
+-- v4.8: 参数配置云端同步
+-- ═══════════════════════════════════════════
+
+create table if not exists sync_config (
+  id            bigint generated always as identity primary key,
+  user_id       uuid not null references auth.users(id) on delete cascade,
+  config_json   jsonb not null default '{}'::jsonb,
+  updated_at    bigint not null default extract(epoch from now())::bigint,
+  synced_at     timestamptz default now(),
+  created_at    timestamptz default now(),
+  unique(user_id)
+);
+
+alter table sync_config enable row level security;
+
+create policy "individual_access" on sync_config
+  for all using (auth.uid() = user_id);
