@@ -165,3 +165,68 @@
 | `_syncEnabled` | boolean | 全局同步开关，false = 纯离线 |
 | `_dailyRemovedToday` | `{}` | state_key → true，当日保护移出的卡 |
 | `_lastSrsWrite` | Promise | 最新 SRS 写入 Promise，用于读取前等待 |
+| `_pushConfigTimer` | number | cloudPushConfig 防抖定时器 |
+| `_deviceId` | string | 设备唯一标识（localStorage deviceId） |
+
+---
+
+## 九、并发下载
+
+### v4.8 新增
+
+`parallelMapLimit(arr, limit, fn)` — 通用并发限制辅助函数：
+
+```js
+async function parallelMapLimit(arr, limit, fn) {
+  const entries = arr.entries();
+  const workers = Array.from({ length: limit }, async () => {
+    for (const [i, item] of entries) await fn(item, i);
+  });
+  await Promise.all(workers);
+}
+```
+
+原理：共享迭代器 + 固定数量 Worker，每个 Worker 从迭代器中取下一个元素处理。
+
+### 应用场景
+
+| 场景 | 位置 | 并发数 | 说明 |
+|------|------|--------|------|
+| downloadDeckFromCloud | 首次云端下载 | 3 路 + 卡内图音并行 | 每张卡内 image/audio 用 Promise.all |
+| syncDeckFromCloud downloadMedia | 增量同步媒体 | 卡内图音 Promise.all | 图片和录音同时下载 |
+| syncDeckFromCloud 新增卡片 | 增量新增 | 3 路 parallelMapLimit | 新卡片媒体下载 |
+
+### 性能实测
+
+- 串联（v4.7 估算）：~82s（16 张卡，~11.4MB）
+- 3 路并发 + 卡内并行（v4.8）：**32.6s**，提速约 2.5 倍
+- 服务端：Supabase ap-southeast-1（新加坡）
+
+---
+
+## 十、参数云端同步
+
+### v4.8 新增
+
+**表结构**（sync_config）：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| user_id | uuid PK | 关联 auth.users，唯一 |
+| config_json | jsonb | { srs: {...}, ui: {...} } |
+| updated_at | bigint | 时间戳 |
+
+**流程**：
+
+```
+设置变更 → debouncePushConfig() (500ms 防抖)
+         → cloudPushConfig()
+           → 收集 localStorage 中 srs_* 参数 + UI 参数
+           → upsert sync_config (onConflict: user_id)
+
+页面加载/登录/手动同步 → cloudPullConfig()
+                     → 读取 sync_config.config_json
+                     → 写入 localStorage + SRS_CONFIG
+```
+
+**作用域注意**：`cloudPushConfig` 中需局部定义 `BOOL_KEYS` / `STR_KEYS`，不能引用 `_loadSrsConfig` IIFE 内的同名 const（作用域不达）。

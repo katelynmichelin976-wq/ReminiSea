@@ -5,6 +5,30 @@
 
 ---
 
+## v4.8 迭代（2026-05-05）
+
+### Q1：并发下载的提速效果如何？稳定性怎样？
+
+实测 16 张卡（约 11.4MB 媒体）从 Supabase 新加坡区下载：
+- 串联：~82s（每次 await 一个文件，TLS 握手 ~350ms/文件）
+- 3 路并发 + 卡内图音并行：**32.6s**，提速 ~2.5 倍
+
+稳定性：每张卡内图音用 `.catch()` 包裹单个失败，不影响整体。`parallelMapLimit` 共享迭代器模式，不会出现竞争条件或超量并发。
+
+### Q2：BOOL_KEYS 未定义的原因是什么？
+
+`_loadSrsConfig()` 是 IIFE，内部 `const BOOL_KEYS` / `STR_KEYS` 作用域仅在 IIFE 内。v4.8 新增的 `cloudPushConfig()` 中引用了 `BOOL_KEYS` 和 `STR_KEYS`，运行时抛出 `ReferenceError`。
+
+修复：在 `cloudPushConfig()` 内局部定义这两个数组（与其引用 IIFE 的 const，不如在各函数内局部定义更清晰——因为列表短且稳定）。
+
+### Q3：为什么 settings 改成 bottom sheet 而不用独立页面？
+
+保持单文件架构一致。bottom sheet (`#settings-overlay`) 是 CSS overlay，DOM 始终存在。5 个 Tab 通过 `switchTab(n)` 切换 `.sheet-panel` 的 display。关闭时自动触发 `cloudPushConfig()`。
+
+### Q4：参数同步的防抖策略？
+
+`debouncePushConfig()` — 每次设置变更清空旧定时器，500ms 后才 push。关设置面板时立即强制 push 一次（跳过防抖）。避免频繁操作时过多写入 sync_config。
+
 ## v4.7 迭代（2026-05-04）
 
 ### Q1：活跃时长算法是怎样的？
