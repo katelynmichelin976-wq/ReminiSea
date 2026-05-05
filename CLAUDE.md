@@ -60,26 +60,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Card maker** (`index_v49`) → exports `.yhspack` → **Deck manager** uploads → **Supabase** (cards_pool + Storage)
 - **Deck manager** organizes cards → **Supabase** (server_decks + server_deck_cards)
 - **Training app** downloads ← **Supabase** (server_decks → cards_pool → Storage media)
-- **Training app** uploads ← **Supabase** (sync_trials + sync_card_states, fire-and-forget)
+- **Training app** uploads ← **Supabase** (sync_trials + sync_card_states + sync_config, fire-and-forget)
 - **Training app** imports `.yhspack` directly (offline fallback)
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `yihai_v4.7.html` | Main training app (single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.8.html` | Main training app (single HTML file — CSS + markup + JS all inline, Supabase cloud sync, v4.8+ 参数配置云端同步) |
+| `yihai_v4.7.html` | v4.7 (previous version, kept for reference) |
 | `yihai_v4.6.html` | v4.6 (previous version, kept for reference) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) |
 | `srs_test.js` | Node.js SRS unit tests (67 test cases, 59 pass + 8 pre-existing date-offset failures) |
 | `yihai_v4.4_test.js` | Node.js unit tests for v4.4 additions: simpleHash, escAttr, data format, sync URL logic (55 tests) |
 | `srs_design_v6.9.md` | Authoritative SRS design spec — all SRS implementation decisions derive from this |
-| `supabase_schema.sql` | Supabase database schema (6 tables + indexes) |
+| `supabase_schema.sql` | Supabase database schema (7 tables + indexes) |
 | `supabase_storage_policies.sql` | Supabase Storage RLS policies for ReminiSea bucket |
 | `忆海拾光_训练App_README.md` | Full version history, data formats, architecture docs |
 | `忆海拾光_训练App发布检查清单.md` | Release checklist — execute before every release |
 | `00_新会话入口.md` | Session context recovery document for resuming work across conversations |
 | `yihai_开发问答.md` | Development Q&A — records of user questions and implementation decisions during development |
 | `yihai_实现说明.md` | Implementation manual — cross-module design, sync timing, voice system, stats definitions |
+| `忆海拾光_v5.0_腾讯云迁移设计方案.md` | v5.0 腾讯云 CloudBase 迁移设计方案（待实施） |
 
 ## Development Commands
 
