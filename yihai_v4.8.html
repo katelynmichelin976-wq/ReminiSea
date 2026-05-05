@@ -1645,12 +1645,37 @@ let _srsDb = null;
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
 
+// CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
+// 当前使用腾讯云 COS + 回源：yihai-media-1309041735.cos.ap-shanghai.myqcloud.com
+const MEDIA_CDN_BASE = 'https://yihai-media-1309041735.cos.ap-shanghai.myqcloud.com/storage/v1/object/public/ReminiSea';
+
 let _sb = null;
 let _syncEnabled = false;
 let _deviceId = null;
 let _lastOrphans = [];    // 媒体清理：暂存最近一次扫描的孤立 key
 let _cloudUserEmail = '';
 var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // 学习中实时上传开关
+
+// CDN 媒体下载辅助：尝试 CDN 加速，失败则回退到 Supabase Storage
+function cdnMediaUrl(path) {
+  if (!path) return '';
+  return MEDIA_CDN_BASE ? MEDIA_CDN_BASE + '/' + path : '';
+}
+async function downloadMediaFromCDNorSupabase(path, mimeType) {
+  if (!path) throw new Error('empty path');
+  // 优先走 CDN
+  const cdnUrl = cdnMediaUrl(path);
+  if (cdnUrl) {
+    try {
+      const resp = await fetch(cdnUrl);
+      if (resp.ok) return await resp.blob();
+    } catch(e) { /* CDN 不通则回退到 Supabase */ }
+  }
+  // 回退到 Supabase Storage
+  const { data, error } = await _sb.storage.from('ReminiSea').download(path);
+  if (error) throw error;
+  return new Blob([data], { type: mimeType || 'image/jpeg' });
+}
 
 // 启动时尝试恢复已有会话
 async function restoreCloudSession() {
@@ -4324,25 +4349,19 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl) {
       const tasks = [];
       if (c.image_url) {
         tasks.push(
-          _sb.storage.from('ReminiSea').download(c.image_url)
-            .then(async ({ data, error }) => {
-              if (!error && data) {
-                const blob = new Blob([data], { type: 'image/jpeg' });
-                card.img = URL.createObjectURL(blob);
-                await saveMedia(`${key}_${card.id}_img`, blob).catch(() => {});
-              }
+          downloadMediaFromCDNorSupabase(c.image_url)
+            .then(async blob => {
+              card.img = URL.createObjectURL(blob);
+              await saveMedia(`${key}_${card.id}_img`, blob).catch(() => {});
             }).catch(e => console.warn('[cloud] img failed:', c.image_url, e.message))
         );
       }
       if (c.audio_url) {
         tasks.push(
-          _sb.storage.from('ReminiSea').download(c.audio_url)
-            .then(async ({ data, error }) => {
-              if (!error && data) {
-                const blob = new Blob([data], { type: audioMimeFromUrl(c.audio_url) });
-                card.audioUrl = URL.createObjectURL(blob);
-                await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
-              }
+          downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url))
+            .then(async blob => {
+              card.audioUrl = URL.createObjectURL(blob);
+              await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
             }).catch(e => console.warn('[cloud] aud failed:', c.audio_url, e.message))
         );
       }
@@ -4411,25 +4430,19 @@ async function syncDeckFromCloud(deckId, deckName, btnEl) {
     const tasks = [];
     if (imageUrl) {
       tasks.push(
-        _sb.storage.from('ReminiSea').download(imageUrl)
-          .then(async ({ data, error }) => {
-            if (!error && data) {
-              const blob = new Blob([data], { type: 'image/jpeg' });
-              img = URL.createObjectURL(blob);
-              await saveMedia(`${localKey}_${cardId}_img`, blob).catch(() => {});
-            }
+        downloadMediaFromCDNorSupabase(imageUrl)
+          .then(async blob => {
+            img = URL.createObjectURL(blob);
+            await saveMedia(`${localKey}_${cardId}_img`, blob).catch(() => {});
           }).catch(e => console.warn('[sync] img fail:', e.message))
       );
     }
     if (audioUrl) {
       tasks.push(
-        _sb.storage.from('ReminiSea').download(audioUrl)
-          .then(async ({ data, error }) => {
-            if (!error && data) {
-              const blob = new Blob([data], { type: audioMimeFromUrl(audioUrl) });
-              audioUrlBlob = URL.createObjectURL(blob);
-              await saveMedia(`${localKey}_${cardId}_aud`, blob).catch(() => {});
-            }
+        downloadMediaFromCDNorSupabase(audioUrl, audioMimeFromUrl(audioUrl))
+          .then(async blob => {
+            audioUrlBlob = URL.createObjectURL(blob);
+            await saveMedia(`${localKey}_${cardId}_aud`, blob).catch(() => {});
           }).catch(e => console.warn('[sync] aud fail:', e.message))
       );
     }

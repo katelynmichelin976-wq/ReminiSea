@@ -286,6 +286,21 @@ const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
 const AUTH_EMAIL = 'zyhacl@gmail.com';
 const AUTH_PASSWORD = '667788';
 const STORAGE_BUCKET = 'ReminiSea';
+// CDN 加速媒体下载（可选）：设空串则回退到 Supabase Storage
+const MEDIA_CDN_BASE = 'https://yihai-media-1309041735.cos.ap-shanghai.myqcloud.com/storage/v1/object/public/ReminiSea';
+async function downloadMediaFromCDNorSupabase(path) {
+  if (!path) throw new Error('empty path');
+  const cdnUrl = MEDIA_CDN_BASE ? MEDIA_CDN_BASE + '/' + path : '';
+  if (cdnUrl) {
+    try {
+      const resp = await fetch(cdnUrl);
+      if (resp.ok) return await resp.blob();
+    } catch(e) {}
+  }
+  const { data, error } = await _sb.storage.from(STORAGE_BUCKET).download(path);
+  if (error) throw error;
+  return data;
+}
 
 // ═══════════════════════════════════════════
 // 全局状态
@@ -845,20 +860,16 @@ async function doExport() {
       for (const c of cards) {
         if (c.image_url) {
           try {
-            const { data } = await _sb.storage.from(STORAGE_BUCKET).download(c.image_url);
-            if (data) {
-              const ext = c.image_url.split('.').pop() || 'jpg';
-              mediaFolder.file(c.card_id + '.' + ext, data);
-            }
+            const blob = await downloadMediaFromCDNorSupabase(c.image_url);
+            const ext = c.image_url.split('.').pop() || 'jpg';
+            mediaFolder.file(c.card_id + '.' + ext, blob);
           } catch(e) { console.warn('下载图片失败：' + c.image_url, e); }
         }
         if (c.audio_url) {
           try {
-            const { data } = await _sb.storage.from(STORAGE_BUCKET).download(c.audio_url);
-            if (data) {
-              const ext = c.audio_url.split('.').pop() || 'm4a';
-              mediaFolder.file(c.card_id + '.' + ext, data);
-            }
+            const blob = await downloadMediaFromCDNorSupabase(c.audio_url);
+            const ext = c.audio_url.split('.').pop() || 'm4a';
+            mediaFolder.file(c.card_id + '.' + ext, blob);
           } catch(e) { console.warn('下载录音失败：' + c.audio_url, e); }
         }
       }
