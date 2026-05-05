@@ -1918,6 +1918,8 @@ async function cloudPushConfig() {
       'idle_threshold_sec','warn_duration_sec','warn_repeat_sec',
       'learn_ahead_limit',
     ];
+    const BOOL_KEYS = ['new_cards_ignore_review_limit'];
+    const STR_KEYS  = ['warn_mode'];
     NUM_KEYS.forEach(k => { const v = localStorage.getItem('srs_' + k); if (v !== null) srs[k] = parseFloat(v); });
     BOOL_KEYS.forEach(k => { const v = localStorage.getItem('srs_' + k); if (v !== null) srs[k] = v === '1'; });
     STR_KEYS.forEach(k => { const v = localStorage.getItem('srs_' + k); if (v !== null) srs[k] = v; });
@@ -4259,6 +4261,15 @@ function audioMimeFromUrl(url) {
             wav:'audio/wav' })[ext] || 'audio/mp4';
 }
 
+// 并发限制辅助函数：最多 limit 个异步任务并行
+async function parallelMapLimit(arr, limit, fn) {
+  const entries = arr.entries();
+  const workers = Array.from({ length: limit }, async () => {
+    for (const [i, item] of entries) await fn(item, i);
+  });
+  await Promise.all(workers);
+}
+
 async function downloadDeckFromCloud(deckId, deckName, btnEl) {
   if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '下载中...'; }
@@ -4305,43 +4316,42 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl) {
     // 3. 生成 deck key
     const key = 'cloud_' + deckId;
 
-    // 4. 下载媒体并组装卡片
+    // 4. 下载媒体并组装卡片（并发 3 路，卡内图音并行）
     const deckCards = [];
-    for (let i = 0; i < ordered.length; i++) {
-      const c = ordered[i];
+    let completed = 0;
+    await parallelMapLimit(ordered, 3, async (c, i) => {
       const card = { id: c.card_id, name: c.card_name, img: '', audioUrl: '', details: [] };
-
-      // 下载图片
+      const tasks = [];
       if (c.image_url) {
-        try {
-          const { data: imgData, error: imgErr } = await _sb.storage.from('ReminiSea').download(c.image_url);
-          if (!imgErr && imgData) {
-            const blob = new Blob([imgData], { type: 'image/jpeg' });
-            card.img = URL.createObjectURL(blob);
-            await saveMedia(`${key}_${card.id}_img`, blob).catch(() => {});
-          }
-        } catch(e) { console.warn('[cloud] img download failed:', c.image_url, e.message); }
+        tasks.push(
+          _sb.storage.from('ReminiSea').download(c.image_url)
+            .then(async ({ data, error }) => {
+              if (!error && data) {
+                const blob = new Blob([data], { type: 'image/jpeg' });
+                card.img = URL.createObjectURL(blob);
+                await saveMedia(`${key}_${card.id}_img`, blob).catch(() => {});
+              }
+            }).catch(e => console.warn('[cloud] img failed:', c.image_url, e.message))
+        );
       }
-
-      // 下载录音
       if (c.audio_url) {
-        try {
-          const { data: audData, error: audErr } = await _sb.storage.from('ReminiSea').download(c.audio_url);
-          if (!audErr && audData) {
-            const blob = new Blob([audData], { type: audioMimeFromUrl(c.audio_url) });
-            card.audioUrl = URL.createObjectURL(blob);
-            await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
-          }
-        } catch(e) { console.warn('[cloud] aud download failed:', c.audio_url, e.message); }
+        tasks.push(
+          _sb.storage.from('ReminiSea').download(c.audio_url)
+            .then(async ({ data, error }) => {
+              if (!error && data) {
+                const blob = new Blob([data], { type: audioMimeFromUrl(c.audio_url) });
+                card.audioUrl = URL.createObjectURL(blob);
+                await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
+              }
+            }).catch(e => console.warn('[cloud] aud failed:', c.audio_url, e.message))
+        );
       }
-
-      // 记录服务器源 URL，下次同步时做增量对比
+      await Promise.all(tasks);
       card._imgUrl = c.image_url || '';
       card._audUrl = c.audio_url || '';
-
-      deckCards.push(card);
-      setProgress(i + 1, total);
-    }
+      deckCards[i] = card;
+      setProgress(++completed, total);
+    });
 
     if (!deckCards.length) { hideProgress(); showCloudToast('无有效卡片', true); return; }
 
@@ -4398,29 +4408,34 @@ async function syncDeckFromCloud(deckId, deckName, btnEl) {
   // 媒体下载
   async function downloadMedia(cardId, imageUrl, audioUrl) {
     let img = '', audioUrlBlob = '';
+    const tasks = [];
     if (imageUrl) {
-      try {
-        const { data, error } = await _sb.storage.from('ReminiSea').download(imageUrl);
-        if (!error && data) {
-          const blob = new Blob([data], { type: 'image/jpeg' });
-          img = URL.createObjectURL(blob);
-          await saveMedia(`${localKey}_${cardId}_img`, blob).catch(() => {});
-        }
-      } catch(e) { console.warn('[sync] img fail:', e.message); }
+      tasks.push(
+        _sb.storage.from('ReminiSea').download(imageUrl)
+          .then(async ({ data, error }) => {
+            if (!error && data) {
+              const blob = new Blob([data], { type: 'image/jpeg' });
+              img = URL.createObjectURL(blob);
+              await saveMedia(`${localKey}_${cardId}_img`, blob).catch(() => {});
+            }
+          }).catch(e => console.warn('[sync] img fail:', e.message))
+      );
     }
     if (audioUrl) {
-      try {
-        const { data, error } = await _sb.storage.from('ReminiSea').download(audioUrl);
-        if (!error && data) {
-          const blob = new Blob([data], { type: audioMimeFromUrl(audioUrl) });
-          audioUrlBlob = URL.createObjectURL(blob);
-          await saveMedia(`${localKey}_${cardId}_aud`, blob).catch(() => {});
-        }
-      } catch(e) { console.warn('[sync] aud fail:', e.message); }
+      tasks.push(
+        _sb.storage.from('ReminiSea').download(audioUrl)
+          .then(async ({ data, error }) => {
+            if (!error && data) {
+              const blob = new Blob([data], { type: audioMimeFromUrl(audioUrl) });
+              audioUrlBlob = URL.createObjectURL(blob);
+              await saveMedia(`${localKey}_${cardId}_aud`, blob).catch(() => {});
+            }
+          }).catch(e => console.warn('[sync] aud fail:', e.message))
+      );
     }
+    await Promise.all(tasks);
     return { img, audioUrl: audioUrlBlob };
   }
-
   try {
     const syncNow = new Date().toISOString();
     const lastSyncAt = localStorage.getItem('yihai_sync_at_' + localKey) || '';
@@ -4512,11 +4527,11 @@ async function syncDeckFromCloud(deckId, deckName, btnEl) {
       merged.push(local);
     }
 
-    // 7. 处理新增卡片
+    // 7. 处理新增卡片（并发 3 路）
     let added = 0;
-    for (const cid of newIds) {
+    await parallelMapLimit(newIds, 3, async (cid) => {
       const server = newCardMap[cid];
-      if (!server) continue;
+      if (!server) return;
       const card = { id: cid, name: server.card_name, img: '', audioUrl: '', details: [] };
       const media = await downloadMedia(cid, server.image_url, server.audio_url);
       card.img = media.img;
@@ -4525,7 +4540,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl) {
       card._audUrl = server.audio_url || '';
       merged.push(card);
       added++;
-    }
+    });
 
     // 8. 保留服务器已删除但本地仍有的卡片
     for (const local of localCards) {
