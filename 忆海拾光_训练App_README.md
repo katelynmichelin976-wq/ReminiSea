@@ -147,6 +147,33 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ---
 
+### v4.8 — 2026-05-05
+
+**同步架构重构**
+- 统一同步按钮：单个「🔄 同步」同时同步牌组 + SRS 状态 + 配置 + 答题记录
+- 全量/轻量分离：手动/登录后全量（含牌组），自动/后台仅状态+配置（`noDecks` 参数）
+- 同步进度条：`showSyncProg(1/4, '正在上传练习记录...')` 分步显示
+- 移除云端 tab「刷新列表」按钮和各牌组「同步」/「下载」按钮
+- 服务端已删除卡片同步时自动移除本地副本（Anki 兼容）
+
+**参数云端同步**
+- `sync_config` 表 + `cloudPushConfig()` / `cloudPullConfig()`，同账号跨设备共享
+- 所有 SRS + UI 参数自动 push，登录/加载/同步时 pull
+
+**并发下载**
+- `parallelMapLimit` 3 路并发 + 卡内图音并行，实测 16 张卡 32.6s（较串联 ~82s 提速 2.5 倍）
+
+**UI 调整**
+- 设置面板改为底部 Sheet，通用/语音/文字/SRS/云端 五 Tab
+- 统计页：时长显示 `1`（代替 `<1分`），标签改为「时长(分)」
+- 内置测试牌组（🧪 5 张 Emoji 卡）
+
+**CDN 媒体加速**
+- Tencent Cloud COS + CDN 回源，`MEDIA_CDN_BASE` 指向 COS 域名
+- `downloadMediaFromCDNorSupabase` 优先 CDN、失败回退 Supabase Storage
+
+---
+
 ### v4.3 — 2026-03-28
 
 **SRS 核心 Bug 修复（8项）**

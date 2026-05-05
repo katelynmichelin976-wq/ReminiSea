@@ -56,19 +56,23 @@
 
 ### 触发时机总表
 
-| 时机 | 调用 | Toast |
-|------|------|-------|
-| 页面加载（会话恢复后） | `syncAll(deckKey)` | 否 |
-| 前台切回 | `syncAll(deckKey)` | 否 |
-| 学习中（实时） | `syncCardState` + `syncTrialLog` 在 tx.oncomplete | 受 `_realtimeUpload` 控制 |
-| 练习完成 | `backfillAfterPractice()` → `syncAll()` | 否 |
-| 手动同步按钮 | `syncAll(deckKey, true)` | 是 |
-| 登录后 | `syncPendingData()` 补传离线数据 | 否 |
+| 时机 | 调用 | Toast | 同步范围 |
+|------|------|-------|---------|
+| 页面加载（会话恢复后） | `syncAll(deckKey)` | 否 | 轻量（无牌组） |
+| 前台切回 | `syncAll(deckKey)` | 否 | 轻量（无牌组） |
+| 学习中（实时） | `syncCardState` + `syncTrialLog` 在 tx.oncomplete | 受 `_realtimeUpload` 控制 | 仅单条 |
+| 练习完成 | `backfillAfterPractice()` → `syncAll(deckKey, false, true)` | 否 | 轻量（无牌组） |
+| 手动同步按钮 | `syncAll(deckKey, true)` | 是 | 全量（含牌组） |
+| 登录后 | `syncAll(deckKey, false)` | 否 | 全量（含牌组） |
 
-### v4.7 变更
+### v4.8 变更
 
-- `syncAll` 增加 `showToast` 参数，手动同步时显示「上传答题 N · 下载更新 M」
-- 各调用点静默同步时不弹 toast
+- `syncAll` 增加 `noDecks` 参数，全量同步含牌组下载/增量，轻量同步仅上传答题+同步状态+配置
+- 新增 `showSyncProg(curr, total, text)` / `hideSyncProg()` 进度条显示
+- 手动/登录后同步显示步骤：1/4 上传答题记录 → 2/4 同步练习状态 → 3/4 同步配置 → 4/4 同步牌组
+- 移除了云端 tab 的「刷新列表」按钮和各牌组的「同步」/「下载」按钮，统一由「🔄 同步」管理
+- `downloadDeckFromCloud` / `syncDeckFromCloud` 新增 `noToast` 参数，被 syncAll 调用时不显示 toast 和逐卡进度（避免覆盖 syncAll 步骤指示）
+- 服务端已删除的卡本地同步时直接移除（不再保留）
 
 ### 数据流方向
 

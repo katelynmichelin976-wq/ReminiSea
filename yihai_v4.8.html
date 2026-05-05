@@ -1468,10 +1468,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-section">
             <div class="sheet-section-lbl">云端牌组</div>
             <div class="sheet-row" style="flex-direction:column;align-items:stretch;gap:8px">
-              <button id="cloud-refresh-btn"
-                style="padding:6px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--surf);color:var(--blue);font-size:13px;cursor:pointer;font-family:inherit"
-                onclick="refreshServerDeckList()">🔄 刷新列表</button>
-              <div id="cloud-deck-list" style="font-size:13px;color:var(--text2)">点击刷新获取云端牌组...</div>
+              <div id="cloud-deck-list" style="font-size:13px;color:var(--text2)">点击「同步」获取云端牌组...</div>
               <div id="cloud-progress" style="display:none;margin-top:4px">
                 <div style="display:flex;justify-content:space-between;margin-bottom:3px">
                   <span id="cloud-prog-text" style="font-size:11px;color:var(--text2)"></span>
@@ -1731,10 +1728,8 @@ async function doCloudLogin() {
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     console.log('[sync] logged in:', _cloudUserEmail);
     updateCloudTabUI();
-    // 登录后补传离线期间的数据
-    syncPendingData().catch(e => console.warn('[sync] login backfill error:', e.message));
-    // 登录后拉取云端参数配置
-    cloudPullConfig().catch(e => console.warn('[sync] config pull on login error:', e.message));
+    // 登录后全量同步（答题/状态/配置/牌组）
+    syncAll(currentDeck, false).catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
     if (msgEl) { msgEl.style.display = ''; msgEl.textContent = '登录失败：' + e.message; msgEl.style.color = '#9B3A2A'; }
@@ -2060,11 +2055,32 @@ async function cloudPullConfig() {
   }
 }
 
+// ── 同步进度显示 ──
+function showSyncProg(curr, total, text) {
+  const prog = document.getElementById('cloud-progress');
+  const el   = document.getElementById('cloud-prog-text');
+  const pct  = document.getElementById('cloud-prog-pct');
+  const bar  = document.getElementById('cloud-prog-bar');
+  if (!prog) return;
+  prog.style.display = 'block';
+  if (el)  el.textContent  = text || '';
+  if (pct) pct.textContent = curr + '/' + total;
+  if (bar) bar.style.width  = (curr / total * 100) + '%';
+}
+function hideSyncProg() {
+  const prog = document.getElementById('cloud-progress');
+  if (prog) prog.style.display = 'none';
+}
+
 // 完整双向同步：上传所有未同步数据 → 下载云端 CardState 合并
-async function syncAll(deckKey, showToast) {
-  if (!_syncEnabled || !_sb || !deckKey) return;
+async function syncAll(deckKey, showToast, noDecks) {
+  if (!_syncEnabled || !_sb) return;
   if (showToast) showCloudToast('同步中…');
   try {
+    const totalSteps = noDecks ? 3 : 4;
+
+    // 1. 上传答题记录
+    showSyncProg(1, totalSteps, '正在上传练习记录...');
     const db = await openSrsDb();
     const allTrials = await new Promise((res, rej) => {
       const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
@@ -2076,33 +2092,65 @@ async function syncAll(deckKey, showToast) {
     for (const t of allTrials) {
       if (!t.synced_at) { try { await syncTrialLog(t); uploadedTrials++; } catch(e) { /* skip */ } }
     }
-    let uploadedStates = 0;
-    const states = await getAllCardStates(deckKey);
-    for (const s of states) {
-      try { await syncCardState(s); uploadedStates++; } catch(e) { /* skip */ }
-    }
-    const merged = await syncCardStatesFromCloud(deckKey);
 
-    // 参数配置云端同步
+    // 2. 上传/下载卡牌状态（仅当前牌组）
+    showSyncProg(2, totalSteps, '正在同步练习状态...');
+    let uploadedStates = 0, merged = 0;
+    if (deckKey) {
+      const states = await getAllCardStates(deckKey);
+      for (const s of states) {
+        try { await syncCardState(s); uploadedStates++; } catch(e) { /* skip */ }
+      }
+      merged = await syncCardStatesFromCloud(deckKey);
+    }
+
+    // 3. 参数配置云端同步
+    showSyncProg(3, totalSteps, '正在同步配置...');
     await cloudPushConfig();
     const cfgItems = await cloudPullConfig();
 
+    // 4. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
+    let newDecks = 0, syncedDecks = 0;
+    if (!noDecks) {
+      showSyncProg(4, totalSteps, '正在同步牌组...');
+      const { data: serverDecks } = await _sb.from('server_decks').select('id,name');
+      if (serverDecks) {
+        for (const sd of serverDecks) {
+          try {
+            const existing = DECKS_META.find(m => m.name === sd.name);
+            if (existing) {
+              await syncDeckFromCloud(sd.id, sd.name, null, true);
+              syncedDecks++;
+            } else {
+              await downloadDeckFromCloud(sd.id, sd.name, null, true);
+              newDecks++;
+            }
+          } catch(e) { console.warn('[sync] skip deck:', sd.name, e.message); }
+        }
+      }
+      await refreshServerDeckList();
+    }
+    hideSyncProg();
+
+    // 5. 提示
     if (showToast) {
       const parts = [];
       if (uploadedTrials > 0) parts.push('上传答题 ' + uploadedTrials);
       if (uploadedStates > 0) parts.push('上传状态 ' + uploadedStates);
-      if (merged > 0) parts.push('下载更新 ' + merged);
+      if (merged > 0) parts.push('状态更新 ' + merged);
       if (cfgItems > 0) parts.push('配置 ' + cfgItems);
+      if (newDecks > 0) parts.push('下载牌组 ' + newDecks);
+      if (syncedDecks > 0) parts.push('同步牌组 ' + syncedDecks);
       if (parts.length > 0) showCloudToast('同步完成 · ' + parts.join(' · '));
-      else if (pendingCount === 0 && merged === 0) showCloudToast('已是最新');
+      else if (pendingCount === 0 && merged === 0 && !newDecks && !syncedDecks) showCloudToast('已是最新');
     }
-  } catch(e) { console.warn('[sync] syncAll error:', e.message); if (showToast) showCloudToast('同步失败'); }
+  } catch(e) { hideSyncProg(); console.warn('[sync] syncAll error:', e.message); if (showToast) showCloudToast('同步失败'); }
 }
 
 // 练习完成后集中补传（仅上传，不下拉）
 function backfillAfterPractice(deckKey) {
   if (!_syncEnabled || !_sb || !deckKey) return;
-  syncAll(deckKey).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
+  syncAll(deckKey, false, true).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
 }
 
 function openSrsDb() {
@@ -4241,8 +4289,6 @@ function switchTab(n) {
 async function refreshServerDeckList() {
   if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
   const listEl = document.getElementById('cloud-deck-list');
-  const btnEl = document.getElementById('cloud-refresh-btn');
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ 加载中...'; }
   try {
     // 查询 server_decks 获取整理后的牌组列表
     const { data: decks, error } = await _sb.from('server_decks').select('id,name').order('name');
@@ -4255,17 +4301,14 @@ async function refreshServerDeckList() {
     decks.forEach(d => {
       const exists = DECKS_META.find(m => m.name === d.name);
       html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)">'
-        + '<span style="flex:1;font-weight:500">📦 ' + esc(d.name) + '</span>'
-        + (exists
-          ? '<button style="padding:4px 10px;border:1px solid var(--green-bd);border-radius:6px;background:var(--green-bg);color:var(--green);font-size:12px;cursor:pointer;font-family:inherit" onclick="syncDeckFromCloud(\'' + escAttr(d.id) + '\',\'' + escAttr(d.name) + '\',this)">🔄 同步</button>'
-          : '<button style="padding:4px 10px;border:1px solid var(--blue);border-radius:6px;background:var(--blue-lt);color:var(--blue);font-size:12px;cursor:pointer;font-family:inherit" onclick="downloadDeckFromCloud(\'' + escAttr(d.id) + '\',\'' + escAttr(d.name) + '\',this)">下载</button>')
+        + '<span style="font-size:16px">' + (exists ? '✅' : '📦') + '</span>'
+        + '<span style="flex:1;font-weight:500">' + esc(d.name) + '</span>'
+        + '<span style="font-size:11px;color:var(--text3)">' + (exists ? '已安装' : '未安装') + '</span>'
         + '</div>';
     });
     listEl.innerHTML = html;
   } catch(e) {
     listEl.innerHTML = '<span style="color:var(--text3)">加载失败：' + esc(e.message) + '</span>';
-  } finally {
-    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '🔄 刷新列表'; }
   }
 }
 
@@ -4295,16 +4338,17 @@ async function parallelMapLimit(arr, limit, fn) {
   await Promise.all(workers);
 }
 
-async function downloadDeckFromCloud(deckId, deckName, btnEl) {
+async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
   if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '下载中...'; }
 
-  // 显示进度条
+  // 显示进度条（被 syncAll 调用时不显示逐卡进度，避免覆盖步骤指示）
   const progEl  = document.getElementById('cloud-progress');
   const textEl  = document.getElementById('cloud-prog-text');
   const pctEl   = document.getElementById('cloud-prog-pct');
   const barEl   = document.getElementById('cloud-prog-bar');
   function setProgress(done, total) {
+    if (noToast) return;
     if (!progEl) return;
     progEl.style.display = 'block';
     const pct = Math.round(done / total * 100);
@@ -4312,7 +4356,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl) {
     pctEl.textContent = pct + '%';
     barEl.style.width = pct + '%';
   }
-  function hideProgress() { if (progEl) progEl.style.display = 'none'; }
+  function hideProgress() { if (!noToast && progEl) progEl.style.display = 'none'; }
 
   try {
     // 1. 通过 server_deck_cards 获取该牌组的 card_id 列表（按排序）
@@ -4389,13 +4433,13 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl) {
     currentDeck = key;
     renderDeckList();
     updateDeckStats();
-    refreshServerDeckList(); // 更新云端列表的"已导入"状态
+    if (!noToast) refreshServerDeckList(); // 更新云端列表的"已导入"状态
 
     hideProgress();
-    showCloudToast('✓ 已导入「' + deckName + '」' + deckCards.length + ' 张');
+    if (!noToast) showCloudToast('✓ 已导入「' + deckName + '」' + deckCards.length + ' 张');
   } catch(e) {
     hideProgress();
-    showCloudToast('下载失败：' + e.message, true);
+    if (!noToast) showCloudToast('下载失败：' + e.message, true);
     console.error('[cloud] download error:', e);
   } finally {
     hideProgress();
@@ -4403,7 +4447,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl) {
   }
 }
 
-async function syncDeckFromCloud(deckId, deckName, btnEl) {
+async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
   if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
   const existing = DECKS_META.find(m => m.name === deckName);
   if (!existing) { showCloudToast('本地无此牌组，请先下载', true); return; }
@@ -4415,6 +4459,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl) {
   const pctEl   = document.getElementById('cloud-prog-pct');
   const barEl   = document.getElementById('cloud-prog-bar');
   function setProgress(done, total) {
+    if (noToast) return;
     if (!progEl) return;
     progEl.style.display = 'block';
     const pct = total ? Math.round(done / total * 100) : 100;
@@ -4422,7 +4467,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl) {
     pctEl.textContent = pct + '%';
     barEl.style.width = pct + '%';
   }
-  function hideProgress() { if (progEl) progEl.style.display = 'none'; }
+  function hideProgress() { if (!noToast && progEl) progEl.style.display = 'none'; }
 
   // 媒体下载
   async function downloadMedia(cardId, imageUrl, audioUrl) {
@@ -4555,10 +4600,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl) {
       added++;
     });
 
-    // 8. 保留服务器已删除但本地仍有的卡片
-    for (const local of localCards) {
-      if (!serverIdSet.has(local.id)) merged.push(local);
-    }
+    // 8. 删除同步：服务器已移除的卡片不同步保留（与 Anki 逻辑一致）
 
     setProgress(newIds.length + existingIds.length, newIds.length + existingIds.length);
 
@@ -4570,7 +4612,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl) {
     currentDeck = localKey;
     renderDeckList();
     updateDeckStats();
-    refreshServerDeckList();
+    if (!noToast) refreshServerDeckList();
 
     hideProgress();
     let msg;
@@ -4581,10 +4623,10 @@ async function syncDeckFromCloud(deckId, deckName, btnEl) {
     } else {
       msg = '✓ 已是最新（' + skipped + ' 张均无变化）';
     }
-    showCloudToast(msg);
+    if (!noToast) showCloudToast(msg);
   } catch(e) {
     hideProgress();
-    showCloudToast('同步失败：' + e.message, true);
+    if (!noToast) showCloudToast('同步失败：' + e.message, true);
     console.error('[sync] error:', e);
   } finally {
     hideProgress();
@@ -4640,12 +4682,12 @@ function toggleTheme(checkbox){
     updateDeckStats();
     // Anki 风格：页面加载后自动同步（不阻塞，用户可立即操作）
     sessionPromise.then(function() {
-      if (_syncEnabled && currentDeck) syncAll(currentDeck).catch(function(){});
+      if (_syncEnabled && currentDeck) syncAll(currentDeck, false, true).catch(function(){});
     });
     // Anki 风格：切回前台时自动同步
     document.addEventListener('visibilitychange', function() {
       if (!document.hidden && _syncEnabled && currentDeck) {
-        syncAll(currentDeck).catch(function(){});
+        syncAll(currentDeck, false, true).catch(function(){});
       }
     });
     });
@@ -4702,7 +4744,7 @@ async function renderStatsToday() {
   });
 
   const totalSec = dp.active_duration_sec || 0;
-  const durStr   = totalSec < 30 ? '<1分' : Math.round(totalSec / 60) + '分';
+  const durStr   = totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
 
   // KPI 卡片
   const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
@@ -4712,7 +4754,7 @@ async function renderStatsToday() {
     <div class="stats-kpi"><div class="stats-kpi-num kpi-w">${firstHard}</div><div class="stats-kpi-lbl">困难</div></div>
     <div class="stats-kpi"><div class="stats-kpi-num kpi-e">${firstFail}</div><div class="stats-kpi-lbl">重来</div></div>`;
   document.getElementById('st-kpi2').innerHTML = `
-    <div class="stats-kpi"><div class="stats-kpi-num" style="font-size:16px;font-weight:700">${durStr}</div><div class="stats-kpi-lbl">时长</div></div>
+    <div class="stats-kpi"><div class="stats-kpi-num">${durStr}</div><div class="stats-kpi-lbl">时长(分)</div></div>
     <div class="stats-kpi"><div class="stats-kpi-num">${dp.daily_new_today}</div><div class="stats-kpi-lbl">新卡</div></div>
     <div class="stats-kpi"><div class="stats-kpi-num" style="color:${sus>0?'#7c3aed':'var(--text)'}">${sus}</div><div class="stats-kpi-lbl">待确认</div></div>`;
 
