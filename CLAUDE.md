@@ -91,9 +91,12 @@ node srs_test.js
 
 # Run v4.4 utility tests (required before/after modifying simpleHash, escAttr, data format, sync logic)
 node yihai_v4.4_test.js
+
+# Run v4.8 utility tests (required before/after modifying cdnMediaUrl, secsToLabel, parallelMapLimit, setObjURL)
+node yihai_v4.8_test.js
 ```
 
-All 67 SRS tests must pass — covers: new card learning path, review stage (with screenshot cross-validation), relearning, lapses protection, full lifecycle.
+All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46.
 
 ## SRS Architecture
 

@@ -1557,35 +1557,19 @@ const SRS_CONFIG = {
 
 // ── SRS_CONFIG 持久化覆盖（从 localStorage 恢复用户修改）─────────
 (function _loadSrsConfig() {
-  const NUM_KEYS = [
-    'graduating_interval','easy_interval','minimum_interval','new_interval',
-    'maximum_interval','starting_ease','easy_bonus','interval_modifier',
-    'hard_interval','ease_min','hard_step_multiplier',
-    't1_review_before_mix','t1_mix_before_t7',
-    'new_cards_per_day','maximum_reviews_per_day',
-    'daily_remove_lapses','auto_suspend_lapses',
-    'practice_advance_sec','maximum_answer_seconds',
-    'idle_threshold_sec','warn_duration_sec','warn_repeat_sec',
-    'learn_ahead_limit',
-  ];
-  const BOOL_KEYS = ['new_cards_ignore_review_limit'];
-  const STR_KEYS  = ['warn_mode'];
-  NUM_KEYS.forEach(k => {
+  Object.keys(SRS_CONFIG).forEach(k => {
     const v = localStorage.getItem('srs_' + k);
-    if (v !== null) SRS_CONFIG[k] = parseFloat(v);
-  });
-  BOOL_KEYS.forEach(k => {
-    const v = localStorage.getItem('srs_' + k);
-    if (v !== null) SRS_CONFIG[k] = v === '1';
-  });
-  STR_KEYS.forEach(k => {
-    const v = localStorage.getItem('srs_' + k);
-    if (v !== null) SRS_CONFIG[k] = v;
-  });
-  // 数组字段（learning_steps / relearning_steps）
-  ['learning_steps','relearning_steps'].forEach(k => {
-    const v = localStorage.getItem('srs_' + k);
-    if (v) { try { SRS_CONFIG[k] = JSON.parse(v); } catch(e) {} }
+    if (v === null) return;
+    const def = SRS_CONFIG[k];
+    if (Array.isArray(def)) {
+      try { SRS_CONFIG[k] = JSON.parse(v); } catch(e) {}
+    } else if (typeof def === 'boolean') {
+      SRS_CONFIG[k] = v === '1';
+    } else if (typeof def === 'number') {
+      SRS_CONFIG[k] = parseFloat(v);
+    } else {
+      SRS_CONFIG[k] = v;
+    }
   });
 })();
 
@@ -1651,6 +1635,7 @@ let _syncEnabled = false;
 let _deviceId = null;
 let _lastOrphans = [];    // 媒体清理：暂存最近一次扫描的孤立 key
 let _cloudUserEmail = '';
+let _cloudUserId = '';
 var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // 学习中实时上传开关
 
 // CDN 媒体下载辅助：尝试 CDN 加速，失败则回退到 Supabase Storage
@@ -1683,6 +1668,7 @@ async function restoreCloudSession() {
     if (data.session) {
       _syncEnabled = true;
       _cloudUserEmail = data.session.user.email;
+      _cloudUserId = data.session.user.id;
       _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
       console.log('[sync] session restored:', _cloudUserEmail);
     }
@@ -1725,6 +1711,7 @@ async function doCloudLogin() {
     if (error) throw error;
     _syncEnabled = true;
     _cloudUserEmail = data.user.email;
+    _cloudUserId = data.user.id;
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     console.log('[sync] logged in:', _cloudUserEmail);
     updateCloudTabUI();
@@ -1759,6 +1746,7 @@ async function syncTrialLog(entry) {
     const { error } = await _sb.from('sync_trials').insert({
       device_id: _deviceId,
       trial_id: entry.trial_id,
+      user_id: _cloudUserId,
       card_id: entry.card_id,
       deck_key: entry.deck_key,
       session_id: entry.session_id,
@@ -1821,7 +1809,7 @@ async function syncCardState(state) {
       lapses_total: state.lapses_total,
       suspended: state.suspended,
       updated_at: state.updated_at
-    }, { onConflict: 'device_id, state_key' });
+    }, { onConflict: 'user_id, state_key' });
     if (error) console.warn('[sync] card state upload failed:', error.message);
   } catch(e) { console.warn('[sync] card state upload error:', e.message); }
 }
@@ -1833,6 +1821,7 @@ async function syncCardStatesFromCloud(deckKey) {
   try {
     const { data, error } = await _sb.from('sync_card_states')
       .select('*')
+      .eq('user_id', _cloudUserId)
       .eq('deck_key', deckKey)
       .order('updated_at', { ascending: false });
     if (error) throw error;
@@ -1903,16 +1892,16 @@ async function syncPendingData(deckKey) {
       req.onerror   = e => rej(e.target.error);
     });
     const pending = allTrials.filter(t => !t.synced_at);
-    for (const t of pending) {
+    await parallelMapLimit(pending, 10, async t => {
       try { await syncTrialLog(t); } catch(e) { console.warn('[sync] backfill trial skip:', t.trial_id); }
-    }
+    });
 
     // 2. 补传当前牌组所有 CardState（upsert，安全重传）
     if (deckKey) {
       const states = await getAllCardStates(deckKey);
-      for (const s of states) {
+      await parallelMapLimit(states, 10, async s => {
         try { await syncCardState(s); } catch(e) { /* 单个失败不影响其他 */ }
-      }
+      });
       if (pending.length > 0 || states.length > 0) {
         console.log(`[sync] backfilled ${pending.length} trials + ${states.length} card states for ${deckKey}`);
       }
@@ -1925,27 +1914,21 @@ async function syncPendingData(deckKey) {
 async function cloudPushConfig() {
   if (!_syncEnabled || !_sb) return;
   try {
-    // 收集 SRS 参数
+    // 收集 SRS 参数（从 SRS_CONFIG 动态推导类型，消除双份维护）
     const srs = {};
-    const NUM_KEYS = [
-      'graduating_interval','easy_interval','minimum_interval','new_interval',
-      'maximum_interval','starting_ease','easy_bonus','interval_modifier',
-      'hard_interval','ease_min','hard_step_multiplier',
-      't1_review_before_mix','t1_mix_before_t7',
-      'new_cards_per_day','maximum_reviews_per_day',
-      'daily_remove_lapses','auto_suspend_lapses',
-      'practice_advance_sec','maximum_answer_seconds',
-      'idle_threshold_sec','warn_duration_sec','warn_repeat_sec',
-      'learn_ahead_limit',
-    ];
-    const BOOL_KEYS = ['new_cards_ignore_review_limit'];
-    const STR_KEYS  = ['warn_mode'];
-    NUM_KEYS.forEach(k => { const v = localStorage.getItem('srs_' + k); if (v !== null) srs[k] = parseFloat(v); });
-    BOOL_KEYS.forEach(k => { const v = localStorage.getItem('srs_' + k); if (v !== null) srs[k] = v === '1'; });
-    STR_KEYS.forEach(k => { const v = localStorage.getItem('srs_' + k); if (v !== null) srs[k] = v; });
-    ['learning_steps','relearning_steps'].forEach(k => {
+    Object.keys(SRS_CONFIG).forEach(k => {
       const v = localStorage.getItem('srs_' + k);
-      if (v) { try { srs[k] = JSON.parse(v); } catch(e) {} }
+      if (v === null) return;
+      const def = SRS_CONFIG[k];
+      if (Array.isArray(def)) {
+        try { srs[k] = JSON.parse(v); } catch(e) {}
+      } else if (typeof def === 'boolean') {
+        srs[k] = v === '1';
+      } else if (typeof def === 'number') {
+        srs[k] = parseFloat(v);
+      } else {
+        srs[k] = v;
+      }
     });
 
     // 收集 UI 参数
@@ -2811,10 +2794,10 @@ async function restoreDecks() {
           if (!card._audUrl && c.audUrl) card._audUrl = c.audUrl;
           // 从 IndexedDB 恢复图片
           const imgBlob = await loadMedia(`${key}_${c.id}_img`).catch(() => null);
-          if (imgBlob) try { card.img = URL.createObjectURL(imgBlob); } catch(e) {}
+          if (imgBlob) try { setObjURL(card, 'img', imgBlob); } catch(e) {}
           // 从 IndexedDB 恢复录音
           const audBlob = await loadMedia(`${key}_${c.id}_aud`).catch(() => null);
-          if (audBlob) try { card.audioUrl = URL.createObjectURL(audBlob); } catch(e) {}
+          if (audBlob) try { setObjURL(card, 'audioUrl', audBlob); } catch(e) {}
           cards.push(card);
         } catch(e) { console.warn('restoreDecks: skipping card', c.id, e.message); }
       }
@@ -2858,13 +2841,16 @@ async function importYhspack(file) {
       if (!c.name) continue;
       const card = { id: c.id || String(i), name: c.name, img: '', audioUrl: '', details: [] };
 
-      // 图片
+      // 图片（按扩展名推导 MIME，支持 PNG/WebP/GIF）
       if (c.image) {
         const imgFile = zip.file(c.image);
         if (imgFile) {
           const buf = await imgFile.async('arraybuffer');
-          const blob = new Blob([buf], { type: 'image/jpeg' });
-          card.img = URL.createObjectURL(blob);
+          const ext = (c.image.split('.').pop() || 'jpg').toLowerCase();
+          const mime = {'jpg':'image/jpeg','jpeg':'image/jpeg','png':'image/png',
+                        'webp':'image/webp','gif':'image/gif'}[ext] || 'image/jpeg';
+          const blob = new Blob([buf], { type: mime });
+          setObjURL(card, 'img', blob);
           await saveMedia(`${key}_${card.id}_img`, blob).catch(() => {});
         }
       }
@@ -2878,7 +2864,7 @@ async function importYhspack(file) {
           const mime = {'m4a':'audio/mp4','mp4':'audio/mp4','mp3':'audio/mpeg',
                         'ogg':'audio/ogg','webm':'audio/webm','aac':'audio/aac'}[ext] || 'audio/mp4';
           const blob = new Blob([buf], { type: mime });
-          card.audioUrl = URL.createObjectURL(blob);
+          setObjURL(card, 'audioUrl', blob);
           await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
         }
       }
@@ -2999,11 +2985,17 @@ function selectDeck(el) {
   currentDeck = el.dataset.deck;
 }
 
-function deleteDeck(e, key) {
+async function deleteDeck(e, key) {
   e.stopPropagation();
   const meta = DECKS_META.find(m => m.key === key);
   if (!meta || meta.builtin) return;
-  if (!confirm(`删除牌组「${meta.name}」？`)) return;
+  const ok = await showConfirmDialog(`删除牌组「${esc(meta.name)}」？`);
+  if (!ok) return;
+  // 释放 ObjectURL 防止内存泄漏
+  (DECKS[key] || []).forEach(c => {
+    if (c.img && c.img.startsWith('blob:')) URL.revokeObjectURL(c.img);
+    if (c.audioUrl && c.audioUrl.startsWith('blob:')) URL.revokeObjectURL(c.audioUrl);
+  });
   delete DECKS[key];
   DECKS_META = DECKS_META.filter(m => m.key !== key);
   localStorage.removeItem(LS_DECK_PREFIX + key);
@@ -4322,6 +4314,12 @@ function escAttr(s) {
   return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// 创建 ObjectURL，自动 revoke 旧的（防泄漏）
+function setObjURL(card, field, blob) {
+  if (card[field] && card[field].startsWith('blob:')) URL.revokeObjectURL(card[field]);
+  card[field] = blob ? URL.createObjectURL(blob) : '';
+}
+
 function audioMimeFromUrl(url) {
   var ext = (url || '').split('.').pop().toLowerCase();
   return ({ m4a:'audio/mp4', mp4:'audio/mp4', mp3:'audio/mpeg',
@@ -5268,7 +5266,7 @@ function renderDeckList() {
         </svg>
       </button>`;
     return `<div class="deck-card${m.key === currentDeck ? ' selected' : ''}" data-deck="${m.key}" onclick="selectDeck(this)">
-      <div class="deck-info"><div class="deck-name">${m.name}</div></div>
+      <div class="deck-info"><div class="deck-name">${esc(m.name)}</div></div>
       <div class="deck-stats">
         <div class="deck-stat"><span class="deck-stat-num due"  data-deck="${m.key}">${dueVal}</span><span class="deck-stat-lbl">到期</span></div>
         <div class="deck-stat"><span class="deck-stat-num new-c" data-deck="${m.key}">${newVal}</span><span class="deck-stat-lbl">新卡</span></div>
@@ -5300,7 +5298,7 @@ function showConfirmDialog(msg) {
     mask.className = 'yh-dialog-mask';
     mask.innerHTML = `
       <div class="yh-dialog">
-        <div class="yh-dialog-msg">${msg.replace(/</g,'&lt;')}</div>
+        <div class="yh-dialog-msg">${esc(msg)}</div>
         <div class="yh-dialog-btns">
           <button class="yh-dialog-btn cancel" id="yh-dlg-no">取消</button>
           <button class="yh-dialog-btn confirm" id="yh-dlg-yes">确认</button>

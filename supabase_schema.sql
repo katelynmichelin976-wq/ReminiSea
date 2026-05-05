@@ -60,6 +60,7 @@ create table if not exists upload_log (
 -- 5. 训练端同步 — 答题记录
 create table if not exists sync_trials (
   id                  bigint generated always as identity primary key,
+  user_id             uuid not null references auth.users(id) on delete cascade,
   device_id           text not null,
   trial_id            text not null unique,
   card_id             text not null,
@@ -87,7 +88,7 @@ create table if not exists sync_trials (
   created_at          timestamptz default now()
 );
 
-create index if not exists idx_sync_trials_device on sync_trials(device_id);
+create index if not exists idx_sync_trials_user on sync_trials(user_id);
 create index if not exists idx_sync_trials_timestamp on sync_trials(timestamp);
 
 -- ═══════════════════════════════════════════
@@ -99,6 +100,7 @@ create index if not exists idx_sync_trials_timestamp on sync_trials(timestamp);
 -- 6. 训练端同步 — SRS 状态
 create table if not exists sync_card_states (
   id            bigint generated always as identity primary key,
+  user_id       uuid not null references auth.users(id) on delete cascade,
   device_id     text not null,
   state_key     text not null,
   card_id       text not null,
@@ -116,7 +118,7 @@ create table if not exists sync_card_states (
   updated_at    bigint not null,
   synced_at     timestamptz default now(),
   created_at    timestamptz default now(),
-  unique(device_id, state_key)
+  unique(user_id, state_key)
 );
 
 -- ═══════════════════════════════════════════
@@ -142,11 +144,11 @@ create policy "authenticated_access" on server_deck_cards
 create policy "authenticated_access" on upload_log
   for all using (auth.role() = 'authenticated');
 
-create policy "authenticated_access" on sync_trials
-  for all using (auth.role() = 'authenticated');
+create policy "individual_access" on sync_trials
+  for all using (auth.uid() = user_id);
 
-create policy "authenticated_access" on sync_card_states
-  for all using (auth.role() = 'authenticated');
+create policy "individual_access" on sync_card_states
+  for all using (auth.uid() = user_id);
 
 -- ═══════════════════════════════════════════
 -- v4.8: 参数配置云端同步

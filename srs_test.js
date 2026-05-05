@@ -23,14 +23,15 @@ const SRS_CONFIG = {
 };
 
 function todayStr(offsetDays = 0) {
-  const d = new Date('2026-03-28T00:00:00');
-  d.setDate(d.getDate() + offsetDays);
+  const d = new Date(Date.UTC(2026, 2, 28)); // March 28, 2026 UTC
+  d.setUTCDate(d.getUTCDate() + offsetDays);
   return d.toISOString().slice(0, 10);
 }
 
 function addDays(dateStr, n) {
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + n);
+  const p = dateStr.split('-').map(Number);
+  const d = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+  d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
 
