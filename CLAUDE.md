@@ -65,42 +65,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Key Files
 
+### 当前版本
 | File | Purpose |
 |------|---------|
 | `yihai_v4.9.html` | Main training app (single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
-| `yihai_v4.8.html` | v4.8 (previous version, kept for reference) |
-| `yihai_v4.7.html` | v4.7 (previous version, kept for reference) |
-| `yihai_v4.6.html` | v4.6 (previous version, kept for reference) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) |
-| `srs_test.js` | Node.js SRS unit tests (67 test cases, 59 pass + 8 pre-existing date-offset failures) |
-| `yihai_v4.4_test.js` | Node.js unit tests for v4.4 additions: simpleHash, escAttr, data format, sync URL logic (55 tests) |
-| `_playwright_test.js` | Playwright 回归测试（可视化 · 单机版）— 导入 → SRS 算法 → 多日 UI 练习 → IndexedDB 验证 |
-| `_playwright_cloud_test.js` | Playwright 回归测试（可视化 · 网络版）— 登录 → 下载云端牌组 → 练习同步 → 配置同步 → 多设备同步 |
-| `srs_design_v6.9.md` | Authoritative SRS design spec — all SRS implementation decisions derive from this |
-| `supabase_schema.sql` | Supabase database schema (7 tables + indexes) |
-| `supabase_storage_policies.sql` | Supabase Storage RLS policies for ReminiSea bucket |
-| `忆海拾光_训练App_README.md` | Full version history, data formats, architecture docs |
-| `忆海拾光_训练App发布检查清单.md` | Release checklist — execute before every release |
-| `00_新会话入口.md` | Session context recovery document for resuming work across conversations |
-| `yihai_开发问答.md` | Development Q&A — records of user questions and implementation decisions during development |
-| `yihai_实现说明.md` | Implementation manual — cross-module design, sync timing, voice system, stats definitions |
-| `忆海拾光_v5.0_腾讯云迁移设计方案.md` | v5.0 腾讯云 CloudBase 迁移设计方案（待实施） |
+| `index_v49.html` | Card maker tool (paused) |
+
+### 测试
+| File | Purpose |
+|------|---------|
+| `tests/srs_test.js` | Node.js SRS unit tests (67 cases) |
+| `tests/yihai_v4.4_test.js` | v4.4 utility tests (98 cases) |
+| `tests/yihai_v4.8_test.js` | v4.8 utility tests (46 cases) |
+| `tests/_playwright_test.js` | Playwright 单机版回归测试（18 断言） |
+| `tests/_playwright_cloud_test.js` | Playwright 网络版回归测试（17 断言） |
+| `tests/test_data/` | Test .yhspack files |
+
+### 文档
+| File | Purpose |
+|------|---------|
+| `docs/srs_design_v6.9.md` | Authoritative SRS design spec |
+| `docs/忆海拾光_训练App_README.md` | Full version history |
+| `docs/忆海拾光_训练App发布检查清单.md` | Release checklist |
+| `docs/yihai_开发问答.md` | Development Q&A |
+| `docs/yihai_实现说明.md` | Implementation manual |
+| `docs/忆海拾光_v5.0_腾讯云迁移设计方案.md` | v5.0 migration plan |
+
+### 基础设施
+| File | Purpose |
+|------|---------|
+| `sql/supabase_schema.sql` | Database schema (7 tables) |
+| `sql/supabase_storage_policies.sql` | Storage RLS policies |
+| `sql/supabase_migration_002_sync_trials_after_state.sql` | Migration scripts |
+| `archive/` | Previous versions (v4.3–v4.8) |
 
 ## Development Commands
 
 ```bash
 # Run SRS unit tests (required before/after modifying processAnswer or related logic)
-node srs_test.js
+node tests/srs_test.js
 
 # Run v4.4 utility tests (required before/after modifying simpleHash, escAttr, data format, sync logic)
-node yihai_v4.4_test.js
+node tests/yihai_v4.4_test.js
 
 # Run v4.8 utility tests (required before/after modifying cdnMediaUrl, secsToLabel, parallelMapLimit, setObjURL)
-node yihai_v4.8_test.js
+node tests/yihai_v4.8_test.js
 
 # Run Playwright 回归测试（可视化浏览器，需先启动 HTTP 服务）
 # python -m http.server 8080 --directory /c/code
-node _playwright_test.js
+node tests/_playwright_test.js
+node tests/_playwright_cloud_test.js
 ```
 
 All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, Playwright 18/17 (单机/网络).
