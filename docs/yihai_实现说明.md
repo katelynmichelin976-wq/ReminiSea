@@ -234,3 +234,91 @@ async function parallelMapLimit(arr, limit, fn) {
 ```
 
 **作用域注意**：`cloudPushConfig` 中需局部定义 `BOOL_KEYS` / `STR_KEYS`，不能引用 `_loadSrsConfig` IIFE 内的同名 const（作用域不达）。
+
+---
+
+## 七、测试策略
+
+项目分三层测试，各司其职：
+
+### 7.1 单元测试（Node.js）
+
+| 文件 | 覆盖范围 | 修改时必跑 |
+|------|----------|-----------|
+| `tests/srs_test.js` | SRS 状态机（new/learning/review/relearning 各评级） | `processAnswer` / `newCardState` |
+| `tests/yihai_v4.4_test.js` | 工具函数（simpleHash、escAttr、数据迁移、同步排重） | `simpleHash` / `escAttr` / sync 逻辑 |
+| `tests/yihai_v4.8_test.js` | 工具函数（minsToTs、cdnMediaUrl、secsToLabel、parallelMapLimit、setObjURL） | 上述任一函数 |
+| `tests/yihai_v4.9_test.js` | 配置合并（mergeConfig、collectLocalSrs/collectLocalUi） | `cloudPushConfig` / `cloudPullConfig` |
+
+**特点**：
+- 从 HTML 中**抽取纯函数**测试，不依赖浏览器/DOM/Supabase
+- 运行毫秒级，随改随跑
+- 断言框架极简：`check(label, actual, expected)` + `checkDeep(label, actual, expected)`（对象 JSON 比对）
+
+**适用场景**：
+- 新算法逻辑（SRS state machine、参数计算）
+- 工具函数（字符串、时间、URL、并发控制）
+- 数据格式转换（卡片迁移、slim 格式）
+- 业务规则（配置合并、类型转换）
+
+**不适用的场景**：
+- 涉及 DOM 渲染、用户交互
+- 依赖 IndexedDB / localStorage（需 mock 不如上 Playwright）
+- 跨函数集成流程（队列构建 + SRS + 写入的完整链条）
+
+### 7.2 Playwright 功能测试 — 单机版
+
+| 文件 | 覆盖范围 |
+|------|----------|
+| `tests/_playwright_test.js` | SPD 完整流程、每日/普通浏览、导入 .yhspack18 断言 |
+
+**特点**：
+- 真实 Chromium 浏览器，加载 localhost HTTP 服务提供的 `yihai_v4.9.html`
+- 纯离线，不依赖 Supabase 网络
+- 验证 UI 渲染、交互流程、localStorage + IndexedDB 读写
+
+**适用场景**：
+- 完整用户流程回归（导入 → 练习 → 结果页）
+- UI 变更（布局、按钮、弹窗）
+- 本地存储逻辑（卡状态写入/读取是否一致）
+- 发布前的**必跑回归**（与单元测试互补，单元测逻辑、Playwright 测流程）
+
+**不适用的场景**：
+- Supabase 云端同步（登录、上传、下载）
+- 网络异常处理
+
+### 7.3 Playwright 功能测试 — 网络版
+
+| 文件 | 覆盖范围 |
+|------|----------|
+| `tests/_playwright_cloud_test.js` | 云端登录、sync_trials、sync_card_states17 断言 |
+
+**特点**：
+- 真实浏览器 + Supabase 项目
+- 验证云同步写/读是否正确
+
+**适用场景**：
+- 云端同步逻辑变更（syncTrial、syncCardState、syncCardStatesFromCloud）
+- 登录/恢复 session 流程
+- 发布前确认同步不破坏数据
+
+**⚠️ 注意**：网络版使用 `zyhacl@gmail.com` 测试账号，写入的是测试数据，不会影响妈妈的正式记录。
+
+### 7.4 三层选择原则
+
+```
+改了什么？                    → 跑什么？
+─────────────────────────────────────────────
+修改纯函数（SRS / 工具函数）   → 对应单元测试
+新增纯函数                    → 加单元测试
+修改 UI / 流程                → 单机 Playwright
+修改云端同步                  → 网络 Playwright
+跨层改动（如参数设置→同步）    → 单元 + 单机 + 网络 全跑
+发布前                        → 全跑（单元 + 单机 + 网络）
+```
+
+**经验法则**：
+1. 能抽纯函数就先加单元测试 — 确定性、快、不依赖环境
+2. 涉及多步流程（导入→练习→结果）用 Playwright 单机版
+3. 涉及网络请求（Supabase CRUD）用 Playwright 网络版
+4. 单元测试定位问题精确（直接告诉你是第几行断言失败），Playwright 验证集成正确性

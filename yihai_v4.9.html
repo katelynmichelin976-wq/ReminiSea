@@ -1912,28 +1912,29 @@ async function syncPendingData(deckKey) {
 
 // ── 参数配置云端同步（v4.8）──────────────────────────────────
 // 收集所有 SRS + UI 参数为 JSON，upsert 到云端
+// 先拉云端现有配置再合并本地改动（避免不同设备/浏览器间的 AD 预设被冲掉）
 async function cloudPushConfig() {
   if (!_syncEnabled || !_sb) return;
   try {
-    // 收集 SRS 参数（从 SRS_CONFIG 动态推导类型，消除双份维护）
-    const srs = {};
+    // 收集本地 SRS 参数
+    const localSrs = {};
     Object.keys(SRS_CONFIG).forEach(k => {
       const v = localStorage.getItem('srs_' + k);
       if (v === null) return;
       const def = SRS_CONFIG[k];
       if (Array.isArray(def)) {
-        try { srs[k] = JSON.parse(v); } catch(e) {}
+        try { localSrs[k] = JSON.parse(v); } catch(e) {}
       } else if (typeof def === 'boolean') {
-        srs[k] = v === '1';
+        localSrs[k] = v === '1';
       } else if (typeof def === 'number') {
-        srs[k] = parseFloat(v);
+        localSrs[k] = parseFloat(v);
       } else {
-        srs[k] = v;
+        localSrs[k] = v;
       }
     });
 
-    // 收集 UI 参数
-    const ui = {
+    // 收集本地 UI 参数
+    const localUi = {
       readHint:       localStorage.getItem('readHint'),
       quizPromptOn:   localStorage.getItem('quizPromptOn'),
       quizPromptDelay:localStorage.getItem('quizPromptDelay'),
@@ -1958,20 +1959,21 @@ async function cloudPushConfig() {
       bdur:           localStorage.getItem('bdur'),
       theme:          localStorage.getItem('theme'),
     };
-    // CSS 尺寸参数
     ['fs-opt','fs-ans','fs-hint','fs-btn','ls-opt','ls-ans','ls-hint','ls-btn'].forEach(k => {
       const v = localStorage.getItem(k);
-      if (v) ui[k] = v;
+      if (v) localUi[k] = v;
     });
+    Object.keys(localUi).forEach(k => { if (localUi[k] === null) delete localUi[k]; });
 
-    // 过滤掉 null 值
-    const cleanUi = {}; Object.entries(ui).forEach(([k,v]) => { if (v !== null) cleanUi[k] = v; });
-
-    const payload = { srs, ui: cleanUi };
+    // 先拉云端现有配置，合并后再推送（避免冲掉其他设备设置的参数）
+    const cloud = await _sb.from('sync_config').select('config_json').maybeSingle();
+    const cloudCfg = cloud.data?.config_json;
+    const mergedSrs = { ...(cloudCfg?.srs || {}), ...localSrs };
+    const mergedUi  = { ...(cloudCfg?.ui  || {}), ...localUi  };
 
     const { error } = await _sb.from('sync_config').upsert({
       user_id: (await _sb.auth.getSession()).data.session?.user?.id,
-      config_json: payload,
+      config_json: { srs: mergedSrs, ui: mergedUi },
       updated_at: Date.now(),
     }, { onConflict: 'user_id' });
     if (error) console.warn('[sync] config push failed:', error.message);

@@ -78,6 +78,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/srs_test.js` | Node.js SRS unit tests (67 cases) |
 | `tests/yihai_v4.4_test.js` | v4.4 utility tests (98 cases) |
 | `tests/yihai_v4.8_test.js` | v4.8 utility tests (46 cases) |
+| `tests/yihai_v4.9_test.js` | v4.9 config merge tests (48 cases) |
 | `tests/_playwright_test.js` | Playwright 单机版回归测试（18 断言） |
 | `tests/_playwright_cloud_test.js` | Playwright 网络版回归测试（17 断言） |
 | `tests/test_data/` | Test .yhspack files |
@@ -112,13 +113,16 @@ node tests/yihai_v4.4_test.js
 # Run v4.8 utility tests (required before/after modifying cdnMediaUrl, secsToLabel, parallelMapLimit, setObjURL)
 node tests/yihai_v4.8_test.js
 
+# Run v4.9 config merge tests (required before/after modifying cloudPushConfig/cloudPullConfig merge logic)
+node tests/yihai_v4.9_test.js
+
 # Run Playwright 回归测试（可视化浏览器，需先启动 HTTP 服务）
 # python -m http.server 8080 --directory /c/code
 node tests/_playwright_test.js
 node tests/_playwright_cloud_test.js
 ```
 
-All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, Playwright 18/17 (单机/网络).
+All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, v4.9 48, Playwright 18/17 (单机/网络).
 
 ## SRS Architecture
 
