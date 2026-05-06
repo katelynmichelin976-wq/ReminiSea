@@ -73,6 +73,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) |
 | `srs_test.js` | Node.js SRS unit tests (67 test cases, 59 pass + 8 pre-existing date-offset failures) |
 | `yihai_v4.4_test.js` | Node.js unit tests for v4.4 additions: simpleHash, escAttr, data format, sync URL logic (55 tests) |
+| `_playwright_test.js` | Playwright 回归测试（可视化）— 界面登录 → SRS 算法 → 多日 UI 练习 → IndexedDB 验证 → 统计 KPI |
 | `srs_design_v6.9.md` | Authoritative SRS design spec — all SRS implementation decisions derive from this |
 | `supabase_schema.sql` | Supabase database schema (7 tables + indexes) |
 | `supabase_storage_policies.sql` | Supabase Storage RLS policies for ReminiSea bucket |
@@ -94,9 +95,13 @@ node yihai_v4.4_test.js
 
 # Run v4.8 utility tests (required before/after modifying cdnMediaUrl, secsToLabel, parallelMapLimit, setObjURL)
 node yihai_v4.8_test.js
+
+# Run Playwright 回归测试（可视化浏览器，需先启动 HTTP 服务）
+# python -m http.server 8080 --directory /c/code
+node _playwright_test.js
 ```
 
-All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46.
+All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, Playwright 18.
 
 ## SRS Architecture
 
