@@ -156,8 +156,8 @@ async function createTestYhspack() {
       }
     }
 
-    async function finishCard() {
-      for (let tries = 0; tries < 20; tries++) {
+    async function finishCardOrFinish() {
+      for (let tries = 0; tries < 30; tries++) {
         const r = await page.evaluate(() => {
           const n = document.getElementById('nxtbtn');
           if (n && n.classList.contains('show') && !n.disabled) { n.click(); return 'ok'; }
@@ -165,96 +165,85 @@ async function createTestYhspack() {
           if (f && f.classList.contains('active')) return 'finish';
           return null;
         });
-        if (r === 'ok') { await waitRender(); return; }
-        if (r === 'finish') return;
+        if (r === 'ok') { await waitRender(); return 'ok'; }
+        if (r === 'finish') return 'finish';
         await wait(page, 100);
       }
+      return null;
     }
 
-    if (inQ) {
-      const strategies = ['good','hard','again','good','good','good'];
-      for (let i = 0; i < strategies.length; i++) {
-        for (let tries = 0; tries < 20; tries++) {
-          const ready = await page.evaluate(() => {
-            const opts = document.querySelectorAll('.opt').length;
-            return opts > 0 && !revealed ? 'ready' : opts > 0 && revealed ? 'revealed' : 'noopts';
-          });
-          if (ready === 'ready') break;
-          if (ready === 'revealed') { await wait(page, 100); continue; }
-          await wait(page, 100);
-        }
-        await doCard(strategies[i]);
-        await finishCard();
+    // ── 7 天练习循环 ──
+    // 内置牌组 20 张，new_cards_per_day=5 → Day1-4 各进 5 张新卡，Day5-7 纯复习
+    const DAYS = ['2026-05-05','2026-05-06','2026-05-07','2026-05-08','2026-05-09','2026-05-10','2026-05-11'];
+    const DAY_LABELS = ['一','二','三','四','五','六','日'];
+    let totalCards = 0;
+
+    for (let di = 0; di < DAYS.length; di++) {
+      const day = DAYS[di];
+      // 设置日期，切今日 tab
+      await run(page, d => { window.__fakeToday = d; }, day);
+      if (di === 0) {
+        // Day1 已在今日 tab
+        await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('开始练习')){x.click();return} });
+      } else {
+        await run(page, () => { const t=document.querySelectorAll('.sheet-tab'); for(const x of t) if(x.textContent.includes('今日')){x.click();return} });
+        await wait(page, 200);
+        await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('开始练习')){x.click();return} });
       }
-    }
+      await wait(page, 1500);
 
-    // 验证 Day1 状态
-    const d1st = await run(page, () => new Promise(res => {
-      const r=indexedDB.open('yihai_srs',3);
-      r.onsuccess=e=>{
-        const db=e.target.result;
-        const tx=db.transaction('card_states','readonly');
-        const g=tx.objectStore('card_states').getAll();
-        g.onsuccess=()=>{
-          const st=(g.result||[]).filter(s=>s.deck_key==='__builtin_test__');
-          const stages={}; st.forEach(s=>{stages[s.srs_stage]=(stages[s.srs_stage]||0)+1});
-          const t2=db.transaction('trials','readonly');
-          const g2=t2.objectStore('trials').getAll();
-          g2.onsuccess=()=>{
-            const tr=(g2.result||[]).filter(t=>t.deck_key==='__builtin_test__');
-            const ratings={}; tr.forEach(t=>{if(t.rating)ratings[t.rating]=(ratings[t.rating]||0)+1});
-            res({stages, trials:tr.length, ratings});
-          };
-        };
-      };
-    }));
-    console.log(`  Day1 后: ${JSON.stringify(d1st)}`);
-    pass('SRS 状态已变更', Object.keys(d1st.stages).some(k => k !== 'new'));
+      const hasCards = await run(page, () => document.getElementById('screen-quiz').classList.contains('active'));
+      if (!hasCards) {
+        console.log(`  Day${di+1} (${DAY_LABELS[di]}): 无到期卡片`);
+        continue;
+      }
 
-    // 回首页
-    await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('返回首页')){x.click();return} });
-    await wait(page, 500);
+      // Day1 前 3 张混合策略（good/hard/again 各一），其余全部 good
+      const day1Mix = ['good','hard','again','good','good','good'];
+      let dayCards = 0;
 
-    // ── DAY 2 ──
-    await run(page, () => { window.__fakeToday = '2026-05-06'; });
-    await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('开始练习')){x.click();return} });
-    await wait(page, 1500);
+      for (let ci = 0; ci < 30; ci++) {
+        // 检查是否仍在答题屏
+        const quizActive = await run(page, () => document.getElementById('screen-quiz').classList.contains('active'));
+        if (!quizActive) break;
 
-    const d2 = await run(page, () => document.getElementById('screen-quiz').classList.contains('active'));
-    console.log(`  Day2 到期: ${d2}`);
-    if (d2) {
-      for (let i = 0; i < 15; i++) {
-        const s = await run(page, () => document.getElementById('screen-quiz').classList.contains('active'));
-        if (!s) break;
+        // 等卡片就绪
         let ready = false;
-        for (let t = 0; t < 10; t++) {
-          const r = await run(page, () => document.querySelectorAll('.opt').length > 0 && !revealed);
-          if (r) { ready = true; break; }
+        for (let t = 0; t < 20; t++) {
+          const r = await run(page, () => {
+            if (document.getElementById('screen-finish').classList.contains('active')) return 'finish';
+            return document.querySelectorAll('.opt').length > 0 && !revealed ? 'ready' : null;
+          });
+          if (r === 'finish') { ready = true; break; }
+          if (r === 'ready') { ready = true; break; }
           await wait(page, 100);
         }
         if (!ready) break;
-        await clickByIdx(0);
-        await wait(page, 50);
-        await waitWrite();
-        let nxt = false;
-        for (let t = 0; t < 10; t++) {
-          const r = await run(page, () => {
-            const n = document.getElementById('nxtbtn');
-            if (n && n.classList.contains('show') && !n.disabled) { n.click(); return true; }
-            return false;
-          });
-          if (r) { nxt = true; break; }
-          await wait(page, 100);
-        }
-        if (nxt) await waitRender(); else break;
+
+        // 选策略
+        let strat;
+        if (di === 0 && ci < day1Mix.length) strat = day1Mix[ci];
+        else strat = 'good';
+
+        await doCard(strat);
+        const ret = await finishCardOrFinish();
+        if (ret === 'finish') break;
+        dayCards++;
       }
+
+      console.log(`  Day${di+1} (${DAY_LABELS[di]}): 完成 ${dayCards} 张`);
+      totalCards += dayCards;
+
+      // 返回首页
+      await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('返回首页')){x.click();return} });
+      await wait(page, 300);
     }
 
-    await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('返回首页')){x.click();return} });
-    await wait(page, 300);
+    pass('7 天累计练习', totalCards > 0);
+    console.log(`  7 天共练习: ${totalCards} 张次`);
 
     // ═══════════════════ PHASE 4: 最终验证 ═══════════════════
-    section('PHASE 4: 验证');
+    section('PHASE 4: 7 天后验证');
 
     const finalSt = await run(page, () => new Promise(res => {
       const r=indexedDB.open('yihai_srs',3);
@@ -276,8 +265,10 @@ async function createTestYhspack() {
       };
     }));
     console.log(`  最终: ${JSON.stringify(finalSt)}`);
-    pass('有 SRS 状态', finalSt.states > 0);
-    pass('有答题记录', finalSt.trials > 0);
+    pass('20 张卡全部有 SRS 状态', finalSt.states === 20);
+    pass('无 new 卡（全部已学习）', !finalSt.stages['new'] || finalSt.stages['new'] === 0);
+    pass('有 review 阶段卡（已毕业）', (finalSt.stages['review']||0) > 0);
+    pass('答题记录充足', finalSt.trials > 20);
     if (finalSt.ratings && Object.keys(finalSt.ratings).length > 0) {
       pass('含 good', (finalSt.ratings['good']||0)>0);
       pass('含 hard', (finalSt.ratings['hard']||0)>0);
