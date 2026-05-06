@@ -482,6 +482,7 @@ let _sortState = {};          // { col: 'email', asc: true }
 let _detailSubTab = 'overview';
 let _calYear = new Date().getFullYear();
 let _calMonth = new Date().getMonth() + 1;
+let _cardStatesShowDeck = true;
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1176,18 +1177,20 @@ function buildTrialRecordsHTML(trials) {
   }
   let table = `<div class="section-title" style="font-size:13px;margin-bottom:8px;">答题记录 (${trials.length} 条)</div>
     <div class="table-wrap"><table>
-    <thead><tr><th>时间</th><th>卡ID</th><th>牌组</th><th>评分</th><th>响应</th><th>阶段</th></tr></thead><tbody>`;
+    <thead><tr><th>时间</th><th>卡片</th><th>牌组</th><th>评分</th><th>响应</th><th>阶段变化</th></tr></thead><tbody>`;
   trials.forEach(t => {
     const ratingCls = t.rating === 'again' ? 'again' : t.rating === 'hard' ? 'hard' : t.rating === 'good' ? 'good' : 'easy';
     const time = new Date(t.timestamp).toTimeString().slice(0, 5);
     const rt = t.responseTimeMs ? formatDuration(t.responseTimeMs) : '—';
+    const before = srsStageLabel(t.srsStageBefore) || '?';
+    const after = srsStageLabel(t.srsStageAfter) || '?';
     table += `<tr>
-      <td>${time}</td>
-      <td class="truncate" style="max-width:80px">${t.cardId}</td>
-      <td class="truncate" style="max-width:80px">${t.deckKey}</td>
-      <td><span class="trial-rating ${ratingCls}">${t.rating}</span></td>
-      <td>${rt}</td>
-      <td>${t.srsStageBefore || '?'} → ${t.srsStageAfter || '?'}</td>
+      <td style="white-space:nowrap">${time}</td>
+      <td style="min-width:100px;word-break:break-all">${t.cardId}</td>
+      <td style="min-width:60px">${t.deckKey}</td>
+      <td><span class="trial-rating ${ratingCls}">${t.rating === 'again' ? '忘记' : t.rating === 'hard' ? '困难' : t.rating === 'good' ? '正确' : '简单'}</span></td>
+      <td style="white-space:nowrap">${rt}</td>
+      <td style="white-space:nowrap">${before} → ${after}</td>
     </tr>`;
   });
   table += '</tbody></table></div>';
@@ -1218,23 +1221,44 @@ function srsStageBadge(stage) {
 function buildCardStatesHTML(cards) {
   if (!cards || cards.length === 0) return emptyState('无卡牌状态数据');
 
-  let table = `<div class="table-wrap"><table>
-    <thead><tr><th>卡片名称</th><th>牌组</th><th>SRS 阶段</th><th>间隔(天)</th><th>易度</th><th>到期</th><th>失败次数</th><th>连续失败</th></tr></thead><tbody>`;
+  const deckHeader = _cardStatesShowDeck ? '<th style="min-width:80px">牌组 <span style="cursor:pointer;font-size:11px;color:var(--text3)" onclick="_cardStatesShowDeck=false;renderPatientCardStates(_selectedPatientId,document.getElementById(\'detail-body\'))">✕</span></th>' : '';
+
+  let table = `<div style="margin-bottom:8px;font-size:12px;color:var(--text3)">
+    共 ${cards.length} 张卡
+    ${_cardStatesShowDeck ? '' : '<span style="cursor:pointer;color:var(--primary)" onclick="_cardStatesShowDeck=true;renderPatientCardStates(_selectedPatientId,document.getElementById(\'detail-body\'))"> 显示牌组</span>'}
+  </div><div class="table-wrap"><table>
+    <thead><tr>
+      <th style="min-width:160px">卡片名称</th>
+      ${deckHeader}
+      <th style="min-width:80px">SRS 阶段</th>
+      <th style="min-width:60px">间隔</th>
+      <th style="min-width:50px">易度</th>
+      <th style="min-width:70px">到期</th>
+      <th style="min-width:60px">失败</th>
+      <th style="min-width:60px">连续败</th>
+    </tr></thead><tbody>`;
   cards.forEach(c => {
     const suspended = c.suspended ? ' <span class="badge badge-danger">挂起</span>' : '';
+    let dueLabel = c.dueDate || '—';
+    if (c.dueTs && c.dueTs > 0 && !c.dueDate) dueLabel = new Date(c.dueTs).toLocaleDateString('zh-CN');
     table += `<tr>
-      <td class="truncate" style="max-width:120px">${c.cardName}${suspended}</td>
-      <td class="truncate" style="max-width:80px">${c.deckKey}</td>
+      <td style="min-width:160px;word-break:break-all">${c.cardName}${suspended}</td>
+      ${_cardStatesShowDeck ? '<td style="min-width:80px">' + c.deckKey + '</td>' : ''}
       <td>${srsStageBadge(c.suspended ? 'suspended' : c.srsStage)}</td>
-      <td>${c.interval}</td>
+      <td>${c.interval}d</td>
       <td>${c.easeFactor.toFixed(2)}</td>
-      <td>${c.dueDate || '—'}</td>
+      <td>${dueLabel}</td>
       <td>${c.lapsesTotal}</td>
       <td>${c.lapsesStreak}</td>
     </tr>`;
   });
   table += '</tbody></table></div>';
   return table;
+}
+
+function srsStageLabel(stage) {
+  const map = { 'new':'待开始', 'learning':'学习中', 'review':'复习中', 'relearning':'重学中', 'suspended':'已挂起' };
+  return map[stage] || stage;
 }
 
 // ═══ Cards View ═══
