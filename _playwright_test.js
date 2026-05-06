@@ -1,9 +1,15 @@
 /**
- * 忆海拾光 v4.8 回归测试（可视化）
- * node _playwright_test.js
+ * 忆海拾光 v4.8 回归测试（可视化 · 单机版）
+ * 依赖：python -m http.server 8080 --directory /c/code
+ * 运行：node _playwright_test.js
  */
 const { chromium } = require('playwright');
-const CFG = { url:'http://localhost:8080/yihai_v4.8.html', email:'zyhacl@gmail.com', password:'667788' };
+const JSZip = require('jszip');
+const fs = require('fs');
+const path = require('path');
+
+const CFG = { url:'http://localhost:8080/yihai_v4.8.html' };
+const YHPACK = path.join(__dirname, '_test_import.yhspack');
 
 let passed=0, failed=0, errors=[];
 const pass=(l,v)=>{if(v){passed++;console.log(`  ✓ ${l}`)}else{failed++;errors.push(`✗ ${l}`);console.log(`  ✗ ${l}`)}};
@@ -12,52 +18,61 @@ const section=t=>console.log(`\n${'═'.repeat(60)}\n  ${t}\n${'═'.repeat(60)}
 const run = (page, fn, arg) => page.evaluate(fn, arg);
 const wait = (page, ms) => page.waitForTimeout(ms);
 
+async function createTestYhspack() {
+  const zip = new JSZip();
+  zip.file('deck.json', JSON.stringify({
+    deck: {
+      id: '__test_import__',
+      name: '测试导入牌组',
+      cards: [
+        { id:'i1', name:'苹果', image:'', audio:'' },
+        { id:'i2', name:'香蕉', image:'', audio:'' },
+        { id:'i3', name:'橘子', image:'', audio:'' },
+        { id:'i4', name:'西瓜', image:'', audio:'' },
+        { id:'i5', name:'草莓', image:'', audio:'' },
+      ]
+    }
+  }));
+  const buf = await zip.generateAsync({ type:'nodebuffer' });
+  fs.writeFileSync(YHPACK, buf);
+  console.log(`  已创建测试文件: ${YHPACK} (${buf.length} bytes)`);
+}
+
 (async () => {
+  await createTestYhspack();
+
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
   try {
-    // ═══════════════════════ PHASE 1: Login ═══════════════════════
-    section('PHASE 1: 登录');
+    // ═══════════════════ PHASE 1: 导入 .yhspack ═══════════════════
+    section('PHASE 1: 导入 .yhspack');
     await page.goto(CFG.url, { waitUntil:'networkidle', timeout:30000 });
     await wait(page, 1500);
 
-    await run(page, () => { const t=document.querySelectorAll('.sheet-tab'); for(const x of t) if(x.textContent.includes('云端')){x.click();return} });
-    await wait(page, 500);
+    // 上传 .yhspack
+    await page.setInputFiles('input[accept=".yhspack"]', YHPACK);
+    await wait(page, 2000); // 等 JSZip 加载 + 导入完成
 
-    // 如已登录则先退出（确保每次从头走界面登录流程）
-    const isLoggedIn = await run(page, () => {
-      const conn = document.getElementById('cloud-connected-section');
-      return conn && conn.style.display !== 'none';
+    // 验证牌组出现在列表中
+    const deckName = await run(page, () => {
+      const cards = document.querySelectorAll('.deck-card');
+      for (const c of cards) {
+        const nameEl = c.querySelector('.deck-name');
+        if (nameEl && nameEl.textContent.includes('测试导入牌组')) return nameEl.textContent.trim();
+      }
+      return '';
     });
-    if (isLoggedIn) {
-      console.log('  检测到已登录，先退出');
-      await run(page, () => {
-        const btns = document.querySelectorAll('#cloud-connected-section button');
-        for (const b of btns) if (b.textContent.includes('退出')) { b.click(); return; }
-      });
-      await wait(page, 2000);
-    }
+    check('导入牌组出现在列表', deckName, '测试导入牌组');
 
-    // 界面输入 → 点击登录（page.fill 模拟真实输入，click 触发表单的 onclick）
-    await page.fill('#cloud-email', CFG.email);
-    await page.fill('#cloud-password', CFG.password);
-    await wait(page, 100);
-    await run(page, () => document.getElementById('cloud-login-btn').click());
-    await wait(page, 4000);
+    // 选中导入牌组验证 currentDeck
+    await run(page, () => { const c=document.querySelector('.deck-card[data-deck="__test_import__"]'); if(c)c.click(); });
+    await wait(page, 300);
+    check('currentDeck 已切换', await run(page, () => currentDeck), '__test_import__');
 
-    const uid = await run(page, ()=>typeof _cloudUserId!=='undefined'?_cloudUserId:'');
-    pass('登录成功', uid.length>0);
-    check('登录邮箱', await run(page, ()=>_cloudUserEmail||''), CFG.email);
-
-    if (uid) {
-      // 点击「同步」按钮
-      await run(page, () => {
-        const btns = document.querySelectorAll('#cloud-connected-section button');
-        for (const b of btns) if (b.textContent.includes('同步')) { b.click(); return; }
-      });
-      await wait(page, 3000);
-    }
+    // 切回内置牌组用于后续练习
+    await run(page, () => { const c=document.querySelector('.deck-card[data-deck="__builtin_test__"]'); if(c)c.click(); });
+    await wait(page, 300);
 
     // ═══════════════════ PHASE 2: SRS processAnswer ═══════════════════
     section('PHASE 2: SRS 算法验证');
@@ -296,5 +311,10 @@ const wait = (page, ms) => page.waitForTimeout(ms);
 
   await page.close();
   await browser.close();
+
+  // 清理测试文件
+  try { fs.unlinkSync(YHPACK); } catch(e) {}
+  console.log('  已清理测试文件');
+
   process.exit(failed > 0 ? 1 : 0);
 })();
