@@ -69,6 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | File | Purpose |
 |------|---------|
 | `yihai_v4.9.html` | Main training app (single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) |
 | `index_v49.html` | Card maker tool (paused) |
 
@@ -96,9 +97,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 基础设施
 | File | Purpose |
 |------|---------|
-| `sql/supabase_schema.sql` | Database schema (7 tables) |
+| `sql/supabase_schema.sql` | Database schema (8 tables) |
 | `sql/supabase_storage_policies.sql` | Storage RLS policies |
 | `sql/supabase_migration_002_sync_trials_after_state.sql` | Migration scripts |
+| `sql/supabase_migration_003_admin.sql` | Admin dashboard migration (admin_users + indexes + RPCs) |
+| `supabase/functions/` | Edge Functions (5 functions for admin API) |
 | `archive/` | Previous versions (v4.3–v4.8) |
 
 ## Development Commands

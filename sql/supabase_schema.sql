@@ -168,3 +168,23 @@ alter table sync_config enable row level security;
 
 create policy "individual_access" on sync_config
   for all using (auth.uid() = user_id);
+
+-- ═══════════════════════════════════════════
+-- v1.0: 管理看板
+-- ═══════════════════════════════════════════
+
+create table if not exists admin_users (
+  id            bigint generated always as identity primary key,
+  user_id       uuid not null references auth.users(id) on delete cascade,
+  role          text not null default 'doctor',
+  display_name  text not null,
+  notes         text default '',
+  created_at    timestamptz default now(),
+  updated_at    timestamptz default now(),
+  unique(user_id)
+);
+
+alter table admin_users enable row level security;
+
+create policy "service_role_only" on admin_users
+  for all using (auth.role() = 'service_role');

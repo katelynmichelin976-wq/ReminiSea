@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>忆海拾光 · 管理看板</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ═══════════════════════════════════════════
+   忆海拾光 · 管理看板 — Styles
+   ═══════════════════════════════════════════ */
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #dbeafe;
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --text2: #334155;
+  --text3: #64748b;
+  --border: #e2e8f0;
+  --success: #059669;
+  --success-bg: #d1fae5;
+  --warning: #d97706;
+  --warning-bg: #fef3c7;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --sidebar-w: 200px;
+  --topbar-h: 56px;
+  --transition: 0.2s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+
+/* ── Screen Switching ── */
+.screen { display: none; }
+.screen.active { display: flex; }
+
+/* ═══ Login Screen ═══ */
+#screen-login {
+  align-items: center; justify-content: center;
+  min-height: 100vh; background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  padding: 20px;
+}
+.login-card {
+  background: var(--surface); border-radius: 16px; padding: 40px 36px;
+  width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.login-card h1 {
+  font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px;
+}
+.login-card p {
+  font-size: 13px; color: var(--text3); margin-bottom: 28px;
+}
+.login-card .subtitle { color: var(--primary); font-weight: 500; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.form-group input {
+  width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; outline: none; transition: border-color var(--transition);
+}
+.form-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+.btn-primary {
+  width: 100%; padding: 11px; background: var(--primary); color: #fff; border: none;
+  border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: background var(--transition);
+}
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.login-error {
+  display: none; background: var(--danger-bg); color: var(--danger); padding: 10px 14px;
+  border-radius: var(--radius-sm); font-size: 13px; margin-top: 16px;
+}
+
+/* ═══ Main Layout ═══ */
+#screen-main { flex-direction: column; height: 100vh; }
+.topbar {
+  height: var(--topbar-h); background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+  flex-shrink: 0; z-index: 10;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-logo { font-size: 17px; font-weight: 700; color: var(--text); }
+.topbar-logo span { color: var(--primary); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.admin-badge {
+  background: var(--primary-light); color: var(--primary); padding: 3px 10px;
+  border-radius: 20px; font-size: 12px; font-weight: 600;
+}
+.btn-text {
+  background: none; border: none; color: var(--text3); cursor: pointer; font-size: 13px;
+  padding: 6px 12px; border-radius: var(--radius-sm); transition: all var(--transition);
+}
+.btn-text:hover { background: var(--bg); color: var(--danger); }
+
+.main-wrap { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border);
+  padding: 12px 0; flex-shrink: 0; overflow-y: auto;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer;
+  color: var(--text3); font-size: 14px; font-weight: 500; transition: all var(--transition);
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item.active { background: var(--primary-light); color: var(--primary); border-left-color: var(--primary); font-weight: 600; }
+.nav-item .nav-icon { font-size: 18px; }
+
+/* ── Content ── */
+.content { flex: 1; overflow-y: auto; padding: 24px; background: var(--bg); }
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── KPI Cards ── */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--surface); border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow); border: 1px solid var(--border);
+}
+.kpi-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.kpi-value { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1.2; }
+.kpi-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.kpi-card.success .kpi-value { color: var(--success); }
+.kpi-card.warning .kpi-value { color: var(--warning); }
+.kpi-card.danger .kpi-value { color: var(--danger); }
+.kpi-card.primary .kpi-value { color: var(--primary); }
+
+/* ── Section ── */
+.section { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+.section-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text); }
+.section-title .badge { font-size: 12px; font-weight: 500; color: var(--text3); margin-left: 8px; }
+
+/* ── Bar Chart ── */
+.chart-wrap { padding-top: 8px; }
+.chart-bars { display: flex; align-items: flex-end; gap: 8px; height: 120px; position: relative; }
+.chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+.chart-bar { width: 100%; max-width: 40px; border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.5s ease; position: relative; }
+.chart-bar.primary { background: var(--primary); }
+.chart-bar.success { background: var(--success); }
+.chart-bar-line {
+  position: absolute; width: 100%; height: 3px; background: var(--warning); border-radius: 2px; top: 0;
+}
+.chart-col .chart-label { font-size: 10px; color: var(--text3); margin-top: 6px; text-align: center; }
+.chart-col .chart-val { font-size: 10px; color: var(--text2); font-weight: 600; margin-bottom: 2px; }
+.chart-legend { display: flex; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--text3); }
+.chart-legend-item { display: flex; align-items: center; gap: 4px; }
+.chart-legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  text-align: left; padding: 10px 12px; font-weight: 600; color: var(--text3); font-size: 12px;
+  border-bottom: 2px solid var(--border); cursor: pointer; user-select: none; white-space: nowrap;
+}
+thead th:hover { color: var(--text); }
+thead th .sort-icon { margin-left: 4px; opacity: 0.3; }
+thead th.sorted .sort-icon { opacity: 1; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr { transition: background var(--transition); cursor: pointer; }
+tbody tr:hover { background: #f8fafc; }
+tbody tr.clickable { cursor: pointer; }
+
+/* ── Status Badge ── */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-success { background: var(--success-bg); color: var(--success); }
+.badge-warning { background: var(--warning-bg); color: var(--warning); }
+.badge-danger { background: var(--danger-bg); color: var(--danger); }
+.badge-primary { background: var(--primary-light); color: var(--primary); }
+
+/* ── Progress Bar ── */
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.progress-fill.success { background: var(--success); }
+.progress-fill.warning { background: var(--warning); }
+.progress-fill.danger { background: var(--danger); }
+.progress-fill.primary { background: var(--primary); }
+
+/* ── Doughnut ── */
+.doughnut-wrap { display: flex; align-items: center; gap: 20px; }
+.doughnut-svg { width: 100px; height: 100px; flex-shrink: 0; }
+.doughnut-legend { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.doughnut-item { display: flex; align-items: center; gap: 6px; }
+.doughnut-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* ── Search / Filter ── */
+.filter-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.search-input {
+  padding: 8px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; outline: none; min-width: 200px; transition: border-color var(--transition);
+}
+.search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+.select-input {
+  padding: 8px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; outline: none; background: var(--surface); cursor: pointer;
+}
+
+/* ── Patient Detail Panel ── */
+.detail-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100;
+}
+.detail-overlay.open { display: block; }
+.detail-panel {
+  position: fixed; top: 0; right: -480px; width: 480px; max-width: 90vw; height: 100vh;
+  background: var(--surface); z-index: 101; transition: right 0.3s ease;
+  overflow-y: auto; box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+}
+.detail-panel.open { right: 0; }
+.detail-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0;
+  background: var(--surface); z-index: 2;
+}
+.detail-header h2 { font-size: 16px; font-weight: 600; }
+.detail-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text3); padding: 4px; }
+.detail-body { padding: 20px; }
+.detail-section { margin-bottom: 24px; }
+.detail-section h3 { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 12px; }
+
+/* ── Skeleton ── */
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skeleton-kpi { height: 80px; margin-bottom: 16px; }
+.skeleton-chart { height: 140px; margin-bottom: 16px; }
+.skeleton-row { height: 40px; margin-bottom: 8px; }
+.skeleton-table { height: 200px; }
+
+/* ── Empty State ── */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text3); }
+.empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+.empty-state p { font-size: 14px; }
+
+/* ── Error State ── */
+.error-state { text-align: center; padding: 40px 20px; }
+.error-state .error-icon { font-size: 32px; margin-bottom: 8px; }
+.error-state p { color: var(--danger); font-size: 13px; margin-bottom: 12px; }
+.btn-retry {
+  padding: 8px 20px; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; transition: all var(--transition);
+}
+.btn-retry:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--text); color: #fff; padding: 10px 20px; border-radius: var(--radius-sm);
+  font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+
+/* ── Mobile Bottom Tab ── */
+.mobile-tabs {
+  display: none; height: 56px; background: var(--surface); border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.mobile-tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; cursor: pointer; color: var(--text3); font-size: 11px; transition: all var(--transition);
+  border: none; background: none; padding: 4px;
+}
+.mobile-tab .tab-icon { font-size: 20px; }
+.mobile-tab.active { color: var(--primary); font-weight: 600; }
+.mobile-tab:hover { background: var(--bg); }
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+  .sidebar { display: none; }
+  .mobile-tabs { display: flex; }
+  .content { padding: 16px; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi-value { font-size: 22px; }
+  .detail-panel { width: 100vw; max-width: 100vw; }
+}
+
+/* ── Scrollbar ── */
+.content::-webkit-scrollbar { width: 6px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.content::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ═══ Misc Utility ═══ */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.gap-2 { gap: 8px; }
+.gap-4 { gap: 16px; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.text-sm { font-size: 12px; }
+.text-muted { color: var(--text3); }
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-4 { margin-bottom: 16px; }
+.font-bold { font-weight: 600; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<!-- ═══ Login Screen ═══ -->
+<div class="screen active" id="screen-login">
+  <div class="login-card">
+    <h1>忆海拾光</h1>
+    <p class="subtitle">管理看板</p>
+    <p>医生 / 家属监控平台</p>
+    <div class="form-group">
+      <label for="login-email">邮箱</label>
+      <input type="email" id="login-email" placeholder="doctor@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label for="login-pwd">密码</label>
+      <input type="password" id="login-pwd" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">登录</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ═══ Main Screen ═══ -->
+<div class="screen" id="screen-main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">忆海拾光<span> · 管理看板</span></div>
+    </div>
+    <div class="topbar-right">
+      <span class="admin-badge" id="admin-badge">管理员</span>
+      <span id="admin-name" style="font-size:13px;color:var(--text2);"></span>
+      <button class="btn-text" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+
+  <div class="main-wrap">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+      <div class="nav-item active" data-tab="summary" onclick="switchTab('summary')">
+        <span class="nav-icon">📊</span> 概览
+      </div>
+      <div class="nav-item" data-tab="patients" onclick="switchTab('patients')">
+        <span class="nav-icon">👥</span> 患者
+      </div>
+      <div class="nav-item" data-tab="cards" onclick="switchTab('cards')">
+        <span class="nav-icon">🃏</span> 卡片
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="content" id="content-area">
+
+      <!-- ═══ View: Summary ═══ -->
+      <div class="view active" id="view-summary">
+        <div id="summary-content"></div>
+      </div>
+
+      <!-- ═══ View: Patients ═══ -->
+      <div class="view" id="view-patients">
+        <div id="patients-content"></div>
+      </div>
+
+      <!-- ═══ View: Cards ═══ -->
+      <div class="view" id="view-cards">
+        <div id="cards-content"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Tabs -->
+  <div class="mobile-tabs" id="mobile-tabs">
+    <button class="mobile-tab active" data-tab="summary" onclick="switchTab('summary')">
+      <span class="tab-icon">📊</span>概览
+    </button>
+    <button class="mobile-tab" data-tab="patients" onclick="switchTab('patients')">
+      <span class="tab-icon">👥</span>患者
+    </button>
+    <button class="mobile-tab" data-tab="cards" onclick="switchTab('cards')">
+      <span class="tab-icon">🃏</span>卡片
+    </button>
+  </div>
+</div>
+
+<!-- ═══ Patient Detail Overlay ═══ -->
+<div class="detail-overlay" id="detail-overlay" onclick="closePatientDetail()"></div>
+<div class="detail-panel" id="detail-panel">
+  <div class="detail-header">
+    <h2 id="detail-title">患者详情</h2>
+    <button class="detail-close" onclick="closePatientDetail()">✕</button>
+  </div>
+  <div class="detail-body" id="detail-body"></div>
+</div>
+
+<!-- ═══ Toast ═══ -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   忆海拾光 · 管理看板 — JavaScript
+   ═══════════════════════════════════════════ */
+
+// ── Config ──
+const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
+
+// ── State ──
+let _sb = null;
+let _adminInfo = null;        // { userId, displayName, role }
+let _activeTab = 'summary';
+let _autoRefreshTimer = null;
+let _selectedPatientId = null;
+let _patientsCache = {};
+let _sortState = {};          // { col: 'email', asc: true }
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', async () => {
+  _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) {
+    try {
+      const result = await callEdgeFunction('admin-auth-check', {});
+      if (result.ok) {
+        _adminInfo = result;
+        enterMain();
+        return;
+      }
+    } catch(e) {
+      // Not admin or session expired
+      await _sb.auth.signOut();
+    }
+  }
+  showLogin();
+});
+
+// ── Auth ──
+function showLogin() {
+  document.getElementById('screen-login').classList.add('active');
+  document.getElementById('screen-main').classList.remove('active');
+}
+function showMain() {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-main').classList.add('active');
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pwd = document.getElementById('login-pwd').value;
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+
+  if (!email || !pwd) {
+    errEl.style.display = 'block';
+    errEl.textContent = '请输入邮箱和密码';
+    return;
+  }
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = '登录中...';
+
+  try {
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
+    if (error) throw error;
+    // Verify admin
+    const result = await callEdgeFunction('admin-auth-check', {});
+    if (result.ok) {
+      _adminInfo = result;
+      enterMain();
+    } else {
+      throw new Error('该账号没有管理权限');
+    }
+  } catch(e) {
+    errEl.style.display = 'block';
+    errEl.textContent = '登录失败：' + e.message;
+    await _sb.auth.signOut().catch(() => {});
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '登录';
+  }
+}
+
+async function doLogout() {
+  await _sb.auth.signOut().catch(() => {});
+  _adminInfo = null;
+  stopAutoRefresh();
+  showLogin();
+  document.getElementById('admin-name').textContent = '';
+  showToast('已退出登录');
+}
+
+function enterMain() {
+  document.getElementById('admin-name').textContent = _adminInfo.displayName || _adminInfo.userId.slice(0,8);
+  showMain();
+  switchTab('summary');
+}
+
+// ── Edge Function Call ──
+async function callEdgeFunction(name, payload = {}) {
+  const { data: { session } } = await _sb.auth.getSession();
+  if (!session) throw new Error('No session');
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+  return data;
+}
+
+// ── Tab Switching ──
+function switchTab(tab) {
+  _activeTab = tab;
+  stopAutoRefresh();
+  document.querySelectorAll('.nav-item, .mobile-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + tab).classList.add('active');
+  // Render
+  switch(tab) {
+    case 'summary': renderSummary(); startAutoRefresh(60); break;
+    case 'patients': renderPatients(); break;
+    case 'cards': renderCards(); break;
+  }
+}
+
+function startAutoRefresh(seconds) {
+  stopAutoRefresh();
+  if (_activeTab === 'summary') {
+    _autoRefreshTimer = setInterval(renderSummary, seconds * 1000);
+  }
+}
+function stopAutoRefresh() {
+  if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── Format Helpers ──
+function formatDate(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  const h = d.getHours().toString().padStart(2, '0');
+  const m = d.getMinutes().toString().padStart(2, '0');
+  return `${month}-${day} ${h}:${m}`;
+}
+function formatAccuracy(pct) {
+  if (pct === null || pct === undefined) return '—';
+  return pct + '%';
+}
+function formatDuration(ms) {
+  if (!ms) return '—';
+  if (ms < 1000) return ms + 'ms';
+  if (ms < 60000) return (ms / 1000).toFixed(1) + 's';
+  return Math.floor(ms / 60000) + 'm ' + Math.floor((ms % 60000) / 1000) + 's';
+}
+
+// ── Skeleton Loader ──
+function skeletonKPI() {
+  return '<div class="kpi-row">' +
+    '<div class="kpi-card skeleton skeleton-kpi"></div>'.repeat(4) +
+    '</div>';
+}
+function skeletonChart() {
+  return '<div class="section"><div class="skeleton skeleton-chart"></div></div>';
+}
+function skeletonTable() {
+  return '<div class="section">' +
+    '<div class="skeleton skeleton-row"></div>'.repeat(6) +
+    '</div>';
+}
+
+// ── Empty State ──
+function emptyState(msg) {
+  return '<div class="empty-state"><div class="empty-icon">📭</div><p>' + msg + '</p></div>';
+}
+
+// ── Error State ──
+function errorState(msg, retryFn) {
+  return '<div class="error-state"><div class="error-icon">⚠️</div><p>' + msg + '</p>' +
+    '<button class="btn-retry" onclick="' + retryFn + '">重试</button></div>';
+}
+
+// ═══════════════════════════════════════════
+//   渲染函数
+// ═══════════════════════════════════════════
+
+async function renderSummary() {
+  const el = document.getElementById('summary-content');
+  el.innerHTML = skeletonKPI() + skeletonChart() + skeletonTable();
+  try {
+    const data = await callEdgeFunction('get-dashboard-summary');
+    el.innerHTML = buildSummaryHTML(data);
+  } catch(e) {
+    el.innerHTML = errorState('加载概览数据失败：' + e.message, 'renderSummary()');
+  }
+}
+
+function buildSummaryHTML(d) {
+  const accuracyColor = d.avgAccuracyToday !== null && d.avgAccuracyToday >= 70 ? 'success' :
+    d.avgAccuracyToday !== null && d.avgAccuracyToday >= 50 ? 'warning' : 'danger';
+
+  return `
+    <div class="kpi-row">
+      <div class="kpi-card primary">
+        <div class="kpi-label">今日活跃患者</div>
+        <div class="kpi-value">${d.activePatientsToday}</div>
+        <div class="kpi-sub">/ ${d.totalPatients} 总患者</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">今日复习量</div>
+        <div class="kpi-value">${d.totalReviewsToday}</div>
+        <div class="kpi-sub">本周 ${d.totalReviewsThisWeek} · 本月 ${d.totalReviewsThisMonth}</div>
+      </div>
+      <div class="kpi-card ${accuracyColor}">
+        <div class="kpi-label">今日平均正确率</div>
+        <div class="kpi-value">${formatAccuracy(d.avgAccuracyToday)}</div>
+        <div class="kpi-sub">每卡首次评分</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">今日平均响应时间</div>
+        <div class="kpi-value">${formatDuration(d.avgResponseTimeMsToday)}</div>
+        <div class="kpi-sub">本周活跃 ${d.activePatientsThisWeek} 人</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">近 7 天练习量 <span class="badge">复习量 + 活跃患者</span></div>
+      ${buildBarChart(d.practiceVolume7d || [])}
+    </div>
+
+    <div class="section">
+      <div class="section-title">今日活跃患者</div>
+      ${buildRecentTable(d.recentActivity || [])}
+    </div>
+  `;
+}
+
+function buildBarChart(data) {
+  if (!data || data.length === 0) return emptyState('暂无数据');
+  const maxReviews = Math.max(...data.map(d => d.reviews), 1);
+  const maxUsers = Math.max(...data.map(d => d.activeUsers), 1);
+  const days = ['日','一','二','三','四','五','六'];
+
+  let bars = '';
+  data.forEach(d => {
+    const date = new Date(d.date);
+    const dayLabel = days[date.getDay()];
+    const barH = (d.reviews / maxReviews * 100);
+    bars += `
+      <div class="chart-col">
+        <div class="chart-val">${d.reviews}</div>
+        <div style="position:relative;width:100%;max-width:40px;flex:1;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div class="chart-bar primary" style="height:${Math.max(barH, 2)}%"></div>
+          <div class="chart-bar-line" style="bottom:${d.activeUsers / maxUsers * 100}%"></div>
+        </div>
+        <div class="chart-label">周${dayLabel}</div>
+      </div>
+    `;
+  });
+
+  return `
+    <div class="chart-wrap">
+      <div class="chart-bars">${bars}</div>
+      <div class="chart-legend">
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--primary)"></div> 复习量</div>
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--warning)"></div> 活跃患者</div>
+      </div>
+    </div>
+  `;
+}
+
+function buildRecentTable(activities) {
+  if (!activities || activities.length === 0) return emptyState('今日暂无活跃患者');
+  let rows = '';
+  activities.forEach(a => {
+    rows += `<tr><td>${a.email}</td><td>${formatDate(a.lastActive)}</td><td>${a.reviewsToday}</td><td>${formatAccuracy(a.accuracyToday)}</td></tr>`;
+  });
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>邮箱</th><th>最后活动</th><th>今日复习</th><th>正确率</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ═══ Patients View ═══
+let _patientSearchQuery = '';
+let _patientSortCol = 'lastActiveTs';
+let _patientSortAsc = false;
+
+async function renderPatients() {
+  const el = document.getElementById('patients-content');
+  el.innerHTML = skeletonTable();
+  try {
+    const data = await callEdgeFunction('get-patients-list');
+    _patientsCache = {};
+    data.patients.forEach(p => { _patientsCache[p.userId] = p; });
+    el.innerHTML = buildPatientsHTML(data.patients);
+  } catch(e) {
+    el.innerHTML = errorState('加载患者列表失败：' + e.message, 'renderPatients()');
+  }
+}
+
+function buildPatientsHTML(patients) {
+  const searchTerm = _patientSearchQuery.toLowerCase();
+  let filtered = patients;
+  if (searchTerm) {
+    filtered = patients.filter(p => p.email.toLowerCase().includes(searchTerm));
+  }
+  // Sort
+  filtered.sort((a, b) => {
+    const av = a[_patientSortCol] ?? '';
+    const bv = b[_patientSortCol] ?? '';
+    const cmp = typeof av === 'string' ? av.localeCompare(bv) : (av > bv ? 1 : -1);
+    return _patientSortAsc ? cmp : -cmp;
+  });
+
+  if (!filtered.length) return emptyState(searchTerm ? '没有匹配的患者' : '暂无患者数据');
+
+  let rows = '';
+  filtered.forEach(p => {
+    const isActive = p.lastActiveTs && (Date.now() - p.lastActiveTs) < 86400000 * 3;
+    const statusBadge = isActive
+      ? '<span class="badge badge-success">活跃</span>'
+      : '<span class="badge badge-warning">不活跃</span>';
+    rows += `<tr onclick="openPatientDetail('${p.userId}')">
+      <td>${p.email}</td>
+      <td>${formatDate(p.lastActiveTs)}</td>
+      <td>${p.reviewsLast7d}</td>
+      <td>${formatAccuracy(p.avgAccuracyLast7d)}</td>
+      <td>${p.activeDaysLast7d}天</td>
+      <td>${p.currentStreakDays}天</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  });
+
+  return `
+    <div class="filter-bar">
+      <input class="search-input" placeholder="按邮箱搜索..." value="${_patientSearchQuery}"
+        oninput="_patientSearchQuery=this.value;renderPatients();" style="min-width:220px;">
+    </div>
+    <div class="section" style="padding:0;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th onclick="sortPatients('email')">邮箱 <span class="sort-icon">${_patientSortCol==='email'?'▾':'▽'}</span></th>
+            <th onclick="sortPatients('lastActiveTs')">最后活跃 <span class="sort-icon">${_patientSortCol==='lastActiveTs'?'▾':'▽'}</span></th>
+            <th onclick="sortPatients('reviewsLast7d')">7天复习 <span class="sort-icon">${_patientSortCol==='reviewsLast7d'?'▾':'▽'}</span></th>
+            <th onclick="sortPatients('avgAccuracyLast7d')">7天正确率 <span class="sort-icon">${_patientSortCol==='avgAccuracyLast7d'?'▾':'▽'}</span></th>
+            <th onclick="sortPatients('activeDaysLast7d')">活跃天数 <span class="sort-icon">${_patientSortCol==='activeDaysLast7d'?'▾':'▽'}</span></th>
+            <th onclick="sortPatients('currentStreakDays')">连续天数 <span class="sort-icon">${_patientSortCol==='currentStreakDays'?'▾':'▽'}</span></th>
+            <th>状态</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function sortPatients(col) {
+  if (_patientSortCol === col) _patientSortAsc = !_patientSortAsc;
+  else { _patientSortCol = col; _patientSortAsc = false; }
+  renderPatients();
+}
+
+// ═══ Patient Detail ═══
+async function openPatientDetail(userId) {
+  _selectedPatientId = userId;
+  document.getElementById('detail-overlay').classList.add('open');
+  document.getElementById('detail-panel').classList.add('open');
+  const body = document.getElementById('detail-body');
+  const title = document.getElementById('detail-title');
+  const p = _patientsCache[userId];
+  title.textContent = p ? p.email : '患者详情';
+  body.innerHTML = '<div class="skeleton" style="height:300px"></div>';
+  try {
+    const data = await callEdgeFunction('get-patient-detail', { userId, days: 30 });
+    body.innerHTML = buildPatientDetailHTML(data);
+  } catch(e) {
+    body.innerHTML = errorState('加载详情失败：' + e.message, 'openPatientDetail(\''+userId+'\')');
+  }
+}
+
+function closePatientDetail() {
+  document.getElementById('detail-overlay').classList.remove('open');
+  document.getElementById('detail-panel').classList.remove('open');
+  _selectedPatientId = null;
+}
+
+function buildPatientDetailHTML(d) {
+  const p = d.patient;
+  return `
+    <div class="detail-section">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3>${p.email}</h3>
+          <div class="flex gap-4 mt-2 text-sm text-muted">
+            <span>总复习 ${p.totalReviews}</span>
+            <span>总天数 ${p.totalActiveDays}</span>
+            <span>连续 ${p.currentStreak} 天</span>
+            <span>最长 ${p.longestStreak} 天</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-4 mt-2">
+        <span class="text-sm text-muted">最后活跃：${formatDate(p.lastActive)}</span>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>每日趋势（近 30 天）</h3>
+      ${buildDailyTrend(d.dailyStats || [])}
+    </div>
+
+    <div class="detail-section">
+      <h3>牌组分解</h3>
+      ${buildDeckTable(d.deckBreakdown || [])}
+    </div>
+
+    <div class="detail-section">
+      <h3>SRS 阶段分布</h3>
+      ${buildDoughnut(d.srsDistribution || {})}
+    </div>
+
+    <div class="detail-section">
+      <h3>响应时间分布</h3>
+      ${buildRTDist(d.responseTimeDistribution || {})}
+    </div>
+
+    <div class="detail-section">
+      <h3>练习时段分布</h3>
+      ${buildHourlyChart(d.hourlyDistribution || [])}
+    </div>
+  `;
+}
+
+function buildDailyTrend(dailyStats) {
+  if (!dailyStats || dailyStats.length === 0) return emptyState('近 30 天无练习记录');
+  const maxReviews = Math.max(...dailyStats.map(d => d.reviews), 1);
+  const maxAcc = 100;
+  let rows = '';
+  dailyStats.slice(-14).forEach(d => {
+    const barH = d.reviews / maxReviews * 100;
+    const accH = d.accuracyPct / maxAcc * 100;
+    rows += `
+      <div class="chart-col">
+        <div class="chart-val">${d.reviews}</div>
+        <div style="position:relative;width:100%;max-width:28px;flex:1;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div class="chart-bar primary" style="height:${Math.max(barH, 2)}%;max-width:28px;"></div>
+          <div class="chart-bar success" style="height:${Math.max(accH, 2)}%;max-width:28px;opacity:0.6;"></div>
+        </div>
+        <div class="chart-label">${d.date.slice(5)}</div>
+        <div class="text-sm text-muted">${d.accuracyPct}%</div>
+      </div>
+    `;
+  });
+
+  return `
+    <div class="chart-wrap">
+      <div class="chart-bars" style="height:100px;">${rows}</div>
+      <div class="chart-legend">
+        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--primary)"></span> 复习量</span>
+        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--success)"></span> 正确率</span>
+      </div>
+    </div>
+  `;
+}
+
+function buildDeckTable(decks) {
+  if (!decks || decks.length === 0) return emptyState('无牌组数据');
+  let rows = '';
+  decks.forEach(d => {
+    const accColor = d.accuracyPct >= 70 ? 'success' : d.accuracyPct >= 50 ? 'warning' : 'danger';
+    rows += `<tr>
+      <td class="truncate" style="max-width:120px">${d.deckKey}</td>
+      <td>${d.totalReviews}</td>
+      <td><span class="badge badge-${accColor}">${d.accuracyPct}%</span></td>
+      <td>${d.cardsTotal}</td>
+      <td>${d.cardsMastered}</td>
+      <td>${d.cardsLearning}</td>
+      <td>${d.cardsSuspended}</td>
+    </tr>`;
+  });
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>牌组</th><th>复习量</th><th>正确率</th><th>总卡片</th><th>已掌握</th><th>学习中</th><th>挂起</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function buildDoughnut(dist) {
+  const colors = ['#94a3b8', '#3b82f6', '#059669', '#f59e0b', '#dc2626'];
+  const labels = ['待开始(New)', '学习中(Learning)', '复习中(Review)', '重学(Relearning)', '挂起(Suspended)'];
+  const keys = ['new', 'learning', 'review', 'relearning', 'suspended'];
+  const total = keys.reduce((s, k) => s + (dist[k] || 0), 0);
+  if (total === 0) return emptyState('无卡片数据');
+
+  let cumulative = 0;
+  let segments = '';
+  let legend = '';
+  keys.forEach((k, i) => {
+    const val = dist[k] || 0;
+    const pct = val / total * 100;
+    const dash = pct;
+    const offset = -cumulative / total * 100;
+    if (val > 0) {
+      segments += `<circle cx="18" cy="18" r="15.915" fill="none" stroke="${colors[i]}" stroke-width="3"
+        stroke-dasharray="${dash} ${100 - dash}"
+        stroke-dashoffset="${offset}"
+        transform="rotate(-90 18 18)"/>`;
+    }
+    legend += `<div class="doughnut-item">
+      <div class="doughnut-dot" style="background:${colors[i]}"></div>
+      <span>${labels[i]} ${val} (${Math.round(pct)}%)</span>
+    </div>`;
+    cumulative += val;
+  });
+
+  return `<div class="doughnut-wrap">
+    <svg class="doughnut-svg" viewBox="0 0 36 36">${segments}</svg>
+    <div class="doughnut-legend">${legend}</div>
+  </div>`;
+}
+
+function buildRTDist(rt) {
+  if (!rt || Object.values(rt).every(v => v === 0)) return emptyState('无响应时间数据');
+  const total = Object.values(rt).reduce((s, v) => s + v, 0);
+  const items = [
+    { key: 'fast', label: '< 2s', color: 'success' },
+    { key: 'normal', label: '2-5s', color: 'primary' },
+    { key: 'slow', label: '5-10s', color: 'warning' },
+    { key: 'verySlow', label: '> 10s', color: 'danger' },
+  ];
+  let html = '';
+  items.forEach(item => {
+    const val = rt[item.key] || 0;
+    const pct = total > 0 ? Math.round(val / total * 100) : 0;
+    html += `<div class="mb-2">
+      <div class="flex items-center justify-between text-sm">
+        <span>${item.label}</span>
+        <span>${val} (${pct}%)</span>
+      </div>
+      <div class="progress-bar mt-2"><div class="progress-fill ${item.color}" style="width:${pct}%"></div></div>
+    </div>`;
+  });
+  return html;
+}
+
+function buildHourlyChart(hours) {
+  if (!hours || hours.every(h => h.count === 0)) return emptyState('无时段数据');
+  const maxCount = Math.max(...hours.map(h => h.count), 1);
+  let cols = '';
+  const labels = ['0','2','4','6','8','10','12','14','16','18','20','22'];
+  hours.forEach(h => {
+    const barH = h.count / maxCount * 100;
+    // Only show label every 2 hours
+    const lbl = h.hour % 2 === 0 ? labels[h.hour / 2] : '';
+    cols += `<div class="chart-col">
+      <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;">
+        <div class="chart-bar primary" style="height:${Math.max(barH, 2)}%;max-width:20px;"></div>
+      </div>
+      <div class="chart-label">${lbl}</div>
+    </div>`;
+  });
+  return `<div class="chart-bars" style="height:80px;">${cols}</div>`;
+}
+
+// ═══ Cards View ═══
+let _cardFilterUserId = '';
+
+async function renderCards() {
+  const el = document.getElementById('cards-content');
+  el.innerHTML = skeletonTable();
+  try {
+    const payload = {};
+    if (_cardFilterUserId) payload.userId = _cardFilterUserId;
+    const data = await callEdgeFunction('get-card-difficulty', payload);
+    el.innerHTML = buildCardsHTML(data);
+  } catch(e) {
+    el.innerHTML = errorState('加载卡片分析失败：' + e.message, 'renderCards()');
+  }
+}
+
+function buildCardsHTML(d) {
+  // Patient filter dropdown
+  const patientOptions = Object.entries(_patientsCache).map(([id, p]) =>
+    `<option value="${id}" ${_cardFilterUserId === id ? 'selected' : ''}>${p.email}</option>`
+  ).join('');
+
+  return `
+    <div class="filter-bar">
+      <select class="select-input" onchange="_cardFilterUserId=this.value;renderCards();">
+        <option value="">全部患者</option>
+        ${patientOptions}
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-title">高失败率卡片 <span class="badge">lapses ≥ 5</span></div>
+      ${buildCardTable(d.highLapseCards || [], 'highLapse')}
+    </div>
+
+    <div class="section">
+      <div class="section-title">已挂起卡片</div>
+      ${buildCardTable(d.suspendedCards || [], 'suspended')}
+    </div>
+
+    <div class="section">
+      <div class="section-title">牌组失败率排名</div>
+      ${buildDeckFailureTable(d.deckFailureRates || [])}
+    </div>
+  `;
+}
+
+function buildCardTable(cards, type) {
+  if (!cards || cards.length === 0) return emptyState('无数据');
+  const isHighLapse = type === 'highLapse';
+  let rows = '';
+  cards.forEach(c => {
+    rows += `<tr>
+      <td class="truncate" style="max-width:100px">${c.cardName}</td>
+      <td>${c.email}</td>
+      <td>${c.deckKey}</td>
+      ${isHighLapse ? `<td><span class="badge ${c.lapsesTotal >= 8 ? 'badge-danger' : 'badge-warning'}">${c.lapsesTotal}</span></td>` : ''}
+      <td>${c.lapsesStreak}</td>
+      <td>${c.suspended ? '<span class="badge badge-danger">是</span>' : '<span class="badge badge-success">否</span>'}</td>
+    </tr>`;
+  });
+  return `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>卡片</th>
+      <th>患者</th>
+      <th>牌组</th>
+      ${isHighLapse ? '<th>总失败次数</th>' : ''}
+      <th>连续失败</th>
+      <th>已挂起</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function buildDeckFailureTable(decks) {
+  if (!decks || decks.length === 0) return emptyState('无数据');
+  let rows = '';
+  decks.forEach(d => {
+    const rateColor = d.failureRate >= 30 ? 'danger' : d.failureRate >= 15 ? 'warning' : 'success';
+    rows += `<tr>
+      <td>${d.deckKey}</td>
+      <td>${d.totalReviews}</td>
+      <td>${d.totalAgainRatings}</td>
+      <td><span class="badge badge-${rateColor}">${d.failureRate}%</span></td>
+      <td><div class="progress-bar"><div class="progress-fill ${rateColor}" style="width:${Math.min(d.failureRate, 100)}%"></div></div></td>
+    </tr>`;
+  });
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>牌组</th><th>总复习量</th><th>Again 次数</th><th>失败率</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+</script>
+</body>
+</html>
