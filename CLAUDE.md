@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**忆海拾光 (Memory Glimmers)** — A cognitive training PWA for AD/MCI patients. Single-file app (`yihai_v{version}.html`) with inline CSS/JS. Custom SM-2 SRS implementation, IndexedDB persistence, and GitHub Pages deployment.
+**忆海拾光 (Memory Glimmers)** — A cognitive training PWA for AD/MCI patients. Single-file app (`yihai_v{version}.html`) with inline CSS/JS. Custom SM-2 SRS implementation, IndexedDB persistence, Supabase cloud sync, and GitHub Pages deployment.
 
 ## System Architecture
 
@@ -67,13 +67,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | File | Purpose |
 |------|---------|
-| `yihai_v4.8.html` | Main training app (single HTML file — CSS + markup + JS all inline, Supabase cloud sync, v4.8+ 参数配置云端同步) |
+| `yihai_v4.9.html` | Main training app (single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.8.html` | v4.8 (previous version, kept for reference) |
 | `yihai_v4.7.html` | v4.7 (previous version, kept for reference) |
 | `yihai_v4.6.html` | v4.6 (previous version, kept for reference) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) |
 | `srs_test.js` | Node.js SRS unit tests (67 test cases, 59 pass + 8 pre-existing date-offset failures) |
 | `yihai_v4.4_test.js` | Node.js unit tests for v4.4 additions: simpleHash, escAttr, data format, sync URL logic (55 tests) |
-| `_playwright_test.js` | Playwright 回归测试（可视化）— 界面登录 → SRS 算法 → 多日 UI 练习 → IndexedDB 验证 → 统计 KPI |
+| `_playwright_test.js` | Playwright 回归测试（可视化 · 单机版）— 导入 → SRS 算法 → 多日 UI 练习 → IndexedDB 验证 |
+| `_playwright_cloud_test.js` | Playwright 回归测试（可视化 · 网络版）— 登录 → 下载云端牌组 → 练习同步 → 配置同步 → 多设备同步 |
 | `srs_design_v6.9.md` | Authoritative SRS design spec — all SRS implementation decisions derive from this |
 | `supabase_schema.sql` | Supabase database schema (7 tables + indexes) |
 | `supabase_storage_policies.sql` | Supabase Storage RLS policies for ReminiSea bucket |
@@ -101,7 +103,7 @@ node yihai_v4.8_test.js
 node _playwright_test.js
 ```
 
-All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, Playwright 18.
+All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, Playwright 18/17 (单机/网络).
 
 ## SRS Architecture
 

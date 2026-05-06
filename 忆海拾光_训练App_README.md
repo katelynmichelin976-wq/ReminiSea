@@ -147,6 +147,21 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ---
 
+### v4.9 — 2026-05-06
+
+**Bug 修复**
+- 配置同步先 pull 后 push，修复多设备场景本地空配置覆盖远端修改
+- `getDeckStatsSrs` 无 CardState 卡片计入新卡数，修复下载后牌组显示 0/0
+- `syncCardState` upsert 补 `user_id` 字段，修复卡片状态上传静默失败
+
+**COS 回源停用**
+- `MEDIA_CDN_BASE = ''`，媒体下载回退到 Supabase Storage
+
+**回归测试**
+- 新增 `_playwright_cloud_test.js`（17 断言，含多设备同步测试）
+
+---
+
 ### v4.8 — 2026-05-05
 
 **同步架构重构**
