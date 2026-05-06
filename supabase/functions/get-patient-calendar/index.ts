@@ -36,6 +36,7 @@ interface DayData {
 interface TrialRecord {
   trialId: string;
   cardId: string;
+  cardName: string;
   deckKey: string;
   rating: string;
   isCorrect: boolean | null;
@@ -89,11 +90,23 @@ Deno.serve(async (req: Request) => {
         .eq("trial_date", date)
         .order("timestamp", { ascending: true });
 
+      // Look up card names
+      const cardIds = [...new Set((trials || []).map(t => t.card_id))];
+      const { data: cardsPool } = await supabase
+        .from("cards_pool")
+        .select("card_id, card_name")
+        .in("card_id", cardIds);
+      const nameMap = new Map<string, string>();
+      if (cardsPool) {
+        for (const c of cardsPool) nameMap.set(c.card_id, c.card_name);
+      }
+
       const response: CalendarResponse = { year, month, days: [], trials: [] };
       if (trials) {
         response.trials = trials.map(t => ({
           trialId: t.trial_id,
           cardId: t.card_id,
+          cardName: nameMap.get(t.card_id) || t.card_id,
           deckKey: t.deck_key,
           rating: t.rating,
           isCorrect: t.is_correct,

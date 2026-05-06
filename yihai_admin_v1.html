@@ -1177,18 +1177,18 @@ function buildTrialRecordsHTML(trials) {
   }
   let table = `<div class="section-title" style="font-size:13px;margin-bottom:8px;">答题记录 (${trials.length} 条)</div>
     <div class="table-wrap"><table>
-    <thead><tr><th>时间</th><th>卡片</th><th>牌组</th><th>评分</th><th>响应</th><th>阶段变化</th></tr></thead><tbody>`;
+    <thead><tr><th>时间</th><th>卡牌名称</th><th>评分</th><th>响应</th><th>阶段变化</th></tr></thead><tbody>`;
   trials.forEach(t => {
     const ratingCls = t.rating === 'again' ? 'again' : t.rating === 'hard' ? 'hard' : t.rating === 'good' ? 'good' : 'easy';
+    const ratingLabel = t.rating === 'again' ? '重来' : t.rating === 'hard' ? '困难' : t.rating === 'good' ? '良好' : '简单';
     const time = new Date(t.timestamp).toTimeString().slice(0, 5);
     const rt = t.responseTimeMs ? formatDuration(t.responseTimeMs) : '—';
     const before = srsStageLabel(t.srsStageBefore) || '?';
     const after = srsStageLabel(t.srsStageAfter) || '?';
     table += `<tr>
       <td style="white-space:nowrap">${time}</td>
-      <td style="min-width:100px;word-break:break-all">${t.cardId}</td>
-      <td style="min-width:60px">${t.deckKey}</td>
-      <td><span class="trial-rating ${ratingCls}">${t.rating === 'again' ? '忘记' : t.rating === 'hard' ? '困难' : t.rating === 'good' ? '正确' : '简单'}</span></td>
+      <td style="min-width:120px;word-break:break-all">${t.cardName || t.cardId}</td>
+      <td><span class="trial-rating ${ratingCls}">${ratingLabel}</span></td>
       <td style="white-space:nowrap">${rt}</td>
       <td style="white-space:nowrap">${before} → ${after}</td>
     </tr>`;
