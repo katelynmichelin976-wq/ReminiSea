@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CFG = { url:'http://localhost:8080/yihai_v4.8.html' };
-const YHPACK = path.join(__dirname, '_test_import.yhspack');
+const YHPACK = path.join(__dirname, 'test_data', '蔬菜水果本地版.yhspack');
 
 let passed=0, failed=0, errors=[];
 const pass=(l,v)=>{if(v){passed++;console.log(`  ✓ ${l}`)}else{failed++;errors.push(`✗ ${l}`);console.log(`  ✗ ${l}`)}};
@@ -20,22 +20,25 @@ const wait = (page, ms) => page.waitForTimeout(ms);
 
 async function createTestYhspack() {
   const zip = new JSZip();
+  // 保持与原文件一致的格式（version + exportedAt + deck）
   zip.file('deck.json', JSON.stringify({
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
     deck: {
       id: '__test_import__',
-      name: '测试导入牌组',
+      name: '蔬菜水果本地版',
       cards: [
-        { id:'i1', name:'苹果', image:'', audio:'' },
-        { id:'i2', name:'香蕉', image:'', audio:'' },
-        { id:'i3', name:'橘子', image:'', audio:'' },
-        { id:'i4', name:'西瓜', image:'', audio:'' },
-        { id:'i5', name:'草莓', image:'', audio:'' },
+        { name:'苹果', image:'', audio:'' },
+        { name:'香蕉', image:'', audio:'' },
+        { name:'橘子', image:'', audio:'' },
+        { name:'西瓜', image:'', audio:'' },
+        { name:'草莓', image:'', audio:'' },
       ]
     }
   }));
   const buf = await zip.generateAsync({ type:'nodebuffer' });
   fs.writeFileSync(YHPACK, buf);
-  console.log(`  已创建测试文件: ${YHPACK} (${buf.length} bytes)`);
+  console.log(`  已写入测试文件: ${YHPACK} (${buf.length} bytes)`);
 }
 
 (async () => {
@@ -59,11 +62,11 @@ async function createTestYhspack() {
       const cards = document.querySelectorAll('.deck-card');
       for (const c of cards) {
         const nameEl = c.querySelector('.deck-name');
-        if (nameEl && nameEl.textContent.includes('测试导入牌组')) return nameEl.textContent.trim();
+        if (nameEl && nameEl.textContent.includes('蔬菜水果本地版')) return nameEl.textContent.trim();
       }
       return '';
     });
-    check('导入牌组出现在列表', deckName, '测试导入牌组');
+    check('导入牌组出现在列表', deckName, '蔬菜水果本地版');
 
     // 选中导入牌组验证 currentDeck
     await run(page, () => { const c=document.querySelector('.deck-card[data-deck="__test_import__"]'); if(c)c.click(); });
@@ -312,9 +315,7 @@ async function createTestYhspack() {
   await page.close();
   await browser.close();
 
-  // 清理测试文件
-  try { fs.unlinkSync(YHPACK); } catch(e) {}
-  console.log('  已清理测试文件');
+  console.log(`  测试文件保留: ${YHPACK}`);
 
   process.exit(failed > 0 ? 1 : 0);
 })();
