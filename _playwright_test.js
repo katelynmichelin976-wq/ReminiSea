@@ -1,5 +1,5 @@
 /**
- * 忆海拾光 v4.8 回归测试（可视化 · 单机版）
+ * 忆海拾光 v4.8 回归测试（可视化 · 单机版 · 10 天 SRS 验证）
  * 依赖：python -m http.server 8080 --directory /c/code
  * 运行：node _playwright_test.js
  */
@@ -20,7 +20,6 @@ const wait = (page, ms) => page.waitForTimeout(ms);
 
 async function createTestYhspack() {
   const zip = new JSZip();
-  // 保持与原文件一致的格式（version + exportedAt + deck）
   zip.file('deck.json', JSON.stringify({
     version: '1.0',
     exportedAt: new Date().toISOString(),
@@ -41,6 +40,14 @@ async function createTestYhspack() {
   console.log(`  已写入测试文件: ${YHPACK} (${buf.length} bytes)`);
 }
 
+// 加权随机评级：70% good, 20% hard, 10% again
+function randRating() {
+  const r = Math.random();
+  if (r < 0.10) return 'again';
+  if (r < 0.30) return 'hard';
+  return 'good';
+}
+
 (async () => {
   await createTestYhspack();
 
@@ -53,11 +60,9 @@ async function createTestYhspack() {
     await page.goto(CFG.url, { waitUntil:'networkidle', timeout:30000 });
     await wait(page, 1500);
 
-    // 上传 .yhspack
     await page.setInputFiles('input[accept=".yhspack"]', YHPACK);
-    await wait(page, 2000); // 等 JSZip 加载 + 导入完成
+    await wait(page, 2000);
 
-    // 验证牌组出现在列表中
     const deckName = await run(page, () => {
       const cards = document.querySelectorAll('.deck-card');
       for (const c of cards) {
@@ -68,12 +73,10 @@ async function createTestYhspack() {
     });
     check('导入牌组出现在列表', deckName, '蔬菜水果本地版');
 
-    // 选中导入牌组验证 currentDeck
     await run(page, () => { const c=document.querySelector('.deck-card[data-deck="__test_import__"]'); if(c)c.click(); });
     await wait(page, 300);
     check('currentDeck 已切换', await run(page, () => currentDeck), '__test_import__');
 
-    // 切回内置牌组用于后续练习
     await run(page, () => { const c=document.querySelector('.deck-card[data-deck="__builtin_test__"]'); if(c)c.click(); });
     await wait(page, 300);
 
@@ -97,8 +100,11 @@ async function createTestYhspack() {
     check('2.8 relearning+good→review',
       (await run(page, d => { const st={srs_stage:'relearning',interval:0,ease_factor:2.5,due_date:'',due_ts:0,step_index:0,review_mode:'T1',lapses_streak:0,lapses_total:1,suspended:false,state_key:'t2h',card_id:'t2h',deck_key:'__test__'}; return processAnswer(st,'good',d); }, T)).srs_stage, 'review');
 
-    // ═══════════════════ PHASE 3: 多日 UI 练习 ═══════════════════
-    section('PHASE 3: 多日练习');
+    // ═══════════════════ PHASE 3: 10 天 UI 练习 ═══════════════════
+    section('PHASE 3: 10 天练习（maximum_interval=7）');
+
+    // 设置 AD 友好参数：最大间隔 7 天
+    await run(page, () => { SRS_CONFIG.maximum_interval = 7; });
 
     await run(page, () => {
       window.__fakeToday = '2026-05-05';
@@ -110,13 +116,12 @@ async function createTestYhspack() {
 
     await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('开始练习')){x.click();return} });
     await wait(page, 1500);
-    const inQ = await run(page, () => document.getElementById('screen-quiz').classList.contains('active'));
-    pass('进入练习屏', inQ);
+    pass('进入练习屏',
+      await run(page, () => document.getElementById('screen-quiz').classList.contains('active')));
 
     const waitWrite = () => page.evaluate(async () => { if (_lastSrsWrite) await _lastSrsWrite; });
     const waitRender = () => wait(page, 300);
 
-    // 按 dataset.idx 查找并点击选项按钮（onSel 监听 mouseup/touchend，非 click）
     const clickByIdx = (origIdx) => page.evaluate(i => {
       const btns = document.querySelectorAll('.opt');
       for (const b of btns) if (parseInt(b.dataset.idx) === i) { onSel(new MouseEvent('mouseup',{bubbles:true}), i, b); return; }
@@ -172,24 +177,23 @@ async function createTestYhspack() {
       return null;
     }
 
-    // ── 7 天练习循环 ──
-    // 内置牌组 20 张，new_cards_per_day=5 → Day1-4 各进 5 张新卡，Day5-7 纯复习
-    const DAYS = ['2026-05-05','2026-05-06','2026-05-07','2026-05-08','2026-05-09','2026-05-10','2026-05-11'];
-    const DAY_LABELS = ['一','二','三','四','五','六','日'];
+    // ── 10 天练习循环 ──
+    const DAYS = ['2026-05-05','2026-05-06','2026-05-07','2026-05-08','2026-05-09',
+                  '2026-05-10','2026-05-11','2026-05-12','2026-05-13','2026-05-14'];
+    const DAY_LABELS = ['一','二','三','四','五','六','日','一','二','三'];
     let totalCards = 0;
 
     for (let di = 0; di < DAYS.length; di++) {
       const day = DAYS[di];
-      // 设置日期，切今日 tab
       await run(page, d => { window.__fakeToday = d; }, day);
       if (di === 0) {
-        // Day1 已在今日 tab
-        await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('开始练习')){x.click();return} });
+        // Day1 已在今日 tab，只需点开始练习
+        // （从 Phase 2 的今日 tab 切过来的状态）
       } else {
         await run(page, () => { const t=document.querySelectorAll('.sheet-tab'); for(const x of t) if(x.textContent.includes('今日')){x.click();return} });
         await wait(page, 200);
-        await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('开始练习')){x.click();return} });
       }
+      await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('开始练习')){x.click();return} });
       await wait(page, 1500);
 
       const hasCards = await run(page, () => document.getElementById('screen-quiz').classList.contains('active'));
@@ -198,18 +202,13 @@ async function createTestYhspack() {
         continue;
       }
 
-      // Day1 前 3 张混合策略（good/hard/again 各一），其余全部 good
-      const day1Mix = ['good','hard','again','good','good','good'];
       let dayCards = 0;
-
-      for (let ci = 0; ci < 30; ci++) {
-        // 检查是否仍在答题屏
+      for (let ci = 0; ci < 40; ci++) {
         const quizActive = await run(page, () => document.getElementById('screen-quiz').classList.contains('active'));
         if (!quizActive) break;
 
-        // 等卡片就绪
         let ready = false;
-        for (let t = 0; t < 20; t++) {
+        for (let t = 0; t < 15; t++) {
           const r = await run(page, () => {
             if (document.getElementById('screen-finish').classList.contains('active')) return 'finish';
             return document.querySelectorAll('.opt').length > 0 && !revealed ? 'ready' : null;
@@ -220,59 +219,69 @@ async function createTestYhspack() {
         }
         if (!ready) break;
 
-        // 选策略
-        let strat;
-        if (di === 0 && ci < day1Mix.length) strat = day1Mix[ci];
-        else strat = 'good';
-
+        // 加权随机评级（但 always 留至少一次 good 确保毕业路径）
+        const strat = di === 0 && ci < 3
+          ? ['good','hard','again'][ci]  // Day1 前 3 张确定性混合
+          : randRating();
         await doCard(strat);
         const ret = await finishCardOrFinish();
         if (ret === 'finish') break;
         dayCards++;
       }
 
-      console.log(`  Day${di+1} (${DAY_LABELS[di]}): 完成 ${dayCards} 张`);
+      console.log(`  Day${di+1} (${DAY_LABELS[di]}): ${dayCards} 张`);
       totalCards += dayCards;
 
-      // 返回首页
       await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('返回首页')){x.click();return} });
-      await wait(page, 300);
+      await wait(page, 200);
     }
 
-    pass('7 天累计练习', totalCards > 0);
-    console.log(`  7 天共练习: ${totalCards} 张次`);
+    pass('10 天累计练习 >0', totalCards > 0);
+    console.log(`  10 天共练习: ${totalCards} 张次`);
 
-    // ═══════════════════ PHASE 4: 最终验证 ═══════════════════
-    section('PHASE 4: 7 天后验证');
+    // ═══════════════════ PHASE 4: 10 天后验证 ═══════════════════
+    section('PHASE 4: 10 天后验证');
 
     const finalSt = await run(page, () => new Promise(res => {
       const r=indexedDB.open('yihai_srs',3);
       r.onsuccess=e=>{
         const db=e.target.result;
-        const t1=db.transaction('card_states','readonly');
-        const g1=t1.objectStore('card_states').getAll();
-        g1.onsuccess=()=>{
-          const st=(g1.result||[]).filter(s=>s.deck_key==='__builtin_test__');
-          const stages={}; st.forEach(s=>{stages[s.srs_stage]=(stages[s.srs_stage]||0)+1});
-          const t2=db.transaction('trials','readonly');
-          const g2=t2.objectStore('trials').getAll();
+        const tx=db.transaction('card_states','readonly');
+        const g=tx.objectStore('card_states').getAll();
+        g.onsuccess=()=>{
+          const st=(g.result||[]).filter(s=>s.deck_key==='__builtin_test__');
+          const stages={}; const intervals=[];
+          st.forEach(s=>{
+            stages[s.srs_stage]=(stages[s.srs_stage]||0)+1;
+            if (s.srs_stage==='review') intervals.push(s.interval);
+          });
+          const maxInterval = intervals.length ? Math.max(...intervals) : 0;
+          const avgInterval = intervals.length ? Math.round(intervals.reduce((a,b)=>a+b,0)/intervals.length) : 0;
+          const tx2=db.transaction('trials','readonly');
+          const g2=tx2.objectStore('trials').getAll();
           g2.onsuccess=()=>{
             const tr=(g2.result||[]).filter(t=>t.deck_key==='__builtin_test__');
             const ratings={}; tr.forEach(t=>{if(t.rating)ratings[t.rating]=(ratings[t.rating]||0)+1});
-            res({states:st.length, stages, trials:tr.length, ratings});
+            res({states:st.length, stages, maxInterval, avgInterval, trials:tr.length, ratings});
           };
         };
       };
     }));
     console.log(`  最终: ${JSON.stringify(finalSt)}`);
+
     pass('20 张卡全部有 SRS 状态', finalSt.states === 20);
     pass('无 new 卡（全部已学习）', !finalSt.stages['new'] || finalSt.stages['new'] === 0);
     pass('有 review 阶段卡（已毕业）', (finalSt.stages['review']||0) > 0);
-    pass('答题记录充足', finalSt.trials > 20);
+
+    // maximum_interval=7 验证
+    pass('最大间隔 ≤ 7（maximum_interval 生效）', finalSt.maxInterval <= 7);
+    pass('review 平均间隔合理（≥2）', finalSt.avgInterval >= 2);
+
+    pass('答题记录充足（≥60）', finalSt.trials >= 60);
     if (finalSt.ratings && Object.keys(finalSt.ratings).length > 0) {
-      pass('含 good', (finalSt.ratings['good']||0)>0);
-      pass('含 hard', (finalSt.ratings['hard']||0)>0);
-      pass('含 again', (finalSt.ratings['again']||0)>0);
+      pass('含 good 评级', (finalSt.ratings['good']||0)>0);
+      pass('含 hard 评级', (finalSt.ratings['hard']||0)>0);
+      pass('含 again 评级', (finalSt.ratings['again']||0)>0);
     }
 
     // 统计页
@@ -297,7 +306,8 @@ async function createTestYhspack() {
     section('结果');
     console.log(`  通过: ${passed}  失败: ${failed}`);
     if (failed > 0) console.log(`  失败: ${errors.join(' | ')}`);
-    console.log(`  SRS: ${JSON.stringify(finalSt.stages)}, 答题: ${finalSt.trials}, 评级: ${JSON.stringify(finalSt.ratings)}`);
+    console.log(`  SRS: ${JSON.stringify(finalSt.stages)}, 最大间隔: ${finalSt.maxInterval}, 平均间隔: ${finalSt.avgInterval}`);
+    console.log(`  答题: ${finalSt.trials}, 评级: ${JSON.stringify(finalSt.ratings)}`);
 
   } catch (err) {
     console.error('\nFATAL:', err.message);
@@ -305,8 +315,6 @@ async function createTestYhspack() {
 
   await page.close();
   await browser.close();
-
   console.log(`  测试文件保留: ${YHPACK}`);
-
   process.exit(failed > 0 ? 1 : 0);
 })();
