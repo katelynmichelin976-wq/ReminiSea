@@ -205,6 +205,58 @@ tbody tr.clickable { cursor: pointer; }
   font-size: 13px; outline: none; background: var(--surface); cursor: pointer;
 }
 
+/* ── Detail Sub-Tabs ── */
+.detail-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 16px; gap: 0; }
+.detail-tab {
+  padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+  color: var(--text3); border-bottom: 2px solid transparent; transition: all var(--transition);
+  background: none; border-top: none; border-left: none; border-right: none;
+}
+.detail-tab:hover { color: var(--text); background: var(--bg); }
+.detail-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+/* ── Calendar ── */
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-nav-title { font-size: 15px; font-weight: 600; }
+.cal-nav-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer; font-size: 14px; color: var(--text2); }
+.cal-nav-btn:hover { background: var(--bg); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-header { text-align: center; font-size: 11px; font-weight: 600; color: var(--text3); padding: 4px 0; }
+.cal-cell {
+  aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm); font-size: 13px; cursor: default; position: relative;
+  background: var(--bg); min-height: 36px;
+}
+.cal-cell.other-month { opacity: 0.3; }
+.cal-cell.has-data { cursor: pointer; background: var(--primary-light); font-weight: 600; color: var(--primary); }
+.cal-cell.has-data:hover { background: var(--primary); color: #fff; }
+.cal-cell.selected { background: var(--primary); color: #fff; }
+.cal-cell.today { box-shadow: inset 0 0 0 2px var(--primary); }
+.cal-cell .cal-dot {
+  width: 5px; height: 5px; border-radius: 50%; position: absolute; bottom: 3px;
+}
+.cal-cell .cal-dot.high { background: var(--success); }
+.cal-cell .cal-dot.med { background: var(--warning); }
+.cal-cell .cal-dot.low { background: var(--danger); }
+.cal-legend { display: flex; gap: 12px; margin-top: 8px; font-size: 11px; color: var(--text3); }
+.cal-legend-item { display: flex; align-items: center; gap: 4px; }
+
+/* ── Trial Records ── */
+.trial-records { margin-top: 12px; }
+.trial-records .trial-rating { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.trial-rating.again { background: var(--danger-bg); color: var(--danger); }
+.trial-rating.hard { background: var(--warning-bg); color: var(--warning); }
+.trial-rating.good { background: var(--success-bg); color: var(--success); }
+.trial-rating.easy { background: var(--primary-light); color: var(--primary); }
+
+/* ── Card States ── */
+.srs-stage-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.srs-stage-new { background: #e2e8f0; color: #64748b; }
+.srs-stage-learning { background: var(--warning-bg); color: var(--warning); }
+.srs-stage-review { background: var(--primary-light); color: var(--primary); }
+.srs-stage-relearning { background: var(--danger-bg); color: var(--danger); }
+.srs-stage-suspended { background: #f3e8ff; color: #9333ea; }
+
 /* ── Patient Detail Panel ── */
 .detail-overlay {
   display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100;
@@ -399,6 +451,11 @@ tbody tr.clickable { cursor: pointer; }
     <h2 id="detail-title">患者详情</h2>
     <button class="detail-close" onclick="closePatientDetail()">✕</button>
   </div>
+  <div class="detail-tabs" id="detail-tabs" style="padding:0 20px;">
+    <button class="detail-tab active" data-subtab="overview" onclick="switchDetailTab('overview')">概览</button>
+    <button class="detail-tab" data-subtab="calendar" onclick="switchDetailTab('calendar')">月历</button>
+    <button class="detail-tab" data-subtab="cardstates" onclick="switchDetailTab('cardstates')">卡牌状态</button>
+  </div>
   <div class="detail-body" id="detail-body"></div>
 </div>
 
@@ -422,6 +479,9 @@ let _autoRefreshTimer = null;
 let _selectedPatientId = null;
 let _patientsCache = {};
 let _sortState = {};          // { col: 'email', asc: true }
+let _detailSubTab = 'overview';
+let _calYear = new Date().getFullYear();
+let _calMonth = new Date().getMonth() + 1;
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', async () => {
@@ -792,25 +852,60 @@ function sortPatients(col) {
 // ═══ Patient Detail ═══
 async function openPatientDetail(userId) {
   _selectedPatientId = userId;
+  _detailSubTab = 'overview';
+  _calYear = new Date().getFullYear();
+  _calMonth = new Date().getMonth() + 1;
   document.getElementById('detail-overlay').classList.add('open');
   document.getElementById('detail-panel').classList.add('open');
+  updateDetailTabs();
   const body = document.getElementById('detail-body');
   const title = document.getElementById('detail-title');
   const p = _patientsCache[userId];
   title.textContent = p ? p.email : '患者详情';
   body.innerHTML = '<div class="skeleton" style="height:300px"></div>';
-  try {
-    const data = await callEdgeFunction('get-patient-detail', { userId, days: 30 });
-    body.innerHTML = buildPatientDetailHTML(data);
-  } catch(e) {
-    body.innerHTML = errorState('加载详情失败：' + e.message, 'openPatientDetail(\''+userId+'\')');
-  }
+  await renderDetailOverview(userId, body);
 }
 
 function closePatientDetail() {
   document.getElementById('detail-overlay').classList.remove('open');
   document.getElementById('detail-panel').classList.remove('open');
   _selectedPatientId = null;
+}
+
+function updateDetailTabs() {
+  document.querySelectorAll('.detail-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.subtab === _detailSubTab);
+  });
+}
+
+async function switchDetailTab(tab) {
+  _detailSubTab = tab;
+  updateDetailTabs();
+  const body = document.getElementById('detail-body');
+  if (!_selectedPatientId) return;
+  switch (tab) {
+    case 'overview':
+      body.innerHTML = '<div class="skeleton" style="height:300px"></div>';
+      await renderDetailOverview(_selectedPatientId, body);
+      break;
+    case 'calendar':
+      body.innerHTML = '<div class="skeleton" style="height:300px"></div>';
+      await renderPatientCalendar(_selectedPatientId, body);
+      break;
+    case 'cardstates':
+      body.innerHTML = '<div class="skeleton" style="height:300px"></div>';
+      await renderPatientCardStates(_selectedPatientId, body);
+      break;
+  }
+}
+
+async function renderDetailOverview(userId, body) {
+  try {
+    const data = await callEdgeFunction('get-patient-detail', { userId, days: 30 });
+    body.innerHTML = buildPatientDetailHTML(data);
+  } catch(e) {
+    body.innerHTML = errorState('加载详情失败：' + e.message, 'switchDetailTab(\'overview\')');
+  }
 }
 
 function buildPatientDetailHTML(d) {
@@ -988,6 +1083,158 @@ function buildHourlyChart(hours) {
     </div>`;
   });
   return `<div class="chart-bars" style="height:80px;">${cols}</div>`;
+}
+
+// ═══ Detail: Calendar ═══
+async function renderPatientCalendar(userId, body) {
+  try {
+    const data = await callEdgeFunction('get-patient-calendar', { userId, year: _calYear, month: _calMonth });
+    body.innerHTML = buildCalendarHTML(data, userId);
+  } catch(e) {
+    body.innerHTML = errorState('加载月历失败：' + e.message, 'renderPatientCalendar(\''+userId+'\',document.getElementById(\'detail-body\'))');
+  }
+}
+
+function buildCalendarHTML(data, userId) {
+  const year = _calYear, month = _calMonth;
+  const firstDay = new Date(year, month - 1, 1).getDay(); // 0=Sun
+  const lastDate = new Date(year, month, 0).getDate();
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const dayMap = {};
+  (data.days || []).forEach(d => { dayMap[d.date] = d; });
+
+  // Navigation
+  const monthNames = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+
+  let cells = '';
+  // Weekday headers
+  ['日','一','二','三','四','五','六'].forEach(d => {
+    cells += `<div class="cal-header">${d}</div>`;
+  });
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    cells += '<div class="cal-cell"></div>';
+  }
+  // Day cells
+  const today = new Date();
+  for (let d = 1; d <= lastDate; d++) {
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayData = dayMap[dateStr];
+    const isToday = dateStr === todayStr;
+    let cls = 'cal-cell';
+    if (dayData) cls += ' has-data';
+    if (isToday) cls += ' today';
+    let dotHtml = '';
+    if (dayData && dayData.reviews > 0) {
+      const acc = dayData.accuracyPct !== null ? dayData.accuracyPct : 0;
+      const dotCls = acc >= 70 ? 'high' : acc >= 40 ? 'med' : 'low';
+      dotHtml = `<div class="cal-dot ${dotCls}"></div>`;
+    }
+    cells += `<div class="${cls}" onclick="${dayData ? `loadDateTrials('${userId}','${dateStr}')` : ''}">
+      ${d}${dotHtml}
+    </div>`;
+  }
+
+  return `
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="changeCalMonth('${userId}', -1)">‹</button>
+      <span class="cal-nav-title">${year}年 ${monthNames[month-1]}</span>
+      <button class="cal-nav-btn" onclick="changeCalMonth('${userId}', 1)">›</button>
+    </div>
+    <div class="cal-grid">${cells}</div>
+    <div class="cal-legend">
+      <span class="cal-legend-item"><span class="cal-dot high" style="position:static;width:8px;height:8px;"></span> ≥70%</span>
+      <span class="cal-legend-item"><span class="cal-dot med" style="position:static;width:8px;height:8px;"></span> 40-70%</span>
+      <span class="cal-legend-item"><span class="cal-dot low" style="position:static;width:8px;height:8px;"></span> <40%</span>
+    </div>
+    <div id="trial-records" class="trial-records"></div>
+  `;
+}
+
+function changeCalMonth(userId, delta) {
+  _calMonth += delta;
+  if (_calMonth < 1) { _calMonth = 12; _calYear--; }
+  if (_calMonth > 12) { _calMonth = 1; _calYear++; }
+  renderPatientCalendar(userId, document.getElementById('detail-body'));
+}
+
+async function loadDateTrials(userId, date) {
+  const container = document.getElementById('trial-records');
+  container.innerHTML = '<div class="text-sm text-muted">加载中...</div>';
+  try {
+    const data = await callEdgeFunction('get-patient-calendar', { userId, year: _calYear, month: _calMonth, date });
+    container.innerHTML = buildTrialRecordsHTML(data.trials || []);
+  } catch(e) {
+    container.innerHTML = '<div class="text-sm" style="color:var(--danger)">加载失败</div>';
+  }
+}
+
+function buildTrialRecordsHTML(trials) {
+  if (!trials || trials.length === 0) {
+    return '<div class="empty-state" style="padding:12px"><p>该日无练习记录</p></div>';
+  }
+  let table = `<div class="section-title" style="font-size:13px;margin-bottom:8px;">答题记录 (${trials.length} 条)</div>
+    <div class="table-wrap"><table>
+    <thead><tr><th>时间</th><th>卡ID</th><th>牌组</th><th>评分</th><th>响应</th><th>阶段</th></tr></thead><tbody>`;
+  trials.forEach(t => {
+    const ratingCls = t.rating === 'again' ? 'again' : t.rating === 'hard' ? 'hard' : t.rating === 'good' ? 'good' : 'easy';
+    const time = new Date(t.timestamp).toTimeString().slice(0, 5);
+    const rt = t.responseTimeMs ? formatDuration(t.responseTimeMs) : '—';
+    table += `<tr>
+      <td>${time}</td>
+      <td class="truncate" style="max-width:80px">${t.cardId}</td>
+      <td class="truncate" style="max-width:80px">${t.deckKey}</td>
+      <td><span class="trial-rating ${ratingCls}">${t.rating}</span></td>
+      <td>${rt}</td>
+      <td>${t.srsStageBefore || '?'} → ${t.srsStageAfter || '?'}</td>
+    </tr>`;
+  });
+  table += '</tbody></table></div>';
+  return table;
+}
+
+// ═══ Detail: Card States ═══
+async function renderPatientCardStates(userId, body) {
+  try {
+    const data = await callEdgeFunction('get-patient-card-states', { userId });
+    body.innerHTML = buildCardStatesHTML(data.cards || []);
+  } catch(e) {
+    body.innerHTML = errorState('加载卡牌状态失败：' + e.message, 'renderPatientCardStates(\''+userId+'\',document.getElementById(\'detail-body\'))');
+  }
+}
+
+function srsStageBadge(stage) {
+  const map = {
+    'new': '<span class="srs-stage-badge srs-stage-new">待开始</span>',
+    'learning': '<span class="srs-stage-badge srs-stage-learning">学习中</span>',
+    'review': '<span class="srs-stage-badge srs-stage-review">复习中</span>',
+    'relearning': '<span class="srs-stage-badge srs-stage-relearning">重学中</span>',
+    'suspended': '<span class="srs-stage-badge srs-stage-suspended">已挂起</span>',
+  };
+  return map[stage] || '<span class="srs-stage-badge srs-stage-new">'+stage+'</span>';
+}
+
+function buildCardStatesHTML(cards) {
+  if (!cards || cards.length === 0) return emptyState('无卡牌状态数据');
+
+  let table = `<div class="table-wrap"><table>
+    <thead><tr><th>卡片名称</th><th>牌组</th><th>SRS 阶段</th><th>间隔(天)</th><th>易度</th><th>到期</th><th>失败次数</th><th>连续失败</th></tr></thead><tbody>`;
+  cards.forEach(c => {
+    const suspended = c.suspended ? ' <span class="badge badge-danger">挂起</span>' : '';
+    table += `<tr>
+      <td class="truncate" style="max-width:120px">${c.cardName}${suspended}</td>
+      <td class="truncate" style="max-width:80px">${c.deckKey}</td>
+      <td>${srsStageBadge(c.suspended ? 'suspended' : c.srsStage)}</td>
+      <td>${c.interval}</td>
+      <td>${c.easeFactor.toFixed(2)}</td>
+      <td>${c.dueDate || '—'}</td>
+      <td>${c.lapsesTotal}</td>
+      <td>${c.lapsesStreak}</td>
+    </tr>`;
+  });
+  table += '</tbody></table></div>';
+  return table;
 }
 
 // ═══ Cards View ═══
