@@ -1625,6 +1625,7 @@ let _srsDb = null;
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
+const APP_VERSION = '4.9';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1746,7 +1747,8 @@ function getDeviceInfo() {
     return JSON.stringify({
       ua:     navigator.userAgent,
       screen: screen.width + 'x' + screen.height,
-      lang:   navigator.language
+      lang:   navigator.language,
+      app:    APP_VERSION
     });
   } catch(e) { return null; }
 }
