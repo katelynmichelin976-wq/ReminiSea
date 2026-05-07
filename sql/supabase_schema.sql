@@ -86,7 +86,8 @@ create table if not exists sync_trials (
   timestamp           bigint not null,
   synced_at           timestamptz default now(),
   created_at          timestamptz default now(),
-  device_info         jsonb default null
+  device_info         jsonb default null,
+  app_version         text not null default ''
 );
 
 create index if not exists idx_sync_trials_user on sync_trials(user_id);
@@ -119,6 +120,7 @@ create table if not exists sync_card_states (
   updated_at    bigint not null,
   synced_at     timestamptz default now(),
   created_at    timestamptz default now(),
+  app_version   text not null default '',
   unique(user_id, state_key)
 );
 

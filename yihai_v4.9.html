@@ -1759,6 +1759,7 @@ async function syncTrialLog(entry) {
     const { error } = await _sb.from('sync_trials').insert({
       device_id: _deviceId,
       device_info: getDeviceInfo(),
+      app_version: APP_VERSION,
       trial_id: entry.trial_id,
       user_id: _cloudUserId,
       card_id: entry.card_id,
@@ -1810,6 +1811,7 @@ async function syncCardState(state) {
     const { error } = await _sb.from('sync_card_states').upsert({
       user_id: _cloudUserId,
       device_id: _deviceId,
+      app_version: APP_VERSION,
       state_key: state.state_key,
       card_id: state.card_id,
       deck_key: state.deck_key,
