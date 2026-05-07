@@ -455,6 +455,7 @@ tbody tr.clickable { cursor: pointer; }
     <button class="detail-tab active" data-subtab="overview" onclick="switchDetailTab('overview')">概览</button>
     <button class="detail-tab" data-subtab="calendar" onclick="switchDetailTab('calendar')">月历</button>
     <button class="detail-tab" data-subtab="cardstates" onclick="switchDetailTab('cardstates')">卡牌状态</button>
+    <button class="detail-tab" data-subtab="config" onclick="switchDetailTab('config')">参数配置</button>
   </div>
   <div class="detail-body" id="detail-body"></div>
 </div>
@@ -483,6 +484,7 @@ let _detailSubTab = 'overview';
 let _calYear = new Date().getFullYear();
 let _calMonth = new Date().getMonth() + 1;
 let _cardStatesShowDeck = true;
+var _configShowSrs = true, _configShowUi = true;
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', async () => {
@@ -897,6 +899,10 @@ async function switchDetailTab(tab) {
       body.innerHTML = '<div class="skeleton" style="height:300px"></div>';
       await renderPatientCardStates(_selectedPatientId, body);
       break;
+    case 'config':
+      body.innerHTML = '<div class="skeleton" style="height:300px"></div>';
+      await renderPatientConfig(_selectedPatientId, body);
+      break;
   }
 }
 
@@ -1259,6 +1265,88 @@ function buildCardStatesHTML(cards) {
 function srsStageLabel(stage) {
   const map = { 'new':'待开始', 'learning':'学习中', 'review':'复习中', 'relearning':'重学中', 'suspended':'已挂起' };
   return map[stage] || stage;
+}
+
+// ═══ Detail: Patient Config ═══
+async function renderPatientConfig(userId, body) {
+  try {
+    const data = await callEdgeFunction('get-patient-config', { userId });
+    body.innerHTML = buildConfigHTML(data);
+  } catch(e) {
+    body.innerHTML = errorState('加载参数配置失败：' + e.message, 'renderPatientConfig(\''+userId+'\',document.getElementById(\'detail-body\'))');
+  }
+}
+
+function buildConfigHTML(data) {
+  const cfg = data.config;
+
+  if (!cfg) {
+    return `<div class="empty-state"><div class="empty-icon">⚙️</div><p>该患者暂无云端参数配置</p>
+      <p class="text-sm text-muted mt-2">登录 App 并开启云同步后，参数会自动推送至云端</p></div>`;
+  }
+
+  const updatedAt = data.updatedAt
+    ? new Date(data.updatedAt).toLocaleString('zh-CN')
+    : '—';
+
+  let html = `
+    <div class="detail-section">
+      <h3>参数配置</h3>
+      <div class="text-sm text-muted mb-2">最后更新：${updatedAt}</div>
+      <div style="margin-bottom:8px;display:flex;gap:8px;">
+        <button class="cal-nav-btn" onclick="_configShowSrs=true;_configShowUi=true;renderPatientConfig(_selectedPatientId,document.getElementById('detail-body'))">展开全部</button>
+        <button class="cal-nav-btn" onclick="_configShowSrs=false;_configShowUi=false;renderPatientConfig(_selectedPatientId,document.getElementById('detail-body'))">收起全部</button>
+      </div>
+    </div>`;
+
+  // SRS 参数
+  const srs = cfg.srs;
+  if (srs && Object.keys(srs).length > 0) {
+    const srsLabels = data.srsLabels || {};
+    html += buildConfigSection('SRS 复习参数', srs, srsLabels, '_configShowSrs');
+  }
+
+  // UI 参数
+  const ui = cfg.ui;
+  if (ui && Object.keys(ui).length > 0) {
+    const uiLabels = data.uiLabels || {};
+    html += buildConfigSection('UI 界面参数', ui, uiLabels, '_configShowUi');
+  }
+
+  return html;
+}
+
+function buildConfigSection(title, params, labels, showVar) {
+  let rows = '';
+  const entries = Object.entries(params).sort(([a], [b]) => a.localeCompare(b));
+  entries.forEach(([key, val]) => {
+    const label = labels[key] || key;
+    let displayVal = formatConfigValue(val);
+    rows += `<tr>
+      <td style="min-width:140px;word-break:break-word">${label}</td>
+      <td style="font-family:monospace;font-size:12px;word-break:break-all">${displayVal}</td>
+    </tr>`;
+  });
+
+  const isCollapsed = window[showVar] === false;
+
+  return `<div class="section" style="padding:14px 20px;cursor:pointer" onclick="var v=window['${showVar}'];window['${showVar}']=v===false?true:false;renderPatientConfig(_selectedPatientId,document.getElementById('detail-body'))">
+    <div class="flex items-center justify-between">
+      <div class="section-title" style="margin-bottom:0;font-size:14px;">${title} <span class="badge">${entries.length} 项</span></div>
+      <span style="color:var(--text3);font-size:12px;">${isCollapsed ? '展开 ▶' : '收起 ▼'}</span>
+    </div>
+    ${isCollapsed ? '' : `<div class="table-wrap mt-2"><table>
+      <thead><tr><th style="min-width:140px">参数</th><th>值</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`}
+  </div>`;
+}
+
+function formatConfigValue(val) {
+  if (val === null || val === undefined) return '—';
+  if (typeof val === 'boolean') return val ? '✓ 是' : '✗ 否';
+  if (Array.isArray(val)) return val.join(', ');
+  return String(val);
 }
 
 // ═══ Cards View ═══
