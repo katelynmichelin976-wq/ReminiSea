@@ -1747,8 +1747,7 @@ function getDeviceInfo() {
     return JSON.stringify({
       ua:     navigator.userAgent,
       screen: screen.width + 'x' + screen.height,
-      lang:   navigator.language,
-      app:    APP_VERSION
+      lang:   navigator.language
     });
   } catch(e) { return null; }
 }
