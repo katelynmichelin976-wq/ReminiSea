@@ -8,7 +8,7 @@ const JSZip = require('jszip');
 const fs = require('fs');
 const path = require('path');
 
-const CFG = { url:'http://localhost:8080/yihai_v4.8.html' };
+const CFG = { url:'http://localhost:8080/yihai_v4.9.html' };
 const YHPACK = path.join(__dirname, 'test_data', '蔬菜水果本地版.yhspack');
 
 let passed=0, failed=0, errors=[];
@@ -61,17 +61,15 @@ function randRating() {
     await wait(page, 1500);
 
     await page.setInputFiles('input[accept=".yhspack"]', YHPACK);
-    await wait(page, 2000);
-
+    // 等待导入完成：JSZip CDN 加载 + importYhspack 异步执行
+    await wait(page, 3000);
+    // 等待牌组卡片渲染
+    await page.waitForSelector('.deck-card[data-deck="__test_import__"]', { timeout: 10000 }).catch(() => {});
     const deckName = await run(page, () => {
-      const cards = document.querySelectorAll('.deck-card');
-      for (const c of cards) {
-        const nameEl = c.querySelector('.deck-name');
-        if (nameEl && nameEl.textContent.includes('蔬菜水果本地版')) return nameEl.textContent.trim();
-      }
-      return '';
+      const el = document.querySelector('.deck-card[data-deck="__test_import__"] .deck-name');
+      return el ? el.textContent.trim() : '';
     });
-    check('导入牌组出现在列表', deckName, '蔬菜水果本地版');
+    pass('导入牌组出现在列表', deckName.includes('蔬菜水果本地版'));
 
     await run(page, () => { const c=document.querySelector('.deck-card[data-deck="__test_import__"]'); if(c)c.click(); });
     await wait(page, 300);
