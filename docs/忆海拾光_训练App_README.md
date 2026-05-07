@@ -170,8 +170,10 @@ new → learning（学习中）→ review（复习中/已掌握）
 - 新增 `_playwright_cloud_test.js`（17 断言，含多设备同步测试）
 
 **设备信息采集**
-- 答题记录新增 `device_info` jsonb 字段，记录浏览器 UA、屏幕分辨率、语言设置
-- Supabase Migration 004：`sync_trials` 表新增 `device_info` 列
+- `sync_trials` 新增 `device_info` jsonb 字段，记录浏览器 UA、屏幕分辨率、语言设置
+- `sync_trials` + `sync_card_states` 新增 `app_version` 独立列，记录产生该记录的 App 版本号
+- 新增 `APP_VERSION` 常量，版本号统一定义在一处
+- Supabase Migration 004：两张表结构变更
 
 ---
 
