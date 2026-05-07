@@ -941,6 +941,11 @@ function buildPatientDetailHTML(d) {
     </div>
 
     <div class="detail-section">
+      <h3>设备信息 ${(d.devices||[]).length > 1 ? '<span class="badge badge-warning">多设备</span>' : ''}</h3>
+      ${buildDeviceTable(d.devices || [])}
+    </div>
+
+    <div class="detail-section">
       <h3>牌组分解</h3>
       ${buildDeckTable(d.deckBreakdown || [])}
     </div>
@@ -992,6 +997,46 @@ function buildDailyTrend(dailyStats) {
       </div>
     </div>
   `;
+}
+
+function buildDeviceTable(devices) {
+  if (!devices || devices.length === 0) return '<div class="text-sm text-muted">无设备数据</div>';
+  const multiDevice = devices.length > 1;
+  let rows = '';
+  devices.forEach(d => {
+    const deviceLabel = d.deviceId.length > 12 ? d.deviceId.slice(0, 12) + '…' : d.deviceId;
+    const info = d.deviceInfo || {};
+    const ua = info.ua || '';
+    let browser = '—';
+    if (ua.includes('Edg/')) browser = 'Edge';
+    else if (ua.includes('Chrome/') && !ua.includes('Edg/')) browser = 'Chrome';
+    else if (ua.includes('Safari/') && !ua.includes('Chrome/')) browser = 'Safari';
+    else if (ua.includes('Firefox/')) browser = 'Firefox';
+    else if (ua.includes('WeChat')) browser = '微信';
+    let deviceType = '—';
+    if (ua.includes('iPhone') || ua.includes('iPad')) deviceType = 'iOS';
+    else if (ua.includes('Android')) deviceType = 'Android';
+    else if (ua.includes('Windows')) deviceType = 'PC';
+    else if (ua.includes('Mac OS')) deviceType = 'Mac';
+
+    rows += `<tr>
+      <td style="font-family:monospace;font-size:12px;" title="${d.deviceId}">${deviceLabel}</td>
+      <td style="font-size:12px;"><span class="badge badge-primary">${deviceType}</span></td>
+      <td style="font-size:12px;">${browser}</td>
+      <td style="font-size:12px;">${info.screen || '—'}</td>
+      <td style="font-size:12px;">${info.lang || '—'}</td>
+      <td>${d.reviews}</td>
+      <td>${formatDate(d.lastActive)}</td>
+    </tr>`;
+  });
+  const multiBadge = multiDevice
+    ? '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:var(--warning-bg);color:var(--warning);margin-left:8px;">多设备</span>'
+    : '';
+  return `<div class="text-sm text-muted mb-2">${devices.length} 台设备${multiBadge}</div>
+    <div class="table-wrap"><table>
+    <thead><tr><th>设备 ID</th><th>类型</th><th>浏览器</th><th>屏幕</th><th>语言</th><th>答题数</th><th>最后活跃</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
 }
 
 function buildDeckTable(decks) {

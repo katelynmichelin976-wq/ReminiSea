@@ -47,6 +47,7 @@ Deno.serve(async (req: Request) => {
       sessionsData,
       cardStates,
       authUsers,
+      deviceRows,
     ] = await Promise.all([
       // 用户总体统计
       supabase.from("sync_trials")
@@ -75,6 +76,13 @@ Deno.serve(async (req: Request) => {
 
       // 用户邮箱
       supabase.auth.admin.listUsers(),
+
+      // 设备信息（取最近 2000 条记录用于识别设备）
+      supabase.from("sync_trials")
+        .select("device_id, device_info, timestamp")
+        .eq("user_id", userId)
+        .order("timestamp", { ascending: false })
+        .limit(2000),
     ]);
 
     // ── 患者基本信息 ──
@@ -104,6 +112,9 @@ Deno.serve(async (req: Request) => {
       currentStreak: calcStreak(activeDates, today),
       longestStreak: calcLongestStreak(activeDates),
     };
+
+    // ── 设备信息 ──
+    const devices = computeDevices(deviceRows.data || []);
 
     // ── 每日统计（每卡首次评分法）──
     const dailyStats = computeDailyStats(allTrials.data || []);
@@ -140,6 +151,7 @@ Deno.serve(async (req: Request) => {
         srsDistribution: srsDist,
         responseTimeDistribution: rt,
         hourlyDistribution: hourlyDist,
+        devices,
       }),
       { status: 200, headers: { ...corsHeaders(), "Content-Type": "application/json" } }
     );
@@ -276,6 +288,37 @@ function computeHourlyDist(trials: any[]): { hour: number; count: number }[] {
     hours[h]++;
   }
   return hours.map((count, hour) => ({ hour, count }));
+}
+
+function computeDevices(rows: any[]): { deviceId: string; lastActive: number | null; reviews: number; deviceInfo: Record<string, string> | null }[] {
+  const deviceMap = new Map<string, { lastActive: number | null; count: number; info: Record<string, string> | null }>();
+  for (const row of rows) {
+    if (!row.device_id) continue;
+    const existing = deviceMap.get(row.device_id);
+    let parsed = null;
+    if (row.device_info && typeof row.device_info === 'string') {
+      try { parsed = JSON.parse(row.device_info); } catch(e) {}
+    } else if (row.device_info && typeof row.device_info === 'object') {
+      parsed = row.device_info;
+    }
+    if (existing) {
+      existing.count++;
+      if (row.timestamp && (!existing.lastActive || row.timestamp > existing.lastActive)) {
+        existing.lastActive = row.timestamp;
+      }
+      if (parsed && !existing.info) existing.info = parsed;
+    } else {
+      deviceMap.set(row.device_id, { lastActive: row.timestamp || null, count: 1, info: parsed });
+    }
+  }
+  return Array.from(deviceMap.entries())
+    .map(([deviceId, info]) => ({
+      deviceId,
+      lastActive: info.lastActive,
+      reviews: info.count,
+      deviceInfo: info.info,
+    }))
+    .sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
 }
 
 function calcStreak(activeDates: Set<string>, today: string): number {
