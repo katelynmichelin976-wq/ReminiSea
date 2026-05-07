@@ -28,6 +28,7 @@ interface CardState {
   stateKey: string;
   cardId: string;
   deckKey: string;
+  cardName: string;
   srsStage: string;
   interval: number;
   easeFactor: number;
@@ -41,12 +42,6 @@ interface CardState {
   updatedAt: number;
 }
 
-/**
- * get-patient-card-states
- * 返回指定患者所有卡片的 SRS 状态。
- * 参数: { userId }
- * 从 cards_pool 获取卡片名称。
- */
 Deno.serve(async (req: Request) => {
   const cors = handleCors(req);
   if (cors) return cors;
@@ -61,47 +56,27 @@ Deno.serve(async (req: Request) => {
     const { userId } = await req.json();
     if (!userId) return errorResponse(400, "Missing required parameter: userId");
 
-    // Get all card states for this user
-    const { data: cardStates, error: csError } = await supabase
-      .from("sync_card_states")
-      .select("*")
-      .eq("user_id", userId)
-      .order("deck_key", { ascending: true })
-      .order("card_id", { ascending: true });
+    // Single RPC call — JOIN sync_card_states + cards_pool server-side
+    const { data, error } = await supabase.rpc("get_card_states_with_names", { p_user_id: userId });
 
-    if (csError) throw csError;
+    if (error) throw error;
 
-    // Get card names from cards_pool
-    const cardIds = [...new Set((cardStates || []).map(c => c.card_id))];
-    const { data: cardsPool } = await supabase
-      .from("cards_pool")
-      .select("card_id, card_name, deck_name")
-      .in("card_id", cardIds);
-
-    const nameMap = new Map<string, string>();
-    if (cardsPool) {
-      for (const c of cardsPool) {
-        // Take the latest name for each card_id
-        nameMap.set(c.card_id, c.card_name);
-      }
-    }
-
-    const cards: (CardState & { cardName: string })[] = (cardStates || []).map(cs => ({
-      stateKey: cs.state_key,
-      cardId: cs.card_id,
-      deckKey: cs.deck_key,
-      cardName: nameMap.get(cs.card_id) || cs.card_id,
-      srsStage: cs.srs_stage,
-      interval: cs.interval,
-      easeFactor: cs.ease_factor,
-      dueDate: cs.due_date,
-      dueTs: cs.due_ts,
-      stepIndex: cs.step_index,
-      reviewMode: cs.review_mode,
-      lapsesStreak: cs.lapses_streak,
-      lapsesTotal: cs.lapses_total,
-      suspended: cs.suspended,
-      updatedAt: cs.updated_at,
+    const cards: CardState[] = (data || []).map((r: Record<string, unknown>) => ({
+      stateKey: r.state_key as string,
+      cardId: r.card_id as string,
+      deckKey: r.deck_key as string,
+      cardName: r.card_name as string,
+      srsStage: r.srs_stage as string,
+      interval: r.interval as number,
+      easeFactor: r.ease_factor as number,
+      dueDate: r.due_date as string,
+      dueTs: r.due_ts as number,
+      stepIndex: r.step_index as number,
+      reviewMode: r.review_mode as string,
+      lapsesStreak: r.lapses_streak as number,
+      lapsesTotal: r.lapses_total as number,
+      suspended: r.suspended as boolean,
+      updatedAt: r.updated_at as number,
     }));
 
     return new Response(JSON.stringify({ cards }), {
