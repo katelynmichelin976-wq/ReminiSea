@@ -1753,7 +1753,7 @@ function getDeviceInfo() {
 }
 
 async function syncTrialLog(entry) {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  if (!_syncEnabled || !_sb || !_cloudUserId || !entry.deck_key) return;
   try {
     const { error } = await _sb.from('sync_trials').insert({
       device_id: _deviceId,
@@ -2094,10 +2094,10 @@ async function syncAll(deckKey, showToast, noDecks) {
       req.onsuccess = e => res(e.target.result || []);
       req.onerror   = e => rej(e.target.error);
     });
-    const pendingCount = allTrials.filter(t => !t.synced_at).length;
+    const pendingCount = allTrials.filter(t => !t.synced_at && t.deck_key).length;
     let uploadedTrials = 0;
     for (const t of allTrials) {
-      if (!t.synced_at) { try { await syncTrialLog(t); uploadedTrials++; } catch(e) { /* skip */ } }
+      if (!t.synced_at && t.deck_key) { try { await syncTrialLog(t); uploadedTrials++; } catch(e) { /* skip */ } }
     }
 
     // 2. 同步卡牌状态：先拉后推（仅上传本地脏记录）
