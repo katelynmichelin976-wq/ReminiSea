@@ -1753,7 +1753,7 @@ function getDeviceInfo() {
 }
 
 async function syncTrialLog(entry) {
-  if (!_syncEnabled || !_sb) return;
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
   try {
     const { error } = await _sb.from('sync_trials').insert({
       device_id: _deviceId,
@@ -1805,7 +1805,7 @@ async function syncTrialLog(entry) {
 }
 
 async function syncCardState(state) {
-  if (!_syncEnabled || !_sb) return;
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
   try {
     const { error } = await _sb.from('sync_card_states').upsert({
       user_id: _cloudUserId,
@@ -3704,7 +3704,7 @@ async function onNext() {
 async function _writeSrs(q, rating, attempt) {
   const deckKey = currentDeck;
   const state   = q._srsState;
-  if (!state) return;
+  if (!state || !deckKey) return;
 
   // 活跃时长记录（在 SRS 更新之前）
   recordCardTime();

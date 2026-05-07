@@ -148,10 +148,12 @@ create policy "authenticated_access" on upload_log
   for all using (auth.role() = 'authenticated');
 
 create policy "individual_access" on sync_trials
-  for all using (auth.uid() = user_id);
+  for all using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 create policy "individual_access" on sync_card_states
-  for all using (auth.uid() = user_id);
+  for all using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- ═══════════════════════════════════════════
 -- v4.8: 参数配置云端同步

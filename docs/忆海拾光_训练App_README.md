@@ -175,6 +175,11 @@ new → learning（学习中）→ review（复习中/已掌握）
 - 新增 `APP_VERSION` 常量，版本号统一定义在一处
 - Supabase Migration 004：两张表结构变更
 
+**同步防错加固**
+- `_writeSrs` 增加 `!deckKey` 守卫，防止 `currentDeck` 为空时写出 `deck_key = null` 的 TrialLog
+- `syncTrialLog` / `syncCardState` 增加 `!_cloudUserId` 守卫，避免未登录态尝试上传导致 RLS 403
+- RLS 策略增加显式 `WITH CHECK`（`supabase_migration_005`），修复 upsert 场景 Postgres 未自动下推 USING 表达式导致 "new row violates row-level security" 错误
+
 ---
 
 ### v4.8 — 2026-05-05
