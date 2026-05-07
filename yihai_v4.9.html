@@ -2835,7 +2835,7 @@ async function restoreDecks() {
   // 始终注入内置测试牌组
   DECKS[BUILTIN_KEY] = BUILTIN_DECK;
   if (!DECKS_META.find(m => m.key === BUILTIN_KEY)) {
-    DECKS_META.push({ key: BUILTIN_KEY, name: '🧪 测试牌组', builtin: true });
+    DECKS_META.push({ key: BUILTIN_KEY, name: '测试牌组', builtin: true, source: 'builtin' });
   }
 }
 
@@ -2906,8 +2906,8 @@ async function importYhspack(file) {
     DECKS[key] = cards;
     // 更新或追加 meta
     const existing = DECKS_META.findIndex(m => m.key === key);
-    if (existing >= 0) DECKS_META[existing] = { key, name };
-    else DECKS_META.push({ key, name });
+    if (existing >= 0) DECKS_META[existing] = { key, name, source: 'local' };
+    else DECKS_META.push({ key, name, source: 'local' });
 
     // 持久化（只存 id+name，blob URL 不存）
     saveDeckIndex();
@@ -4447,8 +4447,8 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 4. 写入内存 + 持久化
     DECKS[key] = deckCards;
     const existing = DECKS_META.findIndex(m => m.key === key);
-    if (existing >= 0) DECKS_META[existing] = { key, name: deckName };
-    else DECKS_META.push({ key, name: deckName });
+    if (existing >= 0) DECKS_META[existing] = { key, name: deckName, source: 'cloud' };
+    else DECKS_META.push({ key, name: deckName, source: 'cloud' });
     saveDeckIndex();
     saveDeckCards(key, deckCards);
 
@@ -4633,6 +4633,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     saveDeckCards(localKey, merged);
 
     currentDeck = localKey;
+    // 标记为云端牌组
+    const metaIdx = DECKS_META.findIndex(m => m.key === localKey);
+    if (metaIdx >= 0) DECKS_META[metaIdx].source = 'cloud';
     renderDeckList();
     updateDeckStats();
     if (!noToast) refreshServerDeckList();
@@ -5291,7 +5294,7 @@ function renderDeckList() {
         </svg>
       </button>`;
     return `<div class="deck-card${m.key === currentDeck ? ' selected' : ''}" data-deck="${m.key}" onclick="selectDeck(this)">
-      <div class="deck-info"><div class="deck-name">${esc(m.name)}</div></div>
+      <div class="deck-info"><div class="deck-name">${sourceIcon(m.source)}${esc(m.name)}</div></div>
       <div class="deck-stats">
         <div class="deck-stat"><span class="deck-stat-num due"  data-deck="${m.key}">${dueVal}</span><span class="deck-stat-lbl">到期</span></div>
         <div class="deck-stat"><span class="deck-stat-num new-c" data-deck="${m.key}">${newVal}</span><span class="deck-stat-lbl">新卡</span></div>
@@ -5299,6 +5302,10 @@ function renderDeckList() {
       ${delBtn}
     </div>`;
   }).join('');
+}
+
+function sourceIcon(src) {
+  return src === 'builtin' ? '🧪 ' : src === 'cloud' ? '☁️ ' : src === 'local' ? '📂 ' : '';
 }
 
 // updateDeckStats：刷新到期和新卡两列
