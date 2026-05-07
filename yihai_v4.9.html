@@ -1811,7 +1811,12 @@ async function syncCardState(state) {
       suspended: state.suspended,
       updated_at: state.updated_at
     }, { onConflict: 'user_id, state_key' });
-    if (error) console.warn('[sync] card state upload failed:', error.message);
+    if (error) throw error;
+    // 上传成功 → 标记已同步
+    state.synced_at = Date.now();
+    const db = await openSrsDb();
+    const tx = db.transaction(CS_STORE, 'readwrite');
+    tx.objectStore(CS_STORE).put(state);
   } catch(e) { console.warn('[sync] card state upload error:', e.message); }
 }
 
@@ -1867,6 +1872,7 @@ async function syncCardStatesFromCloud(deckKey) {
           suspended:       cloud.suspended,
           suspended_reason: '',
           updated_at:      cloud.updated_at,
+          synced_at:       Date.now(),
         });
         merged++;
       }
@@ -2079,15 +2085,16 @@ async function syncAll(deckKey, showToast, noDecks) {
       if (!t.synced_at) { try { await syncTrialLog(t); uploadedTrials++; } catch(e) { /* skip */ } }
     }
 
-    // 2. 上传/下载卡牌状态（仅当前牌组）
+    // 2. 同步卡牌状态：先拉后推（仅上传本地脏记录）
     showSyncProg(2, totalSteps, '正在同步练习状态...');
     let uploadedStates = 0, merged = 0;
     if (deckKey) {
+      merged = await syncCardStatesFromCloud(deckKey);
       const states = await getAllCardStates(deckKey);
-      for (const s of states) {
+      const dirty = states.filter(s => s.synced_at == null);
+      for (const s of dirty) {
         try { await syncCardState(s); uploadedStates++; } catch(e) { /* skip */ }
       }
-      merged = await syncCardStatesFromCloud(deckKey);
     }
 
     // 3. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
@@ -2131,12 +2138,13 @@ async function syncAll(deckKey, showToast, noDecks) {
       else if (pendingCount === 0 && merged === 0 && !newDecks && !syncedDecks) showCloudToast('已是最新');
     }
   } catch(e) { hideSyncProg(); console.warn('[sync] syncAll error:', e.message); if (showToast) showCloudToast('同步失败'); }
+  if (deckKey) updateDeckStats();
 }
 
 // 练习完成后集中补传（仅上传，不下拉）
 function backfillAfterPractice(deckKey) {
-  if (!_syncEnabled || !_sb || !deckKey) return;
-  syncAll(deckKey, false, true).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
+  if (!_syncEnabled || !_sb || !deckKey) return Promise.resolve();
+  return syncAll(deckKey, false, true).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
 }
 
 function openSrsDb() {
@@ -2184,6 +2192,7 @@ function newCardState(deckKey, cardId) {
     suspended         : false,
     suspended_reason  : '',
     updated_at      : Date.now(),
+    synced_at       : null,
   };
 }
 
@@ -2200,6 +2209,7 @@ async function getCardState(deckKey, cardId) {
 
 async function saveCardState(state) {
   state.updated_at = Date.now();
+  state.synced_at = null;
   const db = await openSrsDb();
   return new Promise((res, rej) => {
     const tx = db.transaction(CS_STORE, 'readwrite');
@@ -3088,11 +3098,8 @@ function _launch(mode) {
       requestWakeLock();
       render();
     }).catch(err => {
-      console.error('buildSessionQueue error', err);
-      Qs = getDeck(currentDeck);
-      showScreen('screen-quiz');
-      requestWakeLock();
-      render();
+      console.error('[srs] buildSessionQueue 构造失败，回退到完成界面', err?.name, err?.message, err);
+      showFinish();
     });
   }
 }

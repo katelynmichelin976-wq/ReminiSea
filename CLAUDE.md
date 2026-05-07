@@ -88,7 +88,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | File | Purpose |
 |------|---------|
 | `docs/srs_design_v6.9.md` | Authoritative SRS design spec |
-| `docs/忆海拾光_训练App_README.md` | Full version history |
+| `docs/忆海拾光_训练App_README.md` | Training app version history |
+| `docs/忆海拾光_管理看板_README.md` | Admin dashboard version history |
 | `docs/忆海拾光_训练App发布检查清单.md` | Release checklist |
 | `docs/yihai_开发问答.md` | Development Q&A |
 | `docs/yihai_实现说明.md` | Implementation manual |
@@ -101,7 +102,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `sql/supabase_storage_policies.sql` | Storage RLS policies |
 | `sql/supabase_migration_002_sync_trials_after_state.sql` | Migration scripts |
 | `sql/supabase_migration_003_admin.sql` | Admin dashboard migration (admin_users + indexes + RPCs) |
-| `supabase/functions/` | Edge Functions (5 functions for admin API) |
+| `supabase/functions/` | Edge Functions (8 functions for admin API) |
 | `archive/` | Previous versions (v4.3–v4.8) |
 
 ## Development Commands
