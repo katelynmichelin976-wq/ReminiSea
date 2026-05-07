@@ -85,7 +85,8 @@ create table if not exists sync_trials (
   ease_after          real,
   timestamp           bigint not null,
   synced_at           timestamptz default now(),
-  created_at          timestamptz default now()
+  created_at          timestamptz default now(),
+  device_info         jsonb default null
 );
 
 create index if not exists idx_sync_trials_user on sync_trials(user_id);

@@ -169,6 +169,10 @@ new → learning（学习中）→ review（复习中/已掌握）
 **回归测试**
 - 新增 `_playwright_cloud_test.js`（17 断言，含多设备同步测试）
 
+**设备信息采集**
+- 答题记录新增 `device_info` jsonb 字段，记录浏览器 UA、屏幕分辨率、语言设置
+- Supabase Migration 004：`sync_trials` 表新增 `device_info` 列
+
 ---
 
 ### v4.8 — 2026-05-05

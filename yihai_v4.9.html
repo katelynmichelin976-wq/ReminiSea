@@ -1740,11 +1740,23 @@ async function doCloudLogout() {
   if (listEl) listEl.innerHTML = '<span style="color:var(--text3)">请先登录</span>';
 }
 
+// 采集设备信息用于问题定位
+function getDeviceInfo() {
+  try {
+    return JSON.stringify({
+      ua:     navigator.userAgent,
+      screen: screen.width + 'x' + screen.height,
+      lang:   navigator.language
+    });
+  } catch(e) { return null; }
+}
+
 async function syncTrialLog(entry) {
   if (!_syncEnabled || !_sb) return;
   try {
     const { error } = await _sb.from('sync_trials').insert({
       device_id: _deviceId,
+      device_info: getDeviceInfo(),
       trial_id: entry.trial_id,
       user_id: _cloudUserId,
       card_id: entry.card_id,
