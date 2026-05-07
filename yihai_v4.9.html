@@ -2809,7 +2809,11 @@ async function cleanOrphanMedia() {
 
 async function restoreDecks() {
   const idx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
-  DECKS_META = idx;
+  // 兼容旧数据：未标记 source 的按云端同步戳推断
+  DECKS_META = idx.map(m => {
+    if (m.source) return m;
+    return { ...m, source: localStorage.getItem('yihai_sync_at_' + m.key) ? 'cloud' : 'local' };
+  });
   for (const { key } of idx) {
     try {
       const raw = JSON.parse(localStorage.getItem(LS_DECK_PREFIX + key) || '[]');
@@ -5305,7 +5309,7 @@ function renderDeckList() {
 }
 
 function sourceIcon(src) {
-  return src === 'builtin' ? '🧪 ' : src === 'cloud' ? '☁️ ' : src === 'local' ? '📂 ' : '';
+  return src === 'builtin' ? '🏠 ' : src === 'cloud' ? '☁️ ' : src === 'local' ? '📂 ' : '';
 }
 
 // updateDeckStats：刷新到期和新卡两列
