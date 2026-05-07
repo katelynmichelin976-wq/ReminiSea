@@ -1672,7 +1672,6 @@ async function restoreCloudSession() {
       _cloudUserEmail = data.session.user.email;
       _cloudUserId = data.session.user.id;
       _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
-      console.log('[sync] session restored:', _cloudUserEmail);
     }
   } catch(e) {
     _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); // 确保客户端可用
@@ -1715,7 +1714,6 @@ async function doCloudLogin() {
     _cloudUserEmail = data.user.email;
     _cloudUserId = data.user.id;
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
-    console.log('[sync] logged in:', _cloudUserEmail);
     updateCloudTabUI();
     // 登录后全量同步（答题/状态/配置/牌组）
     syncAll(currentDeck, false).catch(e => console.warn('[sync] login sync error:', e.message));
@@ -1735,7 +1733,6 @@ async function doCloudLogout() {
   _syncEnabled = false;
   _cloudUserEmail = '';
   _sb = null;
-  console.log('[sync] logged out');
   updateCloudTabUI();
   // 清空云端牌组列表
   const listEl = document.getElementById('cloud-deck-list');
@@ -1894,7 +1891,6 @@ async function syncCardStatesFromCloud(deckKey) {
       }
     }
 
-    if (merged > 0) console.log(`[sync] merged ${merged} card states from cloud for ${deckKey}`);
     return merged;
   } catch(e) {
     console.warn('[sync] card states download error:', e.message);
@@ -1925,9 +1921,6 @@ async function syncPendingData(deckKey) {
       await parallelMapLimit(states, 10, async s => {
         try { await syncCardState(s); } catch(e) { /* 单个失败不影响其他 */ }
       });
-      if (pending.length > 0 || states.length > 0) {
-        console.log(`[sync] backfilled ${pending.length} trials + ${states.length} card states for ${deckKey}`);
-      }
     }
   } catch(e) { console.warn('[sync] backfill error:', e.message); }
 }
@@ -2054,8 +2047,6 @@ async function cloudPullConfig() {
       const tog = document.getElementById('dark-toggle');
       if (tog) tog.checked = themeVal === 'dark';
     }
-
-    console.log(`[sync] applied ${applied} config items from cloud`);
     return applied;
   } catch(e) {
     console.warn('[sync] config pull error:', e.message);
