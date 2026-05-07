@@ -157,6 +157,15 @@ new → learning（学习中）→ review（复习中/已掌握）
 **COS 回源停用**
 - `MEDIA_CDN_BASE = ''`，媒体下载回退到 Supabase Storage
 
+**CardState 同步优化**
+- 改为先拉后推：syncAll 先下载云端卡牌状态再上传，避免过时数据覆盖远端
+- 增量上传：新增 `synced_at` 脏标记，仅上传本地修改过的 CardState，减少同步量
+- 同步完成自动刷新首页统计，解决新设备首次同步后仍显示「新卡 N」
+
+**Bug 修复**
+- `backfillAfterPractice` 返回 `Promise.resolve()`，修复 Supabase 客户端未就绪时 `undefined.catch()` 崩溃导致绕过完成界面
+- `_launch` 构造队列失败回退改为 `showFinish()`，修复崩溃后显示全部卡片而非完成界面
+
 **回归测试**
 - 新增 `_playwright_cloud_test.js`（17 断言，含多设备同步测试）
 
