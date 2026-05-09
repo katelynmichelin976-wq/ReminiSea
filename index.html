@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
@@ -2077,7 +2077,7 @@ async function syncAll(deckKey, showToast, noDecks) {
   if (!_syncEnabled || !_sb) return;
   if (showToast) showCloudToast('同步中…');
   try {
-    const totalSteps = noDecks ? 3 : 4;
+    const totalSteps = noDecks ? 4 : 5;
 
     // 1. 上传答题记录
     showSyncProg(1, totalSteps, '正在上传练习记录...');
@@ -2105,15 +2105,31 @@ async function syncAll(deckKey, showToast, noDecks) {
       }
     }
 
-    // 3. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
-    showSyncProg(3, totalSteps, '正在同步配置...');
+    // 3. 跨设备新卡计数同步：统计云端今天已练新卡数
+    showSyncProg(3, totalSteps, '正在同步今日进度...');
+    const { data: todayNew } = await _sb.from('sync_trials')
+      .select('card_id')
+      .eq('user_id', _cloudUserId)
+      .eq('trial_date', todayStr())
+      .eq('srs_stage_before', 'new');
+    if (todayNew) {
+      const cloudNewToday = new Set(todayNew.map(r => r.card_id)).size;
+      const dp = getDailyProgress();
+      if (cloudNewToday > (dp.daily_new_today || 0)) {
+        dp.daily_new_today = cloudNewToday;
+        saveDailyProgress(dp);
+      }
+    }
+
+    // 4. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
+    showSyncProg(4, totalSteps, '正在同步配置...');
     const cfgItems = await cloudPullConfig();
     await cloudPushConfig();
 
-    // 4. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
+    // 5. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
     let newDecks = 0, syncedDecks = 0;
     if (!noDecks) {
-      showSyncProg(4, totalSteps, '正在同步牌组...');
+      showSyncProg(5, totalSteps, '正在同步牌组...');
       const { data: serverDecks } = await _sb.from('server_decks').select('id,name');
       if (serverDecks) {
         for (const sd of serverDecks) {
