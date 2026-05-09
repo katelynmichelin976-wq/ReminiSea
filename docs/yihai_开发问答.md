@@ -37,6 +37,7 @@
 - 测量相邻两张卡的时间差（`now - _lastCardTs`）
 - 若差值 ≤ `idle_threshold_sec`（默认 120s），累加到活跃时长
 - 切后台（`visibilitychange → hidden`）时 `_lastCardTs = null`，切回来后不补计长间隔
+- `render()` 中若 `_lastCardTs` 为 null（session 首卡 / 切回后首卡），初始化为 `_cardStartTs`，确保首卡时长计入（v4.9 修复）
 - 活跃时长 ≈ 有效练习时间（排除发呆/切后台）
 
 ### Q2：今日统计的数据源是本地还是云端？时间范围？同步到设备上的记录是否有必要纳入？

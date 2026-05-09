@@ -47,8 +47,11 @@
 2. 若差值 ≤ `idle_threshold_sec`（默认 120s），累加差值到活跃时长
 3. 设 `_lastCardTs = now`
 4. `visibilitychange → hidden` 时强制 `_lastCardTs = null`，切回后不补计
+5. `render()` 中若 `_lastCardTs` 为 null（session 首卡 / 切回后首卡），
+   将其设为 `_cardStartTs`，确保首卡时长计入
 
 活跃时长 ≈ 有效练习时间（排除发呆/切后台）。
+注意：v4.9 之前 session 首卡时长被遗漏，v4.9 修复后已计入。
 
 ---
 
