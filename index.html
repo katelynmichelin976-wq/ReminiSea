@@ -3367,6 +3367,7 @@ function render() {
   sel = null; revealed = false; wrongCount = 0;
   _cardAnswerRating = null; _pendingAttempt = null;
   _cardStartTs = Date.now();   // 记录卡片显示时间，用于 response_time_ms
+  if (!_lastCardTs) _lastCardTs = _cardStartTs;
   updateSrsCounter();
 
   // 立即清除上一张的答案状态，防止浏览模式翻页闪现
