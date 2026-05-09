@@ -4782,7 +4782,23 @@ function switchStatsTab(n) {
 async function renderStatsToday() {
   const dp     = getDailyProgress();
   // 今天的 TrialLog（getTrialLogs 已过滤 _retrying）
-  const trials = await getTrialLogs(null, 1);
+  var trials = await getTrialLogs(null, 1);
+
+  // 云端同步时，合并其他设备的今日答题记录（按 trial_id 去重）
+  if (_syncEnabled && _sb) {
+    try {
+      const { data: cloudTrials } = await _sb.from('sync_trials')
+        .select('trial_id, card_id, rating, timestamp')
+        .eq('user_id', _cloudUserId)
+        .eq('trial_date', todayStr());
+      if (cloudTrials && cloudTrials.length > 0) {
+        const merged = new Map();
+        trials.forEach(function(t) { merged.set(t.trial_id, t); });
+        cloudTrials.forEach(function(t) { merged.set(t.trial_id, t); });
+        trials = Array.from(merged.values());
+      }
+    } catch(e) { /* 静默失败，继续用本地数据 */ }
+  }
 
   // 今日累计 = 今天练习的唯一卡片数（同一张卡步长内多次答题只算1张）
   const uniqueToday = new Set(trials.map(t => t.card_id)).size;
