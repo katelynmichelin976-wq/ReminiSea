@@ -2109,7 +2109,7 @@ async function syncAll(deckKey, showToast, noDecks) {
     // 3. 跨设备今日统计同步：从云端拉取今天全部答题记录
     showSyncProg(3, totalSteps, '正在同步今日进度...');
     const { data: todayCloud } = await _sb.from('sync_trials')
-      .select('card_id, srs_stage_before, active_gap_ms')
+      .select('card_id, srs_stage_before, active_gap_ms, rating, timestamp')
       .eq('user_id', _cloudUserId)
       .eq('trial_date', todayStr());
     if (todayCloud) {
@@ -2123,9 +2123,27 @@ async function syncAll(deckKey, showToast, noDecks) {
       const cloudNewToday = cloudNewSet.size;
       const cloudReviewed = todayCloud.length;
       const cloudDurationSec = Math.round(cloudDurationMs / 1000);
+      // 计算评级分布（每卡首次评为准）
+      const firstRating = {};
+      for (const r of todayCloud) {
+        if (!firstRating[r.card_id] || r.timestamp < firstRating[r.card_id].timestamp) {
+          firstRating[r.card_id] = r.rating;
+        }
+      }
+      let passN = 0, hardN = 0, failN = 0;
+      for (const k of Object.keys(firstRating)) {
+        const r = firstRating[k];
+        if (r === 'again') failN++;
+        else if (r === 'hard') hardN++;
+        else passN++;
+      }
+
       if (cloudNewToday > (cp.daily_new_today || 0)) cp.daily_new_today = cloudNewToday;
       if (cloudReviewed > (cp.reviewed_today || 0)) cp.reviewed_today = cloudReviewed;
       if (cloudDurationSec > (cp.active_duration_sec || 0)) cp.active_duration_sec = cloudDurationSec;
+      if (passN > (cp.first_pass_today || 0)) cp.first_pass_today = passN;
+      if (hardN > (cp.first_hard_today || 0)) cp.first_hard_today = hardN;
+      if (failN > (cp.first_fail_today || 0)) cp.first_fail_today = failN;
       saveDailyProgress(cp);
     }
 
@@ -2454,6 +2472,9 @@ function newDailyProgress() {
     preview_cards_viewed : 0,
     active_duration_sec  : 0,
     last_card_ts         : null,
+    first_pass_today     : 0,
+    first_hard_today     : 0,
+    first_fail_today     : 0,
   };
 }
 
@@ -4781,57 +4802,53 @@ function switchStatsTab(n) {
 // ── Tab 0：今日概况 ───────────────────────────────────────────
 async function renderStatsToday() {
   const dp     = getDailyProgress();
-  // 今天的 TrialLog（getTrialLogs 已过滤 _retrying）
-  var trials = await getTrialLogs(null, 1);
 
-  // 云端同步时，合并其他设备的今日答题记录（按 trial_id 去重）
-  if (_syncEnabled && _sb) {
-    try {
-      const { data: cloudTrials } = await _sb.from('sync_trials')
-        .select('trial_id, card_id, rating, timestamp')
-        .eq('user_id', _cloudUserId)
-        .eq('trial_date', todayStr());
-      if (cloudTrials && cloudTrials.length > 0) {
-        const merged = new Map();
-        trials.forEach(function(t) { merged.set(t.trial_id, t); });
-        cloudTrials.forEach(function(t) { merged.set(t.trial_id, t); });
-        trials = Array.from(merged.values());
+  // 当跨设备同步已填充 dp 统计时优先使用（同步是练习完成/手动/切前台时触发，不在统计时拉云端）
+  const hasSyncDp = (dp.reviewed_today || 0) > 0;
+  if (hasSyncDp) {
+    // 使用同步后的跨设备汇总数据
+    const totalSec = dp.active_duration_sec || 0;
+    const durStr   = totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
+    const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
+    document.getElementById('st-kpi').innerHTML = `
+      <div class="stats-kpi"><div class="stats-kpi-num kpi-b">${dp.reviewed_today}</div><div class="stats-kpi-lbl">练习</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-num kpi-c">${dp.first_pass_today||0}</div><div class="stats-kpi-lbl">良好</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-num kpi-w">${dp.first_hard_today||0}</div><div class="stats-kpi-lbl">困难</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-num kpi-e">${dp.first_fail_today||0}</div><div class="stats-kpi-lbl">重来</div></div>`;
+    document.getElementById('st-kpi2').innerHTML = `
+      <div class="stats-kpi"><div class="stats-kpi-num">${durStr}</div><div class="stats-kpi-lbl">时长(分)</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-num">${dp.daily_new_today||0}</div><div class="stats-kpi-lbl">新卡</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-num" style="color:${sus>0?'#7c3aed':'var(--text)'}">${sus}</div><div class="stats-kpi-lbl">待确认</div></div>`;
+  } else {
+    // 未同步：从本地 TrialLog 计算
+    const trials = await getTrialLogs(null, 1);
+    const uniqueToday = new Set(trials.map(t => t.card_id)).size;
+    const firstOfCard = {};
+    trials.forEach(function(t) {
+      if (!firstOfCard[t.card_id] || t.timestamp < firstOfCard[t.card_id].timestamp) {
+        firstOfCard[t.card_id] = t;
       }
-    } catch(e) { /* 静默失败，继续用本地数据 */ }
+    });
+    var firstPass = 0, firstHard = 0, firstFail = 0;
+    Object.keys(firstOfCard).forEach(function(k) {
+      var r = firstOfCard[k].rating;
+      if (r === 'again') firstFail++;
+      else if (r === 'hard') firstHard++;
+      else firstPass++;
+    });
+    const totalSec = dp.active_duration_sec || 0;
+    const durStr   = totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
+    const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
+    document.getElementById('st-kpi').innerHTML = `
+      <div class="stats-kpi"><div class="stats-kpi-num kpi-b">${uniqueToday}</div><div class="stats-kpi-lbl">练习</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-num kpi-c">${firstPass}</div><div class="stats-kpi-lbl">良好</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-num kpi-w">${firstHard}</div><div class="stats-kpi-lbl">困难</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-num kpi-e">${firstFail}</div><div class="stats-kpi-lbl">重来</div></div>`;
+    document.getElementById('st-kpi2').innerHTML = `
+      <div class="stats-kpi"><div class="stats-kpi-num">${durStr}</div><div class="stats-kpi-lbl">时长(分)</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-num">${dp.daily_new_today||0}</div><div class="stats-kpi-lbl">新卡</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-num" style="color:${sus>0?'#7c3aed':'var(--text)'}">${sus}</div><div class="stats-kpi-lbl">待确认</div></div>`;
   }
-
-  // 今日累计 = 今天练习的唯一卡片数（同一张卡步长内多次答题只算1张）
-  const uniqueToday = new Set(trials.map(t => t.card_id)).size;
-
-  // 按卡·首次评级统计（每张卡今日首次评为准）
-  const firstOfCard = {};
-  trials.forEach(function(t) {
-    if (!firstOfCard[t.card_id] || t.timestamp < firstOfCard[t.card_id].timestamp) {
-      firstOfCard[t.card_id] = t;
-    }
-  });
-  var firstPass = 0, firstHard = 0, firstFail = 0;
-  Object.keys(firstOfCard).forEach(function(k) {
-    var r = firstOfCard[k].rating;
-    if (r === 'again') firstFail++;
-    else if (r === 'hard') firstHard++;
-    else firstPass++;
-  });
-
-  const totalSec = dp.active_duration_sec || 0;
-  const durStr   = totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
-
-  // KPI 卡片
-  const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
-  document.getElementById('st-kpi').innerHTML = `
-    <div class="stats-kpi"><div class="stats-kpi-num kpi-b">${uniqueToday}</div><div class="stats-kpi-lbl">练习</div></div>
-    <div class="stats-kpi"><div class="stats-kpi-num kpi-c">${firstPass}</div><div class="stats-kpi-lbl">良好</div></div>
-    <div class="stats-kpi"><div class="stats-kpi-num kpi-w">${firstHard}</div><div class="stats-kpi-lbl">困难</div></div>
-    <div class="stats-kpi"><div class="stats-kpi-num kpi-e">${firstFail}</div><div class="stats-kpi-lbl">重来</div></div>`;
-  document.getElementById('st-kpi2').innerHTML = `
-    <div class="stats-kpi"><div class="stats-kpi-num">${durStr}</div><div class="stats-kpi-lbl">时长(分)</div></div>
-    <div class="stats-kpi"><div class="stats-kpi-num">${dp.daily_new_today}</div><div class="stats-kpi-lbl">新卡</div></div>
-    <div class="stats-kpi"><div class="stats-kpi-num" style="color:${sus>0?'#7c3aed':'var(--text)'}">${sus}</div><div class="stats-kpi-lbl">待确认</div></div>`;
 
   // 近7天柱状图（每天练习卡片数）
   const week7 = await getTrialLogs(null, 7);

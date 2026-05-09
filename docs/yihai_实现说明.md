@@ -115,6 +115,12 @@
 
 **为什么不用"最终状态"**：learning/relearning 步长内会反复出现，取最终结果几乎所有卡都滑到一次过或困难，重来永远为 0，失去区分度。
 
+### v4.9 变更 — 跨设备统计显示
+
+`renderStatsToday()` 优先使用 `dp.reviewed_today`、`dp.first_pass_today`、`dp.first_hard_today`、`dp.first_fail_today`（syncAll step 3 写入的跨设备汇总值）。当 `reviewed_today > 0` 时直接显示同步后数据；否则回退到本地 TrialLog 计算。
+
+**设计原则**：统计页不主动拉取云端。数据在同步时机（练习完成、手动同步、切前台、登录）通过 syncAll step 3 写入 dp，统计页只读 dp。
+
 ---
 
 ## 五、语音系统
