@@ -43,6 +43,25 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); colo
 .screen { display: none; }
 .screen.active { display: flex; }
 
+/* ═══ Loading Screen ═══ */
+#screen-loading {
+  align-items: center; justify-content: center;
+  min-height: 100vh; background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  padding: 20px;
+}
+.loading-card {
+  background: var(--surface); border-radius: 16px; padding: 48px 36px;
+  width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  text-align: center;
+}
+.loading-card h1 { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+.spinner {
+  width: 36px; height: 36px; border: 3px solid var(--border);
+  border-top-color: var(--primary); border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 20px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ═══ Login Screen ═══ */
 #screen-login {
   align-items: center; justify-content: center;
@@ -363,8 +382,18 @@ tbody tr.clickable { cursor: pointer; }
 </head>
 <body>
 
+<!-- ═══ Loading Screen ═══ -->
+<div class="screen active" id="screen-loading">
+  <div class="loading-card">
+    <h1>忆海拾光</h1>
+    <p>管理看板</p>
+    <div class="spinner"></div>
+    <p style="font-size:13px;color:var(--text3);">正在验证身份…</p>
+  </div>
+</div>
+
 <!-- ═══ Login Screen ═══ -->
-<div class="screen active" id="screen-login">
+<div class="screen" id="screen-login">
   <div class="login-card">
     <h1>忆海拾光</h1>
     <p class="subtitle">管理看板</p>
@@ -508,10 +537,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ── Auth ──
 function showLogin() {
+  document.getElementById('screen-loading').classList.remove('active');
   document.getElementById('screen-login').classList.add('active');
   document.getElementById('screen-main').classList.remove('active');
 }
 function showMain() {
+  document.getElementById('screen-loading').classList.remove('active');
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-main').classList.add('active');
 }
@@ -546,6 +577,7 @@ async function doLogin() {
     errEl.style.display = 'block';
     errEl.textContent = '登录失败：' + e.message;
     await _sb.auth.signOut().catch(() => {});
+    showLogin();
   } finally {
     btn.disabled = false;
     btn.textContent = '登录';
