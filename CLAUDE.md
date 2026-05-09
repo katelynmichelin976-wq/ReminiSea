@@ -166,8 +166,17 @@ review → again → relearning
 10. **Cloud login** — Supabase SDK persists session in localStorage. `restoreCloudSession()` on startup, `updateCloudTabUI()` toggles login/deck-list UI.
 11. **Incremental sync** — `syncDeckFromCloud` uses `cards_pool.updated_at > lastSyncAt` + `_imgUrl/_audUrl` URL comparison to skip unchanged media.
 
+## Workflow Rules
+
+1. **Bug fix** — 你报告现象后，我先查数据/代码定位根因，把分析摆出来。等你确认定位无误，再动手改。
+2. **Feature/enhancement** — 先列举可选路径和利弊，等你决定方向后，再进入实现。
+3. **文档先行** — `git add` 之前检查相关文档（README、docs/、CLAUDE.md 等）是否需要同步更新。功能新增或行为变更，先改文档再提交代码。
+4. **本地提交** — commit 可随时做，但提交前必须跑对应单元测试并全部通过。
+5. **发布需指令** — `git push` / 部署到 GitHub Pages 必须等你明确说「正式发布」或「推送」后才执行。
+6. **Commit message** — 遵循 repo 既有风格（fix:/feat:/docs:/release:），说明「为什么」而非「改了什么」。
+
 ## Deployment
 
-Rename `yihai_v{version}.html` → `index.html`, push to `gemi` repo `main` branch. GitHub Pages auto-deploys at https://katelynmichelin976-wq.github.io/gemi/
+我复制 `yihai_v{version}.html` → `index.html` → 提交 → 等你确认 → 推送。GitHub Pages 自动部署到 https://katelynmichelin976-wq.github.io/gemi/
 
 Card maker is a separate repo (`anki-maker`), not in this working directory.

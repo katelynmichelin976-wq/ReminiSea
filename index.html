@@ -1771,6 +1771,7 @@ async function syncTrialLog(entry) {
       correct_option: entry.correct_option,
       distractor_chosen: entry.distractor_chosen,
       response_time_ms: entry.response_time_ms,
+      active_gap_ms: entry.active_gap_ms,
       srs_stage_before: entry.srs_stage_before,
       interval_before: entry.interval_before,
       ease_before: entry.ease_before,
@@ -2105,20 +2106,27 @@ async function syncAll(deckKey, showToast, noDecks) {
       }
     }
 
-    // 3. 跨设备新卡计数同步：统计云端今天已练新卡数
+    // 3. 跨设备今日统计同步：从云端拉取今天全部答题记录
     showSyncProg(3, totalSteps, '正在同步今日进度...');
-    const { data: todayNew } = await _sb.from('sync_trials')
-      .select('card_id')
+    const { data: todayCloud } = await _sb.from('sync_trials')
+      .select('card_id, srs_stage_before, active_gap_ms')
       .eq('user_id', _cloudUserId)
-      .eq('trial_date', todayStr())
-      .eq('srs_stage_before', 'new');
-    if (todayNew) {
-      const cloudNewToday = new Set(todayNew.map(r => r.card_id)).size;
-      const dp = getDailyProgress();
-      if (cloudNewToday > (dp.daily_new_today || 0)) {
-        dp.daily_new_today = cloudNewToday;
-        saveDailyProgress(dp);
+      .eq('trial_date', todayStr());
+    if (todayCloud) {
+      const cloudNewSet = new Set();
+      let cloudDurationMs = 0;
+      for (const r of todayCloud) {
+        if (r.srs_stage_before === 'new') cloudNewSet.add(r.card_id);
+        if (r.active_gap_ms != null) cloudDurationMs += r.active_gap_ms;
       }
+      const cp = getDailyProgress();
+      const cloudNewToday = cloudNewSet.size;
+      const cloudReviewed = todayCloud.length;
+      const cloudDurationSec = Math.round(cloudDurationMs / 1000);
+      if (cloudNewToday > (cp.daily_new_today || 0)) cp.daily_new_today = cloudNewToday;
+      if (cloudReviewed > (cp.reviewed_today || 0)) cp.reviewed_today = cloudReviewed;
+      if (cloudDurationSec > (cp.active_duration_sec || 0)) cp.active_duration_sec = cloudDurationSec;
+      saveDailyProgress(cp);
     }
 
     // 4. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
@@ -3721,7 +3729,7 @@ async function _writeSrs(q, rating, attempt) {
   if (!state || !deckKey) return;
 
   // 活跃时长记录（在 SRS 更新之前）
-  recordCardTime();
+  const activeGapMs = recordCardTime();
 
   // 当日移出保护：lapses_streak 已达阈值，今天跳过此卡（任何评分）
   const stateKey = state.state_key;
@@ -3809,7 +3817,7 @@ async function _writeSrs(q, rating, attempt) {
     ease_after           : newState.ease_factor,
 
     response_time_ms     : responseMs,
-    active_gap_ms        : null,   // Phase 2
+    active_gap_ms        : activeGapMs,
 
     session_mode         : 'practice',
     time_of_day          : timeOfDay,
@@ -3873,12 +3881,14 @@ function showFinish() {
 
 // ── 活跃时长记录（练习模式）──────────────────────────────────
 function recordCardTime() {
-  if (currentMode === 'browse') return;
+  if (currentMode === 'browse') return null;
   const now = Date.now();
+  let recorded = null;
   if (_lastCardTs) {
     const gap = (now - _lastCardTs) / 1000;
     if (gap <= SRS_CONFIG.idle_threshold_sec) {
       _sessionActiveSec += gap;
+      recorded = now - _lastCardTs;
       const dp = getDailyProgress();
       dp.active_duration_sec = (dp.active_duration_sec || 0) + gap;
       saveDailyProgress(dp);
@@ -3886,6 +3896,7 @@ function recordCardTime() {
   }
   _lastCardTs = now;
   _checkDurationWarning();
+  return recorded;
 }
 
 function _checkDurationWarning() {

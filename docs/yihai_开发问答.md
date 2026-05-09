@@ -42,10 +42,11 @@
 
 ### Q2：今日统计的数据源是本地还是云端？时间范围？同步到设备上的记录是否有必要纳入？
 
-- 数据源：纯本地（localStorage dailyProgress + IndexedDB TrialLog）
+- 数据源：localStorage dailyProgress + IndexedDB TrialLog
 - 时间范围：当日 `YYYY-MM-DD`
-- 不拉云端，统计是设备级的概念，混入其他设备的数据反而困惑
-- 如需多设备汇总，应在云端独立做报表
+- v4.9 前：纯本地设备级，跨设备不共享
+- v4.9+：`syncAll` step 3 从云端拉取今日全部 trial，同步更新 `daily_new_today`、`reviewed_today`、`active_duration_sec`，确保多设备限额一致
+- `active_duration_sec` 通过每题 `active_gap_ms` 累加实现精确跨设备汇总
 
 ### Q3：牌组首页显示的新卡数为什么不受 new_cards_per_day 参数限制？
 

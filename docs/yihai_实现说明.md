@@ -72,7 +72,9 @@
 
 - `syncAll` 增加 `noDecks` 参数，全量同步含牌组下载/增量，轻量同步仅上传答题+同步状态+配置
 - 新增 `showSyncProg(curr, total, text)` / `hideSyncProg()` 进度条显示
-- 手动/登录后同步显示步骤：1/4 上传答题记录 → 2/4 同步练习状态 → 3/4 同步配置 → 4/4 同步牌组
+- 手动/登录后同步显示步骤：1/5 上传答题记录 → 2/5 同步练习状态 → 3/5 同步今日统计 → 4/5 同步配置 → 5/5 同步牌组
+- `syncAll` step 3 新增跨设备统计同步：拉取云端今日所有 trial，更新本地 `daily_new_today`、`reviewed_today`、`active_duration_sec`
+- TrialLog 新增 `active_gap_ms` 字段记录每题活跃间隔，供跨设备时长汇总使用
 - 移除了云端 tab 的「刷新列表」按钮和各牌组的「同步」/「下载」按钮，统一由「🔄 同步」管理
 - `downloadDeckFromCloud` / `syncDeckFromCloud` 新增 `noToast` 参数，被 syncAll 调用时不显示 toast 和逐卡进度（避免覆盖 syncAll 步骤指示）
 - 服务端已删除的卡本地同步时直接移除（不再保留）
