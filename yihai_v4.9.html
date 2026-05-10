@@ -1584,6 +1584,7 @@ function saveSrsConfigKey(key, value) {
     localStorage.setItem('srs_' + key, String(value));
   }
   SRS_CONFIG[key] = value;
+  logAppEvent('config_changed', { key: key, value: Array.isArray(value) ? JSON.stringify(value) : String(value) });
   debouncePushConfig();
 }
 
@@ -1623,9 +1624,11 @@ function minsToTs(mins) {
 
 // ── IndexedDB：yihai_srs（version 3）────────────────────────────
 const SRS_DB_NAME    = 'yihai_srs';
-const SRS_DB_VER     = 3;
+const SRS_DB_VER     = 4;
 const CS_STORE       = 'card_states';
 const TRIAL_STORE    = 'trials';
+const EVT_STORE      = 'app_events';
+const CSL_STORE      = 'card_state_log';
 
 let _srsDb = null;
 
@@ -1720,7 +1723,10 @@ async function doCloudLogin() {
     _cloudUserEmail = data.user.email;
     _cloudUserId = data.user.id;
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
+    localStorage.setItem('yihai_has_ever_logged_in', '1');
     updateCloudTabUI();
+    logAppEvent('login', { email: email });
+    upsertDeviceRegistry();
     // 登录后全量同步（答题/状态/配置/牌组）
     syncAll(currentDeck, false).catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
@@ -1733,6 +1739,7 @@ async function doCloudLogin() {
 }
 
 async function doCloudLogout() {
+  logAppEvent('logout', {});
   try {
     if (_sb) await _sb.auth.signOut();
   } catch(e) { console.warn('[sync] signOut error:', e.message); }
@@ -1898,6 +1905,7 @@ async function syncCardStatesFromCloud(deckKey) {
       }
     }
 
+    if (merged > 0) logAppEvent('cloud_state_merge', { deck_key: deckKey, merged_count: merged }, deckKey);
     return merged;
   } catch(e) {
     console.warn('[sync] card states download error:', e.message);
@@ -2082,8 +2090,10 @@ function hideSyncProg() {
 async function syncAll(deckKey, showToast, noDecks) {
   if (!_syncEnabled || !_sb) return;
   if (showToast) showCloudToast('同步中…');
+  logAppEvent('sync_started', { deck_key: deckKey, noDecks: !!noDecks }, deckKey);
+  var syncStats = { trials: 0, events: 0, csl: 0, states: 0, states_merged: 0, config: 0, decks: 0 };
   try {
-    const totalSteps = noDecks ? 4 : 5;
+    const totalSteps = noDecks ? 6 : 7;
 
     // 1. 上传答题记录
     showSyncProg(1, totalSteps, '正在上传练习记录...');
@@ -2094,25 +2104,31 @@ async function syncAll(deckKey, showToast, noDecks) {
       req.onerror   = e => rej(e.target.error);
     });
     const pendingCount = allTrials.filter(t => !t.synced_at && t.deck_key).length;
-    let uploadedTrials = 0;
     for (const t of allTrials) {
-      if (!t.synced_at && t.deck_key) { try { await syncTrialLog(t); uploadedTrials++; } catch(e) { /* skip */ } }
+      if (!t.synced_at && t.deck_key) { try { await syncTrialLog(t); syncStats.trials++; } catch(e) { /* skip */ } }
     }
 
+    // 1.5 上传应用事件日志
+    showSyncProg(2, totalSteps, '正在上传事件日志...');
+    syncStats.events = await syncAppEvents();
+
+    // 1.6 上传 CardState 变更日志
+    showSyncProg(3, totalSteps, '正在上传状态日志...');
+    syncStats.csl = await syncCardStateLogs();
+
     // 2. 同步卡牌状态：先拉后推（仅上传本地脏记录）
-    showSyncProg(2, totalSteps, '正在同步练习状态...');
-    let uploadedStates = 0, merged = 0;
+    showSyncProg(4, totalSteps, '正在同步练习状态...');
     if (deckKey) {
-      merged = await syncCardStatesFromCloud(deckKey);
+      syncStats.states_merged = await syncCardStatesFromCloud(deckKey);
       const states = await getAllCardStates(deckKey);
       const dirty = states.filter(s => s.synced_at == null);
       for (const s of dirty) {
-        try { await syncCardState(s); uploadedStates++; } catch(e) { /* skip */ }
+        try { await syncCardState(s); syncStats.states++; } catch(e) { /* skip */ }
       }
     }
 
-    // 3. 跨设备今日统计同步：从云端拉取今天全部答题记录
-    showSyncProg(3, totalSteps, '正在同步今日进度...');
+    // 5. 跨设备今日统计同步：从云端拉取今天全部答题记录
+    showSyncProg(5, totalSteps, '正在同步今日进度...');
     const { data: todayCloud } = await _sb.from('sync_trials')
       .select('card_id, srs_stage_before, active_gap_ms, rating, timestamp')
       .eq('user_id', _cloudUserId)
@@ -2152,15 +2168,16 @@ async function syncAll(deckKey, showToast, noDecks) {
       saveDailyProgress(cp);
     }
 
-    // 4. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
-    showSyncProg(4, totalSteps, '正在同步配置...');
+    // 6. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
+    showSyncProg(6, totalSteps, '正在同步配置...');
     const cfgItems = await cloudPullConfig();
+    syncStats.config = cfgItems;
     await cloudPushConfig();
 
-    // 5. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
+    // 7. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
     let newDecks = 0, syncedDecks = 0;
     if (!noDecks) {
-      showSyncProg(5, totalSteps, '正在同步牌组...');
+      showSyncProg(7, totalSteps, '正在同步牌组...');
       const { data: serverDecks } = await _sb.from('server_decks').select('id,name');
       if (serverDecks) {
         for (const sd of serverDecks) {
@@ -2179,18 +2196,24 @@ async function syncAll(deckKey, showToast, noDecks) {
       await refreshServerDeckList();
     }
     hideSyncProg();
+    syncStats.decks = newDecks + syncedDecks;
 
-    // 5. 提示
+    // 清理过期日志（非阻塞）
+    purgeOldLogs();
+
+    logAppEvent('sync_done', { deck_key: deckKey, stats: syncStats }, deckKey);
+
+    // 提示
     if (showToast) {
       const parts = [];
-      if (uploadedTrials > 0) parts.push('上传答题 ' + uploadedTrials);
-      if (uploadedStates > 0) parts.push('上传状态 ' + uploadedStates);
-      if (merged > 0) parts.push('状态更新 ' + merged);
-      if (cfgItems > 0) parts.push('配置 ' + cfgItems);
+      if (syncStats.trials > 0) parts.push('上传答题 ' + syncStats.trials);
+      if (syncStats.states > 0) parts.push('上传状态 ' + syncStats.states);
+      if (syncStats.states_merged > 0) parts.push('状态更新 ' + syncStats.states_merged);
+      if (syncStats.config > 0) parts.push('配置 ' + syncStats.config);
       if (newDecks > 0) parts.push('下载牌组 ' + newDecks);
       if (syncedDecks > 0) parts.push('同步牌组 ' + syncedDecks);
       if (parts.length > 0) showCloudToast('同步完成 · ' + parts.join(' · '));
-      else if (pendingCount === 0 && merged === 0 && !newDecks && !syncedDecks) showCloudToast('已是最新');
+      else if (pendingCount === 0 && syncStats.states_merged === 0 && !newDecks && !syncedDecks) showCloudToast('已是最新');
     }
   } catch(e) { hideSyncProg(); console.warn('[sync] syncAll error:', e.message); if (showToast) showCloudToast('同步失败'); }
   if (deckKey) updateDeckStats();
@@ -2208,7 +2231,6 @@ function openSrsDb() {
     const req = indexedDB.open(SRS_DB_NAME, SRS_DB_VER);
     req.onupgradeneeded = e => {
       const db = e.target.result;
-      // 废弃旧 store（card_type_states / pool）检测保留，不删除
       if (!db.objectStoreNames.contains(CS_STORE)) {
         db.createObjectStore(CS_STORE, { keyPath: 'state_key' });
       }
@@ -2216,12 +2238,174 @@ function openSrsDb() {
         const ts = db.createObjectStore(TRIAL_STORE, { keyPath: 'trial_id' });
         ts.createIndex('deck_key',   'deck_key');
         ts.createIndex('timestamp',  'timestamp');
-        ts.createIndex('synced_at',  'synced_at');  // Phase 2：增量上传
+        ts.createIndex('synced_at',  'synced_at');
+      }
+      // v4 新增：事件日志 store
+      if (!db.objectStoreNames.contains(EVT_STORE)) {
+        db.createObjectStore(EVT_STORE, { keyPath: 'event_id' });
+      }
+      // v4 新增：CardState 变更日志 store
+      if (!db.objectStoreNames.contains(CSL_STORE)) {
+        db.createObjectStore(CSL_STORE, { keyPath: 'log_id' });
       }
     };
     req.onsuccess = e => { _srsDb = e.target.result; res(_srsDb); };
     req.onerror   = e => rej(e.target.error);
   });
+}
+
+// ── 数据埋点：应用事件日志 ──────────────────────────────────────────
+function isMember() {
+  return localStorage.getItem('yihai_has_ever_logged_in') === '1';
+}
+
+function logAppEvent(type, payload, deckKey) {
+  var event = {
+    event_id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    event_type: type,
+    deck_key: deckKey || '',
+    payload: payload || {},
+    device_id: _deviceId || '',
+    timestamp: Date.now(),
+    synced_at: null
+  };
+  if (!isMember()) {
+    // 非会员：上限 50 条
+    openSrsDb().then(function(db) {
+      var tx = db.transaction(EVT_STORE, 'readwrite');
+      tx.objectStore(EVT_STORE).put(event);
+      tx.oncomplete = function() { trimStore(db, EVT_STORE, 50); };
+    }).catch(function(){});
+    return;
+  }
+  openSrsDb().then(function(db) {
+    db.transaction(EVT_STORE, 'readwrite').objectStore(EVT_STORE).put(event);
+  }).catch(function(){});
+  uploadAppEvent(event);
+}
+
+function logCardStateChange(changeType, before, after) {
+  if (!isMember()) return;
+  var log = {
+    log_id: 'csl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    state_key: after.state_key,
+    card_id: after.card_id,
+    deck_key: after.deck_key,
+    change_type: changeType,
+    stage_before: (before && before.srs_stage) || '',
+    interval_before: (before && before.interval) || 0,
+    ease_before: (before && before.ease_factor) || 2.5,
+    stage_after: after.srs_stage,
+    interval_after: after.interval || 0,
+    ease_after: after.ease_factor || 2.5,
+    device_id: _deviceId || '',
+    timestamp: Date.now(),
+    synced_at: null
+  };
+  openSrsDb().then(function(db) {
+    db.transaction(CSL_STORE, 'readwrite').objectStore(CSL_STORE).put(log);
+  }).catch(function(){});
+  uploadCardStateLog(log);
+}
+
+// 设备注册（非阻塞）
+async function upsertDeviceRegistry() {
+  if (!_syncEnabled || !_sb || !_cloudUserId || !_deviceId) return;
+  try {
+    await _sb.from('device_registry').upsert({
+      user_id: _cloudUserId, device_id: _deviceId,
+      device_info: getDeviceInfo(), last_seen: new Date().toISOString()
+    }, { onConflict: 'user_id,device_id' });
+  } catch(e) {}
+}
+
+async function uploadAppEvent(event) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  try {
+    var payload = { event_id: event.event_id, user_id: _cloudUserId, event_type: event.event_type, deck_key: event.deck_key, payload: event.payload, device_id: event.device_id, timestamp: event.timestamp };
+    var _a = await _sb.from('app_events').insert(payload);
+    if (!_a.error) { event.synced_at = Date.now(); markEventSynced(event.event_id); }
+  } catch(e) {}
+}
+
+async function uploadCardStateLog(log) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  try {
+    var payload = { log_id: log.log_id, user_id: _cloudUserId, state_key: log.state_key, card_id: log.card_id, deck_key: log.deck_key, change_type: log.change_type, stage_before: log.stage_before, interval_before: log.interval_before, ease_before: log.ease_before, stage_after: log.stage_after, interval_after: log.interval_after, ease_after: log.ease_after, device_id: log.device_id, timestamp: log.timestamp };
+    var _a = await _sb.from('card_state_log').insert(payload);
+    if (!_a.error) { log.synced_at = Date.now(); markCslSynced(log.log_id); }
+  } catch(e) {}
+}
+
+// 标记事件已同步（写回 IndexedDB）
+function markEventSynced(eventId) {
+  openSrsDb().then(function(db) {
+    var tx = db.transaction(EVT_STORE, 'readwrite');
+    var req = tx.objectStore(EVT_STORE).get(eventId);
+    req.onsuccess = function() { if (req.result) { req.result.synced_at = Date.now(); tx.objectStore(EVT_STORE).put(req.result); } };
+  }).catch(function(){});
+}
+
+function markCslSynced(logId) {
+  openSrsDb().then(function(db) {
+    var tx = db.transaction(CSL_STORE, 'readwrite');
+    var req = tx.objectStore(CSL_STORE).get(logId);
+    req.onsuccess = function() { if (req.result) { req.result.synced_at = Date.now(); tx.objectStore(CSL_STORE).put(req.result); } };
+  }).catch(function(){});
+}
+
+// syncAll 批量补传
+async function syncAppEvents() {
+  if (!_syncEnabled || !_sb) return 0;
+  var db = await openSrsDb();
+  var all = await new Promise(function(res, rej) { var r = db.transaction(EVT_STORE, 'readonly').objectStore(EVT_STORE).getAll(); r.onsuccess = function(e) { res(e.target.result || []); }; r.onerror = function(e) { rej(e.target.error); }; });
+  var uploaded = 0;
+  for (var i = 0; i < all.length; i++) { if (!all[i].synced_at) { try { await uploadAppEvent(all[i]); uploaded++; } catch(e) {} } }
+  return uploaded;
+}
+
+async function syncCardStateLogs() {
+  if (!_syncEnabled || !_sb) return 0;
+  var db = await openSrsDb();
+  var all = await new Promise(function(res, rej) { var r = db.transaction(CSL_STORE, 'readonly').objectStore(CSL_STORE).getAll(); r.onsuccess = function(e) { res(e.target.result || []); }; r.onerror = function(e) { rej(e.target.error); }; });
+  var uploaded = 0;
+  for (var i = 0; i < all.length; i++) { if (!all[i].synced_at) { try { await uploadCardStateLog(all[i]); uploaded++; } catch(e) {} } }
+  return uploaded;
+}
+
+// 裁剪 store 到指定条数（保留最新）
+function trimStore(db, storeName, maxCount) {
+  var tx = db.transaction(storeName, 'readwrite');
+  var store = tx.objectStore(storeName);
+  var countReq = store.count();
+  countReq.onsuccess = function() {
+    var excess = countReq.result - maxCount;
+    if (excess <= 0) return;
+    // 按 timestamp 升序（最旧在前），删 excess 条
+    var cursorReq = store.openCursor();
+    var deleted = 0;
+    cursorReq.onsuccess = function(e) {
+      var cursor = e.target.result;
+      if (cursor && deleted < excess) { cursor.delete(); deleted++; cursor.continue(); }
+    };
+  };
+}
+
+// 清理过期日志（会员版：app_events 30 天，card_state_log 7 天）
+async function purgeOldLogs() {
+  try {
+    var db = await openSrsDb();
+    var cutoff30 = Date.now() - 30 * 86400000;
+    var cutoff7  = Date.now() - 7 * 86400000;
+    // app_events: 删 30 天前
+    var evtTx = db.transaction(EVT_STORE, 'readwrite');
+    var evtReq = evtTx.objectStore(EVT_STORE).openCursor();
+    evtReq.onsuccess = function(e) { var c = e.target.result; if (c && c.value.timestamp < cutoff30) { c.delete(); c.continue(); } };
+    // card_state_log: 删 7 天前
+    var cslTx = db.transaction(CSL_STORE, 'readwrite');
+    var cslReq = cslTx.objectStore(CSL_STORE).openCursor();
+    cslReq.onsuccess = function(e) { var c = e.target.result; if (c && c.value.timestamp < cutoff7) { c.delete(); c.continue(); } };
+  } catch(e) {}
 }
 
 // ── CardState CRUD ───────────────────────────────────────────────
@@ -2509,11 +2693,13 @@ async function buildSessionQueue(deckKey) {
   // 确保每张卡都有 CardState（仅写本地，不上传云端——
   // 此处的 new 状态只是队列构建所需的临时初始值，
   // 真实状态由用户答题后的 _writeSrs → processAnswer 产生并同步）
+  var newCardsCreated = 0;
   for (const card of cards) {
     if (!stateMap[card.id]) {
       const s = newCardState(deckKey, card.id);
       await saveCardStateLocal(s);
       stateMap[card.id] = s;
+      newCardsCreated++;
     }
   }
 
@@ -2587,6 +2773,7 @@ async function buildSessionQueue(deckKey) {
     return { ...card, options, correct, _srsState: stateMap[card.id] };
   });
 
+  logAppEvent('build_queue', { deck_key: deckKey, new_cards_created: newCardsCreated, total_cards: cards.length, queue_length: queue.length }, deckKey);
   return queue;
 }
 
@@ -3149,6 +3336,7 @@ function _launch(mode) {
     _cardAnswerRating = null;
     _pendingAttempt   = null;
     _sessionFirstRatings = {};
+    logAppEvent('start_practice', { deck_key: currentDeck, mode: mode }, currentDeck);
 
     // 先拉取云端状态（防止新设备 IndexedDB 为空时 buildSessionQueue
     // 创建 new 状态并通过 saveCardState→syncCardState 实时上传，
@@ -3173,6 +3361,7 @@ function _launch(mode) {
 }
 function goHome() {
   sessionId++;
+  logAppEvent('go_home', { deck_key: currentDeck }, currentDeck);
   stopNRing(); stopAllPromptTimers();
   speechSynthesis.cancel();
   releaseWakeLock();
@@ -3776,6 +3965,7 @@ async function _writeSrs(q, rating, attempt) {
 
   // 更新 CardState
   const newState = processAnswer(state, rating, todayStr());
+  logCardStateChange('processAnswer', state, newState);
   await saveCardState(newState);
 
   // 更新内存中的 _srsState（供后续答题参考）

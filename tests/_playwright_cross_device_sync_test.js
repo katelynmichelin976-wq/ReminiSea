@@ -15,7 +15,8 @@
  */
 const { chromium } = require('playwright');
 
-const CFG = { url: 'http://localhost:8080/yihai_v4.9.html' };
+const BASE_URL = 'http://localhost:8080/yihai_v4.9.html';
+function pageUrl() { return BASE_URL + '?v=' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
 const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
 const TEST_DECK_NAME = '__test_xdev__';
@@ -58,7 +59,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     section('PHASE 0: 登录 + 清理 + 创建数据');
 
     const loginPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-    await loginPage.goto(CFG.url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await loginPage.goto(pageUrl(), { waitUntil: 'domcontentloaded', timeout: 15000 });
     await wait(loginPage, 1000);
 
     // 登录（合并操作减少 evaluate 次数）
@@ -141,7 +142,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     section('PHASE 1: 设备 A — 练习 3 张卡 (new → review)');
 
     pageA = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-    await pageA.goto(CFG.url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await pageA.goto(pageUrl(), { waitUntil: 'domcontentloaded', timeout: 15000 });
     await wait(pageA, 1000);
 
     // 登录
@@ -290,7 +291,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     const diagA = await run(pageA, async ({ key }) => {
       // 本地 trials
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 3);
+        const r = indexedDB.open('yihai_srs', 4);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });
@@ -320,7 +321,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     ctxB = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     pageB = await ctxB.newPage();
 
-    await pageB.goto(CFG.url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await pageB.goto(pageUrl(), { waitUntil: 'domcontentloaded', timeout: 15000 });
     await wait(pageB, 1000);
 
     // 设备 B 登录
@@ -348,7 +349,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
       const dp = getDailyProgress();
       // 检查 IndexedDB 是否有云端同步下来的 card states
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 3);
+        const r = indexedDB.open('yihai_srs', 4);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });
@@ -409,7 +410,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     // 诊断：buildSessionQueue 后 B 的本地状态
     const diagBafterOpen = await run(pageB, async ({ key }) => {
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 3);
+        const r = indexedDB.open('yihai_srs', 4);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });

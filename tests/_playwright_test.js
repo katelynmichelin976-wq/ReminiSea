@@ -8,7 +8,7 @@ const JSZip = require('jszip');
 const fs = require('fs');
 const path = require('path');
 
-const CFG = { url:'http://localhost:8080/yihai_v4.9.html' };
+const CFG = { url:'http://localhost:8080/yihai_v4.9.html?v=' + Date.now() };
 const YHPACK = path.join(__dirname, 'test_data', '蔬菜水果本地版.yhspack');
 
 let passed=0, failed=0, errors=[];
@@ -241,7 +241,7 @@ function randRating() {
     section('PHASE 4: 10 天后验证');
 
     const finalSt = await run(page, () => new Promise(res => {
-      const r=indexedDB.open('yihai_srs',3);
+      const r=indexedDB.open('yihai_srs',4);
       r.onsuccess=e=>{
         const db=e.target.result;
         const tx=db.transaction('card_states','readonly');

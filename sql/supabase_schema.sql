@@ -193,3 +193,75 @@ alter table admin_users enable row level security;
 
 create policy "service_role_only" on admin_users
   for all using (auth.role() = 'service_role');
+
+-- ═══════════════════════════════════════════
+-- v4.9+: 数据埋点（app_events / card_state_log / device_registry）
+-- ═══════════════════════════════════════════
+
+-- 应用事件表
+create table if not exists app_events (
+  event_id    text primary key,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  event_type  text not null,
+  deck_key    text default '',
+  payload     jsonb default '{}'::jsonb,
+  device_id   text not null,
+  timestamp   bigint not null,
+  created_at  timestamptz default now()
+);
+
+create index if not exists idx_app_events_user_ts
+  on app_events(user_id, timestamp desc);
+
+create index if not exists idx_app_events_type
+  on app_events(event_type);
+
+alter table app_events enable row level security;
+
+create policy "individual_access" on app_events
+  for all using (auth.uid() = user_id);
+
+-- CardState 变更日志
+create table if not exists card_state_log (
+  log_id          text primary key,
+  user_id         uuid not null references auth.users(id) on delete cascade,
+  state_key       text not null,
+  card_id         text not null,
+  deck_key        text not null,
+  change_type     text not null,
+  stage_before    text default '',
+  interval_before integer default 0,
+  ease_before     real default 2.5,
+  stage_after     text not null,
+  interval_after  integer not null default 0,
+  ease_after      real not null default 2.5,
+  device_id       text not null,
+  timestamp       bigint not null,
+  created_at      timestamptz default now()
+);
+
+create index if not exists idx_card_state_log_user_ts
+  on card_state_log(user_id, timestamp desc);
+
+create index if not exists idx_card_state_log_state_key
+  on card_state_log(state_key);
+
+alter table card_state_log enable row level security;
+
+create policy "individual_access" on card_state_log
+  for all using (auth.uid() = user_id);
+
+-- 设备注册表
+create table if not exists device_registry (
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  device_id   text not null,
+  device_info jsonb default '{}'::jsonb,
+  first_seen  timestamptz default now(),
+  last_seen   timestamptz default now(),
+  primary key (user_id, device_id)
+);
+
+alter table device_registry enable row level security;
+
+create policy "individual_access" on device_registry
+  for all using (auth.uid() = user_id);

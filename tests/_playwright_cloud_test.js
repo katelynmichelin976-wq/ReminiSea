@@ -10,7 +10,7 @@
  */
 const { chromium } = require('playwright');
 
-const CFG = { url: 'http://localhost:8080/yihai_v4.9.html' };
+const CFG = { url: 'http://localhost:8080/yihai_v4.9.html?v=' + Date.now() };
 const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
 const TEST_DECK_NAME = '网络版';            // simpleHash = 01edbdfd
@@ -142,6 +142,28 @@ const SETTINGS_SEL = '[aria-label="设置"]';
     // ═══════════════════ PHASE 3: 练习并验证同步 ═══════════════════
     section('PHASE 3: 练习并验证同步');
 
+    // 清理旧 CardState（确保 buildSessionQueue 有可用新卡）
+    await run(page, async (uid, dk) => {
+      await _sb.from('sync_card_states').delete().eq('user_id', uid).eq('deck_key', dk);
+    }, await run(page, () => _cloudUserId), CLOUD_DECK_KEY);
+    // 也清理本地
+    await run(page, (dk) => {
+      return new Promise((res) => {
+        const r = indexedDB.open('yihai_srs', 4);
+        r.onsuccess = e => {
+          const db = e.target.result;
+          const tx = db.transaction('card_states', 'readwrite');
+          const req = tx.objectStore('card_states').getAll();
+          req.onsuccess = () => {
+            const states = req.result.filter(s => s.deck_key === dk);
+            states.forEach(s => tx.objectStore('card_states').delete(s.state_key));
+            res(states.length);
+          };
+        };
+      });
+    }, CLOUD_DECK_KEY);
+    console.log('  旧状态已清理');
+
     await run(page, () => {
       const btns = document.querySelectorAll('button');
       for (const b of btns) { if (b.textContent.includes('开始练习')) { b.click(); return; } }
@@ -232,7 +254,7 @@ const SETTINGS_SEL = '[aria-label="设置"]';
 
     // 验证 IndexedDB 本地数据
     const localData = await run(page, (key) => new Promise(res => {
-      const r = indexedDB.open('yihai_srs', 3);
+      const r = indexedDB.open('yihai_srs', 4);
       r.onsuccess = e => {
         const db = e.target.result;
         const g1 = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
