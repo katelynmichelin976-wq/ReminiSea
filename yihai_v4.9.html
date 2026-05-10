@@ -4015,14 +4015,21 @@ async function _writeSrs(q, rating, attempt) {
   }
 
   // DailyProgress 更新
-  // Phase 1: buildSessionQueue 每张卡只入队一次，无步长内重现，_retrying 始终 false
   const isRetrying = false;
   const dp2 = getDailyProgress();
   dp2.reviewed_today++;
   if (stageBefore === 'new') dp2.daily_new_today++;
+  // 当日首次评级计数（跨 session 累计，每卡每日只计首次评级）
+  const firstRatingKey = 'yh_fr_' + todayStr() + '_' + state.card_id;
+  if (!localStorage.getItem(firstRatingKey)) {
+    localStorage.setItem(firstRatingKey, rating);
+    if (rating === 'again') dp2.first_fail_today++;
+    else if (rating === 'hard') dp2.first_hard_today++;
+    else dp2.first_pass_today++;
+  }
   saveDailyProgress(dp2);
 
-  // 按卡·首次评级统计（每张卡取首次答题评级）
+  // 按卡·首次评级统计（本次 session）
   if (!_sessionFirstRatings[state.state_key]) {
     _sessionFirstRatings[state.state_key] = rating;
   }
