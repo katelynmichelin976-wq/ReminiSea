@@ -222,6 +222,9 @@ new → learning（学习中）→ review（复习中/已掌握）
 - `renderStatsToday()` 路径 2 按日历日过滤（`timestamp >= 今日 0 点`），不再混入昨日数据
 - `showFinish()` 改为 async，`backfillAfterPractice` 改为 await，减少关页面丢数据
 
+**统计页优化**
+- 「连续天数」改为「练习天数」：取本地 ∪ 云端 sync_trials 的唯一天数总数，不再要求连续，跨设备显示一致
+
 **埋点增强**
 - `build_queue` payload 增加 `used_review`、`review_slots`、`new_slots`、`max_reviews`、`max_new`
 - 新增 `show_finish` 事件，含 `reviewed_today` + `session_pass/hard/fail`
