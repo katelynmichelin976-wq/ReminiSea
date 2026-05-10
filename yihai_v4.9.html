@@ -1602,6 +1602,11 @@ function todayStr() {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+// UTC 日期（与 Supabase trial_date 生成列一致，该列用 to_timestamp()::date = UTC）
+function utcTodayStr() {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+}
 
 function addDays(dateStr, n) {
   const d = new Date(dateStr + 'T00:00:00');
@@ -2111,7 +2116,7 @@ async function syncAll(deckKey, showToast, noDecks) {
     const { data: todayCloud } = await _sb.from('sync_trials')
       .select('card_id, srs_stage_before, active_gap_ms, rating, timestamp')
       .eq('user_id', _cloudUserId)
-      .eq('trial_date', todayStr());
+      .eq('trial_date', utcTodayStr());  // UTC 日期，与 PostgreSQL 生成列对齐
     if (todayCloud) {
       const cloudNewSet = new Set();
       let cloudDurationMs = 0;
@@ -2501,11 +2506,13 @@ async function buildSessionQueue(deckKey) {
   const stateMap = {};
   states.forEach(s => { stateMap[s.card_id] = s; });
 
-  // 确保每张卡都有 CardState
+  // 确保每张卡都有 CardState（仅写本地，不上传云端——
+  // 此处的 new 状态只是队列构建所需的临时初始值，
+  // 真实状态由用户答题后的 _writeSrs → processAnswer 产生并同步）
   for (const card of cards) {
     if (!stateMap[card.id]) {
       const s = newCardState(deckKey, card.id);
-      await saveCardState(s);
+      await saveCardStateLocal(s);
       stateMap[card.id] = s;
     }
   }
@@ -3143,8 +3150,12 @@ function _launch(mode) {
     _pendingAttempt   = null;
     _sessionFirstRatings = {};
 
-    // 异步拉取 SRS 队列（先拉队列再决定是否进入练习屏）
-    buildSessionQueue(currentDeck).then(queue => {
+    // 先拉取云端状态（防止新设备 IndexedDB 为空时 buildSessionQueue
+    // 创建 new 状态并通过 saveCardState→syncCardState 实时上传，
+    // 覆盖其他设备已练习的正确状态）
+    syncCardStatesFromCloud(currentDeck).then(() => {
+      return buildSessionQueue(currentDeck);
+    }).then(queue => {
       if (queue.length === 0) {
         showFinish();
         return;
