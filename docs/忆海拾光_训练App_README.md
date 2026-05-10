@@ -79,8 +79,11 @@ anki-maker 仓库（GitHub Pages）
 | localStorage | 每日进度 | `yihai_daily_progress` |
 | IndexedDB `yihai_media` | 图片 blob | `{deckKey}_{cardId}_img` |
 | IndexedDB `yihai_media` | 录音 blob | `{deckKey}_{cardId}_aud` |
-| IndexedDB `yihai_srs` v3 | CardState（SRS 状态）| `card_states` store，key=`{deckKey}::{cardId}` |
-| IndexedDB `yihai_srs` v3 | TrialLog（答题记录）| `trials` store |
+| localStorage | 会员标记（是否曾登录）| `yihai_has_ever_logged_in` |
+| IndexedDB `yihai_srs` v4 | CardState（SRS 状态）| `card_states` store，key=`{deckKey}::{cardId}` |
+| IndexedDB `yihai_srs` v4 | TrialLog（答题记录）| `trials` store |
+| IndexedDB `yihai_srs` v4 | 应用事件日志 | `app_events` store（会员完整记录/非会员限50条）|
+| IndexedDB `yihai_srs` v4 | CardState 变更日志 | `card_state_log` store（仅会员）|
 
 ---
 
@@ -174,6 +177,15 @@ new → learning（学习中）→ review（复习中/已掌握）
 - `_launch` 进入练习屏前先调 `syncCardStatesFromCloud` 拉取云端状态，修复新设备 IndexedDB 为空时 `buildSessionQueue` 创建 new 状态并通过 `saveCardState`→`syncCardState` 实时上传，覆盖其他设备已练习的正确 CardState
 - `buildSessionQueue` 自动建卡改用 `saveCardStateLocal`（仅写本地），避免临时 new 状态与用户答题后的正确状态产生异步竞争覆盖
 - `syncAll` step3 跨设备今日进度同步的 `trial_date` 查询改用 `utcTodayStr()`（UTC 日期），对齐 PostgreSQL `to_timestamp()::date` 生成列的 UTC 时区，修复中国时区凌晨时段 `daily_progress` 跨设备同步失效
+
+**数据埋点增强（2026-05-10）**
+- IndexedDB `yihai_srs` 升级到 v4，新增 `app_events`（事件日志）和 `card_state_log`（状态变更快照）两个 store
+- Supabase Migration 006：新增 `app_events`、`card_state_log`、`device_registry` 三张表
+- 会员判定：`localStorage` 键 `yihai_has_ever_logged_in`，首次登录后置位
+- 会员版：完整记录日志到 IndexedDB，实时上传至云端，`syncAll` 批量补传；30天事件/7天状态日志自动清理
+- 非会员版：`app_events` 限 50 条，`card_state_log` 不记录，零性能影响
+- 埋点位置：login / logout / build_queue / processAnswer / sync_started / sync_done / config_changed / start_practice / go_home / cloud_state_merge（共 10 处）
+- `syncAll` 步骤从 5 步扩展到 7 步（新增 step 1.5 事件日志上传 + step 1.6 状态日志上传）
 
 **设备信息采集**
 - `sync_trials` 新增 `device_info` jsonb 字段，记录浏览器 UA、屏幕分辨率、语言设置
