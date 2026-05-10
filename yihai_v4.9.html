@@ -5178,14 +5178,28 @@ async function renderStatsDeck() {
   });
   const mastered = states.filter(s => s.srs_stage === 'review' && s.interval >= SRS_CONFIG.maximum_interval && !s.suspended).length;
 
-  // 连续练习天数（streak）
+  // 练习天数（合并本地+云端）
   const trials7 = await getTrialLogs(key, 90);
   const daysSet = new Set(trials7.map(t => {
     const d = new Date(t.timestamp);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }));
-  let streak = 0, cur = todayStr();
-  while (daysSet.has(cur)) { streak++; cur = addDays(cur, -1); }
+  if (_syncEnabled && _sb && _cloudUserId) {
+    try {
+      const { data: cloudTrials } = await _sb.from('sync_trials')
+        .select('timestamp')
+        .eq('user_id', _cloudUserId)
+        .eq('deck_key', key)
+        .gte('timestamp', Date.now() - 90 * 86400000);
+      if (cloudTrials) {
+        cloudTrials.forEach(t => {
+          const d = new Date(t.timestamp);
+          daysSet.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+        });
+      }
+    } catch (e) { console.warn('[stats] cloud practice days fetch error:', e.message); }
+  }
+  const practiceDays = daysSet.size;
 
   document.getElementById('st-deck-overview').innerHTML = `
     <div class="deck-overview-grid">
@@ -5194,7 +5208,7 @@ async function renderStatsDeck() {
       <div class="deck-ov-item"><div class="deck-ov-num" style="color:var(--ocean)">${learning + relearning}</div><div class="deck-ov-lbl">学习中</div></div>
       <div class="deck-ov-item"><div class="deck-ov-num">${newC}</div><div class="deck-ov-lbl">待开始</div></div>
       <div class="deck-ov-item"><div class="deck-ov-num" style="color:#7c3aed">${sus}</div><div class="deck-ov-lbl">暂停</div></div>
-      <div class="deck-ov-item"><div class="deck-ov-num" style="color:var(--ocean)">${streak}</div><div class="deck-ov-lbl">连续天数</div></div>
+      <div class="deck-ov-item"><div class="deck-ov-num" style="color:var(--ocean)">${practiceDays}</div><div class="deck-ov-lbl">练习天数</div></div>
     </div>`;
 
   // 未来7天到期预测
