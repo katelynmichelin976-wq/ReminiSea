@@ -200,6 +200,34 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ---
 
+### v4.9.1 — 2026-05-10
+
+**白屏修复**
+- Supabase CDN 改为 JS 动态加载（`loadSupabaseSDK()`），UI 初始化不再等待 CDN
+- SDK 加载失败 → 静默离线模式，不影响本地练习
+
+**智能同步**
+- 新增 `checkSyncNeeded()` — 先检查本地脏数据 + 服务器 `sync_card_states.updated_at` 和时间戳 `yihai_global_sync_ts` 对比
+- 不需要同步时零网络等待，直接显示首页；需要时显示进度条阻塞同步
+- 同步完成记录 `yihai_global_sync_ts`，供下次增量判断
+
+**减少逐卡上传**
+- 去掉 `logCardStateChange` 调用：`card_state_log` 表前端停产，TrialLog 已含 before/after 状态快照
+- `saveCardState` 去掉逐卡实时上传，仅在 `syncAll` 时批量上传
+- `writeTrialLog` 的 TrialLog entry 新增 `due_ts`、`due_date`、`suspended`、`suspended_reason` 字段，承载完整卡牌状态快照，后续数据库 trigger 可派生 `sync_card_states`
+
+**Bug 修复**
+- `showFinish()` 前 `await _lastSrsWrite`，避免最后一张卡 daily progress 计数偏少导致跨设备统计遗漏
+- `getDeckStatsSrs()` 的 `due` 受 `max(0, max_reviews - reviewed_today)` 上限约束，不再虚高
+- `renderStatsToday()` 路径 2 按日历日过滤（`timestamp >= 今日 0 点`），不再混入昨日数据
+- `showFinish()` 改为 async，`backfillAfterPractice` 改为 await，减少关页面丢数据
+
+**埋点增强**
+- `build_queue` payload 增加 `used_review`、`review_slots`、`new_slots`、`max_reviews`、`max_new`
+- 新增 `show_finish` 事件，含 `reviewed_today` + `session_pass/hard/fail`
+
+---
+
 ### v4.8 — 2026-05-05
 
 **同步架构重构**

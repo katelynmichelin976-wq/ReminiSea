@@ -164,6 +164,10 @@ const SETTINGS_SEL = '[aria-label="设置"]';
     }, CLOUD_DECK_KEY);
     console.log('  旧状态已清理');
 
+    // 重置每日进度（避免 daily_new_today 已达上限导致 buildSessionQueue 返回空队列）
+    await run(page, () => { localStorage.removeItem('yihai_daily_progress'); });
+    console.log('  daily_progress 已重置');
+
     await run(page, () => {
       const btns = document.querySelectorAll('button');
       for (const b of btns) { if (b.textContent.includes('开始练习')) { b.click(); return; } }

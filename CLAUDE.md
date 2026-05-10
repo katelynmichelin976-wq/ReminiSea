@@ -60,7 +60,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Card maker** (`index_v49`) → exports `.yhspack` → **Deck manager** uploads → **Supabase** (cards_pool + Storage)
 - **Deck manager** organizes cards → **Supabase** (server_decks + server_deck_cards)
 - **Training app** downloads ← **Supabase** (server_decks → cards_pool → Storage media)
-- **Training app** uploads ← **Supabase** (sync_trials + sync_card_states + sync_config, fire-and-forget)
+- **Training app** uploads ← **Supabase** (sync_trials 承载完整状态快照 + sync_config)
+- **DB trigger** `fn_trial_to_card_state()` — sync_trials INSERT → 自动 UPSERT sync_card_states
 - **Training app** imports `.yhspack` directly (offline fallback)
 
 ## Key Files
@@ -68,10 +69,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v4.9.html` | Main training app (single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.9.html` | Main training app (v4.9.1, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
 | `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
-| `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) |
-| `index_v49.html` | Card maker tool (paused) |
+| `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
+| `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
 
 ### 测试
 | File | Purpose |
@@ -83,6 +84,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_playwright_test.js` | Playwright 单机版回归测试（22 断言） |
 | `tests/_playwright_cloud_test.js` | Playwright 网络版回归测试（17 断言） |
 | `tests/_playwright_cross_device_sync_test.js` | Playwright 跨设备同步回归测试（21 断言） |
+| `tests/_playwright_v4.9.1_regression_test.js` | v4.9.1 回归测试（21 断言：白屏/到期上限/finish计数/TrialLog字段/统计页） |
 | `tests/test_data/` | Test .yhspack files |
 
 ### 文档
@@ -105,6 +107,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `sql/supabase_migration_003_admin.sql` | Admin dashboard migration (admin_users + indexes + RPCs) |
 | `supabase/functions/` | Edge Functions (8 functions for admin API) |
 | `archive/` | Previous versions (v4.3–v4.8) |
+
+## v4.9.1 Key Changes
+
+- **白屏修复**: Supabase CDN 改为 JS 动态加载（`loadSupabaseSDK()`），UI 初始化不再等待 CDN
+- **智能同步**: 新增 `checkSyncNeeded()` — 先检查本地脏数据 + 服务器时间戳，不需要同步时零网络等待
+- **减少逐卡上传**: 去掉 `logCardStateChange`（`card_state_log` 表废弃）；`saveCardState` 不再逐卡实时上传；TrialLog 新增 `due_ts/due_date/suspended/suspended_reason` 字段承载完整状态
+- **SRS 写入保护**: `showFinish()` 前 `await _lastSrsWrite`，避免最后一张卡 daily progress 计数偏少
+- **主页到期数虚高**: `getDeckStatsSrs()` 的 `due` 受 `max(0, max_reviews - reviewed_today)` 上限约束
+- **统计页日期过滤**: `renderStatsToday()` 按日历日过滤 TrialLog，不再混入昨日数据
+- **埋点增强**: `build_queue` payload 增加 `used_review/review_slots/new_slots`；新增 `show_finish` 事件
 
 ## Development Commands
 
@@ -167,6 +179,9 @@ review → again → relearning
 9. **Supabase cloud sync** — all Supabase calls wrapped in try/catch, fire-and-forget. `_syncEnabled` gates all sync; false = offline mode.
 10. **Cloud login** — Supabase SDK persists session in localStorage. `restoreCloudSession()` on startup, `updateCloudTabUI()` toggles login/deck-list UI.
 11. **Incremental sync** — `syncDeckFromCloud` uses `cards_pool.updated_at > lastSyncAt` + `_imgUrl/_audUrl` URL comparison to skip unchanged media.
+12. **Smart sync** — `checkSyncNeeded()` checks local dirty data + server `updated_at > yihai_global_sync_ts` before running full `syncAll`. Skipped if nothing changed.
+13. **Per-card upload: TrialLog only** — 逐卡仅上传 `sync_trials`（含完整状态快照）；`sync_card_states` 由 DB trigger `fn_trial_to_card_state()` 自动维护；`card_state_log` 已废弃。
+14. **Supabase SDK defer load** — `<script src="supabase" defer>` 不阻塞 DOM 解析和渲染；`initCloud()` 在 SDK 就绪后自动执行。离线下 SDK 加载失败 → `restoreCloudSession()` 静默跳过 → 离线模式。
 
 ## Workflow Rules
 
