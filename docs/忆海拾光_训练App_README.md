@@ -229,6 +229,16 @@ new → learning（学习中）→ review（复习中/已掌握）
 - `build_queue` payload 增加 `used_review`、`review_slots`、`new_slots`、`max_reviews`、`max_new`
 - 新增 `show_finish` 事件，含 `reviewed_today` + `session_pass/hard/fail`
 
+**DB trigger**
+- `sync_trials` 新增 `due_ts`、`due_date`、`suspended`、`suspended_reason` 列
+- `fn_trial_to_card_state()` — TrialLog INSERT 自动 UPSERT sync_card_states，前端不再直接写
+
+**后期修复**
+- `_writeSrs` 更新 `first_pass/hard/fail_today`，单设备统计页评级不再为 0
+- `openSrsDb` promise 缓存防并发两次 `indexedDB.open`
+- `syncCardStatesFromCloud` 去掉 device_id 过滤，兼容双 Tab
+- `cloudPushConfig` 用 `_cloudUserId` 替代 `getSession()`
+
 ---
 
 ### v4.8 — 2026-05-05
