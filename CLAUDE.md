@@ -80,8 +80,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v4.4_test.js` | v4.4 utility tests (98 cases) |
 | `tests/yihai_v4.8_test.js` | v4.8 utility tests (46 cases) |
 | `tests/yihai_v4.9_test.js` | v4.9 config merge tests (48 cases) |
-| `tests/_playwright_test.js` | Playwright 单机版回归测试（18 断言） |
+| `tests/_playwright_test.js` | Playwright 单机版回归测试（22 断言） |
 | `tests/_playwright_cloud_test.js` | Playwright 网络版回归测试（17 断言） |
+| `tests/_playwright_cross_device_sync_test.js` | Playwright 跨设备同步回归测试（21 断言） |
 | `tests/test_data/` | Test .yhspack files |
 
 ### 文档
@@ -124,9 +125,10 @@ node tests/yihai_v4.9_test.js
 # python -m http.server 8080 --directory /c/code
 node tests/_playwright_test.js
 node tests/_playwright_cloud_test.js
+TEST_PASSWORD=xxx node tests/_playwright_cross_device_sync_test.js
 ```
 
-All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, v4.9 48, Playwright 18/17 (单机/网络).
+All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, v4.9 48, Playwright 22/17/21 (单机/网络/跨设备).
 
 ## SRS Architecture
 

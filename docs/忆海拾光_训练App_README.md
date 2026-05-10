@@ -168,6 +168,12 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 **回归测试**
 - 新增 `_playwright_cloud_test.js`（17 断言，含多设备同步测试）
+- 新增 `_playwright_cross_device_sync_test.js`（21 断言，跨设备状态覆写回归）
+
+**Bug 修复（2026-05-10）**
+- `_launch` 进入练习屏前先调 `syncCardStatesFromCloud` 拉取云端状态，修复新设备 IndexedDB 为空时 `buildSessionQueue` 创建 new 状态并通过 `saveCardState`→`syncCardState` 实时上传，覆盖其他设备已练习的正确 CardState
+- `buildSessionQueue` 自动建卡改用 `saveCardStateLocal`（仅写本地），避免临时 new 状态与用户答题后的正确状态产生异步竞争覆盖
+- `syncAll` step3 跨设备今日进度同步的 `trial_date` 查询改用 `utcTodayStr()`（UTC 日期），对齐 PostgreSQL `to_timestamp()::date` 生成列的 UTC 时区，修复中国时区凌晨时段 `daily_progress` 跨设备同步失效
 
 **设备信息采集**
 - `sync_trials` 新增 `device_info` jsonb 字段，记录浏览器 UA、屏幕分辨率、语言设置
