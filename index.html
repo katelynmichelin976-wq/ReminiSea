@@ -1631,6 +1631,7 @@ const EVT_STORE      = 'app_events';
 const CSL_STORE      = 'card_state_log';
 
 let _srsDb = null;
+let _srsDbPromise = null;
 
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
@@ -1862,10 +1863,9 @@ async function syncCardStatesFromCloud(deckKey) {
     if (error) throw error;
     if (!data || !data.length) return 0;
 
-    // 按 state_key 分组去重，取每条最新记录（排除本设备）
+    // 按 state_key 分组去重，取每条最新记录
     const cloudMap = {};
     for (const row of data) {
-      if (row.device_id === _deviceId) continue;
       const prev = cloudMap[row.state_key];
       if (!prev || row.updated_at > prev.updated_at) {
         cloudMap[row.state_key] = row;
@@ -2004,7 +2004,7 @@ async function cloudPushConfig() {
     const mergedUi  = { ...(cloudCfg?.ui  || {}), ...localUi  };
 
     const { error } = await _sb.from('sync_config').upsert({
-      user_id: (await _sb.auth.getSession()).data.session?.user?.id,
+      user_id: _cloudUserId,
       config_json: { srs: mergedSrs, ui: mergedUi },
       updated_at: Date.now(),
     }, { onConflict: 'user_id' });
@@ -2255,7 +2255,8 @@ function backfillAfterPractice(deckKey) {
 
 function openSrsDb() {
   if (_srsDb) return Promise.resolve(_srsDb);
-  return new Promise((res, rej) => {
+  if (_srsDbPromise) return _srsDbPromise;
+  _srsDbPromise = new Promise((res, rej) => {
     const req = indexedDB.open(SRS_DB_NAME, SRS_DB_VER);
     req.onupgradeneeded = e => {
       const db = e.target.result;
@@ -2277,8 +2278,8 @@ function openSrsDb() {
         db.createObjectStore(CSL_STORE, { keyPath: 'log_id' });
       }
     };
-    req.onsuccess = e => { _srsDb = e.target.result; res(_srsDb); };
-    req.onerror   = e => rej(e.target.error);
+    req.onsuccess = e => { _srsDb = e.target.result; _srsDbPromise = null; res(_srsDb); };
+    req.onerror   = e => { _srsDbPromise = null; rej(e.target.error); };
   });
 }
 
