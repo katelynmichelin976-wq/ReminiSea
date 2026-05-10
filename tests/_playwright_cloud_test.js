@@ -13,9 +13,9 @@ const { chromium } = require('playwright');
 const CFG = { url: 'http://localhost:8080/yihai_v4.9.html?v=' + Date.now() };
 const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
-const TEST_DECK_NAME = '网络版';            // simpleHash = 01edbdfd
+const TEST_DECK_NAME = '蔬菜水果';            // 原名网络版，hash 不变 01edbdfd
 const CLOUD_DECK_KEY = 'cloud_01edbdfd';
-const CARD_COUNT = 16;
+const CARD_COUNT = 33;
 
 let passed = 0, failed = 0, errors = [];
 const pass = (l, v) => { if (v) { passed++; console.log(`  ✓ ${l}`); } else { failed++; errors.push(`✗ ${l}`); console.log(`  ✗ ${l}`); } };
@@ -95,11 +95,23 @@ const SETTINGS_SEL = '[aria-label="设置"]';
     });
     await wait(page, 300);
 
-    // 触发同步下载
-    await run(page, () => {
-      syncAll(currentDeck, false).catch(e => console.warn('[test] syncAll:', e.message));
-    });
-    await wait(page, 8000);
+    // 下载云端牌组
+    await run(page, async (name) => {
+      try {
+        const { data: decks, error } = await _sb.from('server_decks').select('id,name').order('name');
+        if (error || !decks) return;
+        const sd = decks.find(function(d) { return d.name === name; });
+        if (sd) {
+          const existing = DECKS_META.find(function(m) { return m.name === sd.name; });
+          if (existing) {
+            await syncDeckFromCloud(sd.id, sd.name);
+          } else {
+            await downloadDeckFromCloud(sd.id, sd.name);
+          }
+        }
+      } catch(e) { console.warn('[test] deck sync error:', e.message); }
+    }, TEST_DECK_NAME);
+    await wait(page, 10000);
 
     // 等待牌组出现在首页
     let deckFound = false;
@@ -172,7 +184,7 @@ const SETTINGS_SEL = '[aria-label="设置"]';
       const btns = document.querySelectorAll('button');
       for (const b of btns) { if (b.textContent.includes('开始练习')) { b.click(); return; } }
     });
-    await wait(page, 1500);
+    await wait(page, 5000);
 
     pass('进入练习屏', await run(page, () =>
       document.getElementById('screen-quiz').classList.contains('active')));
