@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.9.8</title>
+<title>忆海拾光 v4.9.9</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -865,7 +865,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.9.8</span>
+        <span class="home-version">v4.9.9</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1636,7 +1636,7 @@ let _srsDbPromise = null;
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.9.8';
+const APP_VERSION = '4.9.9';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1742,16 +1742,44 @@ async function doCloudLogin() {
 }
 
 async function doCloudLogout() {
+  var prevUserId = _cloudUserId;
   logAppEvent('logout', {});
   try {
     if (_sb) await _sb.auth.signOut();
   } catch(e) { console.warn('[sync] signOut error:', e.message); }
   _syncEnabled = false;
   _cloudUserEmail = '';
+  _cloudUserId = '';
   _sb = null;
+
+  // 清除当前用户的云端本地缓存，防止切换用户后数据混淆
+  if (prevUserId) {
+    // 清除云同步时间戳
+    localStorage.removeItem('yihai_global_sync_ts');
+    // 清除云牌组
+    var keepDecks = {}, keepMeta = [];
+    for (var i = 0; i < DECKS_META.length; i++) {
+      var m = DECKS_META[i];
+      if (m.source === 'cloud') { delete DECKS[m.key]; }
+      else { keepDecks[m.key] = DECKS[m.key]; keepMeta.push(m); }
+    }
+    DECKS_META = keepMeta;
+    saveDeckIndex();
+    // 清除 IndexedDB 中的 CardState 和 TrialLog
+    try {
+      var db = await openSrsDb();
+      var tx1 = db.transaction(CS_STORE, 'readwrite');
+      tx1.objectStore(CS_STORE).clear();
+      var tx2 = db.transaction(TRIAL_STORE, 'readwrite');
+      tx2.objectStore(TRIAL_STORE).clear();
+    } catch(e) { console.warn('[sync] logout cleanup:', e.message); }
+    renderDeckList();
+    updateDeckStats();
+  }
+
   updateCloudTabUI();
   // 清空云端牌组列表
-  const listEl = document.getElementById('cloud-deck-list');
+  var listEl = document.getElementById('cloud-deck-list');
   if (listEl) listEl.innerHTML = '<span style="color:var(--text3)">请先登录</span>';
 }
 

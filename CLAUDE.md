@@ -156,6 +156,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | v4.9.6 | updateDeckStats 占用符覆盖 | initUI await updateDeckStats；轻量同步不调 renderDeckList |
 | v4.9.7 | IndexedDB 首次打开空 | getAllCardStates 空值保护 + updateDeckStats catch 写0 |
 | v4.9.8 | 去除冗余网络请求 | checkSyncNeeded=false 不再拉 syncCardStatesFromCloud |
+| v4.9.9 | 退出登录清除本地数据 | doCloudLogout 清 _cloudUserId + 云牌组 + IndexedDB，防切换用户混淆 |
 
 ### 关键行为变更
 
@@ -185,9 +186,10 @@ node tests/_playwright_test.js
 node tests/_playwright_cloud_test.js
 TEST_PASSWORD=xxx node tests/_playwright_cross_device_sync_test.js
 TEST_PASSWORD=xxx node tests/_playwright_session_restore_test.js
+TEST_PASSWORD=xxx node tests/_playwright_user_switch_test.js
 ```
 
-All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, v4.9 48, Playwright 22/17/21/8 (单机/网络/跨设备/登录恢复).
+All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, v4.9 48, Playwright 22/17/21/8/8 (单机/网络/跨设备/登录恢复/用户切换).
 
 ## SRS Architecture
 
