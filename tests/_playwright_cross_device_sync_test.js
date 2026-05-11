@@ -492,28 +492,50 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     console.log(`  通过: ${passed}  失败: ${failed}  总耗时: ${((ts()-tStart)/1000).toFixed(1)}s`);
     if (failed > 0) console.log(`  失败: ${errors.join(' | ')}`);
 
-    // ═══════════════════ 清理 ═══════════════════
-    const pClean = ts();
-    section('清理');
-    try {
-      // 用 pageA 清理（登录态仍在）
-      const cleanR = await run(pageA, async ({ uid, dk, oldKey }) => {
+  } catch (err) {
+    console.error('\nFATAL:', err.message);
+  }
+
+  // 清理测试数据（无论成功失败）
+  try {
+    const loginPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await loginPage.goto(pageUrl(), { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await loginPage.waitForTimeout(1000);
+    await loginPage.click('[aria-label="设置"]');
+    await loginPage.waitForTimeout(200);
+    await loginPage.evaluate(() => {
+      const tabs = document.querySelectorAll('.sheet-tab');
+      for (const t of tabs) { if (t.textContent.includes('云端')) { t.click(); return; } }
+    });
+    await loginPage.waitForTimeout(200);
+    await loginPage.fill('#cloud-email', TEST_EMAIL);
+    await loginPage.fill('#cloud-password', TEST_PASSWORD);
+    await loginPage.evaluate(() => { document.getElementById('cloud-login-btn').click(); });
+    // 等登录
+    for (let i = 0; i < 20; i++) {
+      const ok = await loginPage.evaluate(() => {
+        const s = document.getElementById('cloud-connected-section');
+        return s && window.getComputedStyle(s).display !== 'none';
+      });
+      if (ok) break;
+      await loginPage.waitForTimeout(500);
+    }
+    const uid = await loginPage.evaluate(() => _cloudUserId);
+    if (uid) {
+      const { data } = await loginPage.evaluate(async ({ uid, dk, oldKey }) => {
         for (const d of [dk, oldKey]) {
           await _sb.from('sync_trials').delete().eq('user_id', uid).eq('deck_key', d);
           await _sb.from('sync_card_states').delete().eq('user_id', uid).eq('deck_key', d);
         }
         await _sb.from('server_deck_cards').delete().eq('deck_id', dk);
         await _sb.from('server_decks').delete().eq('id', dk);
-        await saveSrsConfigKey('learning_steps', [1, 10]);
-        return 'OK';
-      }, { uid: await run(pageA, () => _cloudUserId), dk: TEST_DECK_ID, oldKey: OLD_DECK_KEY });
-      console.log(`  清理: ${cleanR}`);
-    } catch(e) { console.warn('  清理出错:', e.message); }
-    console.log(`  清理耗时: ${((ts()-pClean)/1000).toFixed(1)}s`);
-
-  } catch (err) {
-    console.error('\nFATAL:', err.message);
-  }
+        await _sb.from('cards_pool').delete().eq('deck_name', '__test_xdev__');
+        return 'ok';
+      }, { uid, dk: TEST_DECK_ID, oldKey: OLD_DECK_KEY });
+    }
+    await loginPage.close();
+    console.log('  测试数据已清理');
+  } catch(e) { console.warn('  清理出错:', e.message); }
 
   if (pageB) { await pageB.close(); }
   if (ctxB) { await ctxB.close(); }
