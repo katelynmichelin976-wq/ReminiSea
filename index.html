@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.9.13</title>
+<title>忆海拾光 v4.9.14</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -865,7 +865,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.9.13</span>
+        <span class="home-version">v4.9.14</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1636,7 +1636,7 @@ let _srsDbPromise = null;
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.9.13';
+const APP_VERSION = '4.9.14';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -2163,7 +2163,7 @@ async function syncAll(deckKey, showToast, noDecks) {
   logAppEvent('sync_started', { deck_key: deckKey, noDecks: !!noDecks }, deckKey);
   var syncStats = { trials: 0, events: 0, csl: 0, states: 0, states_merged: 0, config: 0, decks: 0 };
   try {
-    const totalSteps = noDecks ? 6 : 7;
+    const totalSteps = noDecks ? 7 : 8;
 
     // 1. 上传答题记录
     showSyncProg(1, totalSteps, '正在上传练习记录...');
@@ -2234,8 +2234,24 @@ async function syncAll(deckKey, showToast, noDecks) {
       saveDailyProgress(cp);
     }
 
+    // 5.5 拉取用户牌组练习天数
+    showSyncProg(6, totalSteps, '正在同步练习天数...');
+    try {
+      const { data: deckStats } = await _sb.from('user_deck_stats')
+        .select('deck_key, practice_days, last_practice_date')
+        .eq('user_id', _cloudUserId);
+      if (deckStats) {
+        localStorage.setItem('yihai_practice_days', JSON.stringify(deckStats));
+        // 写入对应 DECKS_META 的 practiceDays
+        for (const ds of deckStats) {
+          const m = DECKS_META.find(d => d.key === ds.deck_key);
+          if (m) m.practiceDays = ds.practice_days;
+        }
+      }
+    } catch(e) { console.warn('[sync] practice days fetch error:', e.message); }
+
     // 6. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
-    showSyncProg(6, totalSteps, '正在同步配置...');
+    showSyncProg(8, totalSteps, '正在同步配置...');
     const cfgItems = await cloudPullConfig();
     syncStats.config = cfgItems;
     await cloudPushConfig();
@@ -2243,7 +2259,7 @@ async function syncAll(deckKey, showToast, noDecks) {
     // 7. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
     let newDecks = 0, syncedDecks = 0;
     if (!noDecks) {
-      showSyncProg(7, totalSteps, '正在同步牌组...');
+      showSyncProg(9, totalSteps, '正在同步牌组...');
       const { data: serverDecks } = await _sb.from('server_decks').select('id,name');
       if (serverDecks) {
         for (const sd of serverDecks) {
@@ -3165,6 +3181,17 @@ async function restoreDecks() {
   if (!DECKS_META.find(m => m.key === BUILTIN_KEY)) {
     DECKS_META.push({ key: BUILTIN_KEY, name: '测试牌组', builtin: true, source: 'builtin' });
   }
+  // 恢复云端练习天数缓存
+  try {
+    var raw = localStorage.getItem('yihai_practice_days');
+    if (raw) {
+      var allStats = JSON.parse(raw);
+      for (var i = 0; i < allStats.length; i++) {
+        var m = DECKS_META.find(function(d) { return d.key === allStats[i].deck_key; });
+        if (m) m.practiceDays = allStats[i].practice_days;
+      }
+    }
+  } catch(e) {}
 }
 
 // ── .yhspack 导入 ────────────────────────────────────────────────
@@ -5242,28 +5269,29 @@ async function renderStatsDeck() {
   const newC = Math.max(0, total - (newState + learning + review + relearning + sus));
   const mastered = states.filter(s => s.srs_stage === 'review' && s.interval >= SRS_CONFIG.maximum_interval && !s.suspended).length;
 
-  // 练习天数（合并本地+云端）
-  const trials7 = await getTrialLogs(key, 90);
-  const daysSet = new Set(trials7.map(t => {
-    const d = new Date(t.timestamp);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }));
-  if (_syncEnabled && _sb && _cloudUserId) {
-    try {
-      const { data: cloudTrials } = await _sb.from('sync_trials')
-        .select('timestamp')
-        .eq('user_id', _cloudUserId)
-        .eq('deck_key', key)
-        .gte('timestamp', Date.now() - 90 * 86400000);
-      if (cloudTrials) {
-        cloudTrials.forEach(t => {
-          const d = new Date(t.timestamp);
-          daysSet.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
-        });
-      }
-    } catch (e) { console.warn('[stats] cloud practice days fetch error:', e.message); }
+  // 练习天数 = 云端已计天数 + 本地未同步部分
+  var practiceDays = 0;
+  var cloudDays = 0, cloudLastDate = '';
+  try {
+    var raw = localStorage.getItem('yihai_practice_days');
+    if (raw) {
+      var allStats = JSON.parse(raw);
+      var ds = allStats.find(function(d) { return d.deck_key === key; });
+      if (ds) { cloudDays = ds.practice_days || 0; cloudLastDate = ds.last_practice_date || ''; }
+    }
+  } catch(e) {}
+  practiceDays = cloudDays;
+  // 补充本地未同步的新增天数
+  if (cloudLastDate) {
+    var localTrials = await getTrialLogs(key, 90);
+    var extraDays = new Set();
+    localTrials.forEach(function(t) {
+      var d = new Date(t.timestamp);
+      var ds2 = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      if (ds2 > cloudLastDate) extraDays.add(ds2);
+    });
+    practiceDays += extraDays.size;
   }
-  const practiceDays = daysSet.size;
 
   document.getElementById('st-deck-overview').innerHTML = `
     <div class="deck-overview-grid">
