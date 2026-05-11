@@ -108,6 +108,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `supabase/functions/` | Edge Functions (8 functions for admin API) |
 | `archive/` | Previous versions (v4.3–v4.8) |
 
+## v5.0 Plan（2026-05-10 更新）
+
+**从 PWA → uni-app + 腾讯云 CloudBase 迁移。** 一套代码出微信小程序 + H5。
+
+| 决策 | 结论 | 理由 |
+|------|------|------|
+| 框架 | uni-app (Vue) | AI 开发效率高，与现有 HTML/CSS 思维一致，多端编译 |
+| 后端 | 腾讯云 CloudBase | 国内节点合规，原生 SDK 直连数据库，微信生态打通 |
+| 登录 | 微信 `wx.login` | 免密一键登录，个人主体可用，免费 |
+| 小程序主体 | 个人 | 无支付/web-view 需求，类目选"教育-在线教育" |
+| 独立 App | 暂缓 | 需 ICP 备案 + 医疗器械资质风险，待小程序验证后评估 |
+
+**预估总工时：12-17 天。** 现有 SRS 纯逻辑（processAnswer 等 ~300 行）直接复用。完整方案见 `docs/忆海拾光_v5.0_腾讯云迁移设计方案.md`。
+
+### Key Changes (planning)
+
+- **Storage 层**：IndexedDB → 微信文件系统 + CloudBase 文档数据库
+- **TTS**：speechSynthesis → 微信 TTS 插件（语速/音调控制受限，需评估）
+- **Audio**：Audio + AudioContext → InnerAudioContext（tone 改预录制文件）
+- **Supabase SDK** → CloudBase 原生 SDK（网络请求无需适配层）
+- **用户标识**：邮箱 → openid（微信 `wx.login` 自动获取）
+- **牌组管理**：deck_manager_v1 废弃，功能内化到训练 App
+- **H5 保留**：uni-app 编译到 H5，现有 PWA 用户无缝过渡
+
 ## v4.9.1 Key Changes
 
 - **白屏修复**: Supabase CDN 改为 JS 动态加载（`loadSupabaseSDK()`），UI 初始化不再等待 CDN
