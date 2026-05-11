@@ -163,6 +163,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | v4.9.10 | IndexedDB clear() 未 await | 事务异步提交，数据实际未删除，改为 Promise 包裹 |
 | v4.9.11 | 消除 logAppEvent 409 竞态 | Network 面板追踪：logAppEvent 立即上传后 markEventSynced 异步，syncAppEvents 读到未同步标记重复上传 |
 | v4.9.12 | 登录后云牌组 CardState 缺失 | syncAll step 2 只用旧 currentDeck，云牌组下载后没拉状态。step 7 补拉所有云牌组 CardState |
+| v4.9.13 | 卡片列表无 CardState 的卡不可见 | _statsAllStates 补充无 CardState 卡（视为待开始），全部/待开始筛选均可见 |
+| v4.9.14 | 练习天数改用 DB trigger | user_deck_stats 表 + trigger 自动计数，syncAll step 5.5 拉取，统计页零延迟 |
+
+### 服务端变更（v4.9.14）
+
+- **user_deck_stats**：新建表，`(user_id, deck_key)` 唯一，记录 practice_days + last_practice_date
+- **trg_update_practice_days**：sync_trials INSERT → 同天不重复计数，自动维护统计
 
 ### 关键行为变更
 
@@ -170,6 +177,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **initUI 中 updateDeckStats 加 await**：避免异步结果被后续渲染覆盖
 - **needsSync=false 路径**：不产生任何网络请求，信任本地数据 + initUI 已渲染
 - **syncAll step 7 拉全部云牌组 CardState**：不影响练习自动同步（noDecks=true），仅登录/手动同步时生效
+- **练习天数 = 缓存值 + 本地未同步新增**：不再查云端 90 天，统计页零延迟且始终准确
 
 ## Development Commands
 
