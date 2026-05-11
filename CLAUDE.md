@@ -157,13 +157,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | v4.9.7 | IndexedDB 首次打开空 | getAllCardStates 空值保护 + updateDeckStats catch 写0 |
 | v4.9.8 | 去除冗余网络请求 | checkSyncNeeded=false 不再拉 syncCardStatesFromCloud |
 | v4.9.9 | 退出登录清除本地数据 | doCloudLogout 清 _cloudUserId + 云牌组 + IndexedDB，防切换用户混淆 |
+| v4.9.10 | IndexedDB clear() 未 await | 事务异步提交，数据实际未删除，改为 Promise 包裹 |
+| v4.9.11 | 消除 logAppEvent 409 竞态 | Network 面板追踪：logAppEvent 立即上传后 markEventSynced 异步，syncAppEvents 读到未同步标记重复上传 |
+| v4.9.12 | 登录后云牌组 CardState 缺失 | syncAll step 2 只用旧 currentDeck，云牌组下载后没拉状态。step 7 补拉所有云牌组 CardState |
 
 ### 关键行为变更
 
 - **initCloud 调用时机**：`_tryInitCloud()` 每 200ms 轮询 `typeof supabase`，就绪后执行，最多等 10s
 - **initUI 中 updateDeckStats 加 await**：避免异步结果被后续渲染覆盖
 - **needsSync=false 路径**：不产生任何网络请求，信任本地数据 + initUI 已渲染
-- **syncAll 仍从 doCloudLogin 触发**：登录后走完整同步（含牌组下载）
+- **syncAll step 7 拉全部云牌组 CardState**：不影响练习自动同步（noDecks=true），仅登录/手动同步时生效
 
 ## Development Commands
 
