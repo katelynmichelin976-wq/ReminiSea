@@ -84,7 +84,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_playwright_test.js` | Playwright 单机版回归测试（22 断言） |
 | `tests/_playwright_cloud_test.js` | Playwright 网络版回归测试（17 断言） |
 | `tests/_playwright_cross_device_sync_test.js` | Playwright 跨设备同步回归测试（21 断言） |
-| `tests/_playwright_v4.9.1_regression_test.js` | v4.9.1 回归测试（21 断言：白屏/到期上限/finish计数/TrialLog字段/统计页） |
+| `tests/_playwright_session_restore_test.js` | Playwright 登录恢复测试（8 断言） |
+| `tests/_playwright_user_switch_test.js` | Playwright 用户切换数据隔离测试（8 断言） |
+| `tests/_playwright_v4.9.1_regression_test.js` | v4.9.1 回归测试（21 断言） |
 | `tests/test_data/` | Test .yhspack files |
 
 ### 文档
@@ -96,6 +98,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `docs/忆海拾光_训练App发布检查清单.md` | Release checklist |
 | `docs/yihai_开发问答.md` | Development Q&A |
 | `docs/yihai_实现说明.md` | Implementation manual |
+| `docs/忆海拾光_网络版实现说明_v4.9.md` | Cloud sync architecture doc (v4.9.12) |
 | `docs/忆海拾光_v5.0_腾讯云迁移设计方案.md` | v5.0 migration plan |
 
 ### 基础设施
