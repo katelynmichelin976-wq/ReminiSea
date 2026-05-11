@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.9.10</title>
+<title>忆海拾光 v4.9.11</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -865,7 +865,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.9.10</span>
+        <span class="home-version">v4.9.11</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1636,7 +1636,7 @@ let _srsDbPromise = null;
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.9.10';
+const APP_VERSION = '4.9.11';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1754,33 +1754,59 @@ async function doCloudLogout() {
 
   // 清除当前用户的云端本地缓存，防止切换用户后数据混淆
   if (prevUserId) {
+    // 记录要移除的云牌组 key
+    var cloudKeys = [];
+    for (var i = 0; i < DECKS_META.length; i++) {
+      if (DECKS_META[i].source === 'cloud') cloudKeys.push(DECKS_META[i].key);
+    }
     // 清除云同步时间戳
     localStorage.removeItem('yihai_global_sync_ts');
-    // 清除云牌组
-    var keepDecks = {}, keepMeta = [];
-    for (var i = 0; i < DECKS_META.length; i++) {
-      var m = DECKS_META[i];
-      if (m.source === 'cloud') { delete DECKS[m.key]; }
-      else { keepDecks[m.key] = DECKS[m.key]; keepMeta.push(m); }
+    // 清除云牌组（保留本地导入的牌组）
+    var keepMeta = [];
+    for (var i2 = 0; i2 < DECKS_META.length; i2++) {
+      var m2 = DECKS_META[i2];
+      if (m2.source === 'cloud') { delete DECKS[m2.key]; }
+      else keepMeta.push(m2);
     }
     DECKS_META = keepMeta;
     saveDeckIndex();
-    // 清除 IndexedDB 中的 CardState 和 TrialLog
-    try {
-      var db = await openSrsDb();
-      await new Promise(function(res, rej) {
-        var tx = db.transaction(CS_STORE, 'readwrite');
-        tx.objectStore(CS_STORE).clear();
-        tx.oncomplete = res;
-        tx.onerror = function() { rej(tx.error); };
-      });
-      await new Promise(function(res, rej) {
-        var tx = db.transaction(TRIAL_STORE, 'readwrite');
-        tx.objectStore(TRIAL_STORE).clear();
-        tx.oncomplete = res;
-        tx.onerror = function() { rej(tx.error); };
-      });
-    } catch(e) { console.warn('[sync] logout cleanup:', e.message); }
+    // 仅清除云牌组的 CardState 和 TrialLog，保留本地牌组数据
+    if (cloudKeys.length > 0) {
+      try {
+        var db = await openSrsDb();
+        // 清除云牌组的 card_states
+        await new Promise(function(res, rej) {
+          var tx = db.transaction(CS_STORE, 'readwrite');
+          var store = tx.objectStore(CS_STORE);
+          var req = store.getAll();
+          req.onsuccess = function() {
+            var toDelete = [];
+            var all = req.result || [];
+            for (var j = 0; j < all.length; j++) {
+              if (cloudKeys.indexOf(all[j].deck_key) >= 0) toDelete.push(all[j].state_key);
+            }
+            for (var k = 0; k < toDelete.length; k++) { store.delete(toDelete[k]); }
+          };
+          tx.oncomplete = res;
+          tx.onerror = function() { rej(tx.error); };
+        });
+        // 清除云牌组的 trials
+        await new Promise(function(res, rej) {
+          var tx2 = db.transaction(TRIAL_STORE, 'readwrite');
+          var store2 = tx2.objectStore(TRIAL_STORE);
+          var req2 = store2.index('deck_key').getAll();
+          req2.onsuccess = function() {
+            var all2 = req2.result || [];
+            // 删除 deck_key 属于云牌组的 trials（TrialLog 主键是 trial_id）
+            for (var j2 = 0; j2 < all2.length; j2++) {
+              if (cloudKeys.indexOf(all2[j2].deck_key) >= 0) store2.delete(all2[j2].trial_id);
+            }
+          };
+          tx2.oncomplete = res;
+          tx2.onerror = function() { rej(tx2.error); };
+        });
+      } catch(e) { console.warn('[sync] logout cleanup:', e.message); }
+    }
     renderDeckList();
     updateDeckStats();
   }
