@@ -145,6 +145,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **每日评级计数**: `_writeSrs` 更新 `first_pass/hard/fail_today`，单设备用户统计页评级不再永远是 0
 - **Code review 修复**: `openSrsDb` promise 缓存防并发；`syncCardStatesFromCloud` 去掉 device_id 过滤兼容双 Tab；`cloudPushConfig` 用 `_cloudUserId` 替代 getSession
 
+## v4.9.2–v4.9.8 修复（2026-05-11）
+
+| 版本 | 修复项 | 说明 |
+|------|--------|------|
+| v4.9.2 | syncTrialLog 漏字段 | INSERT 补 due_ts/due_date/suspended/suspended_reason |
+| v4.9.3 | 统计总卡片数 | total 改用 DECKS[deckKey].length，跨设备一致 |
+| v4.9.4 | 刷新后登录恢复 | SDK defer 晚于 inline → 轮询就绪后再 initCloud |
+| v4.9.5 | 登录恢复 + 统计刷新 | SDK 就绪轮询 + checkSyncNeeded=false 也刷新统计 |
+| v4.9.6 | updateDeckStats 占用符覆盖 | initUI await updateDeckStats；轻量同步不调 renderDeckList |
+| v4.9.7 | IndexedDB 首次打开空 | getAllCardStates 空值保护 + updateDeckStats catch 写0 |
+| v4.9.8 | 去除冗余网络请求 | checkSyncNeeded=false 不再拉 syncCardStatesFromCloud |
+
+### 关键行为变更
+
+- **initCloud 调用时机**：`_tryInitCloud()` 每 200ms 轮询 `typeof supabase`，就绪后执行，最多等 10s
+- **initUI 中 updateDeckStats 加 await**：避免异步结果被后续渲染覆盖
+- **needsSync=false 路径**：不产生任何网络请求，信任本地数据 + initUI 已渲染
+- **syncAll 仍从 doCloudLogin 触发**：登录后走完整同步（含牌组下载）
+
 ## Development Commands
 
 ```bash
@@ -165,9 +184,10 @@ node tests/yihai_v4.9_test.js
 node tests/_playwright_test.js
 node tests/_playwright_cloud_test.js
 TEST_PASSWORD=xxx node tests/_playwright_cross_device_sync_test.js
+TEST_PASSWORD=xxx node tests/_playwright_session_restore_test.js
 ```
 
-All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, v4.9 48, Playwright 22/17/21 (单机/网络/跨设备).
+All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, v4.9 48, Playwright 22/17/21/8 (单机/网络/跨设备/登录恢复).
 
 ## SRS Architecture
 
@@ -202,6 +222,7 @@ review → again → relearning
 5. **SRS write race guard** — `_lastSrsWrite` promise chain; `goHome()`/`openStats()` must `await _lastSrsWrite` before reading.
 6. **sessionId** — increments on each `_launch`/`goHome` to break cross-page async speech chains.
 7. **warmupSpeech()** — must be called within user gesture on iOS (unlocks TTS + Audio simultaneously).
+8. **浏览器端改动必须先写 Playwright 测试复现再改代码** — 历史教训：Node.js 单测覆盖不到浏览器时序（DOM 渲染、SDK 异步加载、Service Worker）。直接改代码 → 测试全绿 → 用户一用就崩。流程：写测试复现 bug（预期失败）→ 改代码 → 测试通过 → 跑全部回归 → 提交。
 8. **Release prep** — remove test toolbar (`🗑 重置牌组`, `⏭ +1天`) and debug lines (`iv=X ef=X...`) before release.
 9. **Supabase cloud sync** — all Supabase calls wrapped in try/catch, fire-and-forget. `_syncEnabled` gates all sync; false = offline mode.
 10. **Cloud login** — Supabase SDK persists session in localStorage. `restoreCloudSession()` on startup, `updateCloudTabUI()` toggles login/deck-list UI.
