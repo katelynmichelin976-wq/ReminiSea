@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.9.9</title>
+<title>忆海拾光 v4.9.12</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -865,7 +865,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.9.9</span>
+        <span class="home-version">v4.9.12</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1636,7 +1636,7 @@ let _srsDbPromise = null;
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.9.9';
+const APP_VERSION = '4.9.12';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1768,10 +1768,18 @@ async function doCloudLogout() {
     // 清除 IndexedDB 中的 CardState 和 TrialLog
     try {
       var db = await openSrsDb();
-      var tx1 = db.transaction(CS_STORE, 'readwrite');
-      tx1.objectStore(CS_STORE).clear();
-      var tx2 = db.transaction(TRIAL_STORE, 'readwrite');
-      tx2.objectStore(TRIAL_STORE).clear();
+      await new Promise(function(res, rej) {
+        var tx = db.transaction(CS_STORE, 'readwrite');
+        tx.objectStore(CS_STORE).clear();
+        tx.oncomplete = res;
+        tx.onerror = function() { rej(tx.error); };
+      });
+      await new Promise(function(res, rej) {
+        var tx = db.transaction(TRIAL_STORE, 'readwrite');
+        tx.objectStore(TRIAL_STORE).clear();
+        tx.oncomplete = res;
+        tx.onerror = function() { rej(tx.error); };
+      });
     } catch(e) { console.warn('[sync] logout cleanup:', e.message); }
     renderDeckList();
     updateDeckStats();
@@ -2250,6 +2258,15 @@ async function syncAll(deckKey, showToast, noDecks) {
             }
           } catch(e) { console.warn('[sync] skip deck:', sd.name, e.message); }
         }
+        // 下载/同步牌组后拉取每个云牌组的 CardState
+        for (const sd of serverDecks) {
+          try {
+            var meta = DECKS_META.find(m => m.name === sd.name);
+            if (meta) { syncStats.states_merged += await syncCardStatesFromCloud(meta.key); }
+          } catch(e) {}
+        }
+        renderDeckList();
+        updateDeckStats();
       }
       await refreshServerDeckList();
     }
@@ -2330,8 +2347,8 @@ function logAppEvent(type, payload, deckKey) {
     timestamp: Date.now(),
     synced_at: null
   };
+  // 仅写入 IndexedDB，不立即上传（避免与 syncAppEvents 竞态产生 409）
   if (!isMember()) {
-    // 非会员：上限 50 条
     openSrsDb().then(function(db) {
       var tx = db.transaction(EVT_STORE, 'readwrite');
       tx.objectStore(EVT_STORE).put(event);
@@ -2342,7 +2359,6 @@ function logAppEvent(type, payload, deckKey) {
   openSrsDb().then(function(db) {
     db.transaction(EVT_STORE, 'readwrite').objectStore(EVT_STORE).put(event);
   }).catch(function(){});
-  uploadAppEvent(event);
 }
 
 function logCardStateChange(changeType, before, after) {
@@ -2385,7 +2401,8 @@ async function uploadAppEvent(event) {
   try {
     var payload = { event_id: event.event_id, user_id: _cloudUserId, event_type: event.event_type, deck_key: event.deck_key, payload: event.payload, device_id: event.device_id, timestamp: event.timestamp };
     var _a = await _sb.from('app_events').insert(payload);
-    if (!_a.error) { event.synced_at = Date.now(); markEventSynced(event.event_id); }
+    // 23505 = 记录已存在（logAppEvent 立即上传后 syncAppEvents 竞态重读导致）
+    if (!_a.error || _a.error.code === '23505') { event.synced_at = Date.now(); markEventSynced(event.event_id); }
   } catch(e) {}
 }
 
@@ -2394,7 +2411,7 @@ async function uploadCardStateLog(log) {
   try {
     var payload = { log_id: log.log_id, user_id: _cloudUserId, state_key: log.state_key, card_id: log.card_id, deck_key: log.deck_key, change_type: log.change_type, stage_before: log.stage_before, interval_before: log.interval_before, ease_before: log.ease_before, stage_after: log.stage_after, interval_after: log.interval_after, ease_after: log.ease_after, device_id: log.device_id, timestamp: log.timestamp };
     var _a = await _sb.from('card_state_log').insert(payload);
-    if (!_a.error) { log.synced_at = Date.now(); markCslSynced(log.log_id); }
+    if (!_a.error || _a.error.code === '23505') { log.synced_at = Date.now(); markCslSynced(log.log_id); }
   } catch(e) {}
 }
 
