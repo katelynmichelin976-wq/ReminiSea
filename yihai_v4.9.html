@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.9.13</title>
+<title>忆海拾光 v4.9.12</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -865,7 +865,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.9.13</span>
+        <span class="home-version">v4.9.12</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1636,7 +1636,7 @@ let _srsDbPromise = null;
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.9.13';
+const APP_VERSION = '4.9.12';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1674,7 +1674,7 @@ async function downloadMediaFromCDNorSupabase(path, mimeType) {
 // 启动时尝试恢复已有会话
 async function restoreCloudSession() {
   try {
-    if (!_sb) _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data, error } = await _sb.auth.getSession();
     if (error) throw error;
     if (data.session) {
@@ -1684,8 +1684,7 @@ async function restoreCloudSession() {
       _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     }
   } catch(e) {
-    // SDK 未就绪或无保存的 session，静默跳过
-    if (typeof supabase !== 'undefined' && !_sb) {
+    if (typeof supabase !== 'undefined') {
       _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
     console.warn('[sync] no saved session');
@@ -1720,7 +1719,7 @@ async function doCloudLogin() {
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '登录中...'; }
   if (msgEl) { msgEl.style.display = 'none'; }
   try {
-    if (!_sb) _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
     if (error) throw error;
     _syncEnabled = true;
@@ -2431,8 +2430,7 @@ async function uploadAppEvent(event) {
   try {
     var payload = { event_id: event.event_id, user_id: _cloudUserId, event_type: event.event_type, deck_key: event.deck_key, payload: event.payload, device_id: event.device_id, timestamp: event.timestamp };
     var _a = await _sb.from('app_events').insert(payload);
-    // 成功或已存在（唯一键冲突）均标记为已同步，避免无限重试产生 409
-    if (!_a.error || _a.error.code === '23505') { event.synced_at = Date.now(); markEventSynced(event.event_id); }
+    if (!_a.error) { event.synced_at = Date.now(); markEventSynced(event.event_id); }
   } catch(e) {}
 }
 
@@ -2441,7 +2439,7 @@ async function uploadCardStateLog(log) {
   try {
     var payload = { log_id: log.log_id, user_id: _cloudUserId, state_key: log.state_key, card_id: log.card_id, deck_key: log.deck_key, change_type: log.change_type, stage_before: log.stage_before, interval_before: log.interval_before, ease_before: log.ease_before, stage_after: log.stage_after, interval_after: log.interval_after, ease_after: log.ease_after, device_id: log.device_id, timestamp: log.timestamp };
     var _a = await _sb.from('card_state_log').insert(payload);
-    if (!_a.error || _a.error.code === '23505') { log.synced_at = Date.now(); markCslSynced(log.log_id); }
+    if (!_a.error) { log.synced_at = Date.now(); markCslSynced(log.log_id); }
   } catch(e) {}
 }
 
