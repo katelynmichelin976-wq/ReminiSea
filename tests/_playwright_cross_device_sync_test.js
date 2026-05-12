@@ -522,7 +522,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     }
     const uid = await loginPage.evaluate(() => _cloudUserId);
     if (uid) {
-      const { data } = await loginPage.evaluate(async ({ uid, dk, oldKey }) => {
+      await loginPage.evaluate(async ({ uid, dk, oldKey }) => {
         for (const d of [dk, oldKey]) {
           await _sb.from('sync_trials').delete().eq('user_id', uid).eq('deck_key', d);
           await _sb.from('sync_card_states').delete().eq('user_id', uid).eq('deck_key', d);
@@ -530,11 +530,18 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
         await _sb.from('server_deck_cards').delete().eq('deck_id', dk);
         await _sb.from('server_decks').delete().eq('id', dk);
         await _sb.from('cards_pool').delete().eq('deck_name', '__test_xdev__');
-        return 'ok';
       }, { uid, dk: TEST_DECK_ID, oldKey: OLD_DECK_KEY });
+      // 清理本地 localStorage（防止残留到同一 Profile 的下次运行）
+      await loginPage.evaluate((dk, oldKey) => {
+        localStorage.removeItem('yihai_deck_cloud_' + dk);
+        localStorage.removeItem('yihai_deck_' + oldKey);
+        const idx = JSON.parse(localStorage.getItem('yihai_decks_index') || '[]');
+        const filtered = idx.filter(m => m.key !== 'cloud_' + dk && m.key !== oldKey);
+        localStorage.setItem('yihai_decks_index', JSON.stringify(filtered));
+      }, TEST_DECK_ID, OLD_DECK_KEY);
     }
     await loginPage.close();
-    console.log('  测试数据已清理');
+    console.log('  测试数据已清理（云端 + 本地）');
   } catch(e) { console.warn('  清理出错:', e.message); }
 
   if (pageB) { await pageB.close(); }

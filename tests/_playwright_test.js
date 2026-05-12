@@ -300,6 +300,13 @@ function randRating() {
     // ═══════════════════ PHASE 5: 清理 ═══════════════════
     section('PHASE 5: 清理');
     await run(page, () => { if(window.__origToday)todayStr=window.__origToday; delete window.__fakeToday; delete window.__origToday; }).catch(() => {});
+    // 清理本地 localStorage 残留
+    await run(page, () => {
+      localStorage.removeItem('yihai_deck___test_import__');
+      const idx = JSON.parse(localStorage.getItem('yihai_decks_index') || '[]');
+      const filtered = idx.filter(m => m.key !== '__test_import__');
+      localStorage.setItem('yihai_decks_index', JSON.stringify(filtered));
+    }).catch(() => {});
 
     section('结果');
     console.log(`  通过: ${passed}  失败: ${failed}`);
