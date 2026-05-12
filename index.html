@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.9.15</title>
+<title>忆海拾光 v4.9.16</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -865,7 +865,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.9.15</span>
+        <span class="home-version">v4.9.16</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1616,6 +1616,14 @@ function addDays(dateStr, n) {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+function daysLate(dueDate, todayStr) {
+  if (!dueDate) return 0;
+  const due  = new Date(dueDate + 'T00:00:00');
+  const today = new Date(todayStr + 'T00:00:00');
+  const diffDays = Math.round((today - due) / 86400000);
+  return Math.max(0, diffDays);
 }
 
 function minsToTs(mins) {
@@ -2676,6 +2684,7 @@ function processAnswer(state, rating, todayDateStr) {
     }
 
   } else if (state.srs_stage === 'review') {
+    const days_late = daysLate(state.due_date, today);
     if (rating === 'again') {
       state.lapses_streak++;
       state.lapses_total++;
@@ -2704,7 +2713,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.lapses_streak = 0;
       state.interval = Math.max(
         cfg.minimum_interval,
-        Math.ceil(state.interval * state.ease_factor * cfg.interval_modifier)
+        Math.ceil((state.interval + days_late / 2) * state.ease_factor * cfg.interval_modifier)
       );
       state.interval = Math.min(state.interval, cfg.maximum_interval);
       state.due_date = addDays(today, state.interval);
@@ -2714,7 +2723,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.ease_factor = Math.min(3.0, state.ease_factor + 0.15);
       state.interval = Math.max(
         cfg.minimum_interval,
-        Math.ceil(state.interval * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)
+        Math.ceil((state.interval + days_late) * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)
       );
       state.interval = Math.min(state.interval, cfg.maximum_interval);
       state.due_date = addDays(today, state.interval);
