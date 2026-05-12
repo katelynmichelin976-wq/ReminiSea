@@ -188,12 +188,17 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;b
     <div style="text-align:center;padding:40px 0">
       <div id="login-icon" style="font-size:48px;margin-bottom:16px">☁️</div>
       <h2 style="font-size:18px;margin-bottom:8px" id="login-title">连接服务器</h2>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:24px" id="login-desc">正在自动登录...</p>
-      <div id="login-spinner" style="width:36px;height:36px;border:3px solid var(--warm);border-top-color:var(--accent);border-radius:50%;margin:0 auto;animation:spin .8s linear infinite"></div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px" id="login-desc">输入测试账号密码登录</p>
+      <div id="login-form" style="max-width:260px;margin:0 auto">
+        <input type="email" id="login-email" value="zyhacl@gmail.com" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:10px;box-sizing:border-box" readonly onclick="this.readOnly=false;this.focus()" title="点击可编辑">
+        <input type="password" id="login-pwd" placeholder="输入密码" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:16px;box-sizing:border-box" autofocus onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="btn primary" onclick="doLogin()" id="btn-login" style="width:100%">登录</button>
+      </div>
+      <div id="login-spinner" style="display:none;width:36px;height:36px;border:3px solid var(--warm);border-top-color:var(--accent);border-radius:50%;margin:24px auto;animation:spin .8s linear infinite"></div>
       <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
       <div id="login-error" style="display:none;margin-top:16px">
-        <p style="color:var(--red);font-size:13px;margin-bottom:12px">登录失败，请检查网络后重试</p>
-        <button class="btn primary" onclick="doLogin()">重新连接</button>
+        <p style="color:var(--red);font-size:13px;margin-bottom:12px">登录失败，请检查密码后重试</p>
+        <button class="btn primary" onclick="showLoginForm()">重试</button>
       </div>
     </div>
   </div>
@@ -284,7 +289,6 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;b
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
 const AUTH_EMAIL = 'zyhacl@gmail.com';
-const AUTH_PASSWORD = '667788';
 const STORAGE_BUCKET = 'ReminiSea';
 // CDN 加速媒体下载（可选）：设空串则回退到 Supabase Storage
 const MEDIA_CDN_BASE = 'https://yihai-media-1309041735.cos.ap-shanghai.myqcloud.com/storage/v1/object/public/ReminiSea';
@@ -379,7 +383,21 @@ function updateStatus() {
 // Supabase Auth
 // ═══════════════════════════════════════════
 
+function showLoginForm() {
+  $('login-form').style.display = 'block';
+  $('login-spinner').style.display = 'none';
+  $('login-error').style.display = 'none';
+  $('login-title').textContent = '连接服务器';
+  $('login-desc').textContent = '输入测试账号密码登录';
+  $('login-icon').textContent = '☁️';
+  $('login-pwd').value = '';
+  $('login-pwd').focus();
+}
+
 async function doLogin() {
+  const pwd = $('login-pwd').value.trim();
+  if (!pwd) { $('login-pwd').focus(); return; }
+  $('login-form').style.display = 'none';
   $('login-spinner').style.display = 'block';
   $('login-error').style.display = 'none';
   $('login-title').textContent = '正在连接...';
@@ -387,7 +405,7 @@ async function doLogin() {
 
   try {
     _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data, error } = await _sb.auth.signInWithPassword({ email: AUTH_EMAIL, password: AUTH_PASSWORD });
+    const { data, error } = await _sb.auth.signInWithPassword({ email: AUTH_EMAIL, password: pwd });
     if (error) throw error;
 
     $('login-icon').textContent = '✅';
@@ -402,7 +420,7 @@ async function doLogin() {
     showToast('已连接 · 卡池 ' + poolCards.length + ' 张 · 牌组 ' + serverDecks.length + ' 组');
 
   } catch(e) {
-    $('login-spinner').style.display = 'none';
+    showLoginForm();
     $('login-error').style.display = 'block';
     $('login-icon').textContent = '❌';
     $('login-title').textContent = '连接失败';
