@@ -225,6 +225,10 @@ review → again → relearning
 4. 提交 `release: v4.9.16`
 5. `git tag v4.9.16`
 6. `git push && git push --tags`
-7. GitHub Pages 自动部署到 https://katelynmichelin976-wq.github.io/gemi/
+7. `gh release create v4.9.16 --title "v4.9.16" --notes-file release_notes.md`
+   （需要 `HTTPS_PROXY=http://127.0.0.1:10808` 环境变量）
+8. GitHub Pages 自动部署到 https://katelynmichelin976-wq.github.io/gemi/
+
+git 代理已全局配置（http.proxy + https.proxy = 127.0.0.1:10808）；gh 依赖 HTTPS_PROXY 环境变量。
 
 Card maker is a separate repo (`anki-maker`), not in this working directory.
