@@ -35,6 +35,14 @@ function addDays(dateStr, n) {
   return d.toISOString().slice(0, 10);
 }
 
+function daysLate(dueDate, todayStr) {
+  if (!dueDate) return 0;
+  const due  = new Date(dueDate + 'T00:00:00');
+  const today = new Date(todayStr + 'T00:00:00');
+  const diffDays = Math.round((today - due) / 86400000);
+  return Math.max(0, diffDays);
+}
+
 function minsToTs(mins) {
   return Math.round(mins * 60 * 1000);
 }
@@ -100,6 +108,7 @@ function processAnswer(state, rating, today, nowMs) {
     }
 
   } else if (state.srs_stage === 'review') {
+    const days_late = daysLate(state.due_date, today);
     if (rating === 'again') {
       state.lapses_streak++;
       state.lapses_total++;
@@ -121,14 +130,14 @@ function processAnswer(state, rating, today, nowMs) {
       state.lapses_streak = 0;
       state.interval = Math.min(cfg.maximum_interval,
         Math.max(cfg.minimum_interval,
-          Math.ceil(state.interval * state.ease_factor * cfg.interval_modifier)));
+          Math.ceil((state.interval + days_late / 2) * state.ease_factor * cfg.interval_modifier)));
       state.due_date = addDays(today, state.interval);
       state.due_ts   = 0;
     } else if (rating === 'easy') {
       state.ease_factor = Math.min(3.0, state.ease_factor + 0.15);
       state.interval = Math.min(cfg.maximum_interval,
         Math.max(cfg.minimum_interval,
-          Math.ceil(state.interval * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)));
+          Math.ceil((state.interval + days_late) * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)));
       state.due_date = addDays(today, state.interval);
       state.due_ts   = 0;
     }
@@ -362,6 +371,49 @@ function makeReviewCard(interval, ef) {
   const sa = clone(s); processAnswer(sa, 'again', TODAY, NOW);
   check('2-G Again stage=relearning', sa.srs_stage, 'relearning');
   check('2-G Again 10min', sa.due_ts, NOW + 10*MIN, 100);
+}
+
+// 2-H: Good with 3 days late — interval bonus from days_late/2
+//   interval=5, ef=2.50, today=TODAY+3, due_date=TODAY
+//   days_late=3, ceil((5 + 3/2) * 2.50) = ceil(6.5 * 2.50) = ceil(16.25) = 17
+//   without bonus: ceil(5 * 2.50) = 13
+{
+  const s = makeReviewCard(5, 2.50);
+  processAnswer(s, 'good', addDays(TODAY, 3), NOW + 3*DAY);
+  check('2-H Good late interval=17', s.interval, 17);
+  check('2-H Good late due', s.due_date, addDays(TODAY, 3+17));
+}
+
+// 2-I: Easy with 3 days late — full days_late in base
+//   interval=5, ef=2.50, today=TODAY+3
+//   ef_new = 2.65, ceil((5 + 3) * 2.65 * 1.30) = ceil(8 * 3.445) = ceil(27.56) = 28
+//   without bonus: ceil(5 * 2.65 * 1.30) = ceil(17.225) = 18
+{
+  const s = makeReviewCard(5, 2.50);
+  processAnswer(s, 'easy', addDays(TODAY, 3), NOW + 3*DAY);
+  check('2-I Easy late interval=28', s.interval, 28);
+  check('2-I Easy late ef=2.65', s.ease_factor, 2.65);
+}
+
+// 2-J: Hard with 3 days late — no bonus (Anki-compatible)
+//   interval=5, ef=2.50, today=TODAY+3
+//   ceil(5 * 1.20) = 6 (same as on-time)
+{
+  const s = makeReviewCard(5, 2.50);
+  processAnswer(s, 'hard', addDays(TODAY, 3), NOW + 3*DAY);
+  check('2-J Hard late interval=6', s.interval, 6);
+  // Hard late: no bonus applied, same as on-time calculation
+}
+
+// 2-K: Good with early review — days_late clamped to 0
+//   interval=5, ef=2.50, due_date=TODAY+3, today=TODAY
+//   days_late = max(0, -3) = 0, ceil((5+0)*2.50) = 13 (same as on-time)
+{
+  const s = makeReviewCard(5, 2.50);
+  s.due_date = addDays(TODAY, 3);  // not due for 3 more days
+  processAnswer(s, 'good', TODAY, NOW);
+  check('2-K early review interval=13', s.interval, 13);
+  // Early review: days_late clamped to 0, same as on-time calculation
 }
 
 // ═══════════════════════════════════════════════

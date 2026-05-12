@@ -1618,6 +1618,14 @@ function addDays(dateStr, n) {
   return `${y}-${m}-${day}`;
 }
 
+function daysLate(dueDate, todayStr) {
+  if (!dueDate) return 0;
+  const due  = new Date(dueDate + 'T00:00:00');
+  const today = new Date(todayStr + 'T00:00:00');
+  const diffDays = Math.round((today - due) / 86400000);
+  return Math.max(0, diffDays);
+}
+
 function minsToTs(mins) {
   return Math.round(mins * 60 * 1000);
 }
@@ -2676,6 +2684,7 @@ function processAnswer(state, rating, todayDateStr) {
     }
 
   } else if (state.srs_stage === 'review') {
+    const days_late = daysLate(state.due_date, today);
     if (rating === 'again') {
       state.lapses_streak++;
       state.lapses_total++;
@@ -2704,7 +2713,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.lapses_streak = 0;
       state.interval = Math.max(
         cfg.minimum_interval,
-        Math.ceil(state.interval * state.ease_factor * cfg.interval_modifier)
+        Math.ceil((state.interval + days_late / 2) * state.ease_factor * cfg.interval_modifier)
       );
       state.interval = Math.min(state.interval, cfg.maximum_interval);
       state.due_date = addDays(today, state.interval);
@@ -2714,7 +2723,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.ease_factor = Math.min(3.0, state.ease_factor + 0.15);
       state.interval = Math.max(
         cfg.minimum_interval,
-        Math.ceil(state.interval * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)
+        Math.ceil((state.interval + days_late) * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)
       );
       state.interval = Math.min(state.interval, cfg.maximum_interval);
       state.due_date = addDays(today, state.interval);
