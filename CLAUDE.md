@@ -113,72 +113,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## v5.0 Plan（2026-05-10 更新）
 
-**从 PWA → uni-app + 腾讯云 CloudBase 迁移。** 一套代码出微信小程序 + H5。
+**从 PWA → uni-app + 腾讯云 CloudBase 迁移。** 一套代码出微信小程序 + H5。预估总工时 12-17 天，SRS 纯逻辑直接复用。完整方案见 `docs/忆海拾光_v5.0_腾讯云迁移设计方案.md`。
 
-| 决策 | 结论 | 理由 |
-|------|------|------|
-| 框架 | uni-app (Vue) | AI 开发效率高，与现有 HTML/CSS 思维一致，多端编译 |
-| 后端 | 腾讯云 CloudBase | 国内节点合规，原生 SDK 直连数据库，微信生态打通 |
-| 登录 | 微信 `wx.login` | 免密一键登录，个人主体可用，免费 |
-| 小程序主体 | 个人 | 无支付/web-view 需求，类目选"教育-在线教育" |
-| 独立 App | 暂缓 | 需 ICP 备案 + 医疗器械资质风险，待小程序验证后评估 |
+## Recent Changes
 
-**预估总工时：12-17 天。** 现有 SRS 纯逻辑（processAnswer 等 ~300 行）直接复用。完整方案见 `docs/忆海拾光_v5.0_腾讯云迁移设计方案.md`。
+v4.9.1 引入智能同步（`checkSyncNeeded`）、DB trigger（`fn_trial_to_card_state`）、TrialLog 承载完整状态快照。v4.9.2–v4.9.15 累计修复 14 项（登录恢复、IndexedDB 竞态、跨设备状态缺失、时区偏移等）。详见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
-### Key Changes (planning)
-
-- **Storage 层**：IndexedDB → 微信文件系统 + CloudBase 文档数据库
-- **TTS**：speechSynthesis → 微信 TTS 插件（语速/音调控制受限，需评估）
-- **Audio**：Audio + AudioContext → InnerAudioContext（tone 改预录制文件）
-- **Supabase SDK** → CloudBase 原生 SDK（网络请求无需适配层）
-- **用户标识**：邮箱 → openid（微信 `wx.login` 自动获取）
-- **牌组管理**：deck_manager_v1 废弃，功能内化到训练 App
-- **H5 保留**：uni-app 编译到 H5，现有 PWA 用户无缝过渡
-
-## v4.9.1 Key Changes
-
-- **白屏修复**: Supabase CDN 改为 JS 动态加载（`loadSupabaseSDK()`），UI 初始化不再等待 CDN
-- **智能同步**: 新增 `checkSyncNeeded()` — 先检查本地脏数据 + 服务器时间戳，不需要同步时零网络等待
-- **减少逐卡上传**: 去掉 `logCardStateChange`（`card_state_log` 表废弃）；`saveCardState` 不再逐卡实时上传；TrialLog 新增 `due_ts/due_date/suspended/suspended_reason` 字段承载完整状态
-- **SRS 写入保护**: `showFinish()` 前 `await _lastSrsWrite`，避免最后一张卡 daily progress 计数偏少
-- **主页到期数虚高**: `getDeckStatsSrs()` 的 `due` 受 `max(0, max_reviews - reviewed_today)` 上限约束
-- **统计页日期过滤**: `renderStatsToday()` 按日历日过滤 TrialLog，不再混入昨日数据
-- **埋点增强**: `build_queue` payload 增加 `used_review/review_slots/new_slots`；新增 `show_finish` 事件
-- **DB trigger**: `fn_trial_to_card_state()` — sync_trials INSERT 自动 UPSERT sync_card_states；前端不再直接写 CardState
-- **每日评级计数**: `_writeSrs` 更新 `first_pass/hard/fail_today`，单设备用户统计页评级不再永远是 0
-- **Code review 修复**: `openSrsDb` promise 缓存防并发；`syncCardStatesFromCloud` 去掉 device_id 过滤兼容双 Tab；`cloudPushConfig` 用 `_cloudUserId` 替代 getSession
-
-## v4.9.2–v4.9.8 修复（2026-05-11）
-
-| 版本 | 修复项 | 说明 |
-|------|--------|------|
-| v4.9.2 | syncTrialLog 漏字段 | INSERT 补 due_ts/due_date/suspended/suspended_reason |
-| v4.9.3 | 统计总卡片数 | total 改用 DECKS[deckKey].length，跨设备一致 |
-| v4.9.4 | 刷新后登录恢复 | SDK defer 晚于 inline → 轮询就绪后再 initCloud |
-| v4.9.5 | 登录恢复 + 统计刷新 | SDK 就绪轮询 + checkSyncNeeded=false 也刷新统计 |
-| v4.9.6 | updateDeckStats 占用符覆盖 | initUI await updateDeckStats；轻量同步不调 renderDeckList |
-| v4.9.7 | IndexedDB 首次打开空 | getAllCardStates 空值保护 + updateDeckStats catch 写0 |
-| v4.9.8 | 去除冗余网络请求 | checkSyncNeeded=false 不再拉 syncCardStatesFromCloud |
-| v4.9.9 | 退出登录清除本地数据 | doCloudLogout 清 _cloudUserId + 云牌组 + IndexedDB，防切换用户混淆 |
-| v4.9.10 | IndexedDB clear() 未 await | 事务异步提交，数据实际未删除，改为 Promise 包裹 |
-| v4.9.11 | 消除 logAppEvent 409 竞态 | Network 面板追踪：logAppEvent 立即上传后 markEventSynced 异步，syncAppEvents 读到未同步标记重复上传 |
-| v4.9.12 | 登录后云牌组 CardState 缺失 | syncAll step 2 只用旧 currentDeck，云牌组下载后没拉状态。step 7 补拉所有云牌组 CardState |
-| v4.9.13 | 卡片列表无 CardState 的卡不可见 | _statsAllStates 补充无 CardState 卡（视为待开始），全部/待开始筛选均可见 |
-| v4.9.14 | 练习天数改用 DB trigger | user_deck_stats 表 + trigger 自动计数，syncAll step 5.5 拉取，统计页零延迟 |
-| v4.9.15 | 早间"今日完成"误报 + 合并不自愈 + learning 卡 due_ts=0 | syncAll step 5 UTC偏移 + max合并不能自愈 + learning卡due_ts=0时被队列跳过。改本地时间戳+直接赋值+兜底(!due_ts||due_ts<=now)；回填6张已损坏learning卡 |
-
-### 服务端变更（v4.9.14）
-
-- **user_deck_stats**：新建表，`(user_id, deck_key)` 唯一，记录 practice_days + last_practice_date
-- **trg_update_practice_days**：sync_trials INSERT → 同天不重复计数，自动维护统计
-
-### 关键行为变更
+### 关键行为变更（当前版本）
 
 - **initCloud 调用时机**：`_tryInitCloud()` 每 200ms 轮询 `typeof supabase`，就绪后执行，最多等 10s
 - **initUI 中 updateDeckStats 加 await**：避免异步结果被后续渲染覆盖
 - **needsSync=false 路径**：不产生任何网络请求，信任本地数据 + initUI 已渲染
 - **syncAll step 7 拉全部云牌组 CardState**：不影响练习自动同步（noDecks=true），仅登录/手动同步时生效
 - **练习天数 = 缓存值 + 本地未同步新增**：不再查云端 90 天，统计页零延迟且始终准确
+- **服务端**：user_deck_stats 表 + trg_update_practice_days trigger 自动维护练习天数
 
 ## Development Commands
 
@@ -240,13 +188,19 @@ review → again → relearning
 6. **sessionId** — increments on each `_launch`/`goHome` to break cross-page async speech chains.
 7. **warmupSpeech()** — must be called within user gesture on iOS (unlocks TTS + Audio simultaneously).
 8. **浏览器端改动必须先写 Playwright 测试复现再改代码** — 历史教训：Node.js 单测覆盖不到浏览器时序（DOM 渲染、SDK 异步加载、Service Worker）。直接改代码 → 测试全绿 → 用户一用就崩。流程：写测试复现 bug（预期失败）→ 改代码 → 测试通过 → 跑全部回归 → 提交。
-8. **Release prep** — remove test toolbar (`🗑 重置牌组`, `⏭ +1天`) and debug lines (`iv=X ef=X...`) before release.
-9. **Supabase cloud sync** — all Supabase calls wrapped in try/catch, fire-and-forget. `_syncEnabled` gates all sync; false = offline mode.
-10. **Cloud login** — Supabase SDK persists session in localStorage. `restoreCloudSession()` on startup, `updateCloudTabUI()` toggles login/deck-list UI.
-11. **Incremental sync** — `syncDeckFromCloud` uses `cards_pool.updated_at > lastSyncAt` + `_imgUrl/_audUrl` URL comparison to skip unchanged media.
-12. **Smart sync** — `checkSyncNeeded()` checks local dirty data + server `updated_at > yihai_global_sync_ts` before running full `syncAll`. Skipped if nothing changed.
-13. **Per-card upload: TrialLog only** — 逐卡仅上传 `sync_trials`（含完整状态快照）；`sync_card_states` 由 DB trigger `fn_trial_to_card_state()` 自动维护；`card_state_log` 已废弃。
-14. **Supabase SDK defer load** — `<script src="supabase" defer>` 不阻塞 DOM 解析和渲染；`initCloud()` 在 SDK 就绪后自动执行。离线下 SDK 加载失败 → `restoreCloudSession()` 静默跳过 → 离线模式。
+9. **Release prep** — remove test toolbar (`🗑 重置牌组`, `⏭ +1天`) and debug lines (`iv=X ef=X...`) before release.
+10. **Supabase cloud sync** — all Supabase calls wrapped in try/catch, fire-and-forget. `_syncEnabled` gates all sync; false = offline mode.
+11. **Cloud login** — Supabase SDK persists session in localStorage. `restoreCloudSession()` on startup, `updateCloudTabUI()` toggles login/deck-list UI.
+12. **Incremental sync** — `syncDeckFromCloud` uses `cards_pool.updated_at > lastSyncAt` + `_imgUrl/_audUrl` URL comparison to skip unchanged media.
+13. **Smart sync** — `checkSyncNeeded()` checks local dirty data + server `updated_at > yihai_global_sync_ts` before running full `syncAll`. Skipped if nothing changed.
+14. **Per-card upload: TrialLog only** — 逐卡仅上传 `sync_trials`（含完整状态快照）；`sync_card_states` 由 DB trigger `fn_trial_to_card_state()` 自动维护；`card_state_log` 已废弃。
+15. **Supabase SDK defer load** — `<script src="supabase" defer>` 不阻塞 DOM 解析和渲染；`initCloud()` 在 SDK 就绪后自动执行。离线下 SDK 加载失败 → `restoreCloudSession()` 静默跳过 → 离线模式。
+
+## Coding & Editing Rules
+
+1. **Simplicity first** — 用最少代码解决问题。不添加未要求的功能，不为单次使用创建抽象，不处理不可能发生的错误场景。200 行能写成 50 行就重写。
+2. **Surgical changes** — 只改必须改的。不"改进"相邻代码/注释/格式，不重构没坏的东西，匹配现有风格即使你不喜欢。只清理你自己的改动造成的孤儿引用/变量/导入。不相关的死代码只提不删。
+3. **Goal-driven** — 把任务转化为可验证目标。"修 bug"→ 先写复现测试；"加功能"→ 先定义验收标准。多步骤任务先列计划+验证点。Dev Rule 8（浏览器端 Playwright 先行）是这一原则的具体化。
 
 ## Workflow Rules
 

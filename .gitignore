@@ -14,3 +14,6 @@ Thumbs.db
 
 # Supabase
 .env
+
+# External reference projects
+anki-main/
