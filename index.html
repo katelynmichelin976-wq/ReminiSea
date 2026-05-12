@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.9.14</title>
+<title>忆海拾光 v4.9.15</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -865,7 +865,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.9.14</span>
+        <span class="home-version">v4.9.15</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -2194,11 +2194,16 @@ async function syncAll(deckKey, showToast, noDecks) {
     }
 
     // 5. 跨设备今日统计同步：从云端拉取今天全部答题记录
+    // 使用本地日期时间戳范围（而非 trial_date），避免 UTC+8 用户在 0:00-7:59
+    // 时 utcTodayStr() 返回前一天日期，把昨天的数据合并到今天
     showSyncProg(5, totalSteps, '正在同步今日进度...');
+    const localDayStart = new Date(); localDayStart.setHours(0, 0, 0, 0);
+    const localDayEnd   = new Date(); localDayEnd.setHours(23, 59, 59, 999);
     const { data: todayCloud } = await _sb.from('sync_trials')
       .select('card_id, srs_stage_before, active_gap_ms, rating, timestamp')
       .eq('user_id', _cloudUserId)
-      .eq('trial_date', utcTodayStr());  // UTC 日期，与 PostgreSQL 生成列对齐
+      .gte('timestamp', localDayStart.getTime())
+      .lte('timestamp', localDayEnd.getTime());
     if (todayCloud) {
       const cloudNewSet = new Set();
       let cloudDurationMs = 0;
@@ -2225,12 +2230,13 @@ async function syncAll(deckKey, showToast, noDecks) {
         else passN++;
       }
 
-      if (cloudNewToday > (cp.daily_new_today || 0)) cp.daily_new_today = cloudNewToday;
-      if (cloudReviewed > (cp.reviewed_today || 0)) cp.reviewed_today = cloudReviewed;
-      if (cloudDurationSec > (cp.active_duration_sec || 0)) cp.active_duration_sec = cloudDurationSec;
-      if (passN > (cp.first_pass_today || 0)) cp.first_pass_today = passN;
-      if (hardN > (cp.first_hard_today || 0)) cp.first_hard_today = hardN;
-      if (failN > (cp.first_fail_today || 0)) cp.first_fail_today = failN;
+      // 云端 todayCloud 已包含步骤 1 上传的本地数据，是今日全设备权威合计
+      cp.daily_new_today   = cloudNewToday;
+      cp.reviewed_today    = cloudReviewed;
+      cp.active_duration_sec = cloudDurationSec;
+      cp.first_pass_today  = passN;
+      cp.first_hard_today  = hardN;
+      cp.first_fail_today  = failN;
       saveDailyProgress(cp);
     }
 
@@ -2250,16 +2256,16 @@ async function syncAll(deckKey, showToast, noDecks) {
       }
     } catch(e) { console.warn('[sync] practice days fetch error:', e.message); }
 
-    // 6. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
-    showSyncProg(8, totalSteps, '正在同步配置...');
+    // 7. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
+    showSyncProg(7, totalSteps, '正在同步配置...');
     const cfgItems = await cloudPullConfig();
     syncStats.config = cfgItems;
     await cloudPushConfig();
 
-    // 7. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
+    // 8. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
     let newDecks = 0, syncedDecks = 0;
     if (!noDecks) {
-      showSyncProg(9, totalSteps, '正在同步牌组...');
+      showSyncProg(8, totalSteps, '正在同步牌组...');
       const { data: serverDecks } = await _sb.from('server_decks').select('id,name');
       if (serverDecks) {
         for (const sd of serverDecks) {
@@ -2797,6 +2803,16 @@ async function buildSessionQueue(deckKey) {
       await saveCardStateLocal(s);
       stateMap[card.id] = s;
       newCardsCreated++;
+    }
+  }
+
+  // 修复 learning/relearning 卡 due_ts=0 的异常数据
+  // （根因待查。兜底：设 due_ts=1 使其立即到期，而非永久跳过）
+  for (const card of cards) {
+    const s = stateMap[card.id];
+    if (s && (s.srs_stage === 'learning' || s.srs_stage === 'relearning') && !s.due_ts) {
+      s.due_ts = 1;
+      await saveCardState(s);
     }
   }
 
@@ -5177,7 +5193,7 @@ async function renderStatsToday() {
   if (hasSyncDp) {
     // 使用同步后的跨设备汇总数据
     const totalSec = dp.active_duration_sec || 0;
-    const durStr   = totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
+    const durStr   = totalSec <= 0 ? '0' : totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
     const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
     document.getElementById('st-kpi').innerHTML = `
       <div class="stats-kpi"><div class="stats-kpi-num kpi-b">${dp.reviewed_today}</div><div class="stats-kpi-lbl">练习</div></div>
@@ -5207,7 +5223,7 @@ async function renderStatsToday() {
       else firstPass++;
     });
     const totalSec = dp.active_duration_sec || 0;
-    const durStr   = totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
+    const durStr   = totalSec <= 0 ? '0' : totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
     const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
     document.getElementById('st-kpi').innerHTML = `
       <div class="stats-kpi"><div class="stats-kpi-num kpi-b">${uniqueToday}</div><div class="stats-kpi-lbl">练习</div></div>
