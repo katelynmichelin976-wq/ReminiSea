@@ -209,10 +209,22 @@ review → again → relearning
 3. **文档先行** — `git add` 之前检查相关文档（README、docs/、CLAUDE.md 等）是否需要同步更新。功能新增或行为变更，先改文档再提交代码。
 4. **本地提交** — commit 可随时做，但提交前必须跑对应单元测试并全部通过。
 5. **发布需指令** — `git push` / 部署到 GitHub Pages 必须等你明确说「正式发布」或「推送」后才执行。
-6. **Commit message** — 遵循 repo 既有风格（fix:/feat:/docs:/release:），说明「为什么」而非「改了什么」。
+6. **版本号仅在发布时 bump** — 开发过程中代码里版本号不变（保留上一发布版本）。发布时一个 commit 完成：bump 版本号（HTML 中 2 处 `<title>` + `.home-version`）+ 复制 `yihai_v{version}.html` → `index.html` + 打 tag。版本号在 HTML 中的目的是运行时识别——本地缓存、远程部署、测试环境可能跑着不同版本。
+7. **Commit message** — 遵循 `type: v{version}: description (#issue)` 格式：
+   - `fix: v4.9.15: 迟到天数加成 (#8)` — 版本号是发现问题的已发布版本
+   - `feat: 牌组层级管理 (#13)` — 新功能不绑定版本号
+   - `docs: CLAUDE.md 同步` — 文档不绑定版本号
+   - `release: v4.9.16` — 发布 commit，包含 bump 版本号 + index.html
 
 ## Deployment
 
-我复制 `yihai_v{version}.html` → `index.html` → 提交 → 等你确认 → 推送。GitHub Pages 自动部署到 https://katelynmichelin976-wq.github.io/gemi/
+发布流程：
+1. 所有测试通过（SRS + v4.4 + v4.8 + v4.9 + Playwright）
+2. 修改 `yihai_v4.9.html` 中 2 处版本号（`<title>` 和 `.home-version`）
+3. 复制 `yihai_v4.9.html` → `index.html`
+4. 提交 `release: v4.9.16`
+5. `git tag v4.9.16`
+6. `git push && git push --tags`
+7. GitHub Pages 自动部署到 https://katelynmichelin976-wq.github.io/gemi/
 
 Card maker is a separate repo (`anki-maker`), not in this working directory.
