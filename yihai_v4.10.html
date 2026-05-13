@@ -2986,8 +2986,8 @@ async function getDeckStatsSrs(deckKey) {
     if (s.suspended) return;
     seenCards.add(s.card_id);
     if (s.srs_stage === 'new') { newC++; return; }
-    if (s.srs_stage === 'review' && s.due_date && s.due_date <= today) { due++; return; }
-    if ((s.srs_stage === 'learning' || s.srs_stage === 'relearning') && s.due_ts && s.due_ts <= now) { due++; return; }
+    if (s.srs_stage === 'review' && (!s.due_date || s.due_date <= today)) { due++; return; }
+    if ((s.srs_stage === 'learning' || s.srs_stage === 'relearning') && (!s.due_ts || s.due_ts <= now)) { due++; return; }
   });
   // 无 CardState 的卡片视为新卡（刚下载/导入后未练习）
   const deck = DECKS[deckKey];
