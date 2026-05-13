@@ -10,7 +10,7 @@
  */
 const { chromium } = require('playwright');
 
-const CFG = { url: 'http://localhost:8080/yihai_v4.9.html?v=' + Date.now() };
+const CFG = { url: 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now() };
 const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
 const TEST_DECK_NAME = '蔬菜水果';            // 原名网络版，hash 不变 01edbdfd

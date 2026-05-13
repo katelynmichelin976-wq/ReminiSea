@@ -15,7 +15,7 @@
  */
 const { chromium } = require('playwright');
 
-const BASE_URL = 'http://localhost:8080/yihai_v4.9.html';
+const BASE_URL = 'http://localhost:8080/yihai_v4.10.html';
 function pageUrl() { return BASE_URL + '?v=' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
 const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';

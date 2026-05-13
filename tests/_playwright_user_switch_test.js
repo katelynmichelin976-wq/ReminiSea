@@ -82,7 +82,7 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
   try {
     // ═══════════════════════ PHASE 1: 登录同步 ═══════════════════════
     section('PHASE 1: 登录同步');
-    await page.goto('http://localhost:8080/yihai_v4.9.html?v=' + Date.now(),
+    await page.goto('http://localhost:8080/yihai_v4.10.html?v=' + Date.now(),
       { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 2000);
 
@@ -112,7 +112,7 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
       DECKS_META.filter(m => m.source === 'cloud').length
     );
     console.log(`  退出后云牌组: ${cloudDecks}`);
-    pass('退出后云牌组已清除', cloudDecks === 0);
+    pass('退出后云牌组保留（离线可用）', cloudDecks > 0);
 
     // ═══════════════════════ PHASE 3: 重新登录 ═══════════════════════
     section('PHASE 3: 重新登录验证数据从云端拉回');
