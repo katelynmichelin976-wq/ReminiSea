@@ -90,6 +90,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_playwright_v4.10_regression_test.js` | v4.10 回归测试（37 断言，含多设备/离线/双开/重新登录验证） |
 | `tests/_playwright_helper.js` | Playwright 测试公共工具（cloudLogin/cloudLogout/断言等） |
 | `tests/_playwright_multi_user_sync_test.js` | Playwright 多用户数据隔离测试 |
+| `tests/_dump_idb.js` | F12 控制台诊断：IndexedDB CardState + localStorage 配置 |
+| `tests/_bookmarklet_diagnose.html` | 书签按钮版诊断工具 |
+| `tests/_diag_sync_state.js` | Playwright 云端 vs 本地数据对比 |
+| `tests/_check_due_count.js` | Node.js Supabase 直接查询到期数 |
 | `tests/test_data/` | Test .yhspack files |
 
 ### 文档

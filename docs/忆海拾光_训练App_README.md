@@ -128,6 +128,21 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.10.1 — 2026-05-14
+
+**Session 恢复增强**
+- `restoreCloudSession()` 增加三级兜底：getSession → setSession（读 localStorage token）→ 300ms 后重试 getSession，修复 Chrome 硬刷新后 Supabase SDK 竞态导致不自动登录
+
+**诊断工具**
+| 文件 | 用途 |
+|------|------|
+| `tests/_dump_idb.js` | F12 控制台 fetch 执行，输出 IndexedDB CardState 详情 + localStorage 配置 |
+| `tests/_bookmarklet_diagnose.html` | 书签按钮，一键诊断 |
+| `tests/_diag_sync_state.js` | Playwright 云端 vs 本地对比 |
+| `tests/_check_due_count.js` | Supabase 直接查询到期数 |
+
+---
+
 ### v4.10 — 2026-05-14
 
 **同步机制重新设计**
@@ -472,6 +487,7 @@ new → learning（学习中）→ review（复习中/已掌握）
 | 单张卡片牌组边界 | 未验证 | 理论上循环正常，未专项测试 |
 | maximum_interval 触顶时 Hard=Good | 遗留 | 结构性问题，Anki 同样存在；建议使用 AD 建议值 7 |
 | 答案朗读开关关闭后 TTS 仍发音 | 待修复 | `playAnswer` 缺开关控制 |
+| 离线练习后登录 CardState user_id 不更新 | 待修复 | 离线下 user_id=deviceId，登录后 `syncCardStatesFromCloud` 因本地 updated_at 更新跳过覆盖，导致进度消失（Issue #26） |
 
 ---
 
