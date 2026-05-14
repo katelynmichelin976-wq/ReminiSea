@@ -82,12 +82,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v4.8_test.js` | v4.8 utility tests (46 cases) |
 | `tests/yihai_v4.9_test.js` | v4.9 config merge tests (48 cases) |
 | `tests/_playwright_test.js` | Playwright 单机版回归测试（22 断言） |
-| `tests/_playwright_cloud_test.js` | Playwright 网络版回归测试（17 断言） |
+| `tests/_playwright_cloud_test.js` | Playwright 网络版回归测试（21 断言，已合并 session_restore） |
 | `tests/_playwright_cross_device_sync_test.js` | Playwright 跨设备同步回归测试（18 断言） |
-| `tests/_playwright_session_restore_test.js` | Playwright 登录恢复测试（8 断言） |
-| `tests/_playwright_user_switch_test.js` | Playwright 用户切换数据隔离测试（8 断言） |
+| `tests/_playwright_session_restore_test.js` | Playwright 登录恢复测试（8 断言，已合并入 cloud_test PHASE 5） |
+| `tests/_playwright_user_switch_test.js` | Playwright 用户切换数据隔离测试（8 断言，已合并入 v4.10_regression PHASE 11） |
 | `tests/_playwright_v4.9.1_regression_test.js` | v4.9.1 回归测试（21 断言） |
-| `tests/_playwright_v4.10_regression_test.js` | v4.10 回归测试（37 断言，含多设备/离线/双开测试） |
+| `tests/_playwright_v4.10_regression_test.js` | v4.10 回归测试（37 断言，含多设备/离线/双开/重新登录验证） |
+| `tests/_playwright_helper.js` | Playwright 测试公共工具（cloudLogin/cloudLogout/断言等） |
 | `tests/_playwright_multi_user_sync_test.js` | Playwright 多用户数据隔离测试 |
 | `tests/test_data/` | Test .yhspack files |
 
@@ -156,11 +157,10 @@ node tests/_playwright_test.js
 TEST_PASSWORD=xxx node tests/_playwright_v4.10_regression_test.js
 TEST_PASSWORD=xxx node tests/_playwright_cloud_test.js
 TEST_PASSWORD=xxx node tests/_playwright_cross_device_sync_test.js
-TEST_PASSWORD=xxx node tests/_playwright_session_restore_test.js
-TEST_PASSWORD=xxx node tests/_playwright_user_switch_test.js
+# session_restore 和 user_switch 已分别合并入 cloud_test 和 v4.10_regression
 ```
 
-All tests must pass before commit. Current counts: SRS 73, v4.4 98, v4.8 46, v4.9 48, Playwright 22/37/17/18/8/8/21 (单机/v4.10回归/网络/跨设备/登录恢复/用户切换/v4.9.1回归).
+All tests must pass before commit. Current counts: SRS 73, v4.4 98, v4.8 46, v4.9 48, Playwright 22/37/21/18 (单机/v4.10回归/网络/跨设备).
 
 ## SRS Architecture
 
