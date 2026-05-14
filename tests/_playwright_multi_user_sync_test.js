@@ -201,7 +201,7 @@ async function checkTrials(page) {
     await page.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 2000);
 
-    pass('页面加载成功', await page.evaluate(() => document.title.includes('v4.10.0')));
+    pass('页面加载成功', await page.evaluate(() => document.title.includes('v4.10.1')));
 
     // ═══════════════════ PHASE 2: A 登录 + 练习 ═══════════════════
     section('PHASE 2: A 登录，蔬菜水果练 3 题 (good/hard/good)');
@@ -210,13 +210,39 @@ async function checkTrials(page) {
     pass('A 登录成功', await page.evaluate(() => !!( _cloudUserId && _syncEnabled)));
     check('A uid', await page.evaluate(() => _cloudUserId.substring(0,8)), USER_A.uid8);
 
-    // 等待云牌组下载完成，设置 currentDeck
-    let deckReady = false;
-    for (let i = 0; i < 20; i++) {
-      deckReady = await page.evaluate((dk) => !!(DECKS[dk] && DECKS[dk].length === 33), CLOUD_DECK);
-      if (deckReady) break;
+    // 等待同步模态关闭，确保牌组数据完全下载
+    for (let i = 0; i < 30; i++) {
+      const done = await page.evaluate(() => {
+        const m = document.getElementById('sync-modal');
+        return m && m.style.display === 'none';
+      });
+      if (done) break;
       await wait(page, 500);
     }
+
+    // 显式下载卡片定义数据（login sync 只下载元数据）
+    await page.evaluate(async (name) => {
+      try {
+        const { data: decks } = await _sb.from('server_decks').select('id,name').order('name');
+        if (!decks) return;
+        const sd = decks.find(d => d.name === name);
+        if (sd) {
+          if (DECKS_META.find(m => m.name === sd.name)) await syncDeckFromCloud(sd.id, sd.name);
+          else await downloadDeckFromCloud(sd.id, sd.name);
+        }
+      } catch(e) { console.warn('[test] deck sync error:', e.message); }
+    }, '蔬菜水果');
+    await wait(page, 5000);
+
+    // 等待云牌组下载完成，设置 currentDeck
+    let deckReady = false;
+    let deckSize = 0;
+    for (let i = 0; i < 20; i++) {
+      deckSize = await page.evaluate((dk) => DECKS[dk] ? DECKS[dk].length : 0, CLOUD_DECK);
+      if (deckSize === 33) { deckReady = true; break; }
+      await wait(page, 500);
+    }
+    console.log(`  DECKS[cloud_01edbdfd] 长度: ${deckSize}`);
     await page.evaluate((dk) => { if (DECKS[dk]) currentDeck = dk; }, CLOUD_DECK);
     await wait(page, 300);
     pass('当前牌组蔬菜水果(33张)', deckReady);
