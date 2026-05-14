@@ -18,6 +18,7 @@ const SRS_CONFIG = {
   hard_interval           : 1.20,
   ease_min                : 1.30,
   hard_step_multiplier    : 1.0,
+  learning_hard_counts_lapse: false,
   daily_remove_lapses     : 3,
   auto_suspend_lapses     : 8,
 };
@@ -92,7 +93,12 @@ function processAnswer(state, rating, today, nowMs) {
       state.lapses_total++;
     } else if (rating === 'hard') {
       state.srs_stage = 'learning';
-      state.due_ts = now + minsToTs(steps[state.step_index] * cfg.hard_step_multiplier);
+      state.due_ts = now + minsToTs(
+        state.step_index === 0
+          ? (steps.length > 1 ? (steps[0] + steps[1]) / 2 : steps[0] * 1.5)
+          : steps[state.step_index]
+      );
+      if (cfg.learning_hard_counts_lapse) { state.lapses_streak++; state.lapses_total++; }
     } else if (rating === 'good') {
       state.lapses_streak = 0;
       state.step_index++;
@@ -150,7 +156,12 @@ function processAnswer(state, rating, today, nowMs) {
       state.lapses_streak++;
       state.lapses_total++;
     } else if (rating === 'hard') {
-      state.due_ts = now + minsToTs(steps[state.step_index] * cfg.hard_step_multiplier);
+      state.due_ts = now + minsToTs(
+        state.step_index === 0
+          ? (steps.length > 1 ? (steps[0] + steps[1]) / 2 : steps[0] * 1.5)
+          : steps[state.step_index]
+      );
+      if (cfg.learning_hard_counts_lapse) { state.lapses_streak++; state.lapses_total++; }
     } else {
       state.lapses_streak = 0;
       state.step_index++;
@@ -250,7 +261,7 @@ section('SUITE 1 — 新卡学习路径（learning_steps=[1,10]）');
   check('1-D lapses_total persists', s.lapses_total, 1);
 }
 
-// 1-E: 新卡 → Good → Hard（步骤不推进，等待时间=步骤1×1.0=10min）
+// 1-E: 新卡 → Good → Hard（步骤不推进，>=步骤1 直接取当前步值 = 10min）
 {
   const s = newCardState('deck', 'c1');
   processAnswer(s, 'good', TODAY, NOW);   // 步骤0→1
@@ -457,8 +468,8 @@ function makeRelearningCard(interval, ef) {
 {
   const s = makeRelearningCard(2, 2.20);
   processAnswer(s, 'hard', TODAY, NOW);
-  // steps[0] × 1.0 = 10min
-  check('3-C due_ts=+10min', s.due_ts, NOW + 10*MIN, 100);
+  // 仅一步，Anki 规则 = steps[0] × 1.5 = 15min
+  check('3-C due_ts=+15min', s.due_ts, NOW + 15*MIN, 100);
   check('3-C step_index=0', s.step_index, 0);
 }
 

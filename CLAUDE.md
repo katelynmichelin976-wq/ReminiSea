@@ -182,6 +182,12 @@ review → again → relearning
 - `daily_remove_lapses` (3): card removed from queue for the day after N consecutive failures
 - `auto_suspend_lapses` (8): card auto-suspended after N total failures
 - `learn_ahead_limit` (1200s): prevents learning steps from being bypassed
+- `learning_hard_counts_lapse` (false): AD 模式下 learning/relearning 阶段 hard 也计入连失
+
+**Learning hard 延迟规则（废弃 hard_step_multiplier）：**
+- 第一步：`(steps[0] + steps[1]) / 2`（如 `[1,10]` → 5.5min）
+- 仅一步时：`steps[0] × 1.5`
+- 第二步起：不变（与 Anki 一致）
 
 **Storage layers:**
 - `localStorage`: deck index, card metadata, settings, SRS config overrides, daily progress

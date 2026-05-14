@@ -1530,7 +1530,8 @@ const SRS_CONFIG = {
 
   // 我们特有参数
   ease_min                : 1.30,
-  hard_step_multiplier    : 1.0,          // AD建议 1.5
+  hard_step_multiplier    : 1.0,          // 不再使用（已改用 Anki 平均规则）
+  learning_hard_counts_lapse: false,      // AD建议 true：learning 阶段 hard 计入连失
 
   // T1→T7 过渡（Phase 2 启用）
   t1_review_before_mix    : 2,
@@ -2701,8 +2702,13 @@ function processAnswer(state, rating, todayDateStr) {
       state.lapses_total++;
     } else if (rating === 'hard') {
       state.srs_stage = 'learning';
-      // step_index 不变，等待时间 = 当前步 × hard_step_multiplier
-      state.due_ts = now + minsToTs(steps[state.step_index] * cfg.hard_step_multiplier);
+      // step_index 不变。延迟 = Anki 规则：第一步取(当前+下一步)/2，后续不变
+      state.due_ts = now + minsToTs(
+        state.step_index === 0
+          ? (steps.length > 1 ? (steps[0] + steps[1]) / 2 : steps[0] * 1.5)
+          : steps[state.step_index]
+      );
+      if (cfg.learning_hard_counts_lapse) { state.lapses_streak++; state.lapses_total++; }
     } else if (rating === 'good') {
       state.lapses_streak = 0;
       state.step_index++;
@@ -2773,7 +2779,12 @@ function processAnswer(state, rating, todayDateStr) {
       state.lapses_streak++;
       state.lapses_total++;
     } else if (rating === 'hard') {
-      state.due_ts = now + minsToTs(steps[state.step_index] * cfg.hard_step_multiplier);
+      state.due_ts = now + minsToTs(
+        state.step_index === 0
+          ? (steps.length > 1 ? (steps[0] + steps[1]) / 2 : steps[0] * 1.5)
+          : steps[state.step_index]
+      );
+      if (cfg.learning_hard_counts_lapse) { state.lapses_streak++; state.lapses_total++; }
     } else {
       // good / easy
       state.lapses_streak = 0;
@@ -2933,14 +2944,17 @@ async function buildSessionQueue(deckKey) {
   return queue;
 }
 
-// ── 获取 learning/relearning 未到期卡（用于主队列耗尽后追加）──────
+// ── 获取 learning/relearning 到期/即将到期卡（主队列耗尽后追加）────
+// 注意：learning/relearning 卡答完后新 due_ts 可能落在本 session 内
+// （hard 不改步长、again 重置到第一步），此时 due_ts ≤ now 仍需出题
 async function getPendingLearningCards(deckKey) {
   const cards  = DECKS[deckKey] || [];
   const states = await getAllCardStates(deckKey);
   const stateMap = {};
   states.forEach(s => { stateMap[s.card_id] = s; });
 
-  const windowTs = Date.now() + SRS_CONFIG.learn_ahead_limit * 1000;
+  const now     = Date.now();
+  const windowTs = now + SRS_CONFIG.learn_ahead_limit * 1000;
 
   return cards
     .filter(c => {
@@ -2948,8 +2962,7 @@ async function getPendingLearningCards(deckKey) {
       return s && (s.srs_stage === 'learning' || s.srs_stage === 'relearning')
         && !s.suspended
         && !_dailyRemovedToday[s.state_key]
-        && s.due_ts && s.due_ts > Date.now()
-        && s.due_ts <= windowTs;
+        && s.due_ts && s.due_ts <= windowTs;
     })
     .sort((a, b) => stateMap[a.id].due_ts - stateMap[b.id].due_ts)
     .map(card => {
@@ -4323,8 +4336,9 @@ function _checkDurationWarning() {
 }
 
 function showRestToast() {
+  const mins = Math.round(SRS_CONFIG.warn_duration_sec / 60);
   const t = document.createElement('div');
-  t.textContent = '已练习 20 分钟，可以休息一下 😊';
+  t.textContent = `已练习 ${mins} 分钟，可以休息一下 😊`;
   t.style.cssText = `position:fixed;bottom:calc(120px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
@@ -5617,6 +5631,7 @@ const SRS_PRESETS = {
     maximum_reviews_per_day: 20,
     daily_remove_lapses  : 3,
     auto_suspend_lapses  : 8,
+    learning_hard_counts_lapse: true,
     warn_duration_sec    : 1200,
     learn_ahead_limit     : 1200,
   },
