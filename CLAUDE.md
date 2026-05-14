@@ -164,7 +164,7 @@ TEST_PASSWORD=xxx node tests/_playwright_cross_device_sync_test.js
 # session_restore 和 user_switch 已分别合并入 cloud_test 和 v4.10_regression
 ```
 
-All tests must pass before commit. Current counts: SRS 73, v4.4 98, v4.8 46, v4.9 48, Playwright 22/37/21/18 (单机/v4.10回归/网络/跨设备).
+All tests must pass before commit. Current counts: SRS 83, v4.4 98, v4.8 46, v4.9 48, Playwright 22/37/21/18 (单机/v4.10回归/网络/跨设备).
 
 ## SRS Architecture
 

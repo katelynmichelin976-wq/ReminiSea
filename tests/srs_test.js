@@ -280,6 +280,17 @@ section('SUITE 1 — 新卡学习路径（learning_steps=[1,10]）');
   check('1-F due_date=3/30', s.due_date, '2026-03-30');
 }
 
+// 1-G: 新卡直接 Hard → 步骤0，延迟 = (1+10)/2=5.5min（Anki 平均规则）
+{
+  const s = newCardState('deck', 'c1');
+  processAnswer(s, 'hard', TODAY, NOW);
+  check('1-G stage=learning', s.srs_stage, 'learning');
+  check('1-G step_index=0', s.step_index, 0);
+  check('1-G due_ts=+5.5min', s.due_ts, NOW + 5.5*MIN, 100);
+  check('1-G lapses_streak=0 (config=false)', s.lapses_streak, 0);
+  check('1-G lapses_total=0 (config=false)', s.lapses_total, 0);
+}
+
 // ═══════════════════════════════════════════════
 // SUITE 2：Review 阶段
 // ═══════════════════════════════════════════════
@@ -514,6 +525,31 @@ section('SUITE 4 — lapses 保护机制');
   const s = makeReviewCard(1, 2.95);
   processAnswer(s, 'easy', TODAY, NOW); // ef = min(3.0, 2.95+0.15) = 3.0
   check('4-D ef caps at 3.0', s.ease_factor, 3.0);
+}
+
+// 4-E: learning_hard_counts_lapse=true → learning Hard 计入连失
+{
+  const orig = SRS_CONFIG.learning_hard_counts_lapse;
+  SRS_CONFIG.learning_hard_counts_lapse = true;
+  const s = newCardState('deck', 'c1');
+  processAnswer(s, 'hard', TODAY, NOW);
+  check('4-E stage=learning', s.srs_stage, 'learning');
+  check('4-E lapses_streak=1', s.lapses_streak, 1);
+  check('4-E lapses_total=1', s.lapses_total, 1);
+  SRS_CONFIG.learning_hard_counts_lapse = orig;
+}
+
+// 4-F: learning_hard_counts_lapse=true → relearning Hard 计入连失
+{
+  const orig = SRS_CONFIG.learning_hard_counts_lapse;
+  SRS_CONFIG.learning_hard_counts_lapse = true;
+  const s = makeRelearningCard(2, 2.20);
+  s.lapses_total   = 3;
+  s.lapses_streak  = 1;
+  processAnswer(s, 'hard', TODAY, NOW);
+  check('4-F lapses_streak=2', s.lapses_streak, 2);
+  check('4-F lapses_total=4', s.lapses_total, 4);
+  SRS_CONFIG.learning_hard_counts_lapse = orig;
 }
 
 // ═══════════════════════════════════════════════
