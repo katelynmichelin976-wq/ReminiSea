@@ -75,7 +75,8 @@
 | `minimum_interval` | 1 | 最小间隔（天） |
 | `maximum_interval` | 36500 | 最大间隔（天） |
 | `ease_min` | 1.30 | Ease 下限 |
-| `hard_step_multiplier` | 1.0 | 学习中 Hard 步长乘数 |
+| `hard_step_multiplier` | 1.0 | 废弃（v4.10.1 改用 Anki 平均规则） |
+| `learning_hard_counts_lapse` | false | learning 阶段 Hard 计入连失 |
 | `daily_remove_lapses` | 3 | 当日移除阈值 |
 | `auto_suspend_lapses` | 8 | 自动挂起阈值 |
 | `new_cards_per_day` | 5 | 每日新卡上限 |

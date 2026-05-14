@@ -2,7 +2,7 @@
 
 > 版本：v6.9
 > 日期：2026-03-23
-> 修订说明：lapses 拆为 lapses_streak（连续，触发保护）+ lapses_total（累计，统计用）；AD 建议 relearning_steps=[10,60,180]；hard_step_multiplier AD 建议值 1.5；明确 due_date/due_ts 使用约定；Phase 2 照护者统计补充 Retention 和 Forgetting Velocity
+> 修订说明：lapses 拆为 lapses_streak（连续，触发保护）+ lapses_total（累计，统计用）；AD 建议 relearning_steps=[10,60,180]；废弃 hard_step_multiplier 改用 Anki 平均规则（第一步取(steps[0]+steps[1])/2，仅一步×1.5）；新增 learning_hard_counts_lapse（AD true）；明确 due_date/due_ts 使用约定；Phase 2 照护者统计补充 Retention 和 Forgetting Velocity
 
 ---
 
@@ -42,7 +42,7 @@
 | `starting_ease` | 2.50 | 1.30 | 配合 ceil 计算，间隔增长保守但稳定 |
 | `learning_steps` | 1m 10m | 1m 5m 10m | 更密集强化 |
 | `relearning_steps` | 10m | 10m 60m 180m | 遗忘后当天内分3次强化，符合 AD 小时级遗忘曲线 |
-| `hard_step_multiplier` | 1.0 | 1.5 | Hard 等待时间为 Good 的1.5倍，体现认知负担差异 |
+| `learning_hard_counts_lapse` | false | true | learning/relearning 阶段 Hard 也计入连失，触发保护机制 |
 | `maximum_interval` | 36500 天 | 7 天 | 超7天正确率跌至随机水平 |
 | `new_interval` | 0.00 | 0.00 | 忘了就立刻补救，重置最合理 |
 | `interval_modifier` | 1.00 | 0.80 | 整体缩短间隔20%，更频繁复习 |
@@ -230,9 +230,13 @@ Again  →  step_index = 0
            lapses_streak++；lapses_total++
 
 Hard   →  step_index 不变
-           due_ts = now + learning_steps[step_index] × hard_step_multiplier 分钟
-           // Anki 实际行为：第一步 Hard = 前两步平均值；其他步重复当前步
-           // 我们用 hard_step_multiplier 近似，默认1.0
+           // Anki 规则：第一步取 (steps[0]+steps[1])/2，仅一步时 ×1.5，后续不变
+           due_ts = now + (
+             step_index === 0
+               ? (steps.length > 1 ? (steps[0] + steps[1]) / 2 : steps[0] * 1.5)
+               : steps[step_index]
+           ) 分钟
+           if (learning_hard_counts_lapse) { lapses_streak++; lapses_total++ }
 
 Good   →  step_index++
            lapses_streak = 0（答对清零）
@@ -276,7 +280,12 @@ Again  →  step_index = 0
            lapses_streak++；lapses_total++
 
 Hard   →  step_index 不变
-           due_ts = now + relearning_steps[step_index] × hard_step_multiplier 分钟
+           due_ts = now + (
+             step_index === 0
+               ? (steps.length > 1 ? (steps[0] + steps[1]) / 2 : steps[0] * 1.5)
+               : steps[step_index]
+           ) 分钟
+           if (learning_hard_counts_lapse) { lapses_streak++; lapses_total++ }
 
 Good/Easy → step_index++
              lapses_streak = 0（答对清零）
@@ -426,9 +435,11 @@ const SRS_CONFIG = {
   // 避免连续答 Hard/Again 后易度因子跌至无法增长
 
   hard_step_multiplier : 1.0,
-  // learning/relearning 阶段答 Hard 时的步长倍数
-  // 1.0 = 等待时间与 Good 相同，但步长不推进
-  // 注：Anki 实际行为是前两步的平均值，我们用此参数近似
+  // 废弃（已改用 Anki 平均规则）
+
+  learning_hard_counts_lapse : false,
+  // learning/relearning 阶段 Hard 是否计入连失
+  // AD 模式 true：让 daily_remove_lapses 在 3 次 Hard 后移除当日卡片
 
   // ── T1→T7 过渡
   t1_review_before_mix : 2,
@@ -1003,7 +1014,7 @@ Phase 4（数据验证后）
 
 ## 十五、已知局限
 
-**Hard 按钮在 learning 阶段的行为差异**：Anki 实际行为是前两步的平均值（如步长 1m 10m，Hard 显示6m），我们用 `hard_step_multiplier` 近似，默认1.0（等待时间与 Good 相同，但步长不推进）。行为有差异，影响较小。
+**Hard 按钮在 learning 阶段的行为差异**：（v4.10.1 已修复）改用 Anki 完全相同的前两步平均规则，废弃 `hard_step_multiplier`。
 
 **训练迁移性有限**：只能提高特定物品的特定任务表现，不能迁移。应如实告知照护者。
 

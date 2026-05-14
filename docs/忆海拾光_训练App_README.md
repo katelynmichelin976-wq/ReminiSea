@@ -102,6 +102,7 @@ anki-maker 仓库（GitHub Pages）
 | `learn_ahead_limit` | 1200s | 1200s | 提前出题窗口，对应 Anki 同名参数 |
 | `daily_remove_lapses` | - | 3次 | 连续失败当日移出阈值 |
 | `auto_suspend_lapses` | - | 8次 | 累计失败自动挂起阈值 |
+| `learning_hard_counts_lapse` | false | true | learning/relearning 阶段 Hard 计入连失 |
 
 **参数命名规范：** 所有 SRS 参数与 Anki 同名对齐，不加任何后缀。
 

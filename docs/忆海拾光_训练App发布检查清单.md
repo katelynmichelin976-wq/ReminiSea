@@ -216,7 +216,7 @@
 |---|--------|------|------|
 | 8.1.1 | 新卡按 `learning_steps` 步骤逐步推进，未完成所有步骤不毕业 | 📱 | - |
 | 8.1.2 | `1d` 步骤在同一 session 内不提前出题（`learn_ahead_limit=20m` 保护）| 📱 | - |
-| 8.1.3 | Hard 不推进 step_index，等待时间 = 当前步 × `hard_step_multiplier` | 📱 | - |
+| 8.1.3 | Hard 不推进 step_index，等待时间 = Anki 平均规则（第一步取(steps[0]+steps[1])/2，仅一步×1.5） | 📱 | - |
 | 8.1.4 | Again 退回 step_index=0，lapses_streak / lapses_total 正确累计 | 📱 | - |
 | 8.1.5 | 毕业后 srs_stage=review，interval=graduating_interval，ease_factor 保持 starting_ease | 🤖 | ✅ |
 

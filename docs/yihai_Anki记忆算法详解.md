@@ -757,7 +757,7 @@ fsrs_params:              &[]                 // 17-21 个可训练参数
 | 四按钮 | again / hard / good / easy，每种状态对四个按钮分别处理 |
 | 固定 ease 增量 | Again -0.20, Hard -0.15, Easy +0.15（与 Anki 完全一致） |
 | Leech 检测 | `daily_remove_lapses=3`, `auto_suspend_lapses=8` |
-| Hard 步进乘数 | `hard_step_multiplier: 1.0`（Anki 第一步取平均后续不变） |
+| Hard 步进规则 | Anki 平均规则：第一步取(steps[0]+steps[1])/2，仅一步 ×1.5，后续不变（v4.10.1 废弃 hard_step_multiplier） |
 | 间隔乘数 | `interval_modifier`, `easy_bonus`, `hard_interval` |
 | 日卡片限额 | `new_cards_per_day`, `maximum_reviews_per_day` |
 

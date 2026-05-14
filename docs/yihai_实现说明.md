@@ -146,7 +146,7 @@
 
 三阶段学习步长（learning_steps 默认 [1, 10]）：
 - again → step 0，due_ts = now + 1min
-- hard → 当前步 × hard_step_multiplier（1.5），步不变
+- hard → Anki 平均规则（第一步取(steps[0]+steps[1])/2，仅一步×1.5），步不变
 - good → 下一步，最后一步毕业到 review
 - easy → 直接毕业到 review（easy_interval = 4）
 
