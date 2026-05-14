@@ -1693,12 +1693,42 @@ async function downloadMediaFromCDNorSupabase(path, mimeType) {
 async function restoreCloudSession() {
   try {
     _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data, error } = await _sb.auth.getSession();
+    var { data, error } = await _sb.auth.getSession();
     if (error) throw error;
     if (data.session) {
       _syncEnabled = true;
       _cloudUserEmail = data.session.user.email;
       _cloudUserId = data.session.user.id;
+      _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
+      return;
+    }
+    // getSession() 没找到 — 可能 SDK 尚未完成 localStorage 恢复
+    // 尝试直接读取 Supabase 的 localStorage token 并用 setSession 恢复
+    var sbKey = 'sb-' + SUPABASE_URL.replace(/^https?:\/\//, '') + '-auth-token';
+    var raw = localStorage.getItem(sbKey);
+    if (raw) {
+      try {
+        var parsed = JSON.parse(raw);
+        if (parsed.access_token && parsed.refresh_token) {
+          var r = await _sb.auth.setSession({ access_token: parsed.access_token, refresh_token: parsed.refresh_token });
+          if (!r.error && r.data.session) {
+            _syncEnabled = true;
+            _cloudUserEmail = r.data.session.user.email;
+            _cloudUserId = r.data.session.user.id;
+            _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
+            return;
+          }
+        }
+      } catch(pe) { console.warn('[sync] setSession fallback failed', pe.message); }
+    }
+    // Chrome 硬刷新后若 SDK CDN 响应延迟，getSession 可能因竞态返回 null
+    // 再给一次机会：等 300ms 后重试 getSession
+    await new Promise(function(r){setTimeout(r,300)});
+    var retry = await _sb.auth.getSession();
+    if (retry.data && retry.data.session) {
+      _syncEnabled = true;
+      _cloudUserEmail = retry.data.session.user.email;
+      _cloudUserId = retry.data.session.user.id;
       _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     }
   } catch(e) {
