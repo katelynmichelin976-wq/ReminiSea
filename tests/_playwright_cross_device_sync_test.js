@@ -269,12 +269,20 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     });
     await wait(pageA, 500);
 
-    // 手动同步
+    // 手动同步（使用 UI 按钮 + 等待模态关闭）
     await pageA.click(SETTINGS_SEL); await wait(pageA, 200);
-    await run(pageA, () => { const t = document.querySelectorAll('.sheet-tab'); for (const x of t) { if (x.textContent.includes('云端')) { x.click(); return; } } });
-    await wait(pageA, 200);
-    await run(pageA, (key) => { syncAll(key, false, false).catch(e => console.warn('[syncAll A]', e && e.message)); }, deckKeyA);
-    await wait(pageA, 3000);
+    await run(pageA, () => {
+      const btns = document.querySelectorAll('button');
+      for (const b of btns) { if (b.textContent.includes('同步')) { b.click(); break; } }
+    });
+    for (let i = 0; i < 40; i++) {
+      const done = await run(pageA, () => {
+        const modal = document.getElementById('sync-modal');
+        return modal && modal.style.display === 'none';
+      });
+      if (done) break;
+      await wait(pageA, 500);
+    }
     await run(pageA, () => { const o = document.getElementById('settings-overlay'); if (o) o.classList.remove('open'); });
     await wait(pageA, 200);
 
@@ -455,12 +463,20 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     }, { key: deckMetaB.key });
     console.log(`  [诊断] B打开牌组后本地: ${diagBafterOpen.stateCount}条 ${JSON.stringify(diagBafterOpen.stages)} dirty=${diagBafterOpen.dirtyCount}`);
 
-    // 设备 B 手动同步（触发 upload dirty states）
+    // 设备 B 手动同步（使用 UI 按钮 + 等待模态关闭）
     await pageB.click(SETTINGS_SEL); await wait(pageB, 200);
-    await run(pageB, () => { const t = document.querySelectorAll('.sheet-tab'); for (const x of t) { if (x.textContent.includes('云端')) { x.click(); return; } } });
-    await wait(pageB, 200);
-    await run(pageB, (key) => { syncAll(key, false, false).catch(e => console.warn('[syncAll B]', e && e.message)); }, deckMetaB.key);
-    await wait(pageB, 3000);
+    await run(pageB, () => {
+      const btns = document.querySelectorAll('button');
+      for (const b of btns) { if (b.textContent.includes('同步')) { b.click(); break; } }
+    });
+    for (let i = 0; i < 40; i++) {
+      const done = await run(pageB, () => {
+        const modal = document.getElementById('sync-modal');
+        return modal && modal.style.display === 'none';
+      });
+      if (done) break;
+      await wait(pageB, 500);
+    }
     await run(pageB, () => { const o = document.getElementById('settings-overlay'); if (o) o.classList.remove('open'); });
     await wait(pageB, 200);
 
@@ -555,13 +571,13 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
         await _sb.from('cards_pool').delete().eq('deck_name', '__test_xdev__');
       }, { uid, dk: TEST_DECK_ID, oldKey: OLD_DECK_KEY });
       // 清理本地 localStorage（防止残留到同一 Profile 的下次运行）
-      await loginPage.evaluate((dk, oldKey) => {
+      await loginPage.evaluate(({ dk, oldKey }) => {
         localStorage.removeItem('yihai_deck_cloud_' + dk);
         localStorage.removeItem('yihai_deck_' + oldKey);
         const idx = JSON.parse(localStorage.getItem('yihai_decks_index') || '[]');
         const filtered = idx.filter(m => m.key !== 'cloud_' + dk && m.key !== oldKey);
         localStorage.setItem('yihai_decks_index', JSON.stringify(filtered));
-      }, TEST_DECK_ID, OLD_DECK_KEY);
+      }, { dk: TEST_DECK_ID, oldKey: OLD_DECK_KEY });
     }
     await loginPage.close();
     console.log('  测试数据已清理（云端 + 本地）');

@@ -1467,21 +1467,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
               </label>
             </div>
           </div>
-          <div class="sheet-section">
-            <div class="sheet-section-lbl">云端牌组</div>
-            <div class="sheet-row" style="flex-direction:column;align-items:stretch;gap:8px">
-              <div id="cloud-deck-list" style="font-size:13px;color:var(--text2)">点击「同步」获取云端牌组...</div>
-              <div id="cloud-progress" style="display:none;margin-top:4px">
-                <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-                  <span id="cloud-prog-text" style="font-size:11px;color:var(--text2)"></span>
-                  <span id="cloud-prog-pct" style="font-size:11px;font-weight:600;color:var(--blue)"></span>
-                </div>
-                <div style="height:4px;background:var(--bd);border-radius:2px;overflow:hidden">
-                  <div id="cloud-prog-bar" style="height:100%;background:var(--blue);border-radius:2px;width:0%;transition:width .15s"></div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -1794,8 +1779,6 @@ async function doCloudLogout() {
   updateDeckStats();
 
   updateCloudTabUI();
-  var listEl = document.getElementById('cloud-deck-list');
-  if (listEl) listEl.innerHTML = '<span style="color:var(--text3)">请先登录</span>';
 }
 
 // 采集设备信息用于问题定位
@@ -2119,22 +2102,6 @@ async function cloudPullConfig() {
   }
 }
 
-// ── 同步进度显示 ──
-function showSyncProg(curr, total, text) {
-  const prog = document.getElementById('cloud-progress');
-  const el   = document.getElementById('cloud-prog-text');
-  const pct  = document.getElementById('cloud-prog-pct');
-  const bar  = document.getElementById('cloud-prog-bar');
-  if (!prog) return;
-  prog.style.display = 'block';
-  if (el)  el.textContent  = text || '';
-  if (pct) pct.textContent = curr + '/' + total;
-  if (bar) bar.style.width  = (curr / total * 100) + '%';
-}
-function hideSyncProg() {
-  const prog = document.getElementById('cloud-progress');
-  if (prog) prog.style.display = 'none';
-}
 
 // 判断是否需要同步（有本地脏数据 OR 服务器有更新）
 async function checkSyncNeeded() {
@@ -2164,123 +2131,7 @@ async function checkSyncNeeded() {
   } catch(e) { return true; }  // 网络/数据库错误 → 保守同步
 }
 
-// 完整双向同步：上传所有未同步数据 → 下载云端 CardState 合并
-async function syncAll(deckKey, showToast, noDecks) {
-  if (!_syncEnabled || !_sb) return;
-  if (showToast) showCloudToast('同步中…');
-  logAppEvent('sync_started', { deck_key: deckKey, noDecks: !!noDecks }, deckKey);
-  var syncStats = { trials: 0, events: 0, csl: 0, states: 0, states_merged: 0, config: 0, decks: 0 };
-  try {
-    const totalSteps = noDecks ? 6 : 7;
-
-    // 1. 上传答题记录
-    showSyncProg(1, totalSteps, '正在上传练习记录...');
-    const db = await openSrsDb();
-    const uid = getCurrentUserId();
-    const allTrials = await new Promise((res, rej) => {
-      const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
-      req.onsuccess = e => res(e.target.result || []);
-      req.onerror   = e => rej(e.target.error);
-    });
-    const pendingCount = allTrials.filter(t => !t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid)).length;
-    for (const t of allTrials) {
-      if (!t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid)) { try { await syncTrialLog(t); syncStats.trials++; } catch(e) { /* skip */ } }
-    }
-
-    // 1.5 上传应用事件日志
-    showSyncProg(2, totalSteps, '正在上传事件日志...');
-    syncStats.events = await syncAppEvents();
-
-    // 1.6 上传 CardState 变更日志
-    showSyncProg(3, totalSteps, '正在上传状态日志...');
-    syncStats.csl = await syncCardStateLogs();
-
-    // 2. 同步卡牌状态：仅下载（上传由 DB trigger 从 TrialLog 自动派生）
-    showSyncProg(4, totalSteps, '正在同步练习状态...');
-    if (deckKey) {
-      syncStats.states_merged = await syncCardStatesFromCloud(deckKey);
-      // CardState 上传已交数据库 trigger（sync_trials INSERT → UPSERT sync_card_states）
-    }
-
-    // 5.5 拉取用户牌组练习天数
-    showSyncProg(5, totalSteps, '正在同步练习天数...');
-    try {
-      const { data: deckStats } = await _sb.from('user_deck_stats')
-        .select('deck_key, practice_days, last_practice_date')
-        .eq('user_id', _cloudUserId);
-      if (deckStats) {
-        localStorage.setItem('yihai_practice_days', JSON.stringify(deckStats));
-        // 写入对应 DECKS_META 的 practiceDays
-        for (const ds of deckStats) {
-          const m = DECKS_META.find(d => d.key === ds.deck_key);
-          if (m) m.practiceDays = ds.practice_days;
-        }
-      }
-    } catch(e) { console.warn('[sync] practice days fetch error:', e.message); }
-
-    // 7. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
-    showSyncProg(6, totalSteps, '正在同步配置...');
-    const cfgItems = await cloudPullConfig();
-    syncStats.config = cfgItems;
-    await cloudPushConfig();
-
-    // 8. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
-    let newDecks = 0, syncedDecks = 0;
-    if (!noDecks) {
-      showSyncProg(7, totalSteps, '正在同步牌组...');
-      const { data: serverDecks } = await _sb.from('server_decks').select('id,name');
-      if (serverDecks) {
-        for (const sd of serverDecks) {
-          try {
-            const existing = DECKS_META.find(m => m.name === sd.name);
-            if (existing) {
-              await syncDeckFromCloud(sd.id, sd.name, null, true);
-              syncedDecks++;
-            } else {
-              await downloadDeckFromCloud(sd.id, sd.name, null, true);
-              newDecks++;
-            }
-          } catch(e) { console.warn('[sync] skip deck:', sd.name, e.message); }
-        }
-        // 下载/同步牌组后拉取每个云牌组的 CardState
-        for (const sd of serverDecks) {
-          try {
-            var meta = DECKS_META.find(m => m.name === sd.name);
-            if (meta) { syncStats.states_merged += await syncCardStatesFromCloud(meta.key); }
-          } catch(e) {}
-        }
-        renderDeckList();
-        updateDeckStats();
-      }
-      await refreshServerDeckList();
-    }
-    hideSyncProg();
-    syncStats.decks = newDecks + syncedDecks;
-
-    // 清理过期日志（非阻塞）
-    purgeOldLogs();
-
-    localStorage.setItem('yihai_global_sync_ts', String(Date.now()));
-
-    logAppEvent('sync_done', { deck_key: deckKey, stats: syncStats }, deckKey);
-
-    // 提示
-    if (showToast) {
-      const parts = [];
-      if (syncStats.trials > 0) parts.push('上传答题 ' + syncStats.trials);
-      if (syncStats.states > 0) parts.push('上传状态 ' + syncStats.states);
-      if (syncStats.states_merged > 0) parts.push('状态更新 ' + syncStats.states_merged);
-      if (syncStats.config > 0) parts.push('配置 ' + syncStats.config);
-      if (newDecks > 0) parts.push('下载牌组 ' + newDecks);
-      if (syncedDecks > 0) parts.push('同步牌组 ' + syncedDecks);
-      if (parts.length > 0) showCloudToast('同步完成 · ' + parts.join(' · '));
-      else if (pendingCount === 0 && syncStats.states_merged === 0 && !newDecks && !syncedDecks) showCloudToast('已是最新');
-    }
-  } catch(e) { hideSyncProg(); console.warn('[sync] syncAll error:', e.message); if (showToast) showCloudToast('同步失败'); }
-  if (deckKey) updateDeckStats();
-}
-
-// 统一同步入口（v4.10）：支持模态进度条 + 语音播报 + 不同同步范围
+// 统一同步入口（v4.10）：支持模态进度条 + 语音播报 + 不同同步范围：支持模态进度条 + 语音播报 + 不同同步范围
 async function runSync(opts) {
   if (!_syncEnabled || !_sb) { if (opts && opts.showToast) showCloudToast('未连接服务器', true); return; }
   var options = Object.assign({
@@ -2379,7 +2230,6 @@ async function runSync(opts) {
         renderDeckList();
         updateDeckStats();
       }
-      await refreshServerDeckList();
     }
     // 5. 事件日志（可选）
     if (options.events) {
@@ -4866,32 +4716,6 @@ function switchTab(n) {
   if (n === 4) updateCloudTabUI();
 }
 
-async function refreshServerDeckList() {
-  if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
-  const listEl = document.getElementById('cloud-deck-list');
-  try {
-    // 查询 server_decks 获取整理后的牌组列表
-    const { data: decks, error } = await _sb.from('server_decks').select('id,name').order('name');
-    if (error) throw error;
-    if (!decks || !decks.length) {
-      listEl.innerHTML = '<span style="color:var(--text3)">云端暂无牌组（请先在牌组管理工具中整理上传）</span>';
-      return;
-    }
-    let html = '';
-    decks.forEach(d => {
-      const exists = DECKS_META.find(m => m.name === d.name);
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)">'
-        + '<span style="font-size:16px">' + (exists ? '✅' : '📦') + '</span>'
-        + '<span style="flex:1;font-weight:500">' + esc(d.name) + '</span>'
-        + '<span style="font-size:11px;color:var(--text3)">' + (exists ? '已安装' : '未安装') + '</span>'
-        + '</div>';
-    });
-    listEl.innerHTML = html;
-  } catch(e) {
-    listEl.innerHTML = '<span style="color:var(--text3)">加载失败：' + esc(e.message) + '</span>';
-  }
-}
-
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = s;
@@ -4928,22 +4752,6 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
   if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '下载中...'; }
 
-  // 显示进度条（被 syncAll 调用时不显示逐卡进度，避免覆盖步骤指示）
-  const progEl  = document.getElementById('cloud-progress');
-  const textEl  = document.getElementById('cloud-prog-text');
-  const pctEl   = document.getElementById('cloud-prog-pct');
-  const barEl   = document.getElementById('cloud-prog-bar');
-  function setProgress(done, total) {
-    if (noToast) return;
-    if (!progEl) return;
-    progEl.style.display = 'block';
-    const pct = Math.round(done / total * 100);
-    textEl.textContent = `正在下载 ${done}/${total} 张...`;
-    pctEl.textContent = pct + '%';
-    barEl.style.width = pct + '%';
-  }
-  function hideProgress() { if (!noToast && progEl) progEl.style.display = 'none'; }
-
   try {
     // 1. 通过 server_deck_cards 获取该牌组的 card_id 列表（按排序）
     const { data: links, error: linkErr } = await _sb.from('server_deck_cards')
@@ -4965,15 +4773,11 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     cards.forEach(c => { cardMap[c.card_id] = c; });
     const ordered = cardIds.map(id => cardMap[id]).filter(Boolean);
 
-    const total = ordered.length;
-    setProgress(0, total);
-
     // 3. 生成 deck key
     const key = 'cloud_' + deckId;
 
     // 4. 下载媒体并组装卡片（并发 3 路，卡内图音并行）
     const deckCards = [];
-    let completed = 0;
     await parallelMapLimit(ordered, 3, async (c, i) => {
       const card = { id: c.card_id, name: c.card_name, img: '', audioUrl: '', details: [] };
       const tasks = [];
@@ -4999,10 +4803,9 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
       card._imgUrl = c.image_url || '';
       card._audUrl = c.audio_url || '';
       deckCards[i] = card;
-      setProgress(++completed, total);
     });
 
-    if (!deckCards.length) { hideProgress(); showCloudToast('无有效卡片', true); return; }
+    if (!deckCards.length) { showCloudToast('无有效卡片', true); return; }
 
     // 记录同步时间戳
     localStorage.setItem('yihai_sync_at_' + key, new Date().toISOString());
@@ -5019,16 +4822,12 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     currentDeck = key;
     renderDeckList();
     updateDeckStats();
-    if (!noToast) refreshServerDeckList(); // 更新云端列表的"已导入"状态
 
-    hideProgress();
     if (!noToast) showCloudToast('✓ 已导入「' + deckName + '」' + deckCards.length + ' 张');
   } catch(e) {
-    hideProgress();
     if (!noToast) showCloudToast('下载失败：' + e.message, true);
     console.error('[cloud] download error:', e);
   } finally {
-    hideProgress();
     if (btnEl) { btnEl.disabled = false; btnEl.textContent = '下载'; }
   }
 }
@@ -5039,21 +4838,6 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
   if (!existing) { showCloudToast('本地无此牌组，请先下载', true); return; }
   const localKey = existing.key;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '同步中...'; }
-
-  const progEl  = document.getElementById('cloud-progress');
-  const textEl  = document.getElementById('cloud-prog-text');
-  const pctEl   = document.getElementById('cloud-prog-pct');
-  const barEl   = document.getElementById('cloud-prog-bar');
-  function setProgress(done, total) {
-    if (noToast) return;
-    if (!progEl) return;
-    progEl.style.display = 'block';
-    const pct = total ? Math.round(done / total * 100) : 100;
-    textEl.textContent = total ? `正在同步 ${done}/${total} 张...` : '检查更新中...';
-    pctEl.textContent = pct + '%';
-    barEl.style.width = pct + '%';
-  }
-  function hideProgress() { if (!noToast && progEl) progEl.style.display = 'none'; }
 
   // 媒体下载
   async function downloadMedia(cardId, imageUrl, audioUrl) {
@@ -5100,8 +4884,6 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 3. 分类：新增（本地没有）、已有（本地存在）
     const newIds = serverIds.filter(id => !localMap[id]);
     const existingIds = serverIds.filter(id => localMap[id]);
-
-    setProgress(0, newIds.length + existingIds.length);
 
     // 4. 对已有卡片：增量查询（只拉 updated_at > lastSyncAt 的）
     let changedMap = {}; // { card_id: {card_name, image_url, audio_url} }
@@ -5188,8 +4970,6 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
 
     // 8. 删除同步：服务器已移除的卡片不同步保留（与 Anki 逻辑一致）
 
-    setProgress(newIds.length + existingIds.length, newIds.length + existingIds.length);
-
     // 9. 保存
     localStorage.setItem('yihai_sync_at_' + localKey, syncNow);
     DECKS[localKey] = merged;
@@ -5201,9 +4981,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     if (metaIdx >= 0) DECKS_META[metaIdx].source = 'cloud';
     renderDeckList();
     updateDeckStats();
-    if (!noToast) refreshServerDeckList();
 
-    hideProgress();
     let msg;
     if (!lastSyncAt) {
       msg = '✓ 首次同步完成：共 ' + merged.length + ' 张';
@@ -5214,11 +4992,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     }
     if (!noToast) showCloudToast(msg);
   } catch(e) {
-    hideProgress();
     if (!noToast) showCloudToast('同步失败：' + e.message, true);
     console.error('[sync] error:', e);
   } finally {
-    hideProgress();
     if (btnEl) { btnEl.disabled = false; btnEl.textContent = '🔄 同步'; }
   }
 }

@@ -118,11 +118,11 @@ async function login(page, email) {
     if (ok) break;
     await wait(page, 500);
   }
-  // 等待同步完成（进度条隐藏）
-  for (let i = 0; i < 30; i++) {
+  // 等待同步模态关闭（v4.10 runSync 模态弹窗，替代了旧的云端进度条）
+  for (let i = 0; i < 60; i++) {
     const done = await page.evaluate(() => {
-      const prog = document.getElementById('cloud-prog-text');
-      return !prog || prog.style.display === 'none' || prog.textContent === '';
+      const m = document.getElementById('sync-modal');
+      return m && m.style.display === 'none';
     });
     if (done) break;
     await wait(page, 500);
@@ -201,7 +201,7 @@ async function checkTrials(page) {
     await page.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 2000);
 
-    pass('页面加载成功', await page.evaluate(() => document.title.includes('v4.10.1')));
+    pass('页面加载成功', await page.evaluate(() => document.querySelectorAll('.deck-card').length > 0));
 
     // ═══════════════════ PHASE 2: A 登录 + 练习 ═══════════════════
     section('PHASE 2: A 登录，蔬菜水果练 3 题 (good/hard/good)');
@@ -209,16 +209,6 @@ async function checkTrials(page) {
     await login(page, USER_A.email);
     pass('A 登录成功', await page.evaluate(() => !!( _cloudUserId && _syncEnabled)));
     check('A uid', await page.evaluate(() => _cloudUserId.substring(0,8)), USER_A.uid8);
-
-    // 等待同步模态关闭，确保牌组数据完全下载
-    for (let i = 0; i < 30; i++) {
-      const done = await page.evaluate(() => {
-        const m = document.getElementById('sync-modal');
-        return m && m.style.display === 'none';
-      });
-      if (done) break;
-      await wait(page, 500);
-    }
 
     // 显式下载卡片定义数据（login sync 只下载元数据）
     await page.evaluate(async (name) => {

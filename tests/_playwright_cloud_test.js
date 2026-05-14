@@ -211,7 +211,7 @@ const CARD_COUNT = 33;
     await run(page, ({ key, val }) => { saveSrsConfigKey(key, val); }, { key: 'new_cards_per_day', val: testNewVal });
     await wait(page, 1500);
     check('本地配置已更新', await run(page, () => SRS_CONFIG.new_cards_per_day), testNewVal);
-    await run(page, () => syncAll(currentDeck, false, true).catch(e => console.warn('[test] sync cfg:', e.message)));
+    await run(page, () => runSync({ deckKey: currentDeck, modal: false, decks: false, showToast: false }).catch(e => console.warn('[test] sync cfg:', e.message)));
     await wait(page, 4000);
     console.log(`  已推送配置 (new_cards_per_day: ${testNewVal})`);
     await run(page, ({ key, val }) => { saveSrsConfigKey(key, val); }, { key: 'new_cards_per_day', val: origNewPerDay });

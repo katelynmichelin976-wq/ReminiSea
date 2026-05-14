@@ -42,7 +42,7 @@ const CARD_COUNT = 33;
     await page.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 2000);
 
-    pass('页面加载成功', await run(page, () => document.title.includes('v4.10.1')));
+    pass('页面加载成功', await run(page, () => !!document.querySelector('.home-version')));
     pass('主页显示内置牌组', await run(page, () => document.querySelectorAll('.deck-card').length > 0));
 
     // ═══════════════════ PHASE 2: 登录 ═══════════════════
@@ -276,18 +276,18 @@ const CARD_COUNT = 33;
     // ═══════════════════ PHASE 9: 本地 vs 云端 ═══════════════════
     section('PHASE 9: 本地 vs 云端数据对比');
 
-    const cloudCompare = await run(page, async () => {
+    const cloudCompare = await run(page, async (key) => {
       const tok = JSON.parse(localStorage.getItem('sb-juzkonrzfyvchqxzmlpr-auth-token') || '{}');
       const headers = { 'Authorization': 'Bearer ' + tok.access_token, apikey: 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD' };
-      const r1 = await fetch(`https://juzkonrzfyvchqxzmlpr.supabase.co/rest/v1/sync_card_states?select=deck_key,srs_stage&deck_key=eq.${CLOUD_DECK_KEY}`, { headers });
+      const r1 = await fetch(`https://juzkonrzfyvchqxzmlpr.supabase.co/rest/v1/sync_card_states?select=deck_key,srs_stage&deck_key=eq.${key}`, { headers });
       const cloudStates = await r1.json();
       const cloudTotal = cloudStates.length;
       const db = await new Promise(resolve => { const r = indexedDB.open('yihai_srs', 5); r.onsuccess = () => resolve(r.result); });
       const localStates = await new Promise(resolve => { db.transaction('card_states', 'readonly').objectStore('card_states').getAll().onsuccess = e => resolve(e.target.result); });
-      const localTotal = localStates.filter(s => s.deck_key === CLOUD_DECK_KEY).length;
+      const localTotal = localStates.filter(s => s.deck_key === key).length;
       db.close();
       return { cloudTotal, localTotal };
-    });
+    }, CLOUD_DECK_KEY);
 
     console.log(`  云端: ${cloudCompare.cloudTotal}  本地: ${cloudCompare.localTotal}`);
     check('card_states 数量一致', cloudCompare.cloudTotal, cloudCompare.localTotal);
