@@ -128,6 +128,38 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.10 — 2026-05-14
+
+**同步机制重新设计**
+
+- **runSync 统一同步入口**：新增模态弹窗 `#sync-modal`，同步过程显示进度条 + 语音播报，"正在上传练习记录"→"同步配置"→"同步练习状态"→"同步牌组"。阻塞用户操作直到同步完成，确保练习前数据一致
+- **登录调 runSync**：`doCloudLogin()` 登录后调用 `runSync({ modal:true, decks:true })`，不再执行旧 `syncAll`
+- **登出保留本地数据**：退出登录不再清空 IndexedDB（card_states/trials），云牌组保留在列表中离线可用。`_cloudUserId` 保留（离线数据归属），仅 `_syncEnabled=false`
+- **syncAll → runSync**：`syncAll(deckKey,showToast,noDecks)` 重构为 `runSync(options)`，支持 `options.modal/decks/deckKey/voice/title`
+
+**多用户数据隔离**
+
+- `getAllCardStates(deckKey)` 按 `user_id + deck_key` 双字段过滤 IndexedDB，不同用户同牌组互不干扰
+- `syncTrialLog` / `syncCardState` 统一用 `getCurrentUserId()` 获取关联用户 ID
+
+**跨设备同步重构**
+
+- **DP 不再跨设备同步**：`daily_progress`（reviewed_today/daily_new_today/评级分布）仅本地维护。跨设备只需同步 CardState，练习队列自动对齐。删除 `syncAll` step 5 跨设备统计合并
+- **Orphaned CardState 过滤**：统计页渲染时过滤 DECKS 中已不存在的卡片状态，牌组总览/筛选器计算逻辑解耦
+- `getDeckStatsSrs` 兼容 `due_ts=0`：learning 卡不会被永久跳过
+
+**新增/修改测试**
+
+| 测试文件 | 断言 | 覆盖场景 |
+|----------|------|---------|
+| `_playwright_v4.10_regression_test.js` | 37 | 登录同步→练习→配置→注销保留→离线可用→重新登录验证 |
+| `_playwright_multi_user_sync_test.js` | - | 多用户数据隔离验证 |
+| `_playwright_cloud_test.js` | 17→17 | 移除 DP 检查，改进 Device B 同步等待 |
+| `_playwright_cross_device_sync_test.js` | 21→18 | 移除 DP 验证（v4.10 不再跨设备同步 DP） |
+| `_playwright_user_switch_test.js` | 7→8 | 登出后牌组保留断言 |
+
+---
+
 ### v4.4 — 2026-05-01
 
 **Supabase 云端同步**

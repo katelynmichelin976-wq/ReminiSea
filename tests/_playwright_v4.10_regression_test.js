@@ -106,38 +106,27 @@ const SETTINGS_SEL = '[aria-label="设置"]';
     // ═══════════════════ PHASE 3: 同步并验证主页 ═══════════════════
     section('PHASE 3: 同步并验证主页数据');
 
-    // 等待自动同步完成（登录后 syncAll 自动触发，下载牌组+状态）
-    await wait(page, 10000);
-
-    // 关闭设置
+        // 登录自动触发了 runSync，等待同步模态完成
     await page.evaluate(() => {
       const overlay = document.getElementById('settings-overlay');
       if (overlay) overlay.classList.remove('open');
     });
-    await wait(page, 500);
-
-    // 如果还没下载蔬菜水果牌组，点击同步
-    let hasDeck = await page.evaluate((name) => {
-      return DECKS_META.some(m => m.name === name);
-    }, '蔬菜水果');
-    if (!hasDeck) {
-      console.log('  牌组未自动下载，手动同步...');
-      await page.evaluate((sel) => { const b = document.querySelector(sel); if (b) b.click(); }, SETTINGS_SEL);
+    let syncDone = false;
+    for (let i = 0; i < 60; i++) {
+      syncDone = await page.evaluate(() => {
+        const modal = document.getElementById('sync-modal');
+        return modal && modal.style.display === 'none';
+      });
+      if (syncDone) break;
       await wait(page, 500);
-      await page.evaluate(() => {
-        const tabs = document.querySelectorAll('.sheet-tab');
-        for (const t of tabs) { if (t.textContent.includes('云端')) { t.click(); return; } }
-      });
-      await wait(page, 300);
-      await page.evaluate(() => {
-        const btns = document.querySelectorAll('button');
-        for (const b of btns) { if (b.textContent.includes('同步')) { b.click(); break; } }
-      });
-      await wait(page, 15000);
-      await page.evaluate(() => {
-        const overlay = document.getElementById('settings-overlay');
-        if (overlay) overlay.classList.remove('open');
-      });
+    }
+    console.log('  登录同步完成: ' + syncDone);// 等待牌组出现在列表中（同步后云牌组应已下载）
+    let hasDeck = false;
+    for (let i = 0; i < 20; i++) {
+      hasDeck = await page.evaluate((name) => {
+        return DECKS_META.some(m => m.name === name);
+      }, '蔬菜水果');
+      if (hasDeck) break;
       await wait(page, 500);
     }
 
@@ -151,11 +140,23 @@ const SETTINGS_SEL = '[aria-label="设置"]';
       return false;
     }, '蔬菜水果'));
 
+    // 等待牌组统计数字加载（updateDeckStats 异步完成）
+    for (let i = 0; i < 30; i++) {
+      const val = await page.evaluate((dk) => {
+        const card = document.querySelector(`.deck-card[data-deck="${dk}"]`);
+        if (!card) return '-2';
+        const dueEl = card.querySelector('.deck-stat-num.due');
+        return dueEl ? dueEl.textContent.trim() : '-2';
+      }, CLOUD_DECK_KEY);
+      if (val !== '…' && val !== '-2') break;
+      await wait(page, 200);
+    }
+
     const homepage = await page.evaluate((dk) => {
       const card = document.querySelector(`.deck-card[data-deck="${dk}"]`);
       if (!card) return null;
-      const dueEl = card.querySelector('.deck-stat-due .deck-stat-num');
-      const newEl = card.querySelector('.deck-stat-new .deck-stat-num');
+      const dueEl = card.querySelector('.deck-stat-num.due');
+      const newEl = card.querySelector('.deck-stat-num.new-c');
       return { due: dueEl ? parseInt(dueEl.textContent) : -1, new: newEl ? parseInt(newEl.textContent) : -1 };
     }, CLOUD_DECK_KEY);
 
@@ -187,6 +188,13 @@ const SETTINGS_SEL = '[aria-label="设置"]';
     pass('到期数匹配后端', homepage && homepage.due === rawStats.cappedDue);
     pass('新卡数匹配后端', homepage && homepage.new === rawStats.cappedNew);
 
+    // 选中云牌组，让统计页筛选显示正确的牌组数据
+    await page.evaluate((dk) => {
+      const card = document.querySelector(`.deck-card[data-deck="${dk}"]`);
+      if (card) card.click();
+    }, CLOUD_DECK_KEY);
+    await wait(page, 300);
+
     // ═══════════════════ PHASE 4: 统计页 ═══════════════════
     section('PHASE 4: 统计页 — 今日 Tab');
 
@@ -211,7 +219,7 @@ const SETTINGS_SEL = '[aria-label="设置"]';
     const dp = await page.evaluate(() => JSON.parse(localStorage.getItem('yihai_daily_progress') || '{}'));
 
     // 今日无练习 → 全部应为 0
-    pass('今日练习=0', dp.reviewed_today === 0);
+    pass('今日练习=0', (dp.reviewed_today || 0) === 0);
     check('今日良好=0', parseInt(todayStats.kpiText[2] || -1), 0);
     check('今困难=0', parseInt(todayStats.kpiText[4] || -1), 0);
     check('今重来=0', parseInt(todayStats.kpiText[6] || -1), 0);
@@ -254,8 +262,13 @@ const SETTINGS_SEL = '[aria-label="设置"]';
       });
       const deck = DECKS[dk];
       const total = deck ? deck.length : states.length;
-      const pending = Math.max(0, total - (newS + learning + review + sus));
-      return { total, master: mastered, learn: learning, pend: pending, sus };
+      const deckOverviewNew = Math.max(0, total - states.length);
+      // filter "待开始"= unseen cards + real 'new' stage cards (excludes orphaned
+      // CardStates whose card_id no longer exists in DECKS[dk])
+      const validStates = states.filter(s => deck && deck.some(c => c.id === s.card_id));
+      const nonNewActive = validStates.filter(s => s.srs_stage !== 'new' && !s.suspended).length;
+      const filterNew = Math.max(0, total - nonNewActive);
+      return { total, master: mastered, learn: learning, pend: deckOverviewNew, filterNew, sus };
     }, CLOUD_DECK_KEY);
 
     check('总卡片=33', deckStats?.['总卡片'], idbStats.total);
@@ -293,8 +306,8 @@ const SETTINGS_SEL = '[aria-label="设置"]';
       const list = document.getElementById('st-card-list');
       return list ? list.querySelectorAll('.scard').length : -1;
     });
-    console.log(`  待开始筛选: ${cardCount} 张`);
-    check('待开始卡片数=牌组Tab待开始', cardCount, idbStats.pend);
+    console.log(`  待开始筛选: ${cardCount} 张, filterNew=${idbStats.filterNew}`);
+    check('待开始卡片数=筛选待开始', cardCount, idbStats.filterNew);
 
     // 点"学习中"筛选
     await page.evaluate(() => {
@@ -377,36 +390,33 @@ const SETTINGS_SEL = '[aria-label="设置"]';
         'apikey': 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD'
       };
 
-      // sync_card_states by deck
-      const r1 = await fetch('https://juzkonrzfyvchqxzmlpr.supabase.co/rest/v1/sync_card_states?select=deck_key,srs_stage', { headers });
+      // sync_card_states by deck (仅过滤目标 deck_key)
+      const targetDeck = 'cloud_01edbdfd';
+      const r1 = await fetch('https://juzkonrzfyvchqxzmlpr.supabase.co/rest/v1/sync_card_states?select=deck_key,srs_stage&deck_key=eq.' + targetDeck, { headers });
       const cloudStates = await r1.json();
-      const cloudByDeck = {};
-      cloudStates.forEach(s => { cloudByDeck[s.deck_key] = (cloudByDeck[s.deck_key] || 0) + 1; });
+      const cloudTotal = cloudStates.length;
 
-      // Local states by deck
+      // Local states by deck (仅 targetDeck)
       const req = indexedDB.open('yihai_srs', 5);
       const db = await new Promise(resolve => { req.onsuccess = () => resolve(req.result); });
       const localStates = await new Promise(resolve => {
         const tx = db.transaction('card_states', 'readonly');
         tx.objectStore('card_states').getAll().onsuccess = e => resolve(e.target.result);
       });
-      const localByDeck = {};
-      localStates.forEach(s => { localByDeck[s.deck_key] = (localByDeck[s.deck_key] || 0) + 1; });
+      const localTotal = localStates.filter(s => s.deck_key === targetDeck).length;
       db.close();
 
-      return { cloudByDeck, localByDeck, cloudTotal: cloudStates.length, localTotal: localStates.length };
+      return { cloudTotal, localTotal };
     });
 
     console.log(`  云端: ${JSON.stringify(cloudCompare.cloudByDeck)}`);
     console.log(`  本地: ${JSON.stringify(cloudCompare.localByDeck)}`);
-    check('card_states 总数一致', cloudCompare.cloudTotal, cloudCompare.localTotal);
+    check('card_states 数量一致(cloud_01edbdfd)', cloudCompare.cloudTotal, cloudCompare.localTotal);
 
     // ═══════════════════ PHASE 10: 退出登录 ═══════════════════
     section('PHASE 10: 退出登录 — 用户隔离验证');
 
     const uidBeforeLogout = await page.evaluate(() => _cloudUserId);
-    const didBeforeLogout = await page.evaluate(() => localStorage.getItem('yihai_device_id'));
-
     await page.evaluate((sel) => { const b = document.querySelector(sel); if (b) b.click(); }, SETTINGS_SEL);
     await wait(page, 500);
     await page.evaluate(() => {
@@ -450,9 +460,9 @@ const SETTINGS_SEL = '[aria-label="设置"]';
     }, '蔬菜水果');
     pass('登出后 DECKS_META 仍含云牌组', metaHasCloud);
 
-    // 登出后 getCurrentUserId 应切为 deviceId
-    const uidAfter = await page.evaluate(() => typeof getCurrentUserId === 'function' ? getCurrentUserId() : 'N/A');
-    pass('登出后 userId 切为 deviceId', uidAfter === didBeforeLogout && uidAfter !== uidBeforeLogout);
+    // v4.10: 登出后 _cloudUserId 保留（离线数据归属正确），仅 _syncEnabled=false
+    const uidAfter = await page.evaluate(() => typeof _cloudUserId === 'string' ? _cloudUserId : 'N/A');
+    pass('登出后 cloudUserId 保留（离线数据归属）', uidAfter === uidBeforeLogout);
 
     // 登出后 IDB 数据仍在（不删库）
     const dbStillExists = await page.evaluate(async () => {

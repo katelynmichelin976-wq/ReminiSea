@@ -223,7 +223,7 @@ async function createTestYhspack() {
     // 验证 show_finish 事件存在
     const hasShowFinish = await run(page, async (deck) => {
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 4);
+        const r = indexedDB.open('yihai_srs', 5);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });
@@ -263,7 +263,7 @@ async function createTestYhspack() {
 
     const trialFields = await run(page, async (deck) => {
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 4);
+        const r = indexedDB.open('yihai_srs', 5);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });
@@ -301,7 +301,7 @@ async function createTestYhspack() {
       // 读取 dp 和本地 TrialLog 今日数据
       const dp = getDailyProgress();
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 4);
+        const r = indexedDB.open('yihai_srs', 5);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });

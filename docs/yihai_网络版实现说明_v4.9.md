@@ -1,8 +1,9 @@
-# 忆海拾光 · 网络版实现说明 (v4.9.12)
+# 忆海拾光 · 网络版实现说明 (v4.10.0)
 
-> 版本：v1.0  
-> 日期：2026-05-11  
-> 对应代码：yihai_v4.9.html（v4.9.12）
+> 版本：v1.1  
+> 日期：2026-05-14  
+> 对应代码：yihai_v4.10.html（v4.10.0）  
+> 更新说明：v4.10 同步机制重构为 `runSync` + 模态弹窗，登出保留 IDB，移除跨设备 DP 同步
 
 ---
 
@@ -56,6 +57,7 @@
 - 双向同步：上传脏数据 → 拉取云端更新 → 本地合并
 - 增量同步：`checkSyncNeeded()` 判断是否需要同步，无变化零网络请求
 - 写时上传：答题产生 TrialLog，`syncTrialLog` 逐条上传；DB trigger 自动维护 CardState
+- 同步阻塞：`runSync` 模态弹窗确保同步完成前不操作（避免多设备竞争）
 - 离线可用：`_syncEnabled` 门控所有云操作，未登录/断网降级为纯本地模式
 
 ---
@@ -103,10 +105,11 @@ _deviceId      设备唯一标识（localStorage 持久化）
   _sb = supabase.createClient(url, key)
   signInWithPassword(email, pwd)
   → _syncEnabled = true
-  → syncAll(currentDeck, false)  [noDecks=false，下载所有云牌组]
+  → runSync({ modal: true, decks: true, title: '正在同步数据', voice: true })
+    （模态弹窗，同步完成前阻塞操作）
 ```
 
-**注意**：`doCloudLogin` 的 `syncAll` 第三参数是 `undefined`（等价 `false`），会触发步骤 7 下载全部云端牌组。`initCloud` 调 `syncAll(deckKey, false, true)` 明确跳过牌组下载。
+**注意**：`doCloudLogin` 调 `runSync` 时 `decks=true`，会下载全部云端牌组。`initCloud` 调 `runSync` 时 `decks=false`，不下载牌组。旧 `syncAll` 已废弃。
 
 ### 2.4 退出登录
 
@@ -114,14 +117,14 @@ _deviceId      设备唯一标识（localStorage 持久化）
 doCloudLogout()
   logAppEvent('logout')
   signOut()
-  → _syncEnabled = false, _cloudUserId = '', _sb = null
+  → _syncEnabled = false, _sb = null
+  → _cloudUserId 保留（离线数据归属，不删）
   → 清除 localStorage: yihai_global_sync_ts
-  → 移除 DECKS_META 中的云牌组（source='cloud'）
-  → IndexedDB.clear() card_states + trials（全部清空）
+  → IndexedDB 保留（云牌组离线可用，card_states/trials 不清）
   → renderDeckList() + updateDeckStats()
 ```
 
-**设计决策**：退出时清空全部 IndexedDB（不区分云/本地牌组）。理由是：本地 .yhspack 导入牌组使用率极低，且用户重新导入成本小。如果将来需要保留本地数据，可改为按 deck_key 筛选删除。
+**设计决策（v4.10）**：退出登录保留 IndexedDB 和云牌组，离线模式下仍可查看和练习已下载的牌组。`_cloudUserId` 保留用于离线数据归属标记，下次登录后 `migrateDeviceRecordsToUser()` 将离线记录关联到当前用户。
 
 ---
 
@@ -141,10 +144,12 @@ checkSyncNeeded():
 
 **用途**：`initCloud` 启动时、`visibilitychange` 切前台时判断是否需要完整同步。
 
-### 3.2 syncAll() — 完整双向同步
+### 3.2 runSync() — 完整双向同步（v4.10+，旧 syncAll 废弃）
 
 ```
-syncAll(deckKey, showToast, noDecks):
+runSync(options):
+  options: { modal, decks, deckKey, voice, title }
+  
   ┌─ Step 1: 上传答题记录
   │   读 IndexedDB trials → 筛选 !synced_at → syncTrialLog() 逐条上传
   │   （服务端 DB trigger: INSERT sync_trials → UPSERT sync_card_states）
@@ -152,20 +157,17 @@ syncAll(deckKey, showToast, noDecks):
   ├─ Step 1.5: 上传应用事件日志
   │   syncAppEvents() → app_events 表
   │
-  ├─ Step 1.6: 上传 CardState 变更日志
-  │   syncCardStateLogs() → card_state_log 表（已废弃，保留兼容）
+  ├─ Step 2: 参数配置同步
+  │   cloudPullConfig() → merge（本地优先 SRS，云端补充 UI）
+  │   cloudPushConfig() → 上传本地覆盖项（合并云端，不冲掉其他设备）
   │
-  ├─ Step 2: 拉取云端 CardState（仅当前 deckKey）
+  ├─ Step 3: 下载云端 CardState（增量合并）
   │   syncCardStatesFromCloud(deckKey) → 按 updated_at 合并到本地
   │
-  ├─ Step 5: 跨设备今日统计
-  │   从 sync_trials 拉取今日全部记录 → 合并 daily_new_today/reviewed_today/评级分布
+  ├─ Step 3.5: 拉取用户牌组练习天数
+  │   user_deck_stats → practice_days + last_practice_date
   │
-  ├─ Step 6: 配置双向同步
-  │   cloudPullConfig() → merge（本地优先 SRS，云端补充 UI）
-  │   cloudPushConfig() → 上传本地覆盖项
-  │
-  └─ Step 7: 牌组同步（仅 noDecks=false）
+  └─ Step 4: 牌组同步（仅 options.decks=true）
       列出 server_decks → 遍历下载/同步每个牌组
         ├─ 已存在 → syncDeckFromCloud()（增量：只更新变化的卡）
         └─ 不存在 → downloadDeckFromCloud()（全量：下载卡片+媒体）
@@ -175,19 +177,27 @@ syncAll(deckKey, showToast, noDecks):
 ```
 
 **参数说明**：
-- `deckKey`：Step 2 仅同步此牌组的状态；Step 7 不受影响（遍历全部云牌组）
-- `noDecks=true`：练习后自动同步，跳过牌组下载（减少网络开销）
-- `noDecks=false/undefined`：登录后全量同步，下载全部云牌组
+- `deckKey`：Step 3 仅同步此牌组的状态
+- `decks=true`：登录后全量同步，下载全部云牌组
+- `decks=false`：练习后自动同步，跳过牌组下载
+- `modal=true`：显示进度条模态弹窗，阻塞用户操作
+- `voice=true`：同步过程语音播报进度
+- `title`：模态弹窗标题
+
+**v4.10 变更**：
+- `modal` 模态确保同步完成前用户不能操作，避免多设备竞争
+- 跨设备今日统计合并（旧 Step 5）已移除：DP 仅本地维护，不再同步
+- `card_state_log` 上传（旧 Step 1.6）已移除
 
 ### 3.3 同步触发时机
 
-| 触发场景 | 调用路径 | noDecks |
+| 触发场景 | 调用路径 | 参数 |
 |---|---|---|
-| 页面启动（有 session） | initCloud → checkSyncNeeded → syncAll | true |
-| 手动登录 | doCloudLogin → syncAll | false |
-| 手动点同步按钮 | 设置页同步按钮 → syncAll | false |
-| 切前台 | visibilitychange → checkSyncNeeded → syncAll | true |
-| 练习完成 | backfillAfterPractice → syncAll | true |
+| 页面启动（有 session） | initCloud → checkSyncNeeded → runSync | modal:false, decks:false |
+| 手动登录 | doCloudLogin → runSync | modal:true, decks:true, voice:true |
+| 手动点同步按钮 | 设置页同步按钮 → runSync | modal:true, decks:true |
+| 切前台 | visibilitychange → checkSyncNeeded → runSync | modal:false, decks:false |
+| 练习完成 | backfillAfterPractice → runSync | modal:false, decks:false |
 | 逐卡答题 | _writeSrs → syncTrialLog（单条） | — |
 
 ---
@@ -267,7 +277,7 @@ cloudPullConfig():
 
 ## 六、已知问题与优化建议
 
-### 6.1 已修复问题（v4.9.2–v4.9.12）
+### 6.1 已修复问题（v4.9.2–v4.10.0）
 
 | 版本 | 问题 | 根因 |
 |---|---|---|
@@ -279,6 +289,10 @@ cloudPullConfig():
 | v4.9.10 | 退出登录 IndexedDB 未清 | clear() 事务未 await |
 | v4.9.11 | 登录同步 409 错误 | logAppEvent 立即上传与 syncAppEvents 竞态 |
 | v4.9.12 | 登录后云牌组统计为零 | syncAll step 2 仅同步当前牌组状态 |
+| v4.10.0 | 退出清空全部离线数据 | 云牌组练习记录一并丢失 → 退出保留 IndexedDB |
+| v4.10.0 | 跨设备 DP 污染 | 双设备练习后每日计数叠加 → 移除跨设备 DP 同步 |
+| v4.10.0 | 统计页待开始数不准 | Orphaned CardState（已删除卡的状态残留）→ 过滤 DECKS 不存在的 card_id |
+| v4.10.0 | 同步过程可被操作打断 | runSync 无阻塞 → 新增模态弹窗 |
 
 ### 6.2 待优化项
 
@@ -288,11 +302,7 @@ cloudPullConfig():
    `downloadDeckFromCloud` 同步下载全部卡片 + 媒体，33 张卡约需 10-15 秒，期间牌组不出现。
    → 建议：元数据先展示 → 媒体后台逐张下载 → 下载完刷新。
 
-2. **退出时清空全部本地练习记录**  
-   `doCloudLogout` 中 `store.clear()` 删除了所有 IndexedDB 数据，本地 .yhspack 导入牌组的练习记录一并丢失。
-   → 建议：按 deck_key 筛选，仅删除云牌组数据。
-
-3. **退出前未上传未同步数据**  
+2. **退出前未上传未同步数据**  
    用户离线练习后退出，未同步的 TrialLog 直接丢失。
    → 建议：退出前调 `syncPendingData(null)` 上传余量。
 

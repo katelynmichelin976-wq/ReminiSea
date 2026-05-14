@@ -159,6 +159,20 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     }, null, 'deviceA login', 15000, 200);
     pass('设备 A 登录成功', connA);
 
+    // 手动触发同步（v4.10 不自动同步）
+    await run(pageA, () => {
+      const btns = document.querySelectorAll('button');
+      for (const b of btns) { if (b.textContent.includes('同步')) { b.click(); break; } }
+    });
+    for (let i = 0; i < 40; i++) {
+      const done = await run(pageA, () => {
+        const modal = document.getElementById('sync-modal');
+        return modal && modal.style.display === 'none';
+      });
+      if (done) break;
+      await wait(pageA, 500);
+    }
+
     // 关闭设置
     await run(pageA, () => { const o = document.getElementById('settings-overlay'); if (o) o.classList.remove('open'); });
     await wait(pageA, 300);
@@ -294,7 +308,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     const diagA = await run(pageA, async ({ key }) => {
       // 本地 trials
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 4);
+        const r = indexedDB.open('yihai_srs', 5);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });
@@ -341,8 +355,19 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     }, null, 'deviceB login', 15000, 200);
     pass('设备 B 登录成功', connB);
 
-    // login 触发的 syncAll 未 await，等待 syncAll 完成（step 5 需网络查询）
-    await wait(pageB, 5000);
+    // 手动同步（v4.10 不再自动同步）
+    await run(pageB, () => {
+      const btns = document.querySelectorAll('button');
+      for (const b of btns) { if (b.textContent.includes('同步')) { b.click(); break; } }
+    });
+    for (let i = 0; i < 40; i++) {
+      const done = await run(pageB, () => {
+        const modal = document.getElementById('sync-modal');
+        return modal && modal.style.display === 'none';
+      });
+      if (done) break;
+      await wait(pageB, 500);
+    }
 
     await run(pageB, () => { const o = document.getElementById('settings-overlay'); if (o) o.classList.remove('open'); });
     await wait(pageB, 300);
@@ -352,7 +377,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
       const dp = getDailyProgress();
       // 检查 IndexedDB 是否有云端同步下来的 card states
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 4);
+        const r = indexedDB.open('yihai_srs', 5);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });
@@ -370,7 +395,8 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
       };
     });
     console.log(`  [诊断] B登录后 DP: r=${diagBlogin.dp_r} n=${diagBlogin.dp_n} d=${diagBlogin.dp_d} localStates=${diagBlogin.localStateCount}`);
-    pass('登录同步后 DP: new >= 3', diagBlogin.dp_n >= CARD_COUNT);
+    // v4.10: DP 不同步（仅本地计算），但 card states 应从云端拉回
+    pass('登录同步后 card states > 0', diagBlogin.localStateCount > 0);
 
     // 等待测试牌组
     const deckFoundB = await poll(pageB, (name) => {
@@ -413,7 +439,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     // 诊断：buildSessionQueue 后 B 的本地状态
     const diagBafterOpen = await run(pageB, async ({ key }) => {
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 4);
+        const r = indexedDB.open('yihai_srs', 5);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });
@@ -459,15 +485,12 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     // 核心断言
     pass('验证1: 所有卡仍为 review（未被覆写为 new）', revF === CARD_COUNT && newF === 0);
 
-    // 验证 B 的 daily_progress
+    // 验证 B 的本地 DP（v4.10: DP 不同步，仅本地累积，此处应为 0）
     const dpB = await run(pageB, () => {
       const dp = getDailyProgress();
       return { r: dp.reviewed_today || 0, n: dp.daily_new_today || 0, d: dp.active_duration_sec || 0 };
     });
     console.log(`  B最终DP: r=${dpB.r} n=${dpB.n} d=${dpB.d}`);
-    pass('验证2a: daily_new_today >= 3', dpB.n >= CARD_COUNT);
-    pass('验证2b: reviewed_today >= 3', dpB.r >= CARD_COUNT);
-    pass('验证2c: active_duration_sec > 0', dpB.d > 0);
 
     // 云端 trials 验证
     const todayTrials = await run(pageB, async ({ uid, dk }) => {

@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.10.0</title>
+<title>忆海拾光 v4.10.1</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -865,7 +865,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.10.0</span>
+        <span class="home-version">v4.10.1</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1453,7 +1453,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
               <span class="sheet-row-lbl" id="cloud-user-email"></span>
               <div style="display:flex;gap:6px">
                 <button style="padding:4px 10px;border:1px solid var(--blue);border-radius:6px;background:var(--blue-lt);color:var(--blue);font-size:11px;cursor:pointer;font-family:inherit"
-                  onclick="syncAll(currentDeck,true).catch(function(e){console.warn(e)})">🔄 同步</button>
+                  onclick="runSync({modal:true,decks:true,events:true,showToast:true,voice:true,deckKey:currentDeck}).catch(function(e){console.warn(e)})">🔄 同步</button>
                 <button style="padding:4px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--surf);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit"
                   onclick="doCloudLogout()">退出</button>
               </div>
@@ -1486,6 +1486,22 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       </div>
 
     </div><!-- /sheet-panels -->
+  </div>
+</div>
+
+<!-- 同步进度 Modal -->
+<div id="sync-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:280px;width:85%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+    <div id="sync-modal-title" style="font-size:17px;font-weight:700;color:#333;margin-bottom:12px">正在同步</div>
+    <div id="sync-modal-text" style="font-size:13px;color:#888;margin-bottom:10px"></div>
+    <div id="sync-modal-prog-wrap" style="margin-top:4px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span id="sync-modal-pct" style="font-size:12px;font-weight:600;color:var(--blue)"></span>
+      </div>
+      <div style="height:4px;background:#e8e8e8;border-radius:2px;overflow:hidden">
+        <div id="sync-modal-bar" style="height:100%;background:var(--blue);border-radius:2px;width:0%"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1751,7 +1767,7 @@ async function doCloudLogin() {
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
     // 登录后全量同步（答题/状态/配置/牌组）
-    syncAll(currentDeck, false).catch(e => console.warn('[sync] login sync error:', e.message));
+    runSync({ modal: true, decks: true, title: '正在同步数据', voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
     if (msgEl) { msgEl.style.display = ''; msgEl.textContent = '登录失败：' + e.message; msgEl.style.color = '#9B3A2A'; }
@@ -2155,7 +2171,7 @@ async function syncAll(deckKey, showToast, noDecks) {
   logAppEvent('sync_started', { deck_key: deckKey, noDecks: !!noDecks }, deckKey);
   var syncStats = { trials: 0, events: 0, csl: 0, states: 0, states_merged: 0, config: 0, decks: 0 };
   try {
-    const totalSteps = noDecks ? 7 : 8;
+    const totalSteps = noDecks ? 6 : 7;
 
     // 1. 上传答题记录
     showSyncProg(1, totalSteps, '正在上传练习记录...');
@@ -2186,55 +2202,8 @@ async function syncAll(deckKey, showToast, noDecks) {
       // CardState 上传已交数据库 trigger（sync_trials INSERT → UPSERT sync_card_states）
     }
 
-    // 5. 跨设备今日统计同步：从云端拉取今天全部答题记录
-    // 使用本地日期时间戳范围（而非 trial_date），避免 UTC+8 用户在 0:00-7:59
-    // 时 utcTodayStr() 返回前一天日期，把昨天的数据合并到今天
-    showSyncProg(5, totalSteps, '正在同步今日进度...');
-    const localDayStart = new Date(); localDayStart.setHours(0, 0, 0, 0);
-    const localDayEnd   = new Date(); localDayEnd.setHours(23, 59, 59, 999);
-    const { data: todayCloud } = await _sb.from('sync_trials')
-      .select('card_id, srs_stage_before, active_gap_ms, rating, timestamp')
-      .eq('user_id', _cloudUserId)
-      .gte('timestamp', localDayStart.getTime())
-      .lte('timestamp', localDayEnd.getTime());
-    if (todayCloud) {
-      const cloudNewSet = new Set();
-      let cloudDurationMs = 0;
-      for (const r of todayCloud) {
-        if (r.srs_stage_before === 'new') cloudNewSet.add(r.card_id);
-        if (r.active_gap_ms != null) cloudDurationMs += r.active_gap_ms;
-      }
-      const cp = getDailyProgress();
-      const cloudNewToday = cloudNewSet.size;
-      const cloudReviewed = todayCloud.length;
-      const cloudDurationSec = Math.round(cloudDurationMs / 1000);
-      // 计算评级分布（每卡首次评为准）
-      const firstRating = {};
-      for (const r of todayCloud) {
-        if (!firstRating[r.card_id] || r.timestamp < firstRating[r.card_id].timestamp) {
-          firstRating[r.card_id] = r.rating;
-        }
-      }
-      let passN = 0, hardN = 0, failN = 0;
-      for (const k of Object.keys(firstRating)) {
-        const r = firstRating[k];
-        if (r === 'again') failN++;
-        else if (r === 'hard') hardN++;
-        else passN++;
-      }
-
-      // 云端 todayCloud 已包含步骤 1 上传的本地数据，是今日全设备权威合计
-      cp.daily_new_today   = cloudNewToday;
-      cp.reviewed_today    = cloudReviewed;
-      cp.active_duration_sec = cloudDurationSec;
-      cp.first_pass_today  = passN;
-      cp.first_hard_today  = hardN;
-      cp.first_fail_today  = failN;
-      saveDailyProgress(cp);
-    }
-
     // 5.5 拉取用户牌组练习天数
-    showSyncProg(6, totalSteps, '正在同步练习天数...');
+    showSyncProg(5, totalSteps, '正在同步练习天数...');
     try {
       const { data: deckStats } = await _sb.from('user_deck_stats')
         .select('deck_key, practice_days, last_practice_date')
@@ -2250,7 +2219,7 @@ async function syncAll(deckKey, showToast, noDecks) {
     } catch(e) { console.warn('[sync] practice days fetch error:', e.message); }
 
     // 7. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
-    showSyncProg(7, totalSteps, '正在同步配置...');
+    showSyncProg(6, totalSteps, '正在同步配置...');
     const cfgItems = await cloudPullConfig();
     syncStats.config = cfgItems;
     await cloudPushConfig();
@@ -2258,7 +2227,7 @@ async function syncAll(deckKey, showToast, noDecks) {
     // 8. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
     let newDecks = 0, syncedDecks = 0;
     if (!noDecks) {
-      showSyncProg(8, totalSteps, '正在同步牌组...');
+      showSyncProg(7, totalSteps, '正在同步牌组...');
       const { data: serverDecks } = await _sb.from('server_decks').select('id,name');
       if (serverDecks) {
         for (const sd of serverDecks) {
@@ -2311,10 +2280,144 @@ async function syncAll(deckKey, showToast, noDecks) {
   if (deckKey) updateDeckStats();
 }
 
-// 练习完成后集中补传（仅上传，不下拉）
+// 统一同步入口（v4.10）：支持模态进度条 + 语音播报 + 不同同步范围
+async function runSync(opts) {
+  if (!_syncEnabled || !_sb) { if (opts && opts.showToast) showCloudToast('未连接服务器', true); return; }
+  var options = Object.assign({
+    modal: false,
+    title: '正在同步',
+    decks: false,
+    events: false,
+    showToast: false,
+    voice: false,
+    deckKey: currentDeck,
+  }, opts || {});
+  // 等待上次 SRS 写入完成
+  if (_lastSrsWrite) await _lastSrsWrite;
+  var modalEl = document.getElementById('sync-modal');
+  var titleEl = document.getElementById('sync-modal-title');
+  var textEl  = document.getElementById('sync-modal-text');
+  var barEl   = document.getElementById('sync-modal-bar');
+  var pctEl   = document.getElementById('sync-modal-pct');
+  function updateProg(text, pct) {
+    if (!options.modal) return;
+    if (textEl) textEl.textContent = text || '';
+    if (barEl) barEl.style.width = (pct || 0) + '%';
+    if (pctEl) pctEl.textContent = (pct || 0) + '%';
+  }
+  if (options.modal && modalEl) {
+    modalEl.style.display = 'flex';
+    if (titleEl) titleEl.textContent = options.title;
+    if (textEl) textEl.textContent = '正在连接...';
+    if (barEl) barEl.style.width = '0%';
+    if (pctEl) pctEl.textContent = '0%';
+    if (options.voice) { try { speechSynthesis.cancel(); speak(options.title); } catch(e) {} }
+  }
+  logAppEvent('sync_started', { deck_key: options.deckKey, mode: options.modal ? 'modal' : 'bg', decks: !!options.decks, events: !!options.events }, options.deckKey);
+  var syncStats = { trials: 0, events: 0, states_merged: 0, config: 0, decks: 0 };
+  try {
+    // 1. 上传 TrialLog（增量）
+    updateProg('正在上传练习记录...', 10);
+    var db = await openSrsDb();
+    var allTrials = await new Promise(function(res, rej) {
+      var r = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
+      r.onsuccess = function(e) { res(e.target.result || []); };
+      r.onerror   = function(e) { rej(e.target.error); };
+    });
+    var uid = getCurrentUserId();
+    var pendingCount = allTrials.filter(function(t) { return !t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid); }).length;
+    for (var t of allTrials) {
+      if (!t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid)) {
+        try { await syncTrialLog(t); syncStats.trials++; } catch(e) { /* skip */ }
+      }
+    }
+    // 2. 参数配置同步
+    updateProg('正在同步配置...', 40);
+    var cfgItems = await cloudPullConfig();
+    syncStats.config = cfgItems;
+    await cloudPushConfig();
+    // 3. 下载云端 CardState（增量合并）
+    updateProg('正在同步练习状态...', 60);
+    if (options.deckKey) {
+      syncStats.states_merged = await syncCardStatesFromCloud(options.deckKey);
+      updateProg('正在同步练习状态...', 75);
+    }
+    // 3.5 拉取用户牌组练习天数
+    try {
+      var _dsResp = await _sb.from('user_deck_stats')
+        .select('deck_key, practice_days, last_practice_date')
+        .eq('user_id', _cloudUserId);
+      if (_dsResp.data) {
+        localStorage.setItem('yihai_practice_days', JSON.stringify(_dsResp.data));
+        for (var _ds of _dsResp.data) {
+          var _dm = DECKS_META.find(function(d) { return d.key === _ds.deck_key; });
+          if (_dm) _dm.practiceDays = _ds.practice_days;
+        }
+      }
+    } catch(e) { console.warn('[sync] practice days fetch error:', e.message); }
+    // 4. 牌组同步（可选：登录后/手动同步）
+    var newDecks = 0, syncedDecks = 0;
+    if (options.decks) {
+      updateProg('正在同步牌组...', 80);
+      var serverDecks, sd, meta;
+      var dd = await _sb.from('server_decks').select('id,name');
+      if (dd.data) {
+        serverDecks = dd.data;
+        for (sd of serverDecks) {
+          try {
+            meta = DECKS_META.find(function(m) { return m.name === sd.name; });
+            if (meta) { await syncDeckFromCloud(sd.id, sd.name, null, true); syncedDecks++; }
+            else { await downloadDeckFromCloud(sd.id, sd.name, null, true); newDecks++; }
+          } catch(e) { console.warn('[sync] skip deck:', sd.name, e.message); }
+        }
+        for (sd of serverDecks) {
+          try {
+            meta = DECKS_META.find(function(m) { return m.name === sd.name; });
+            if (meta) { syncStats.states_merged += await syncCardStatesFromCloud(meta.key); }
+          } catch(e) {}
+        }
+        renderDeckList();
+        updateDeckStats();
+      }
+      await refreshServerDeckList();
+    }
+    // 5. 事件日志（可选）
+    if (options.events) {
+      updateProg('正在上传日志...', 90);
+      syncStats.events = await syncAppEvents();
+    }
+    syncStats.decks = newDecks + syncedDecks;
+    // 清理 & 标记
+    purgeOldLogs();
+    localStorage.setItem('yihai_global_sync_ts', String(Date.now()));
+    logAppEvent('sync_done', { deck_key: options.deckKey, stats: syncStats }, options.deckKey);
+    // 结束
+    updateProg('同步完成', 100);
+    if (options.modal && modalEl) {
+      setTimeout(function() { modalEl.style.display = 'none'; }, 800);
+    }
+    if (options.showToast) {
+      var parts = [];
+      if (syncStats.trials > 0) parts.push('上传答题 ' + syncStats.trials);
+      if (syncStats.states_merged > 0) parts.push('状态更新 ' + syncStats.states_merged);
+      if (syncStats.config > 0) parts.push('配置 ' + syncStats.config);
+      if (newDecks > 0) parts.push('下载牌组 ' + newDecks);
+      if (syncedDecks > 0) parts.push('同步牌组 ' + syncedDecks);
+      if (parts.length > 0) showCloudToast('同步完成 · ' + parts.join(' · '));
+      else if (pendingCount === 0 && syncStats.states_merged === 0 && !newDecks && !syncedDecks) showCloudToast('已是最新');
+    }
+  } catch(e) {
+    if (options.modal && modalEl) modalEl.style.display = 'none';
+    console.warn('[sync] runSync error:', e.message);
+    if (options.showToast) showCloudToast('同步失败', true);
+  }
+  if (options.deckKey) updateDeckStats();
+}
+
+// 练习完成后集中补传（仅上传未同步 TrialLog + 最新 CardState，不下拉）
 function backfillAfterPractice(deckKey) {
   if (!_syncEnabled || !_sb || !deckKey) return Promise.resolve();
-  return syncAll(deckKey, false, true).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
+  return syncPendingData(deckKey).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
 }
 
 function openSrsDb() {
@@ -3420,6 +3523,7 @@ let tOptHintTimer    = null;
 let tAnswerTimer     = null;  // 答案播报延迟 timer
 let sessionId        = 0;     // 每次进入练习页自增，语音链检查id终止跨页面播报
 let _lastSrsWrite    = Promise.resolve(); // 最近一次 _writeSrs 的 Promise，用于等待写完
+let _launchBusy = false; // 防止重复点击开始练习
 
 // ── 练习模式 SRS 状态 ──────────────────────────────────────────
 let _cardStartTs     = 0;     // 当前卡片显示时间戳（response_time 计算用）
@@ -3477,7 +3581,9 @@ function startBrowse() {
   _launch('browse');
 }
 function startQuiz() {
+  if (_launchBusy) return;
   if (!currentDeck) return;
+  _launchBusy = true;
   warmupSpeech();
   _launch('quiz');
 }
@@ -3525,13 +3631,9 @@ function _launch(mode) {
     _sessionFirstRatings = {};
     logAppEvent('start_practice', { deck_key: currentDeck, mode: mode }, currentDeck);
 
-    // 先拉取云端状态（防止新设备 IndexedDB 为空时 buildSessionQueue
-    // 创建 new 状态并通过 saveCardState→syncCardState 实时上传，
-    // 覆盖其他设备已练习的正确状态）
-    syncCardStatesFromCloud(currentDeck).then(() => {
-      return buildSessionQueue(currentDeck);
-    }).then(queue => {
+    buildSessionQueue(currentDeck).then(queue => {
       if (queue.length === 0) {
+        _launchBusy = false;
         showFinish();
         return;
       }
@@ -3540,8 +3642,10 @@ function _launch(mode) {
       showScreen('screen-quiz');
       requestWakeLock();
       render();
+      _launchBusy = false;
     }).catch(err => {
       console.error('[srs] buildSessionQueue 构造失败，回退到完成界面', err?.name, err?.message, err);
+      _launchBusy = false;
       showFinish();
     });
   }
@@ -3557,6 +3661,7 @@ function goHome() {
     renderDeckList();
     updateDeckStats();
   });
+  _launchBusy = false;
   showScreen('screen-home');
 }
 
@@ -5178,34 +5283,7 @@ function toggleTheme(checkbox){
     var p = _lastSrsWrite || Promise.resolve();
     await p;
 
-    if (_syncEnabled && currentDeck) {
-      const needsSync = await checkSyncNeeded();
-      if (needsSync) {
-        showSyncProg(1, 1, '正在同步…');
-        try { await syncAll(currentDeck, false, true); }
-        catch(e) { console.warn('[cloud] startup sync error:', e.message); }
-        hideSyncProg();
-        await (_lastSrsWrite || Promise.resolve());
-        renderDeckList();  // 完整同步可能下载新牌组，需要重绘
-        updateDeckStats();
-      }
-      // needsSync=false → 本地数据已是最新，initUI 已渲染过
-    }
     upsertDeviceRegistry();
-
-    // 切回前台时自动同步
-    document.addEventListener('visibilitychange', async () => {
-      if (!document.hidden && _syncEnabled && currentDeck) {
-        const needsSync = await checkSyncNeeded();
-        if (needsSync) {
-          try { await syncAll(currentDeck, false, true); }
-          catch(e) { console.warn('[cloud] visibility sync error:', e.message); }
-          await (_lastSrsWrite || Promise.resolve());
-          renderDeckList();
-          updateDeckStats();
-        }
-      }
-    });
   }
 
   // 等待 Supabase SDK 就绪后再 initCloud（defer 脚本在 inline 之后执行）

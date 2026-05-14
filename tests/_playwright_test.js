@@ -241,7 +241,7 @@ function randRating() {
     section('PHASE 4: 10 天后验证');
 
     const finalSt = await run(page, () => new Promise(res => {
-      const r=indexedDB.open('yihai_srs',4);
+      const r=indexedDB.open('yihai_srs',5);
       r.onsuccess=e=>{
         const db=e.target.result;
         const tx=db.transaction('card_states','readonly');

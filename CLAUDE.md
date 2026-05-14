@@ -69,7 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v4.9.html` | Main training app (v4.9.15, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.10.html` | Main training app (v4.10.0, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
 | `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
 | `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
@@ -83,10 +83,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v4.9_test.js` | v4.9 config merge tests (48 cases) |
 | `tests/_playwright_test.js` | Playwright 单机版回归测试（22 断言） |
 | `tests/_playwright_cloud_test.js` | Playwright 网络版回归测试（17 断言） |
-| `tests/_playwright_cross_device_sync_test.js` | Playwright 跨设备同步回归测试（21 断言） |
+| `tests/_playwright_cross_device_sync_test.js` | Playwright 跨设备同步回归测试（18 断言） |
 | `tests/_playwright_session_restore_test.js` | Playwright 登录恢复测试（8 断言） |
 | `tests/_playwright_user_switch_test.js` | Playwright 用户切换数据隔离测试（8 断言） |
 | `tests/_playwright_v4.9.1_regression_test.js` | v4.9.1 回归测试（21 断言） |
+| `tests/_playwright_v4.10_regression_test.js` | v4.10 回归测试（37 断言，含多设备/离线/双开测试） |
+| `tests/_playwright_multi_user_sync_test.js` | Playwright 多用户数据隔离测试 |
 | `tests/test_data/` | Test .yhspack files |
 
 ### 文档
@@ -117,16 +119,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-v4.9.1 引入智能同步（`checkSyncNeeded`）、DB trigger（`fn_trial_to_card_state`）、TrialLog 承载完整状态快照。v4.9.2–v4.9.15 累计修复 14 项（登录恢复、IndexedDB 竞态、跨设备状态缺失、时区偏移等）。详见 `docs/yihai_变更记录_CLAUDE参考.md`。
+### v4.10.0 — IDB user_id 多用户隔离 + 登出保留数据（2026-05-14）
 
-### 关键行为变更（当前版本）
+详见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
-- **initCloud 调用时机**：`_tryInitCloud()` 每 200ms 轮询 `typeof supabase`，就绪后执行，最多等 10s
-- **initUI 中 updateDeckStats 加 await**：避免异步结果被后续渲染覆盖
-- **needsSync=false 路径**：不产生任何网络请求，信任本地数据 + initUI 已渲染
-- **syncAll step 7 拉全部云牌组 CardState**：不影响练习自动同步（noDecks=true），仅登录/手动同步时生效
-- **练习天数 = 缓存值 + 本地未同步新增**：不再查云端 90 天，统计页零延迟且始终准确
-- **服务端**：user_deck_stats 表 + trg_update_practice_days trigger 自动维护练习天数
+### 关键行为变更（当前版本 - v4.10.0）
+
+- **runSync 统一同步入口**：新增 `#sync-modal` 模态弹窗 + 进度条 + 语音播报，同步过程阻塞用户操作确保数据一致
+- **doCloudLogin 调 runSync**：登录后调用 `runSync({ modal:true, decks:true })` 替代原 `syncAll`
+- **登出保留 IndexedDB**：`doCloudLogout` 不再清空 card_states/trials，云牌组保留在列表中（离线可用），仅 `_syncEnabled=false`
+- **_cloudUserId 登出保留**：退出后保留用户 ID（离线数据归属），不再清空
+- **getAllCardStates(deckKey) 多用户隔离**：按 user_id + deck_key 双字段过滤，不同用户同牌组互不干扰
+- **DP 不再跨设备同步**：daily_progress（reviewed_today/daily_new_today）不再通过 sync_trials 跨设备合并，仅本地维护。跨设备只需同步 CardState，练习队列自然对齐
+- **Orphaned CardState 处理**：统计页渲染时过滤 DECKS 中已不存在的卡片状态（清理残留），牌组总览/筛选器计算逻辑解耦
+- **getDeckStatsSrs 兼容 due_ts=0**：learning 卡因各种原因 `due_ts=0` 时仍有 0 分钟的等待期，不再被队列永久跳过
+- **syncAll → runSync 重命名**：全部同步调用改为 `runSync(options)`，支持 modal/decks/deckKey/voice/title 参数
 
 ## Development Commands
 
@@ -146,13 +153,14 @@ node tests/yihai_v4.9_test.js
 # Run Playwright 回归测试（可视化浏览器，需先启动 HTTP 服务）
 # python -m http.server 8080 --directory /c/code
 node tests/_playwright_test.js
-node tests/_playwright_cloud_test.js
+TEST_PASSWORD=xxx node tests/_playwright_v4.10_regression_test.js
+TEST_PASSWORD=xxx node tests/_playwright_cloud_test.js
 TEST_PASSWORD=xxx node tests/_playwright_cross_device_sync_test.js
 TEST_PASSWORD=xxx node tests/_playwright_session_restore_test.js
 TEST_PASSWORD=xxx node tests/_playwright_user_switch_test.js
 ```
 
-All tests must pass before commit. Current counts: SRS 67, v4.4 98, v4.8 46, v4.9 48, Playwright 22/17/21/8/8 (单机/网络/跨设备/登录恢复/用户切换).
+All tests must pass before commit. Current counts: SRS 73, v4.4 98, v4.8 46, v4.9 48, Playwright 22/37/17/18/8/8/21 (单机/v4.10回归/网络/跨设备/登录恢复/用户切换/v4.9.1回归).
 
 ## SRS Architecture
 
@@ -174,7 +182,7 @@ review → again → relearning
 **Storage layers:**
 - `localStorage`: deck index, card metadata, settings, SRS config overrides, daily progress
 - `IndexedDB yihai_media`: image/audio blobs
-- `IndexedDB yihai_srs v3`: CardState (`card_states` store) + TrialLog (`trials` store)
+- `IndexedDB yihai_srs v5`: CardState (`card_states` store) + TrialLog (`trials` store) + app_events
 
 **Parameter naming rule:** All SRS parameters align with Anki names — no suffixes. E.g. `learn_ahead_limit` not `learn_ahead_secs`.
 
@@ -195,6 +203,8 @@ review → again → relearning
 13. **Smart sync** — `checkSyncNeeded()` checks local dirty data + server `updated_at > yihai_global_sync_ts` before running full `syncAll`. Skipped if nothing changed.
 14. **Per-card upload: TrialLog only** — 逐卡仅上传 `sync_trials`（含完整状态快照）；`sync_card_states` 由 DB trigger `fn_trial_to_card_state()` 自动维护；`card_state_log` 已废弃。
 15. **Supabase SDK defer load** — `<script src="supabase" defer>` 不阻塞 DOM 解析和渲染；`initCloud()` 在 SDK 就绪后自动执行。离线下 SDK 加载失败 → `restoreCloudSession()` 静默跳过 → 离线模式。
+16. **runSync 统一同步入口** — 所有同步操作必须通过 `runSync(options)`，不支持直接调旧 `syncAll`。`options.modal` 控制是否显示模态弹窗；`options.decks` 控制是否同步牌组。
+17. **DP 仅本地维护** — `daily_progress`（reviewed_today/daily_new_today）不跨设备同步。跨设备仅同步 CardState 和 TrialLog。DP 由答题时 `writeTrialLog` 写入，只读本地。
 
 ## Coding & Editing Rules
 
@@ -220,10 +230,10 @@ review → again → relearning
 
 发布流程：
 1. 所有测试通过（SRS + v4.4 + v4.8 + v4.9 + Playwright）
-2. 修改 `yihai_v4.9.html` 中 2 处版本号（`<title>` 和 `.home-version`）
-3. 复制 `yihai_v4.9.html` → `index.html`
-4. 提交 `release: v4.9.16`
-5. `git tag v4.9.16`
+2. 修改 `yihai_v4.10.html` 中 2 处版本号（`<title>` 和 `.home-version`）
+3. 复制 `yihai_v4.10.html` → `index.html`
+4. 提交 `release: v4.x.x`
+5. `git tag v4.x.x`
 6. `git push && git push --tags`
 7. `gh release create v4.9.16 --title "v4.9.16" --notes-file release_notes.md`
    （需要 `HTTPS_PROXY=http://127.0.0.1:10808` 环境变量）

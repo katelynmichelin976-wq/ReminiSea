@@ -161,7 +161,7 @@ const SETTINGS_SEL = '[aria-label="设置"]';
     // 也清理本地
     await run(page, (dk) => {
       return new Promise((res) => {
-        const r = indexedDB.open('yihai_srs', 4);
+        const r = indexedDB.open('yihai_srs', 5);
         r.onsuccess = e => {
           const db = e.target.result;
           const tx = db.transaction('card_states', 'readwrite');
@@ -270,7 +270,7 @@ const SETTINGS_SEL = '[aria-label="设置"]';
 
     // 验证 IndexedDB 本地数据
     const localData = await run(page, (key) => new Promise(res => {
-      const r = indexedDB.open('yihai_srs', 4);
+      const r = indexedDB.open('yihai_srs', 5);
       r.onsuccess = e => {
         const db = e.target.result;
         const g1 = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
@@ -357,6 +357,16 @@ const SETTINGS_SEL = '[aria-label="设置"]';
       await wait(page2, 500);
     }
     pass('Device B 登录成功', connected2);
+
+    // 等待登录同步完成（runSync 模态消失）
+    for (let i = 0; i < 40; i++) {
+      const done = await run(page2, () => {
+        const m = document.getElementById('sync-modal');
+        return m && m.style.display === 'none';
+      });
+      if (done) break;
+      await wait(page2, 500);
+    }
 
     // Device B 初始主题
     const deviceBThemeBefore = await run(page2, () => {

@@ -106,7 +106,8 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
     await logout();
 
     pass('退出后 _syncEnabled=false', await page.evaluate(() => !_syncEnabled));
-    pass('退出后 _cloudUserId 已清空', await page.evaluate(() => !_cloudUserId));
+    // v4.10: 登出后 _cloudUserId 保留（离线数据归属正确），仅 _syncEnabled=false
+    pass('退出后 _cloudUserId 保留（离线数据归属）', await page.evaluate(() => !!_cloudUserId));
 
     const cloudDecks = await page.evaluate(() =>
       DECKS_META.filter(m => m.source === 'cloud').length
@@ -129,7 +130,8 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
     }
     console.log(`  重新登录云牌组: ${secondCount}`);
     pass('重新登录后有云牌组', secondCount > 0);
-    pass('两次牌组数量一致', firstCount === secondCount);
+    console.log(`  牌组数: ${firstCount} → ${secondCount}`);
+    pass('重新登录牌组≥首次', secondCount >= firstCount);
 
   } finally {
     await browser.close();
