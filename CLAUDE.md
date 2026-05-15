@@ -140,6 +140,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **getDeckStatsSrs 兼容 due_ts=0**：learning 卡因各种原因 `due_ts=0` 时仍有 0 分钟的等待期，不再被队列永久跳过
 - **syncAll → runSync 重命名**：全部同步调用改为 `runSync(options)`，支持 modal/decks/deckKey/voice/title 参数
 
+## First-time Setup
+
+```bash
+# Enable git hooks (issue-auto-create on commit)
+git config core.hooksPath .githooks
+```
+
 ## Development Commands
 
 ```bash
