@@ -11,6 +11,8 @@ Thumbs.db
 
 # Claude Code
 .claude/
+!.claude/hooks/
+!.claude/settings.json
 
 # Supabase
 .env
