@@ -1,0 +1,86 @@
+#!/bin/bash
+# prepare-commit-msg hook
+# Checks commit message for GitHub issue reference (#N).
+# Auto-creates an issue if missing (non-interactive).
+# Repository: katelynmichelin976-wq/ReminiSea
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+
+# Only process new commits (skip amend, merge, squash, template)
+case "$COMMIT_SOURCE" in
+    message|'') ;;
+    *) exit 0 ;;
+esac
+
+MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Strip UTF-8 BOM if present (some editors add it)
+MSG=${MSG#$'\xef\xbb\xbf'}
+
+# Strip comment lines for checking
+REAL_MSG=$(echo "$MSG" | grep -vE '^\s*#')
+
+# Already has an issue reference?
+if echo "$REAL_MSG" | grep -qE '#[0-9]+'; then
+    exit 0
+fi
+
+# ── No issue reference ──
+echo ""
+echo "============================================="
+echo "  No GitHub issue reference found in commit"
+echo "============================================="
+echo ""
+
+# Try auto-creating via gh CLI
+if command -v gh &> /dev/null && gh auth status &> /dev/null; then
+    # Use first line of commit message as issue title
+    TITLE=$(echo "$REAL_MSG" | head -1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+    if [ -z "$TITLE" ]; then
+        echo "  Empty commit message, cannot auto-create issue."
+        echo "  Add an issue reference: (#N)"
+        echo ""
+        exit 1
+    fi
+
+    echo "  Auto-creating issue: $TITLE"
+
+    # Create issue (non-interactive)
+    ISSUE_OUTPUT=$(HTTPS_PROXY="${HTTPS_PROXY:-http://127.0.0.1:10808}" \
+        gh issue create \
+            --title "$TITLE" \
+            --body "Auto-created from commit." \
+            --label "" \
+            2>&1)
+    GH_EXIT=$?
+
+    if [ $GH_EXIT -eq 0 ]; then
+        ISSUE_NUM=$(echo "$ISSUE_OUTPUT" | grep -oE '[0-9]+$' | head -1)
+        if [ -n "$ISSUE_NUM" ]; then
+            # Append (#N) to end of first line (use BOM-stripped MSG)
+            FIRST_LINE=$(echo "$MSG" | head -1)
+            REST=$(echo "$MSG" | tail -n +2)
+            printf '%s (#%s)\n' "$FIRST_LINE" "$ISSUE_NUM" > "$COMMIT_MSG_FILE"
+            if [ -n "$REST" ]; then
+                echo "$REST" >> "$COMMIT_MSG_FILE"
+            fi
+            echo "  Issue #${ISSUE_NUM} created and linked to commit."
+            echo ""
+            exit 0
+        fi
+    fi
+
+    echo "  gh issue create failed: $ISSUE_OUTPUT"
+    echo ""
+fi
+
+# Couldn't auto-create
+echo "  Commit message must reference a GitHub issue."
+echo "  Format: type: description (#123)"
+echo ""
+echo "  Create one manually:"
+echo "    gh issue create --title \"your summary\""
+echo ""
+exit 1
