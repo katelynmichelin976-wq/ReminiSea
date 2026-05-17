@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.11.0</title>
+<title>忆海拾光 v4.11.1</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -342,7 +342,7 @@ body {
   transition:opacity .2s, transform .2s;
 }
 
-/* Image wrapper — same inset as mid-zone */
+/* Image wrapper */
 .img-zone {
   flex-shrink:0;
   padding:0 16px;
@@ -356,7 +356,7 @@ body {
   justify-content:flex-end;
 }
 
-/* Target card — 1:1 square, capped height, always fixed */
+/* Target card — 1:1 square, capped height */
 .target-card {
   background:var(--surf2);
   border-radius:var(--r);
@@ -396,18 +396,18 @@ body {
 @keyframes dp{0%,70%,100%{transform:scale(.5);opacity:.3}35%{transform:scale(1);opacity:1}}
 .instr-txt { font-size:14px; color:var(--text2); font-weight:500; }
 
-/* Options zone — explicit height matching image; buttons fill it */
+/* Options zone — height driven by JS via vh-based variables */
 .opts-zone {
   width:100%; flex-shrink:0;
   display:flex; flex-direction:column;
   background:var(--surf); border-radius:var(--r);
-  border:1px solid var(--bd); padding:14px;
+  border:1px solid var(--bd); padding:var(--opts-pad, 14px);
   height:var(--opts-zone-h, auto);
   user-select:none; -webkit-user-select:none;
 }
 .opts {
   flex:1;
-  display:flex; flex-direction:column; gap:16px;
+  display:flex; flex-direction:column; gap:var(--opts-gap, 16px);
 }
 .opt {
   flex:1; height:var(--opt-btn-h, auto);
@@ -456,11 +456,11 @@ body {
   align-items:center; justify-content:center;
   background:var(--surf); border-radius:var(--r);
   border:1px solid var(--bd); box-shadow:var(--sh);
-  padding:18px 20px 14px; overflow:hidden;
+  padding:0; overflow:hidden;
   opacity:0; transform:scale(.96);
   transition:opacity .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
 }
-.answer-panel.show { opacity:1; transform:scale(1); }
+.answer-panel.show { opacity:1; transform:scale(1); padding:18px 20px 14px; }
 .answer-word {
   font-size:var(--fs-ans, 48px); font-weight:800; letter-spacing:var(--ls-ans, -1px);
   color:var(--text); line-height:1; text-align:center;
@@ -879,7 +879,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.11.0</span>
+        <span class="home-version">v4.11.1</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1677,7 +1677,7 @@ function getCurrentUserId() {
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.11.0';
+const APP_VERSION = '4.11.1';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -3946,17 +3946,22 @@ function render() {
   document.getElementById('answer-panel').className = 'answer-panel';
   const _nb=document.getElementById('nxtbtn'); _nb.className='nxtbtn'; document.querySelector('.btm').classList.remove('active'); stopNRing();
 
-  // 选项区固定高度
+  // 选项区高度随 viewport 高度等比缩放
   requestAnimationFrame(() => {
-    const gap = 16, pad = 28, n = OPT_COUNT;
-    const btnH = window.innerWidth >= 600 ? 84 : 72;
-    const zoneH = btnH * n + gap * (n - 1) + pad;
+    const n = OPT_COUNT, vh = window.innerHeight;
+    const btnH = Math.round(Math.min(84, Math.max(52, vh * 0.09)));
+    const gap  = Math.round(Math.min(16, Math.max(8,  vh * 0.012)));
+    const padV = Math.round(Math.min(14, Math.max(8,  vh * 0.014)));
+    const zoneH = btnH * n + gap * (n - 1) + padV * 2;
     document.documentElement.style.setProperty('--opts-zone-h', `${zoneH}px`);
-    document.documentElement.style.setProperty('--opt-btn-h', `${btnH}px`);
+    document.documentElement.style.setProperty('--opt-btn-h',   `${btnH}px`);
+    document.documentElement.style.setProperty('--opts-gap',    `${gap}px`);
+    document.documentElement.style.setProperty('--opts-pad',    `${padV}px`);
     if (window.innerWidth >= 600) {
-      const barH = (document.querySelector('.bar') || {offsetHeight:70}).offsetHeight;
-      const maxImgH = window.innerHeight - barH - zoneH - 30;
-      document.documentElement.style.setProperty('--img-max-h', `${Math.max(maxImgH, 120)}px`);
+      const vvh = (window.visualViewport || {height: vh}).height;
+      const barH = (document.querySelector('.bar') || {offsetHeight: 70}).offsetHeight;
+      // 30 = content gap(10) + mid-zone padding-bottom(8) + safety(12)
+      document.documentElement.style.setProperty('--img-max-h', `${Math.max(vvh - barH - zoneH - 30, 120)}px`);
     }
   });
 
