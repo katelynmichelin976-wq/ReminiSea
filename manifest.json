@@ -3,6 +3,7 @@
   "short_name": "忆海拾光",
   "start_url": ".",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#1a2a3a",
   "theme_color": "#1a3a5c",
   "icons": []
