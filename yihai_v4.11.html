@@ -1447,8 +1447,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             </div>
             <div style="display:flex;flex-direction:column;gap:8px">
               <input type="email" id="cloud-email" placeholder="邮箱"
-                style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--surf);color:var(--text);font-family:inherit"
-                value="zyhacl@gmail.com">
+                style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--surf);color:var(--text);font-family:inherit">
               <input type="password" id="cloud-password" placeholder="密码"
                 style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--surf);color:var(--text);font-family:inherit">
               <button id="cloud-login-btn"
@@ -1740,7 +1739,8 @@ async function restoreCloudSession() {
     _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // 预读 localStorage token — 无需网络，可立即获得用户身份
-    var sbKey = 'sb-' + SUPABASE_URL.replace(/^https?:\/\//, '') + '-auth-token';
+    // 注意：Supabase SDK 用 projectRef（不含域名）作 key，需与 SDK 保持一致
+    var sbKey = 'sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token';
     var parsed = null;
     try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
 
@@ -1752,6 +1752,7 @@ async function restoreCloudSession() {
       _cloudUserEmail   = data.session.user.email;
       _cloudUserId      = data.session.user.id;
       _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
+      localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
       return;
     }
 
@@ -1789,6 +1790,7 @@ async function restoreCloudSession() {
       _cloudUserEmail   = retry.data.session.user.email;
       _cloudUserId      = retry.data.session.user.id;
       _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
+      localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
     }
   } catch(e) {
     if (typeof supabase !== 'undefined') {
@@ -1822,6 +1824,11 @@ function updateCloudTabUI() {
     if (loginSec)     loginSec.style.display     = '';
     if (connSec)      connSec.style.display      = 'none';
     if (restoringSec) restoringSec.style.display = 'none';
+    // 预填上次登录邮箱，方便用户重新登录
+    const emailEl = document.getElementById('cloud-email');
+    if (emailEl && !emailEl.value) {
+      emailEl.value = localStorage.getItem('yihai_last_cloud_email') || '';
+    }
   }
 }
 
@@ -1848,6 +1855,7 @@ async function doCloudLogin() {
     _cloudUserEmail = data.user.email;
     _cloudUserId = data.user.id;
     localStorage.setItem('yihai_last_cloud_user_id', _cloudUserId);
+    localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     localStorage.setItem('yihai_has_ever_logged_in', '1');
     // 将本设备离线记录迁移到当前登录用户（非阻塞）
