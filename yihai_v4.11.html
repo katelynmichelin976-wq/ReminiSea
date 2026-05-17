@@ -397,18 +397,18 @@ body {
 @keyframes dp{0%,70%,100%{transform:scale(.5);opacity:.3}35%{transform:scale(1);opacity:1}}
 .instr-txt { font-size:14px; color:var(--text2); font-weight:500; }
 
-/* Options zone — explicit height matching image; buttons fill it */
+/* Options zone — height driven by JS via vh-based variables */
 .opts-zone {
   width:100%; flex-shrink:0;
   display:flex; flex-direction:column;
   background:var(--surf); border-radius:var(--r);
-  border:1px solid var(--bd); padding:14px;
+  border:1px solid var(--bd); padding:var(--opts-pad, 14px);
   height:var(--opts-zone-h, auto);
   user-select:none; -webkit-user-select:none;
 }
 .opts {
   flex:1;
-  display:flex; flex-direction:column; gap:16px;
+  display:flex; flex-direction:column; gap:var(--opts-gap, 16px);
 }
 .opt {
   flex:1; height:var(--opt-btn-h, auto);
@@ -451,9 +451,9 @@ body {
 .opt.dim    { opacity:.25; pointer-events:none; }
 .opt.dim::after { display:none; }
 
-/* Answer panel — fills mid-zone, same space as opts-zone */
+/* Answer panel — same footprint as opts-zone */
 .answer-panel {
-  flex:1; min-height:0; display:flex; flex-direction:column;
+  flex:1; min-height:var(--opts-zone-h, 0px); display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   background:var(--surf); border-radius:var(--r);
   border:1px solid var(--bd); box-shadow:var(--sh);
@@ -3946,13 +3946,17 @@ function render() {
   document.getElementById('answer-panel').className = 'answer-panel';
   const _nb=document.getElementById('nxtbtn'); _nb.className='nxtbtn'; document.querySelector('.btm').classList.remove('active'); stopNRing();
 
-  // 选项区固定高度
+  // 选项区高度随 viewport 高度等比缩放
   requestAnimationFrame(() => {
-    const gap = 16, pad = 28, n = OPT_COUNT;
-    const btnH = window.innerWidth >= 600 ? 84 : 72;
-    const zoneH = btnH * n + gap * (n - 1) + pad;
+    const n = OPT_COUNT, vh = window.innerHeight;
+    const btnH = Math.round(Math.min(84, Math.max(52, vh * 0.09)));
+    const gap  = Math.round(Math.min(16, Math.max(8,  vh * 0.012)));
+    const padV = Math.round(Math.min(14, Math.max(8,  vh * 0.014)));
+    const zoneH = btnH * n + gap * (n - 1) + padV * 2;
     document.documentElement.style.setProperty('--opts-zone-h', `${zoneH}px`);
-    document.documentElement.style.setProperty('--opt-btn-h', `${btnH}px`);
+    document.documentElement.style.setProperty('--opt-btn-h',   `${btnH}px`);
+    document.documentElement.style.setProperty('--opts-gap',    `${gap}px`);
+    document.documentElement.style.setProperty('--opts-pad',    `${padV}px`);
   });
 
   stopAllPromptTimers();
