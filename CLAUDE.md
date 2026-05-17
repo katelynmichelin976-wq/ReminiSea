@@ -231,19 +231,23 @@ review → again → relearning
    - `fix: v4.9.15: 迟到天数加成 (#8)` — 版本号是发现问题的已发布版本
    - `feat: 牌组层级管理 (#13)` — 新功能不绑定版本号
    - `docs: CLAUDE.md 同步` — 文档不绑定版本号
-   - `release: v4.9.16` — 发布 commit，包含 bump 版本号 + index.html
+   - `release: v4.9.16` — 发布 commit，包含 bump 版本号 + index.html + 文档同步
 
 ## Deployment
 
 发布流程：
 1. 所有测试通过（SRS + v4.4 + v4.8 + v4.9 + Playwright）
-2. 修改 `yihai_v4.11.html` 中 **3 处**版本号：`<title>`、`.home-version`、`APP_VERSION` 常量
-3. 复制 `yihai_v4.11.html` → `index.html`
-4. 提交 `release: v4.x.x`
-5. `git tag v4.x.x`
-6. `git push; git push --tags`（PowerShell 不支持 `&&`）
-7. `$env:HTTPS_PROXY="http://127.0.0.1:10808"; gh release create v4.x.x --title "v4.x.x" --notes "..."`
-8. GitHub Pages 自动部署到 https://katelynmichelin976-wq.github.io/gemi/
+2. **文档同步检查**（必须在 release commit 之前完成，与代码一起提交）：
+   - `CLAUDE.md`：更新 `当前版本` 表格里的版本号 + `Recent Changes` 版本号
+   - `docs/忆海拾光_训练App_README.md`：在「版本历史」顶部插入新版本条目
+   - `docs/yihai_变更记录_CLAUDE参考.md`：补充本版本的关键技术变更
+3. 修改 `yihai_v4.11.html` 中 **3 处**版本号：`<title>`、`.home-version`、`APP_VERSION` 常量
+4. 复制 `yihai_v4.11.html` → `index.html`
+5. 将上述所有改动（HTML + index.html + 文档）一起放入 `release: v4.x.x` commit
+6. `git tag v4.x.x`
+7. `git push; git push --tags`（PowerShell 不支持 `&&`）
+8. `$env:HTTPS_PROXY="http://127.0.0.1:10808"; gh release create v4.x.x --title "v4.x.x" --notes "..."`
+9. GitHub Pages 自动部署到 https://katelynmichelin976-wq.github.io/gemi/
 
 **代理说明：** git 代理已全局配置（http.proxy + https.proxy = 127.0.0.1:10808）；`gh` 命令（包括 `gh issue create/close/comment`）依赖 `$env:HTTPS_PROXY` 环境变量，每次新 PowerShell 会话需重新设置。
 
