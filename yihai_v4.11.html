@@ -1659,7 +1659,6 @@ const SRS_DB_VER     = 5;
 const CS_STORE       = 'card_states';
 const TRIAL_STORE    = 'trials';
 const EVT_STORE      = 'app_events';
-const CSL_STORE      = 'card_state_log';
 
 let _srsDb = null;
 let _srsDbPromise = null;
@@ -2408,9 +2407,6 @@ function openSrsDb() {
       if (!db.objectStoreNames.contains(EVT_STORE)) {
         db.createObjectStore(EVT_STORE, { keyPath: 'event_id' });
       }
-      if (!db.objectStoreNames.contains(CSL_STORE)) {
-        db.createObjectStore(CSL_STORE, { keyPath: 'log_id' });
-      }
       if (oldVer < 5) {
         const csStore = e.target.transaction.objectStore(CS_STORE);
         if (!csStore.indexNames.contains('user_id')) csStore.createIndex('user_id', 'user_id');
@@ -2500,29 +2496,6 @@ function logAppEvent(type, payload, deckKey) {
   }).catch(function(){});
 }
 
-function logCardStateChange(changeType, before, after) {
-  if (!isMember()) return;
-  var log = {
-    log_id: 'csl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    state_key: after.state_key,
-    card_id: after.card_id,
-    deck_key: after.deck_key,
-    change_type: changeType,
-    stage_before: (before && before.srs_stage) || '',
-    interval_before: (before && before.interval) || 0,
-    ease_before: (before && before.ease_factor) || 2.5,
-    stage_after: after.srs_stage,
-    interval_after: after.interval || 0,
-    ease_after: after.ease_factor || 2.5,
-    device_id: _deviceId || '',
-    timestamp: Date.now(),
-    synced_at: null
-  };
-  openSrsDb().then(function(db) {
-    db.transaction(CSL_STORE, 'readwrite').objectStore(CSL_STORE).put(log);
-  }).catch(function(){});
-  uploadCardStateLog(log);
-}
 
 // 设备注册（非阻塞）
 async function upsertDeviceRegistry() {
@@ -2545,14 +2518,6 @@ async function uploadAppEvent(event) {
   } catch(e) {}
 }
 
-async function uploadCardStateLog(log) {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return;
-  try {
-    var payload = { log_id: log.log_id, user_id: _cloudUserId, state_key: log.state_key, card_id: log.card_id, deck_key: log.deck_key, change_type: log.change_type, stage_before: log.stage_before, interval_before: log.interval_before, ease_before: log.ease_before, stage_after: log.stage_after, interval_after: log.interval_after, ease_after: log.ease_after, device_id: log.device_id, timestamp: log.timestamp };
-    var _a = await _sb.from('card_state_log').insert(payload);
-    if (!_a.error || _a.error.code === '23505') { log.synced_at = Date.now(); markCslSynced(log.log_id); }
-  } catch(e) {}
-}
 
 // 标记事件已同步（写回 IndexedDB）
 function markEventSynced(eventId) {
@@ -2563,13 +2528,6 @@ function markEventSynced(eventId) {
   }).catch(function(){});
 }
 
-function markCslSynced(logId) {
-  openSrsDb().then(function(db) {
-    var tx = db.transaction(CSL_STORE, 'readwrite');
-    var req = tx.objectStore(CSL_STORE).get(logId);
-    req.onsuccess = function() { if (req.result) { req.result.synced_at = Date.now(); tx.objectStore(CSL_STORE).put(req.result); } };
-  }).catch(function(){});
-}
 
 // syncAll 批量补传
 async function syncAppEvents() {
@@ -2581,14 +2539,6 @@ async function syncAppEvents() {
   return uploaded;
 }
 
-async function syncCardStateLogs() {
-  if (!_syncEnabled || !_sb) return 0;
-  var db = await openSrsDb();
-  var all = await new Promise(function(res, rej) { var r = db.transaction(CSL_STORE, 'readonly').objectStore(CSL_STORE).getAll(); r.onsuccess = function(e) { res(e.target.result || []); }; r.onerror = function(e) { rej(e.target.error); }; });
-  var uploaded = 0;
-  for (var i = 0; i < all.length; i++) { if (!all[i].synced_at) { try { await uploadCardStateLog(all[i]); uploaded++; } catch(e) {} } }
-  return uploaded;
-}
 
 // 裁剪 store 到指定条数（保留最新）
 function trimStore(db, storeName, maxCount) {
@@ -2608,20 +2558,14 @@ function trimStore(db, storeName, maxCount) {
   };
 }
 
-// 清理过期日志（会员版：app_events 30 天，card_state_log 7 天）
+// 清理过期日志（app_events 30 天）
 async function purgeOldLogs() {
   try {
     var db = await openSrsDb();
     var cutoff30 = Date.now() - 30 * 86400000;
-    var cutoff7  = Date.now() - 7 * 86400000;
-    // app_events: 删 30 天前
     var evtTx = db.transaction(EVT_STORE, 'readwrite');
     var evtReq = evtTx.objectStore(EVT_STORE).openCursor();
     evtReq.onsuccess = function(e) { var c = e.target.result; if (c && c.value.timestamp < cutoff30) { c.delete(); c.continue(); } };
-    // card_state_log: 删 7 天前
-    var cslTx = db.transaction(CSL_STORE, 'readwrite');
-    var cslReq = cslTx.objectStore(CSL_STORE).openCursor();
-    cslReq.onsuccess = function(e) { var c = e.target.result; if (c && c.value.timestamp < cutoff7) { c.delete(); c.continue(); } };
   } catch(e) {}
 }
 
