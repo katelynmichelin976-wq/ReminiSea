@@ -342,22 +342,21 @@ body {
   transition:opacity .2s, transform .2s;
 }
 
-/* Image wrapper — fills remaining space above options */
+/* Image wrapper */
 .img-zone {
-  flex:1; min-height:0; overflow:hidden;
-  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
   padding:0 16px;
 }
 
-/* Mid zone: fixed by opts-zone content, never grows */
+/* Mid zone: fills everything between image and btm */
 .mid-zone {
-  flex-shrink:0;
+  flex:1; min-height:0;
   padding:0 16px 8px;
   display:flex; flex-direction:column;
   justify-content:flex-end;
 }
 
-/* Target card — 1:1 square, constrained by img-zone height */
+/* Target card — 1:1 square, capped height */
 .target-card {
   background:var(--surf2);
   border-radius:var(--r);
@@ -366,7 +365,7 @@ body {
   display:flex; align-items:center; justify-content:center;
   flex-shrink:0; overflow:hidden; padding:0; position:relative;
   width:100%; aspect-ratio:1/1;
-  max-height:100%;
+  max-height:44vh;
 }
 .target-card > .target-img { border-radius:var(--r); overflow:hidden; }
 .revealed .target-card { box-shadow:var(--sh); }
@@ -451,9 +450,9 @@ body {
 .opt.dim    { opacity:.25; pointer-events:none; }
 .opt.dim::after { display:none; }
 
-/* Answer panel — same footprint as opts-zone */
+/* Answer panel — fills mid-zone, same space as opts-zone */
 .answer-panel {
-  flex:1; min-height:var(--opts-zone-h, 0px); display:flex; flex-direction:column;
+  flex:1; min-height:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   background:var(--surf); border-radius:var(--r);
   border:1px solid var(--bd); box-shadow:var(--sh);
@@ -859,6 +858,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-footer {
     max-width: min(90vw, 720px);
   }
+  .target-card { max-height: var(--img-max-h, 58vh); }
 }
 /* ── iPad Pro / large tablet (≥900px) ── */
 @media (min-width: 900px) {
@@ -3957,6 +3957,11 @@ function render() {
     document.documentElement.style.setProperty('--opt-btn-h',   `${btnH}px`);
     document.documentElement.style.setProperty('--opts-gap',    `${gap}px`);
     document.documentElement.style.setProperty('--opts-pad',    `${padV}px`);
+    if (window.innerWidth >= 600) {
+      const vvh = (window.visualViewport || {height: vh}).height;
+      const barH = (document.querySelector('.bar') || {offsetHeight: 70}).offsetHeight;
+      document.documentElement.style.setProperty('--img-max-h', `${Math.max(vvh - barH - zoneH - 16, 120)}px`);
+    }
   });
 
   stopAllPromptTimers();
