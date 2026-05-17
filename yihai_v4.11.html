@@ -1691,6 +1691,7 @@ let _cloudUserEmail = '';
 let _cloudUserId = '';
 var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // 学习中实时上传开关
 let _sessionRestoring = false; // SDK 加载中或 session 恢复中，避免闪"未登录"
+var _onlineListenerActive = false; // 防止重复注册 online 监听
 let _sessionOffline   = false; // 有凭证但网络失败，保留登录外观等待重连
 
 // CDN 媒体下载辅助：尝试 CDN 加速，失败则回退到 Supabase Storage
@@ -1716,7 +1717,10 @@ async function downloadMediaFromCDNorSupabase(path, mimeType) {
 
 // 网络失败时注册 online 事件，恢复后自动重试 session
 function _scheduleSessionRetry() {
+  if (_onlineListenerActive) return;
+  _onlineListenerActive = true;
   window.addEventListener('online', function _onOnline() {
+    _onlineListenerActive = false;
     window.removeEventListener('online', _onOnline);
     _sessionRestoring = true;
     _sessionOffline   = false;
@@ -1726,7 +1730,7 @@ function _scheduleSessionRetry() {
       updateCloudTabUI();
       if (_syncEnabled) runSync({ decks: false, showToast: true }).catch(function(){});
     });
-  }, { once: true });
+  });
 }
 
 // 启动时尝试恢复已有会话
@@ -5191,6 +5195,10 @@ function toggleTheme(checkbox){
 
   // 2. 云端初始化 — Supabase SDK 加载完成后执行
   async function initCloud() {
+    window.addEventListener('offline', function() {
+      if (_syncEnabled) { _sessionOffline = true; updateCloudTabUI(); _scheduleSessionRetry(); }
+    });
+
     try {
       await restoreCloudSession();
     } catch(e) { console.warn('[cloud] session restore error:', e.message); }
