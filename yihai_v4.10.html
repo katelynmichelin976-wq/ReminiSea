@@ -4131,8 +4131,10 @@ async function onNext() {
 
 // ── SRS 写入（练习模式专用）───────────────────────────────────
 async function _writeSrs(q, rating, attempt) {
-  const deckKey = currentDeck;
+  // Use the deck key from the card's SRS state (set at queue build time) to avoid
+  // a race where background sync's renderDeckList() resets currentDeck mid-session.
   const state   = q._srsState;
+  const deckKey = (state && state.deck_key) || currentDeck;
   if (!state || !deckKey) return;
 
   // 活跃时长记录（在 SRS 更新之前）
