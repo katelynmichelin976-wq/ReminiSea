@@ -129,6 +129,50 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.11.3 — 2026-05-17
+
+**Session 恢复 Bug 修复**
+- `restoreCloudSession()` Level 2 备用路径 sbKey 错误（全域名 `sb-xxx.supabase.co-auth-token` → 正确 `sb-{projectRef}-auth-token`），Level 2 `setSession()` 兜底路径现在真正生效
+- 移除云端登录框硬编码 `value="zyhacl@gmail.com"`；改为从 `yihai_last_cloud_email` 预填上次登录邮箱
+- 所有登录成功路径（手动登录 + Level 1/3 session 恢复）均保存 `yihai_last_cloud_email`
+- 新增 `tests/_playwright_expired_token_test.js`（9 断言，模拟 access_token 过期后刷新场景）
+- 新增 `tests/_playwright_version_update_test.js`（8 断言，版本更新后刷新 session 恢复）
+
+---
+
+### v4.11.2 — 2026-05-16
+
+**Bug 修复（5项）**
+- `alert()` 全部替换为 `showConfirmDialog()`（iOS PWA 屏蔽系统弹窗）
+- 孤儿统计修复：`statsPend` 排除 DECKS 中已不存在的 CardState 孤儿记录
+- `goHome()` 竞态修复：`_launchBusy=false` 和 `showScreen` 移入 `_lastSrsWrite.finally()` 内，防止 SRS 写入未完成时重入
+- `runSync` 并发锁：新增 `_syncRunning` flag，防止多次点击或 visibilitychange 并发触发同步
+- XSS 转义：`showConfirmDialog` 消息内容改用 `escHtml()` 转义
+
+**在线状态修复**
+- `online` 事件监听改为全局注册一次（而非每次 `initCloud` 重复注册），修复断网恢复后不自动重连
+
+---
+
+### v4.11.1 — 2026-05-14
+
+**平板适配修复**
+- `answer-panel` 隐藏时移除 padding 占位，修复平板图片遮挡选项区问题
+- `visualViewport` 动态计算可用高度，防止键盘/地址栏弹出时选项被遮挡
+- 选项按钮高度随 `vh` 动态缩放（`min(8vh, 52px)`），适配各终端
+- `manifest.json` 锁定 PWA 竖屏方向（`orientation: "portrait"`）
+
+---
+
+### v4.11.0 — 2026-05-14
+
+**iPad/平板响应式适配**
+- 宽屏（≥600px）启用双列布局：左侧图片区 / 右侧选项区并列，提升平板使用体验
+- 图片区高度限制（`max-height: 50vh`），防止大图挤压选项
+- 练习/浏览模式均适配双列 flex 布局
+
+---
+
 ### v4.10.1 — 2026-05-14
 
 **Session 恢复增强**
