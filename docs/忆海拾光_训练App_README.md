@@ -129,6 +129,14 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.11.4 — 2026-05-18
+
+**死代码清理**
+- 清除 `card_state_log` 整条废弃管道：`CSL_STORE` 常量、IDB 建库语句、`logCardStateChange` / `uploadCardStateLog` / `markCslSynced` / `syncCardStateLogs` 函数及 `purgeOldLogs` 中的 CSL 清理段（共删除 57 行）
+- 无行为变更，275 个单测通过
+
+---
+
 ### v4.11.3 — 2026-05-17
 
 **Session 恢复 Bug 修复**
