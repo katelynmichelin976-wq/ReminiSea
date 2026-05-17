@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.11.1</title>
+<title>忆海拾光 v4.11.2</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -879,7 +879,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.11.1</span>
+        <span class="home-version">v4.11.2</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1677,7 +1677,7 @@ function getCurrentUserId() {
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.11.1';
+const APP_VERSION = '4.11.2';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1691,6 +1691,7 @@ let _cloudUserEmail = '';
 let _cloudUserId = '';
 var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // 学习中实时上传开关
 let _sessionRestoring = false; // SDK 加载中或 session 恢复中，避免闪"未登录"
+var _onlineListenerActive = false; // 防止重复注册 online 监听
 let _sessionOffline   = false; // 有凭证但网络失败，保留登录外观等待重连
 
 // CDN 媒体下载辅助：尝试 CDN 加速，失败则回退到 Supabase Storage
@@ -1716,7 +1717,10 @@ async function downloadMediaFromCDNorSupabase(path, mimeType) {
 
 // 网络失败时注册 online 事件，恢复后自动重试 session
 function _scheduleSessionRetry() {
+  if (_onlineListenerActive) return;
+  _onlineListenerActive = true;
   window.addEventListener('online', function _onOnline() {
+    _onlineListenerActive = false;
     window.removeEventListener('online', _onOnline);
     _sessionRestoring = true;
     _sessionOffline   = false;
@@ -1726,7 +1730,7 @@ function _scheduleSessionRetry() {
       updateCloudTabUI();
       if (_syncEnabled) runSync({ decks: false, showToast: true }).catch(function(){});
     });
-  }, { once: true });
+  });
 }
 
 // 启动时尝试恢复已有会话
@@ -5191,6 +5195,10 @@ function toggleTheme(checkbox){
 
   // 2. 云端初始化 — Supabase SDK 加载完成后执行
   async function initCloud() {
+    window.addEventListener('offline', function() {
+      if (_syncEnabled) { _sessionOffline = true; updateCloudTabUI(); _scheduleSessionRetry(); }
+    });
+
     try {
       await restoreCloudSession();
     } catch(e) { console.warn('[cloud] session restore error:', e.message); }
