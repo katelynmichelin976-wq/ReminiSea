@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.10.3</title>
+<title>忆海拾光 v4.10.4</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -865,7 +865,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.10.3</span>
+        <span class="home-version">v4.10.4</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1445,6 +1445,14 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           </div>
         </div>
 
+        <!-- 正在恢复会话 -->
+        <div id="cloud-restoring-section" style="display:none">
+          <div class="sheet-section">
+            <div class="sheet-section-lbl">同步账户</div>
+            <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">正在恢复登录…</div>
+          </div>
+        </div>
+
         <!-- 已登录 -->
         <div id="cloud-connected-section" style="display:none">
           <div class="sheet-section">
@@ -1655,7 +1663,7 @@ function getCurrentUserId() {
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.10.0';
+const APP_VERSION = '4.10.4';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1668,6 +1676,8 @@ let _lastOrphans = [];    // 媒体清理：暂存最近一次扫描的孤立 ke
 let _cloudUserEmail = '';
 let _cloudUserId = '';
 var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // 学习中实时上传开关
+let _sessionRestoring = false; // SDK 加载中或 session 恢复中，避免闪"未登录"
+let _sessionOffline   = false; // 有凭证但网络失败，保留登录外观等待重连
 
 // CDN 媒体下载辅助：尝试 CDN 加速，失败则回退到 Supabase Storage
 function cdnMediaUrl(path) {
@@ -1690,47 +1700,76 @@ async function downloadMediaFromCDNorSupabase(path, mimeType) {
   return new Blob([data], { type: mimeType || 'image/jpeg' });
 }
 
+// 网络失败时注册 online 事件，恢复后自动重试 session
+function _scheduleSessionRetry() {
+  window.addEventListener('online', function _onOnline() {
+    window.removeEventListener('online', _onOnline);
+    _sessionRestoring = true;
+    _sessionOffline   = false;
+    updateCloudTabUI();
+    restoreCloudSession().then(function() {
+      _sessionRestoring = false;
+      updateCloudTabUI();
+      if (_syncEnabled) runSync({ decks: false, showToast: true }).catch(function(){});
+    });
+  }, { once: true });
+}
+
 // 启动时尝试恢复已有会话
 async function restoreCloudSession() {
   try {
     _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // 预读 localStorage token — 无需网络，可立即获得用户身份
+    var sbKey = 'sb-' + SUPABASE_URL.replace(/^https?:\/\//, '') + '-auth-token';
+    var parsed = null;
+    try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
+
+    // 第1级：getSession()（SDK 自动用 refresh_token 续签）
     var { data, error } = await _sb.auth.getSession();
-    if (error) throw error;
-    if (data.session) {
-      _syncEnabled = true;
-      _cloudUserEmail = data.session.user.email;
-      _cloudUserId = data.session.user.id;
-      _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
+    if (!error && data.session) {
+      _syncEnabled      = true;
+      _sessionOffline   = false;
+      _cloudUserEmail   = data.session.user.email;
+      _cloudUserId      = data.session.user.id;
+      _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
       return;
     }
-    // getSession() 没找到 — 可能 SDK 尚未完成 localStorage 恢复
-    // 尝试直接读取 Supabase 的 localStorage token 并用 setSession 恢复
-    var sbKey = 'sb-' + SUPABASE_URL.replace(/^https?:\/\//, '') + '-auth-token';
-    var raw = localStorage.getItem(sbKey);
-    if (raw) {
-      try {
-        var parsed = JSON.parse(raw);
-        if (parsed.access_token && parsed.refresh_token) {
-          var r = await _sb.auth.setSession({ access_token: parsed.access_token, refresh_token: parsed.refresh_token });
-          if (!r.error && r.data.session) {
-            _syncEnabled = true;
-            _cloudUserEmail = r.data.session.user.email;
-            _cloudUserId = r.data.session.user.id;
-            _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
-            return;
-          }
-        }
-      } catch(pe) { console.warn('[sync] setSession fallback failed', pe.message); }
+
+    // 第2级：手动 setSession（处理 SDK 读 localStorage 的竞态）
+    if (parsed && parsed.access_token && parsed.refresh_token) {
+      var r = await _sb.auth.setSession({ access_token: parsed.access_token, refresh_token: parsed.refresh_token });
+      if (!r.error && r.data.session) {
+        _syncEnabled      = true;
+        _sessionOffline   = false;
+        _cloudUserEmail   = r.data.session.user.email;
+        _cloudUserId      = r.data.session.user.id;
+        _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
+        return;
+      }
+      // 区分：网络失败 vs token 真正失效
+      var netFail = !navigator.onLine ||
+        (r.error && /fetch|network|failed to fetch/i.test(r.error.message));
+      if (netFail && parsed.user && parsed.user.email) {
+        // 保留登录外观，等网络恢复后自动重试
+        _cloudUserEmail = parsed.user.email;
+        _cloudUserId    = parsed.user.id || _cloudUserId;
+        _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
+        _sessionOffline = true;
+        _scheduleSessionRetry();
+        return;
+      }
     }
-    // Chrome 硬刷新后若 SDK CDN 响应延迟，getSession 可能因竞态返回 null
-    // 再给一次机会：等 300ms 后重试 getSession
+
+    // 第3级：300ms 重试（CDN 竞态兜底）
     await new Promise(function(r){setTimeout(r,300)});
     var retry = await _sb.auth.getSession();
     if (retry.data && retry.data.session) {
-      _syncEnabled = true;
-      _cloudUserEmail = retry.data.session.user.email;
-      _cloudUserId = retry.data.session.user.id;
-      _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
+      _syncEnabled      = true;
+      _sessionOffline   = false;
+      _cloudUserEmail   = retry.data.session.user.email;
+      _cloudUserId      = retry.data.session.user.id;
+      _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
     }
   } catch(e) {
     if (typeof supabase !== 'undefined') {
@@ -1741,16 +1780,29 @@ async function restoreCloudSession() {
 }
 
 function updateCloudTabUI() {
-  const loginSec = document.getElementById('cloud-login-section');
-  const connSec = document.getElementById('cloud-connected-section');
-  const userEl = document.getElementById('cloud-user-email');
-  if (_syncEnabled) {
-    if (loginSec) loginSec.style.display = 'none';
-    if (connSec) connSec.style.display = '';
+  const loginSec     = document.getElementById('cloud-login-section');
+  const connSec      = document.getElementById('cloud-connected-section');
+  const restoringSec = document.getElementById('cloud-restoring-section');
+  const userEl       = document.getElementById('cloud-user-email');
+  if (_sessionRestoring) {
+    if (loginSec)     loginSec.style.display     = 'none';
+    if (connSec)      connSec.style.display      = 'none';
+    if (restoringSec) restoringSec.style.display = '';
+  } else if (_syncEnabled) {
+    if (loginSec)     loginSec.style.display     = 'none';
+    if (connSec)      connSec.style.display      = '';
+    if (restoringSec) restoringSec.style.display = 'none';
     if (userEl) userEl.textContent = '✅ ' + _cloudUserEmail;
+  } else if (_sessionOffline && _cloudUserEmail) {
+    // 有凭证但网络失败：保留登录外观，等待重连
+    if (loginSec)     loginSec.style.display     = 'none';
+    if (connSec)      connSec.style.display      = '';
+    if (restoringSec) restoringSec.style.display = 'none';
+    if (userEl) userEl.textContent = '📵 ' + _cloudUserEmail + '（网络不稳定）';
   } else {
-    if (loginSec) loginSec.style.display = '';
-    if (connSec) connSec.style.display = 'none';
+    if (loginSec)     loginSec.style.display     = '';
+    if (connSec)      connSec.style.display      = 'none';
+    if (restoringSec) restoringSec.style.display = 'none';
   }
 }
 
@@ -1771,7 +1823,9 @@ async function doCloudLogin() {
     _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
     if (error) throw error;
-    _syncEnabled = true;
+    _syncEnabled      = true;
+    _sessionOffline   = false;
+    _sessionRestoring = false;
     _cloudUserEmail = data.user.email;
     _cloudUserId = data.user.id;
     localStorage.setItem('yihai_last_cloud_user_id', _cloudUserId);
@@ -1798,7 +1852,9 @@ async function doCloudLogout() {
   try {
     if (_sb) await _sb.auth.signOut();
   } catch(e) { console.warn('[sync] signOut error:', e.message); }
-  _syncEnabled = false;
+  _syncEnabled      = false;
+  _sessionOffline   = false;
+  _sessionRestoring = false;
   _cloudUserEmail = '';
   // v5: 不清 _cloudUserId — getCurrentUserId() 继续返回最近登录用户，
   // 离线练习的数据归属正确。除非显式切换账号，新登录会覆盖。
@@ -5102,6 +5158,9 @@ function toggleTheme(checkbox){
       await restoreCloudSession();
     } catch(e) { console.warn('[cloud] session restore error:', e.message); }
 
+    _sessionRestoring = false;
+    updateCloudTabUI();
+
     var p = _lastSrsWrite || Promise.resolve();
     await p;
 
@@ -5109,12 +5168,20 @@ function toggleTheme(checkbox){
   }
 
   // 等待 Supabase SDK 就绪后再 initCloud（defer 脚本在 inline 之后执行）
+  // 若曾登录过，立即标记为恢复中，避免打开设置时闪"未登录"
+  if (localStorage.getItem('yihai_has_ever_logged_in') === '1') {
+    _sessionRestoring = true;
+  }
   var _cloudRetries = 0;
   function _tryInitCloud() {
     if (typeof supabase !== 'undefined') {
       initCloud().catch(function(e) { console.warn('[cloud] init error:', e.message); });
     } else if (++_cloudRetries < 50) {
       setTimeout(_tryInitCloud, 200);
+    } else {
+      // SDK 超时加载失败（离线/CDN 不可达）
+      _sessionRestoring = false;
+      updateCloudTabUI();
     }
   }
   setTimeout(_tryInitCloud, 100);
