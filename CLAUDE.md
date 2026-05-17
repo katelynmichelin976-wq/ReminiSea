@@ -69,7 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v4.10.html` | Main training app (v4.10.4, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.11.html` | Main training app (v4.11.0, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
 | `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
 | `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
@@ -124,7 +124,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v4.10.4**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v4.11.0**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 ## Environment
 
@@ -155,7 +155,7 @@ node tests/yihai_v4.9_test.js
 # Run Playwright 回归测试（可视化浏览器，需先启动 HTTP 服务）
 # python -m http.server 8080 --directory C:\code
 node tests/_playwright_test.js
-$env:TEST_PASSWORD="xxx"; node tests/_playwright_v4.10_regression_test.js
+$env:TEST_PASSWORD="xxx"; node tests/_playwright_v4.10_regression_test.js  # 文件名保留 v4.10，仍适用 v4.11
 $env:TEST_PASSWORD="xxx"; node tests/_playwright_cloud_test.js
 $env:TEST_PASSWORD="xxx"; node tests/_playwright_cross_device_sync_test.js
 # session_restore 和 user_switch 已分别合并入 cloud_test 和 v4.10_regression
@@ -237,8 +237,8 @@ review → again → relearning
 
 发布流程：
 1. 所有测试通过（SRS + v4.4 + v4.8 + v4.9 + Playwright）
-2. 修改 `yihai_v4.10.html` 中 **3 处**版本号：`<title>`、`.home-version`、`APP_VERSION` 常量
-3. 复制 `yihai_v4.10.html` → `index.html`
+2. 修改 `yihai_v4.11.html` 中 **3 处**版本号：`<title>`、`.home-version`、`APP_VERSION` 常量
+3. 复制 `yihai_v4.11.html` → `index.html`
 4. 提交 `release: v4.x.x`
 5. `git tag v4.x.x`
 6. `git push; git push --tags`（PowerShell 不支持 `&&`）
