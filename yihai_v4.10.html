@@ -401,17 +401,17 @@ body {
   width:100%; flex-shrink:0;
   display:flex; flex-direction:column;
   background:var(--surf); border-radius:var(--r);
-  border:1px solid var(--bd); padding:10px;
+  border:1px solid var(--bd); padding:14px;
   height:var(--opts-zone-h, auto);
   user-select:none; -webkit-user-select:none;
 }
 .opts {
   flex:1;
-  display:flex; flex-direction:column; gap:10px;
+  display:flex; flex-direction:column; gap:16px;
 }
 .opt {
   flex:1; height:var(--opt-btn-h, auto);
-  background:#fff; border:2.5px solid var(--ocean);
+  background:var(--surf); border:1.5px solid var(--bd2);
   border-radius:var(--rsm); cursor:pointer; outline:none;
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
   position:relative; overflow:hidden;
@@ -852,6 +852,20 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 }
 .srs-preset-btn:active { opacity: .8; }
 .srs-preset-btn--sec { background: var(--surf2); color: var(--text2); margin-top: 0; }
+
+/* ── iPad / tablet (≥600px) ── */
+@media (min-width: 600px) {
+  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-footer {
+    max-width: min(90vw, 720px);
+  }
+  .target-card { max-height: var(--img-max-h, 58vh); }
+}
+/* ── iPad Pro / large tablet (≥900px) ── */
+@media (min-width: 900px) {
+  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-footer {
+    max-width: min(92vw, 960px);
+  }
+}
 </style>
 </head>
 <body>
@@ -3867,8 +3881,21 @@ function render() {
   timg.style.animation='none'; void timg.offsetWidth; timg.style.animation='';
   // img 字段：URL（blob/http/data）用 <img>，Emoji 或空值用 textContent
   const imgSrc = q.img || '';
+  const _card = timg.closest('.target-card');
+  _card.style.aspectRatio = '1/1';  // reset each question
   if (imgSrc.length > 4) {
-    timg.innerHTML = `<img src="${imgSrc}" alt="${q.name}" onerror="this.parentNode.textContent='🖼️'">`;
+    const _img = document.createElement('img');
+    _img.alt = q.name;
+    _img.onerror = () => { timg.textContent = '🖼️'; };
+    _img.onload = () => {
+      // 平板上横版图片（如16:9家庭照）使用原始比例，最大化图片区
+      if (window.innerWidth >= 600 && _img.naturalWidth > _img.naturalHeight * 1.15) {
+        _card.style.aspectRatio = `${_img.naturalWidth}/${_img.naturalHeight}`;
+      }
+    };
+    _img.src = imgSrc;
+    timg.innerHTML = '';
+    timg.appendChild(_img);
   } else {
     timg.textContent = imgSrc;
   }
@@ -3921,11 +3948,16 @@ function render() {
 
   // 选项区固定高度
   requestAnimationFrame(() => {
-    const gap = 10, pad = 16, n = OPT_COUNT;
-    const btnH = 72;
+    const gap = 16, pad = 28, n = OPT_COUNT;
+    const btnH = window.innerWidth >= 600 ? 84 : 72;
     const zoneH = btnH * n + gap * (n - 1) + pad;
     document.documentElement.style.setProperty('--opts-zone-h', `${zoneH}px`);
     document.documentElement.style.setProperty('--opt-btn-h', `${btnH}px`);
+    if (window.innerWidth >= 600) {
+      const barH = (document.querySelector('.bar') || {offsetHeight:70}).offsetHeight;
+      const maxImgH = window.innerHeight - barH - zoneH - 30;
+      document.documentElement.style.setProperty('--img-max-h', `${Math.max(maxImgH, 120)}px`);
+    }
   });
 
   stopAllPromptTimers();
