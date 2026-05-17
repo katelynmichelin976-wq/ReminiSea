@@ -62,7 +62,7 @@ if command -v gh &> /dev/null && gh auth status &> /dev/null; then
             # Append (#N) to end of first line (use BOM-stripped MSG)
             FIRST_LINE=$(echo "$MSG" | head -1)
             REST=$(echo "$MSG" | tail -n +2)
-            printf '%s (#%s)\n' "$FIRST_LINE" "$ISSUE_NUM" > "$COMMIT_MSG_FILE"
+            printf '%s (Closes #%s)\n' "$FIRST_LINE" "$ISSUE_NUM" > "$COMMIT_MSG_FILE"
             if [ -n "$REST" ]; then
                 echo "$REST" >> "$COMMIT_MSG_FILE"
             fi
