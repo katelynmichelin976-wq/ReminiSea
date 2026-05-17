@@ -456,11 +456,11 @@ body {
   align-items:center; justify-content:center;
   background:var(--surf); border-radius:var(--r);
   border:1px solid var(--bd); box-shadow:var(--sh);
-  padding:18px 20px 14px; overflow:hidden;
+  padding:0; overflow:hidden;
   opacity:0; transform:scale(.96);
   transition:opacity .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
 }
-.answer-panel.show { opacity:1; transform:scale(1); }
+.answer-panel.show { opacity:1; transform:scale(1); padding:18px 20px 14px; }
 .answer-word {
   font-size:var(--fs-ans, 48px); font-weight:800; letter-spacing:var(--ls-ans, -1px);
   color:var(--text); line-height:1; text-align:center;
@@ -3960,7 +3960,8 @@ function render() {
     if (window.innerWidth >= 600) {
       const vvh = (window.visualViewport || {height: vh}).height;
       const barH = (document.querySelector('.bar') || {offsetHeight: 70}).offsetHeight;
-      document.documentElement.style.setProperty('--img-max-h', `${Math.max(vvh - barH - zoneH - 16, 120)}px`);
+      // 30 = content gap(10) + mid-zone padding-bottom(8) + safety(12)
+      document.documentElement.style.setProperty('--img-max-h', `${Math.max(vvh - barH - zoneH - 30, 120)}px`);
     }
   });
 
