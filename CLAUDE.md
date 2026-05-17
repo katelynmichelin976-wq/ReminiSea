@@ -69,7 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v4.10.html` | Main training app (v4.10.0, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.10.html` | Main training app (v4.10.4, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
 | `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
 | `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
@@ -77,7 +77,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 测试
 | File | Purpose |
 |------|---------|
-| `tests/srs_test.js` | Node.js SRS unit tests (67 cases) |
+| `tests/srs_test.js` | Node.js SRS unit tests (83 cases) |
 | `tests/yihai_v4.4_test.js` | v4.4 utility tests (98 cases) |
 | `tests/yihai_v4.8_test.js` | v4.8 utility tests (46 cases) |
 | `tests/yihai_v4.9_test.js` | v4.9 config merge tests (48 cases) |
@@ -124,32 +124,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-### v4.10.0 — IDB user_id 多用户隔离 + 登出保留数据（2026-05-14）
+**当前版本：v4.10.4**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
-详见 `docs/yihai_变更记录_CLAUDE参考.md`。
+## Environment
 
-### 关键行为变更（当前版本 - v4.10.0）
-
-- **runSync 统一同步入口**：新增 `#sync-modal` 模态弹窗 + 进度条 + 语音播报，同步过程阻塞用户操作确保数据一致
-- **doCloudLogin 调 runSync**：登录后调用 `runSync({ modal:true, decks:true })` 替代原 `syncAll`
-- **登出保留 IndexedDB**：`doCloudLogout` 不再清空 card_states/trials，云牌组保留在列表中（离线可用），仅 `_syncEnabled=false`
-- **_cloudUserId 登出保留**：退出后保留用户 ID（离线数据归属），不再清空
-- **getAllCardStates(deckKey) 多用户隔离**：按 user_id + deck_key 双字段过滤，不同用户同牌组互不干扰
-- **DP 不再跨设备同步**：daily_progress（reviewed_today/daily_new_today）不再通过 sync_trials 跨设备合并，仅本地维护。跨设备只需同步 CardState，练习队列自然对齐
-- **Orphaned CardState 处理**：统计页渲染时过滤 DECKS 中已不存在的卡片状态（清理残留），牌组总览/筛选器计算逻辑解耦
-- **getDeckStatsSrs 兼容 due_ts=0**：learning 卡因各种原因 `due_ts=0` 时仍有 0 分钟的等待期，不再被队列永久跳过
-- **syncAll → runSync 重命名**：全部同步调用改为 `runSync(options)`，支持 modal/decks/deckKey/voice/title 参数
+**Windows 11 + PowerShell 5.1。** 所有 shell 命令用 PowerShell 工具，不用 Bash。路径分隔符 `\`，环境变量 `$env:VAR`，无 `&&`/`||` 管道链（改用 `; if ($?) {}`）。
 
 ## First-time Setup
 
-```bash
+```powershell
 # Enable git hooks (issue-auto-create on commit)
 git config core.hooksPath .githooks
 ```
 
 ## Development Commands
 
-```bash
+```powershell
 # Run SRS unit tests (required before/after modifying processAnswer or related logic)
 node tests/srs_test.js
 
@@ -163,15 +153,15 @@ node tests/yihai_v4.8_test.js
 node tests/yihai_v4.9_test.js
 
 # Run Playwright 回归测试（可视化浏览器，需先启动 HTTP 服务）
-# python -m http.server 8080 --directory /c/code
+# python -m http.server 8080 --directory C:\code
 node tests/_playwright_test.js
-TEST_PASSWORD=xxx node tests/_playwright_v4.10_regression_test.js
-TEST_PASSWORD=xxx node tests/_playwright_cloud_test.js
-TEST_PASSWORD=xxx node tests/_playwright_cross_device_sync_test.js
+$env:TEST_PASSWORD="xxx"; node tests/_playwright_v4.10_regression_test.js
+$env:TEST_PASSWORD="xxx"; node tests/_playwright_cloud_test.js
+$env:TEST_PASSWORD="xxx"; node tests/_playwright_cross_device_sync_test.js
 # session_restore 和 user_switch 已分别合并入 cloud_test 和 v4.10_regression
 ```
 
-All tests must pass before commit. Current counts: SRS 83, v4.4 98, v4.8 46, v4.9 48, Playwright 22/37/21/18 (单机/v4.10回归/网络/跨设备).
+All tests must pass before commit. Current counts: SRS 83, v4.4 98, v4.8 46, v4.9 48, Playwright 22/37/21/18（单机/v4.10回归/网络/跨设备）.
 
 ## SRS Architecture
 
@@ -207,7 +197,7 @@ review → again → relearning
 
 1. **Single-file app** — all code lives in `yihai_v{version}.html`. No separate CSS/JS files.
 2. **Version in filename** — output file must be `yihai_v{version}.html` with version displayed in the app UI.
-3. **One version per iteration** — semver minor increments (v4.3 → v4.4 → v5.0).
+3. **One version per iteration** — patch bump for fixes (v4.10.3 → v4.10.4), minor bump for features (v4.10 → v4.11), major for platform migration (v4 → v5).
 4. **No confirm()** — iOS PWA blocks it. Use `showConfirmDialog()` custom dialog instead.
 5. **SRS write race guard** — `_lastSrsWrite` promise chain; `goHome()`/`openStats()` must `await _lastSrsWrite` before reading.
 6. **sessionId** — increments on each `_launch`/`goHome` to break cross-page async speech chains.
@@ -215,9 +205,9 @@ review → again → relearning
 8. **浏览器端改动必须先写 Playwright 测试复现再改代码** — 历史教训：Node.js 单测覆盖不到浏览器时序（DOM 渲染、SDK 异步加载、Service Worker）。直接改代码 → 测试全绿 → 用户一用就崩。流程：写测试复现 bug（预期失败）→ 改代码 → 测试通过 → 跑全部回归 → 提交。
 9. **Release prep** — remove test toolbar (`🗑 重置牌组`, `⏭ +1天`) and debug lines (`iv=X ef=X...`) before release.
 10. **Supabase cloud sync** — all Supabase calls wrapped in try/catch, fire-and-forget. `_syncEnabled` gates all sync; false = offline mode.
-11. **Cloud login** — Supabase SDK persists session in localStorage. `restoreCloudSession()` on startup, `updateCloudTabUI()` toggles login/deck-list UI.
+11. **Cloud login** — Supabase SDK persists session in localStorage. `restoreCloudSession()` on startup, `updateCloudTabUI()` toggles login/deck-list UI. 三个 session 状态 flag：`_syncEnabled`（已验证在线）、`_sessionRestoring`（SDK 加载中或 session 恢复中，显示"正在恢复登录…"）、`_sessionOffline`（有凭证但网络失败，显示"📵 邮箱（网络不稳定）"并等 `online` 事件自动重连）。曾登录过的用户页面加载时同步设 `_sessionRestoring=true`，`initCloud()` 完成后清除并调 `updateCloudTabUI()`。
 12. **Incremental sync** — `syncDeckFromCloud` uses `cards_pool.updated_at > lastSyncAt` + `_imgUrl/_audUrl` URL comparison to skip unchanged media.
-13. **Smart sync** — `checkSyncNeeded()` checks local dirty data + server `updated_at > yihai_global_sync_ts` before running full `syncAll`. Skipped if nothing changed.
+13. **Smart sync** — `checkSyncNeeded()` 已实现但未接入 `runSync`（死代码，issue #43）。当前所有同步路径直接调 `runSync`，无跳过逻辑。
 14. **Per-card upload: TrialLog only** — 逐卡仅上传 `sync_trials`（含完整状态快照）；`sync_card_states` 由 DB trigger `fn_trial_to_card_state()` 自动维护；`card_state_log` 已废弃。
 15. **Supabase SDK defer load** — `<script src="supabase" defer>` 不阻塞 DOM 解析和渲染；`initCloud()` 在 SDK 就绪后自动执行。离线下 SDK 加载失败 → `restoreCloudSession()` 静默跳过 → 离线模式。
 16. **runSync 统一同步入口** — 所有同步操作必须通过 `runSync(options)`，不支持直接调旧 `syncAll`。`options.modal` 控制是否显示模态弹窗；`options.decks` 控制是否同步牌组。
@@ -236,7 +226,7 @@ review → again → relearning
 3. **文档先行** — `git add` 之前检查相关文档（README、docs/、CLAUDE.md 等）是否需要同步更新。功能新增或行为变更，先改文档再提交代码。
 4. **本地提交** — commit 可随时做，但提交前必须跑对应单元测试并全部通过。
 5. **发布需指令** — `git push` / 部署到 GitHub Pages 必须等你明确说「正式发布」或「推送」后才执行。
-6. **版本号仅在发布时 bump** — 开发过程中代码里版本号不变（保留上一发布版本）。发布时一个 commit 完成：bump 版本号（HTML 中 2 处 `<title>` + `.home-version`）+ 复制 `yihai_v{version}.html` → `index.html` + 打 tag。版本号在 HTML 中的目的是运行时识别——本地缓存、远程部署、测试环境可能跑着不同版本。
+6. **版本号仅在发布时 bump** — 开发过程中代码里版本号不变（保留上一发布版本）。发布时一个 commit 完成：bump 版本号（HTML 中 3 处：`<title>`、`.home-version`、`APP_VERSION` 常量）+ 复制 `yihai_v{version}.html` → `index.html` + 打 tag。版本号在 HTML 中的目的是运行时识别——本地缓存、远程部署、测试环境可能跑着不同版本。
 7. **Commit message** — 遵循 `type: v{version}: description (#issue)` 格式：
    - `fix: v4.9.15: 迟到天数加成 (#8)` — 版本号是发现问题的已发布版本
    - `feat: 牌组层级管理 (#13)` — 新功能不绑定版本号
@@ -247,15 +237,14 @@ review → again → relearning
 
 发布流程：
 1. 所有测试通过（SRS + v4.4 + v4.8 + v4.9 + Playwright）
-2. 修改 `yihai_v4.10.html` 中 2 处版本号（`<title>` 和 `.home-version`）
+2. 修改 `yihai_v4.10.html` 中 **3 处**版本号：`<title>`、`.home-version`、`APP_VERSION` 常量
 3. 复制 `yihai_v4.10.html` → `index.html`
 4. 提交 `release: v4.x.x`
 5. `git tag v4.x.x`
-6. `git push && git push --tags`
-7. `gh release create v4.9.16 --title "v4.9.16" --notes-file release_notes.md`
-   （需要 `HTTPS_PROXY=http://127.0.0.1:10808` 环境变量）
+6. `git push; git push --tags`（PowerShell 不支持 `&&`）
+7. `$env:HTTPS_PROXY="http://127.0.0.1:10808"; gh release create v4.x.x --title "v4.x.x" --notes "..."`
 8. GitHub Pages 自动部署到 https://katelynmichelin976-wq.github.io/gemi/
 
-git 代理已全局配置（http.proxy + https.proxy = 127.0.0.1:10808）；gh 依赖 HTTPS_PROXY 环境变量。
+**代理说明：** git 代理已全局配置（http.proxy + https.proxy = 127.0.0.1:10808）；`gh` 命令（包括 `gh issue create/close/comment`）依赖 `$env:HTTPS_PROXY` 环境变量，每次新 PowerShell 会话需重新设置。
 
 Card maker is a separate repo (`anki-maker`), not in this working directory.
