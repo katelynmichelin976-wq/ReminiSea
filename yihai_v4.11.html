@@ -342,21 +342,22 @@ body {
   transition:opacity .2s, transform .2s;
 }
 
-/* Image wrapper — same inset as mid-zone */
+/* Image wrapper — fills remaining space above options */
 .img-zone {
-  flex-shrink:0;
+  flex:1; min-height:0; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
   padding:0 16px;
 }
 
-/* Mid zone: fills everything between image and btm */
+/* Mid zone: fixed by opts-zone content, never grows */
 .mid-zone {
-  flex:1; min-height:0;
+  flex-shrink:0;
   padding:0 16px 8px;
   display:flex; flex-direction:column;
   justify-content:flex-end;
 }
 
-/* Target card — 1:1 square, capped height, always fixed */
+/* Target card — 1:1 square, constrained by img-zone height */
 .target-card {
   background:var(--surf2);
   border-radius:var(--r);
@@ -365,7 +366,7 @@ body {
   display:flex; align-items:center; justify-content:center;
   flex-shrink:0; overflow:hidden; padding:0; position:relative;
   width:100%; aspect-ratio:1/1;
-  max-height:44vh;
+  max-height:100%;
 }
 .target-card > .target-img { border-radius:var(--r); overflow:hidden; }
 .revealed .target-card { box-shadow:var(--sh); }
@@ -858,7 +859,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-footer {
     max-width: min(90vw, 720px);
   }
-  .target-card { max-height: var(--img-max-h, 58vh); }
 }
 /* ── iPad Pro / large tablet (≥900px) ── */
 @media (min-width: 900px) {
@@ -3953,11 +3953,6 @@ function render() {
     const zoneH = btnH * n + gap * (n - 1) + pad;
     document.documentElement.style.setProperty('--opts-zone-h', `${zoneH}px`);
     document.documentElement.style.setProperty('--opt-btn-h', `${btnH}px`);
-    if (window.innerWidth >= 600) {
-      const barH = (document.querySelector('.bar') || {offsetHeight:70}).offsetHeight;
-      const maxImgH = window.innerHeight - barH - zoneH - 30;
-      document.documentElement.style.setProperty('--img-max-h', `${Math.max(maxImgH, 120)}px`);
-    }
   });
 
   stopAllPromptTimers();
