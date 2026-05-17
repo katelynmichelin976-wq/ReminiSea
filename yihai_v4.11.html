@@ -1692,6 +1692,7 @@ let _cloudUserId = '';
 var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // 学习中实时上传开关
 let _sessionRestoring = false; // SDK 加载中或 session 恢复中，避免闪"未登录"
 var _onlineListenerActive = false; // 防止重复注册 online 监听
+var _syncInFlight = false;         // runSync 并发锁
 let _sessionOffline   = false; // 有凭证但网络失败，保留登录外观等待重连
 
 // CDN 媒体下载辅助：尝试 CDN 加速，失败则回退到 Supabase Storage
@@ -2239,6 +2240,8 @@ async function checkSyncNeeded() {
 // 统一同步入口（v4.10）：支持模态进度条 + 语音播报 + 不同同步范围：支持模态进度条 + 语音播报 + 不同同步范围
 async function runSync(opts) {
   if (!_syncEnabled || !_sb) { if (opts && opts.showToast) showCloudToast('未连接服务器', true); return; }
+  if (_syncInFlight) { if (opts && opts.showToast) showCloudToast('同步中…'); return; }
+  _syncInFlight = true;
   var options = Object.assign({
     modal: false,
     title: '正在同步',
@@ -2365,6 +2368,8 @@ async function runSync(opts) {
     if (options.modal && modalEl) modalEl.style.display = 'none';
     console.warn('[sync] runSync error:', e.message);
     if (options.showToast) showCloudToast('同步失败', true);
+  } finally {
+    _syncInFlight = false;
   }
   if (options.deckKey) updateDeckStats();
 }
@@ -3356,10 +3361,10 @@ async function importYhspack(file) {
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
 
     const jsonFile = zip.file('deck.json');
-    if (!jsonFile) { alert('格式错误：未找到 deck.json'); return; }
+    if (!jsonFile) { showCloudToast('格式错误：未找到 deck.json', true); return; }
     const deckData = JSON.parse(await jsonFile.async('string'));
     const deck = deckData.deck;
-    if (!deck || !deck.cards) { alert('格式错误：deck.cards 不存在'); return; }
+    if (!deck || !deck.cards) { showCloudToast('格式错误：deck.cards 不存在', true); return; }
 
     const key = deck.id || ('deck_' + Date.now());
     const name = deck.name || file.name.replace('.yhspack','');
@@ -3401,7 +3406,7 @@ async function importYhspack(file) {
       cards.push(card);
     }
 
-    if (!cards.length) { alert('未找到有效卡片'); return; }
+    if (!cards.length) { showCloudToast('未找到有效卡片', true); return; }
 
     // 写入内存
     DECKS[key] = cards;
@@ -3422,7 +3427,7 @@ async function importYhspack(file) {
 
     showImportToast(name, cards.length);
   } catch(e) {
-    alert('导入失败：' + e.message);
+    showCloudToast('导入失败：' + e.message, true);
     console.error(e);
   }
 }
@@ -3623,13 +3628,13 @@ function goHome() {
   stopNRing(); stopAllPromptTimers();
   speechSynthesis.cancel();
   releaseWakeLock();
-  // 等待最后一次 SRS 写入完成，再刷新首页数字
+  // 等待最后一次 SRS 写入完成，再渲染首页（避免显示写入前的旧数据）
   _lastSrsWrite.finally(() => {
     renderDeckList();
     updateDeckStats();
+    _launchBusy = false;
+    showScreen('screen-home');
   });
-  _launchBusy = false;
-  showScreen('screen-home');
 }
 
 
@@ -5260,7 +5265,8 @@ function switchStatsTab(n) {
 
 // ── Tab 0：今日概况 ───────────────────────────────────────────
 async function renderStatsToday() {
-  const dp     = getDailyProgress();
+  const dp       = getDailyProgress();
+  const knownKeys = new Set(DECKS_META.map(m => m.key));
 
   // 当跨设备同步已填充 dp 统计时优先使用（同步是练习完成/手动/切前台时触发，不在统计时拉云端）
   const hasSyncDp = (dp.reviewed_today || 0) > 0;
@@ -5268,7 +5274,7 @@ async function renderStatsToday() {
     // 使用同步后的跨设备汇总数据
     const totalSec = dp.active_duration_sec || 0;
     const durStr   = totalSec <= 0 ? '0' : totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
-    const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
+    const sus = (await getAllCardStates(null)).filter(s => s.suspended && knownKeys.has(s.deck_key)).length;
     document.getElementById('st-kpi').innerHTML = `
       <div class="stats-kpi"><div class="stats-kpi-num kpi-b">${dp.reviewed_today}</div><div class="stats-kpi-lbl">练习</div></div>
       <div class="stats-kpi"><div class="stats-kpi-num kpi-c">${dp.first_pass_today||0}</div><div class="stats-kpi-lbl">良好</div></div>
@@ -5298,7 +5304,7 @@ async function renderStatsToday() {
     });
     const totalSec = dp.active_duration_sec || 0;
     const durStr   = totalSec <= 0 ? '0' : totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
-    const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
+    const sus = (await getAllCardStates(null)).filter(s => s.suspended && knownKeys.has(s.deck_key)).length;
     document.getElementById('st-kpi').innerHTML = `
       <div class="stats-kpi"><div class="stats-kpi-num kpi-b">${uniqueToday}</div><div class="stats-kpi-lbl">练习</div></div>
       <div class="stats-kpi"><div class="stats-kpi-num kpi-c">${firstPass}</div><div class="stats-kpi-lbl">良好</div></div>
@@ -5485,10 +5491,10 @@ async function renderStatsCards(filter) {
     const lsClass = ls >= SRS_CONFIG.daily_remove_lapses ? 'danger' : ls > 0 ? 'warn' : '';
     const lsHtml  = ls > 0 ? `<div class="scard-lapse ${lsClass}">连失${ls}</div>` : '';
 
-    return `<div class="scard" onclick="openCardDetail('${s.state_key}')">
+    return `<div class="scard" onclick="openCardDetail('${escAttr(s.state_key)}')">
       <div class="scard-img">${imgHtml}</div>
       <div class="scard-info">
-        <div class="scard-name">${c.name || s.card_id}</div>
+        <div class="scard-name">${esc(c.name || s.card_id)}</div>
         <div class="scard-meta">${badge}${s.srs_stage==='review'?` · 间隔${s.interval}天 · ef${s.ease_factor.toFixed(1)}`:''}</div>
       </div>
       <div class="scard-right">
@@ -5528,9 +5534,9 @@ async function renderStatsTrials() {
     const d    = new Date(t.timestamp);
     const timeStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     const detailKey = t.card_id ? (currentDeck + '::' + t.card_id) : '';
-    return `<div class="trial-item" onclick="openCardDetail('${detailKey}')">
+    return `<div class="trial-item" onclick="openCardDetail('${escAttr(detailKey)}')">
       <div class="trial-rating ${RCLS[t.rating]||'tr-good'}">${RLBL[t.rating]||t.rating}</div>
-      <div class="trial-name">${name}</div>
+      <div class="trial-name">${esc(name)}</div>
       <div class="trial-time">${timeStr}</div>
     </div>`;
   }).join('')}</div>`;
@@ -5582,7 +5588,7 @@ async function openCardDetail(stateKey) {
         ? `<img src="${card.img}" style="width:48px;height:48px;object-fit:cover;border-radius:10px">`
         : `<span style="font-size:36px">${card.img||'🃏'}</span>`}
       <div>
-        <div style="font-size:20px;font-weight:800;color:var(--text)">${card.name||cardId}</div>
+        <div style="font-size:20px;font-weight:800;color:var(--text)">${esc(card.name||cardId)}</div>
         <div style="font-size:13px;color:var(--text2);margin-top:2px">${STAGE_LBL[state.srs_stage]||state.srs_stage}${state.suspended?' · 已挂起':''}</div>
       </div>
     </div>
@@ -5603,8 +5609,8 @@ async function openCardDetail(stateKey) {
     ${state.suspended?`
     <div class="cdh">挂起操作</div>
     <div style="display:flex;gap:8px;padding:8px 0 4px">
-      <button onclick="unsuspendCard('${stateKey}','reset')" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--ocean);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">初始化为新卡</button>
-      <button onclick="unsuspendCard('${stateKey}','resume')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--bd2);background:var(--surf);color:var(--text2);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">忽略继续</button>
+      <button onclick="unsuspendCard('${escAttr(stateKey)}','reset')" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--ocean);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">初始化为新卡</button>
+      <button onclick="unsuspendCard('${escAttr(stateKey)}','resume')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--bd2);background:var(--surf);color:var(--text2);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">忽略继续</button>
     </div>`:''}
 
     <div class="cdh">卡片操作</div>
