@@ -7,8 +7,9 @@
 const { chromium } = require('playwright');
 const fs   = require('fs');
 const path = require('path');
+const { getBaseUrl } = require('./_playwright_helper');
 
-const BASE_URL = 'http://localhost:8080/yihai_v4.11.html';
+const BASE_URL = getBaseUrl();
 
 let passed = 0, failed = 0;
 const ok   = (l) => { passed++; console.log(`  \x1b[32m✓\x1b[0m ${l}`); };

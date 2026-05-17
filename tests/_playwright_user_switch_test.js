@@ -1,28 +1,29 @@
-/**
- * 忆海拾光 — 退出登录清除本地数据测试
+﻿/**
+ * å¿†æµ·æ‹¾å…‰ â€” é€€å‡ºç™»å½•æ¸…é™¤æœ¬åœ°æ•°æ®æµ‹è¯•
  *
- * 依赖：
+ * ä¾èµ–ï¼š
  *   python -m http.server 8080 --directory /c/code
  *   TEST_PASSWORD=xxx node tests/_playwright_user_switch_test.js
  *
- * 覆盖：退出后 _cloudUserId 清空、云牌组清除、重新登录数据干净拉回
+ * è¦†ç›–ï¼šé€€å‡ºåŽ _cloudUserId æ¸…ç©ºã€äº‘ç‰Œç»„æ¸…é™¤ã€é‡æ–°ç™»å½•æ•°æ®å¹²å‡€æ‹‰å›ž
  */
 
 const { chromium } = require('playwright');
+const { getBaseUrl } = require('./_playwright_helper');
 
 const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
 
 let passed = 0, failed = 0, errors = [];
 const pass = (label, ok) => {
-  if (ok) { passed++; console.log(`  ✓ ${label}`); }
-  else    { failed++; errors.push(`✗ ${label}`); console.log(`  ✗ ${label}`); }
+  if (ok) { passed++; console.log(`  âœ“ ${label}`); }
+  else    { failed++; errors.push(`âœ— ${label}`); console.log(`  âœ— ${label}`); }
 };
-const section = (t) => console.log(`\n${'═'.repeat(56)}\n  ${t}\n${'═'.repeat(56)}`);
+const section = (t) => console.log(`\n${'â•'.repeat(56)}\n  ${t}\n${'â•'.repeat(56)}`);
 const wait = (pg, ms) => pg.waitForTimeout(ms);
 
 (async () => {
-  if (!TEST_PASSWORD) { console.error('FATAL: 请设置 TEST_PASSWORD 环境变量'); process.exit(1); }
+  if (!TEST_PASSWORD) { console.error('FATAL: è¯·è®¾ç½® TEST_PASSWORD çŽ¯å¢ƒå˜é‡'); process.exit(1); }
 
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -32,11 +33,11 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
   });
 
   async function openCloudTab() {
-    await page.click('[aria-label="设置"]');
+    await page.click('[aria-label="è®¾ç½®"]');
     await wait(page, 300);
     await page.evaluate(() => {
       const tabs = document.querySelectorAll('.sheet-tab');
-      for (const t of tabs) { if (t.textContent.includes('云端')) { t.click(); return; } }
+      for (const t of tabs) { if (t.textContent.includes('äº‘ç«¯')) { t.click(); return; } }
     });
     await wait(page, 300);
   }
@@ -66,11 +67,11 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
 
   async function logout() {
     await openCloudTab();
-    // 点击退出按钮
+    // ç‚¹å‡»é€€å‡ºæŒ‰é’®
     await page.evaluate(() => {
       const btns = document.querySelectorAll('button');
       for (const b of btns) {
-        if (b.textContent.includes('退出') || b.getAttribute('onclick') === 'doCloudLogout()') {
+        if (b.textContent.includes('é€€å‡º') || b.getAttribute('onclick') === 'doCloudLogout()') {
           b.click(); return;
         }
       }
@@ -80,16 +81,16 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
   }
 
   try {
-    // ═══════════════════════ PHASE 1: 登录同步 ═══════════════════════
-    section('PHASE 1: 登录同步');
-    await page.goto('http://localhost:8080/yihai_v4.10.html?v=' + Date.now(),
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 1: ç™»å½•åŒæ­¥ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 1: ç™»å½•åŒæ­¥');
+    await page.goto(getBaseUrl() + '?v=' + Date.now(),
       { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 2000);
 
-    pass('登录成功', await login());
+    pass('ç™»å½•æˆåŠŸ', await login());
     await closeSettings();
 
-    // 等 syncAll 完成（最多 30 秒）
+    // ç­‰ syncAll å®Œæˆï¼ˆæœ€å¤š 30 ç§’ï¼‰
     let firstCount = 0;
     for (let i = 0; i < 60; i++) {
       firstCount = await page.evaluate(() =>
@@ -98,26 +99,26 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
       if (firstCount > 0) break;
       await wait(page, 500);
     }
-    console.log(`  登录后云牌组: ${firstCount}`);
-    pass('登录后有云牌组', firstCount > 0);
+    console.log(`  ç™»å½•åŽäº‘ç‰Œç»„: ${firstCount}`);
+    pass('ç™»å½•åŽæœ‰äº‘ç‰Œç»„', firstCount > 0);
 
-    // ═══════════════════════ PHASE 2: 退出验证 ═══════════════════════
-    section('PHASE 2: 退出并验证数据清除');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 2: é€€å‡ºéªŒè¯ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 2: é€€å‡ºå¹¶éªŒè¯æ•°æ®æ¸…é™¤');
     await logout();
 
-    pass('退出后 _syncEnabled=false', await page.evaluate(() => !_syncEnabled));
-    // v4.10: 登出后 _cloudUserId 保留（离线数据归属正确），仅 _syncEnabled=false
-    pass('退出后 _cloudUserId 保留（离线数据归属）', await page.evaluate(() => !!_cloudUserId));
+    pass('é€€å‡ºåŽ _syncEnabled=false', await page.evaluate(() => !_syncEnabled));
+    // v4.10: ç™»å‡ºåŽ _cloudUserId ä¿ç•™ï¼ˆç¦»çº¿æ•°æ®å½’å±žæ­£ç¡®ï¼‰ï¼Œä»… _syncEnabled=false
+    pass('é€€å‡ºåŽ _cloudUserId ä¿ç•™ï¼ˆç¦»çº¿æ•°æ®å½’å±žï¼‰', await page.evaluate(() => !!_cloudUserId));
 
     const cloudDecks = await page.evaluate(() =>
       DECKS_META.filter(m => m.source === 'cloud').length
     );
-    console.log(`  退出后云牌组: ${cloudDecks}`);
-    pass('退出后云牌组保留（离线可用）', cloudDecks > 0);
+    console.log(`  é€€å‡ºåŽäº‘ç‰Œç»„: ${cloudDecks}`);
+    pass('é€€å‡ºåŽäº‘ç‰Œç»„ä¿ç•™ï¼ˆç¦»çº¿å¯ç”¨ï¼‰', cloudDecks > 0);
 
-    // ═══════════════════════ PHASE 3: 重新登录 ═══════════════════════
-    section('PHASE 3: 重新登录验证数据从云端拉回');
-    pass('重新登录成功', await login());
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 3: é‡æ–°ç™»å½• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 3: é‡æ–°ç™»å½•éªŒè¯æ•°æ®ä»Žäº‘ç«¯æ‹‰å›ž');
+    pass('é‡æ–°ç™»å½•æˆåŠŸ', await login());
     await closeSettings();
 
     let secondCount = 0;
@@ -128,17 +129,17 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
       if (secondCount > 0) break;
       await wait(page, 500);
     }
-    console.log(`  重新登录云牌组: ${secondCount}`);
-    pass('重新登录后有云牌组', secondCount > 0);
-    console.log(`  牌组数: ${firstCount} → ${secondCount}`);
-    pass('重新登录牌组≥首次', secondCount >= firstCount);
+    console.log(`  é‡æ–°ç™»å½•äº‘ç‰Œç»„: ${secondCount}`);
+    pass('é‡æ–°ç™»å½•åŽæœ‰äº‘ç‰Œç»„', secondCount > 0);
+    console.log(`  ç‰Œç»„æ•°: ${firstCount} â†’ ${secondCount}`);
+    pass('é‡æ–°ç™»å½•ç‰Œç»„â‰¥é¦–æ¬¡', secondCount >= firstCount);
 
   } finally {
     await browser.close();
   }
 
-  console.log(`\n${'═'.repeat(56)}`);
-  console.log(`  结果：${passed} 通过  ${failed} 失败`);
-  if (errors.length) { console.log(`\n  失败项：`); errors.forEach(e => console.log('    ' + e)); }
+  console.log(`\n${'â•'.repeat(56)}`);
+  console.log(`  ç»“æžœï¼š${passed} é€šè¿‡  ${failed} å¤±è´¥`);
+  if (errors.length) { console.log(`\n  å¤±è´¥é¡¹ï¼š`); errors.forEach(e => console.log('    ' + e)); }
   process.exit(failed > 0 ? 1 : 0);
 })();

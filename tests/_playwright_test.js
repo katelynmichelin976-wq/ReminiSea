@@ -1,20 +1,21 @@
-/**
- * 忆海拾光 v4.8 回归测试（可视化 · 单机版 · 10 天 SRS 验证）
- * 依赖：python -m http.server 8080 --directory /c/code
- * 运行：node _playwright_test.js
+﻿/**
+ * å¿†æµ·æ‹¾å…‰ v4.8 å›žå½’æµ‹è¯•ï¼ˆå¯è§†åŒ– Â· å•æœºç‰ˆ Â· 10 å¤© SRS éªŒè¯ï¼‰
+ * ä¾èµ–ï¼špython -m http.server 8080 --directory /c/code
+ * è¿è¡Œï¼šnode _playwright_test.js
  */
 const { chromium } = require('playwright');
 const JSZip = require('jszip');
 const fs = require('fs');
 const path = require('path');
+const { getBaseUrl } = require('./_playwright_helper');
 
-const CFG = { url:'http://localhost:8080/yihai_v4.10.html?v=' + Date.now() };
-const YHPACK = path.join(__dirname, 'test_data', '蔬菜水果本地版.yhspack');
+const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
+const YHPACK = path.join(__dirname, 'test_data', 'è”¬èœæ°´æžœæœ¬åœ°ç‰ˆ.yhspack');
 
 let passed=0, failed=0, errors=[];
-const pass=(l,v)=>{if(v){passed++;console.log(`  ✓ ${l}`)}else{failed++;errors.push(`✗ ${l}`);console.log(`  ✗ ${l}`)}};
+const pass=(l,v)=>{if(v){passed++;console.log(`  âœ“ ${l}`)}else{failed++;errors.push(`âœ— ${l}`);console.log(`  âœ— ${l}`)}};
 const check=(l,a,e)=>pass(l,a===e);
-const section=t=>console.log(`\n${'═'.repeat(60)}\n  ${t}\n${'═'.repeat(60)}`);
+const section=t=>console.log(`\n${'â•'.repeat(60)}\n  ${t}\n${'â•'.repeat(60)}`);
 const run = (page, fn, arg) => page.evaluate(fn, arg);
 const wait = (page, ms) => page.waitForTimeout(ms);
 
@@ -25,22 +26,22 @@ async function createTestYhspack() {
     exportedAt: new Date().toISOString(),
     deck: {
       id: '__test_import__',
-      name: '蔬菜水果本地版',
+      name: 'è”¬èœæ°´æžœæœ¬åœ°ç‰ˆ',
       cards: [
-        { name:'苹果', image:'', audio:'' },
-        { name:'香蕉', image:'', audio:'' },
-        { name:'橘子', image:'', audio:'' },
-        { name:'西瓜', image:'', audio:'' },
-        { name:'草莓', image:'', audio:'' },
+        { name:'è‹¹æžœ', image:'', audio:'' },
+        { name:'é¦™è•‰', image:'', audio:'' },
+        { name:'æ©˜å­', image:'', audio:'' },
+        { name:'è¥¿ç“œ', image:'', audio:'' },
+        { name:'è‰èŽ“', image:'', audio:'' },
       ]
     }
   }));
   const buf = await zip.generateAsync({ type:'nodebuffer' });
   fs.writeFileSync(YHPACK, buf);
-  console.log(`  已写入测试文件: ${YHPACK} (${buf.length} bytes)`);
+  console.log(`  å·²å†™å…¥æµ‹è¯•æ–‡ä»¶: ${YHPACK} (${buf.length} bytes)`);
 }
 
-// 加权随机评级：70% good, 20% hard, 10% again
+// åŠ æƒéšæœºè¯„çº§ï¼š70% good, 20% hard, 10% again
 function randRating() {
   const r = Math.random();
   if (r < 0.10) return 'again';
@@ -55,53 +56,53 @@ function randRating() {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
   try {
-    // ═══════════════════ PHASE 1: 导入 .yhspack ═══════════════════
-    section('PHASE 1: 导入 .yhspack');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 1: å¯¼å…¥ .yhspack â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 1: å¯¼å…¥ .yhspack');
     await page.goto(CFG.url, { waitUntil:'networkidle', timeout:30000 });
     await wait(page, 1500);
 
     await page.setInputFiles('input[accept=".yhspack"]', YHPACK);
-    // 等待导入完成：JSZip CDN 加载 + importYhspack 异步执行
+    // ç­‰å¾…å¯¼å…¥å®Œæˆï¼šJSZip CDN åŠ è½½ + importYhspack å¼‚æ­¥æ‰§è¡Œ
     await wait(page, 3000);
-    // 等待牌组卡片渲染
+    // ç­‰å¾…ç‰Œç»„å¡ç‰‡æ¸²æŸ“
     await page.waitForSelector('.deck-card[data-deck="__test_import__"]', { timeout: 10000 }).catch(() => {});
     const deckName = await run(page, () => {
       const el = document.querySelector('.deck-card[data-deck="__test_import__"] .deck-name');
       return el ? el.textContent.trim() : '';
     });
-    pass('导入牌组出现在列表', deckName.includes('蔬菜水果本地版'));
+    pass('å¯¼å…¥ç‰Œç»„å‡ºçŽ°åœ¨åˆ—è¡¨', deckName.includes('è”¬èœæ°´æžœæœ¬åœ°ç‰ˆ'));
 
     await run(page, () => { const c=document.querySelector('.deck-card[data-deck="__test_import__"]'); if(c)c.click(); });
     await wait(page, 300);
-    check('currentDeck 已切换', await run(page, () => currentDeck), '__test_import__');
+    check('currentDeck å·²åˆ‡æ¢', await run(page, () => currentDeck), '__test_import__');
 
     await run(page, () => { const c=document.querySelector('.deck-card[data-deck="__builtin_test__"]'); if(c)c.click(); });
     await wait(page, 300);
 
-    // ═══════════════════ PHASE 2: SRS processAnswer ═══════════════════
-    section('PHASE 2: SRS 算法验证');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 2: SRS processAnswer â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 2: SRS ç®—æ³•éªŒè¯');
     const T = '2026-05-05';
-    check('2.1 new+good → learning',
+    check('2.1 new+good â†’ learning',
       (await run(page, d => { const st={srs_stage:'new',interval:0,ease_factor:2.5,due_date:d,due_ts:0,step_index:0,review_mode:'T1',lapses_streak:0,lapses_total:0,suspended:false,state_key:'t2a',card_id:'t2a',deck_key:'__test__'}; return processAnswer(st,'good',d); }, T)).srs_stage, 'learning');
-    check('2.2 again→step=0',
+    check('2.2 againâ†’step=0',
       (await run(page, d => { const st={srs_stage:'new',interval:0,ease_factor:2.5,due_date:d,due_ts:0,step_index:0,review_mode:'T1',lapses_streak:0,lapses_total:0,suspended:false,state_key:'t2b',card_id:'t2b',deck_key:'__test__'}; return processAnswer(st,'again',d); }, T)).step_index, 0);
-    check('2.3 learning+good→review',
+    check('2.3 learning+goodâ†’review',
       (await run(page, d => { const st={srs_stage:'learning',interval:0,ease_factor:2.5,due_date:d,due_ts:0,step_index:1,review_mode:'T1',lapses_streak:0,lapses_total:0,suspended:false,state_key:'t2c',card_id:'t2c',deck_key:'__test__'}; return processAnswer(st,'good',d); }, T)).srs_stage, 'review');
-    check('2.4 review+again→relearning',
+    check('2.4 review+againâ†’relearning',
       (await run(page, a => { const st={srs_stage:'review',interval:10,ease_factor:2.5,due_date:a.fd,due_ts:Date.now()+864000000,step_index:0,review_mode:'T1',lapses_streak:0,lapses_total:0,suspended:false,state_key:'t2d',card_id:'t2d',deck_key:'__test__'}; return processAnswer(st,'again',a.d); }, {d:T,fd:'2026-05-15'})).srs_stage, 'relearning');
-    check('2.5 review+good≥25d',
+    check('2.5 review+goodâ‰¥25d',
       (await run(page, d => { const st={srs_stage:'review',interval:10,ease_factor:2.5,due_date:d,due_ts:1000,step_index:0,review_mode:'T1',lapses_streak:0,lapses_total:0,suspended:false,state_key:'t2e',card_id:'t2e',deck_key:'__test__'}; return processAnswer(st,'good',d); }, T)).interval >= 25, true);
     check('2.6 review+easy ease=2.65',
       (await run(page, d => { const st={srs_stage:'review',interval:10,ease_factor:2.5,due_date:d,due_ts:1000,step_index:0,review_mode:'T1',lapses_streak:0,lapses_total:0,suspended:false,state_key:'t2f',card_id:'t2f',deck_key:'__test__'}; return processAnswer(st,'easy',d); }, T)).ease_factor, 2.65);
     check('2.7 review+hard ease=2.35',
       (await run(page, d => { const st={srs_stage:'review',interval:10,ease_factor:2.5,due_date:d,due_ts:1000,step_index:0,review_mode:'T1',lapses_streak:0,lapses_total:0,suspended:false,state_key:'t2g',card_id:'t2g',deck_key:'__test__'}; return processAnswer(st,'hard',d); }, T)).ease_factor, 2.35);
-    check('2.8 relearning+good→review',
+    check('2.8 relearning+goodâ†’review',
       (await run(page, d => { const st={srs_stage:'relearning',interval:0,ease_factor:2.5,due_date:'',due_ts:0,step_index:0,review_mode:'T1',lapses_streak:0,lapses_total:1,suspended:false,state_key:'t2h',card_id:'t2h',deck_key:'__test__'}; return processAnswer(st,'good',d); }, T)).srs_stage, 'review');
 
-    // ═══════════════════ PHASE 3: 10 天 UI 练习 ═══════════════════
-    section('PHASE 3: 10 天练习（maximum_interval=7）');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 3: 10 å¤© UI ç»ƒä¹  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 3: 10 å¤©ç»ƒä¹ ï¼ˆmaximum_interval=7ï¼‰');
 
-    // 设置 AD 友好参数：最大间隔 7 天
+    // è®¾ç½® AD å‹å¥½å‚æ•°ï¼šæœ€å¤§é—´éš” 7 å¤©
     await run(page, () => { SRS_CONFIG.maximum_interval = 7; });
 
     await run(page, () => {
@@ -109,12 +110,12 @@ function randRating() {
       window.__origToday = todayStr;
       todayStr = function() { return window.__fakeToday; };
     });
-    await run(page, () => { const t=document.querySelectorAll('.sheet-tab'); for(const x of t) if(x.textContent.includes('今日')){x.click();return} });
+    await run(page, () => { const t=document.querySelectorAll('.sheet-tab'); for(const x of t) if(x.textContent.includes('ä»Šæ—¥')){x.click();return} });
     await wait(page, 300);
 
-    await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('开始练习')){x.click();return} });
+    await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('å¼€å§‹ç»ƒä¹ ')){x.click();return} });
     await wait(page, 1500);
-    pass('进入练习屏',
+    pass('è¿›å…¥ç»ƒä¹ å±',
       await run(page, () => document.getElementById('screen-quiz').classList.contains('active')));
 
     const waitWrite = () => page.evaluate(async () => { if (_lastSrsWrite) await _lastSrsWrite; });
@@ -175,28 +176,28 @@ function randRating() {
       return null;
     }
 
-    // ── 10 天练习循环 ──
+    // â”€â”€ 10 å¤©ç»ƒä¹ å¾ªçŽ¯ â”€â”€
     const DAYS = ['2026-05-05','2026-05-06','2026-05-07','2026-05-08','2026-05-09',
                   '2026-05-10','2026-05-11','2026-05-12','2026-05-13','2026-05-14'];
-    const DAY_LABELS = ['一','二','三','四','五','六','日','一','二','三'];
+    const DAY_LABELS = ['ä¸€','äºŒ','ä¸‰','å››','äº”','å…­','æ—¥','ä¸€','äºŒ','ä¸‰'];
     let totalCards = 0;
 
     for (let di = 0; di < DAYS.length; di++) {
       const day = DAYS[di];
       await run(page, d => { window.__fakeToday = d; }, day);
       if (di === 0) {
-        // Day1 已在今日 tab，只需点开始练习
-        // （从 Phase 2 的今日 tab 切过来的状态）
+        // Day1 å·²åœ¨ä»Šæ—¥ tabï¼Œåªéœ€ç‚¹å¼€å§‹ç»ƒä¹ 
+        // ï¼ˆä»Ž Phase 2 çš„ä»Šæ—¥ tab åˆ‡è¿‡æ¥çš„çŠ¶æ€ï¼‰
       } else {
-        await run(page, () => { const t=document.querySelectorAll('.sheet-tab'); for(const x of t) if(x.textContent.includes('今日')){x.click();return} });
+        await run(page, () => { const t=document.querySelectorAll('.sheet-tab'); for(const x of t) if(x.textContent.includes('ä»Šæ—¥')){x.click();return} });
         await wait(page, 200);
       }
-      await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('开始练习')){x.click();return} });
+      await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('å¼€å§‹ç»ƒä¹ ')){x.click();return} });
       await wait(page, 1500);
 
       const hasCards = await run(page, () => document.getElementById('screen-quiz').classList.contains('active'));
       if (!hasCards) {
-        console.log(`  Day${di+1} (${DAY_LABELS[di]}): 无到期卡片`);
+        console.log(`  Day${di+1} (${DAY_LABELS[di]}): æ— åˆ°æœŸå¡ç‰‡`);
         continue;
       }
 
@@ -217,9 +218,9 @@ function randRating() {
         }
         if (!ready) break;
 
-        // 加权随机评级（但 always 留至少一次 good 确保毕业路径）
+        // åŠ æƒéšæœºè¯„çº§ï¼ˆä½† always ç•™è‡³å°‘ä¸€æ¬¡ good ç¡®ä¿æ¯•ä¸šè·¯å¾„ï¼‰
         const strat = di === 0 && ci < 3
-          ? ['good','hard','again'][ci]  // Day1 前 3 张确定性混合
+          ? ['good','hard','again'][ci]  // Day1 å‰ 3 å¼ ç¡®å®šæ€§æ··åˆ
           : randRating();
         await doCard(strat);
         const ret = await finishCardOrFinish();
@@ -227,18 +228,18 @@ function randRating() {
         dayCards++;
       }
 
-      console.log(`  Day${di+1} (${DAY_LABELS[di]}): ${dayCards} 张`);
+      console.log(`  Day${di+1} (${DAY_LABELS[di]}): ${dayCards} å¼ `);
       totalCards += dayCards;
 
-      await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('返回首页')){x.click();return} });
+      await run(page, () => { const b=document.querySelectorAll('button'); for(const x of b) if(x.textContent.includes('è¿”å›žé¦–é¡µ')){x.click();return} });
       await wait(page, 200);
     }
 
-    pass('10 天累计练习 >0', totalCards > 0);
-    console.log(`  10 天共练习: ${totalCards} 张次`);
+    pass('10 å¤©ç´¯è®¡ç»ƒä¹  >0', totalCards > 0);
+    console.log(`  10 å¤©å…±ç»ƒä¹ : ${totalCards} å¼ æ¬¡`);
 
-    // ═══════════════════ PHASE 4: 10 天后验证 ═══════════════════
-    section('PHASE 4: 10 天后验证');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 4: 10 å¤©åŽéªŒè¯ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 4: 10 å¤©åŽéªŒè¯');
 
     const finalSt = await run(page, () => new Promise(res => {
       const r=indexedDB.open('yihai_srs',5);
@@ -265,24 +266,24 @@ function randRating() {
         };
       };
     }));
-    console.log(`  最终: ${JSON.stringify(finalSt)}`);
+    console.log(`  æœ€ç»ˆ: ${JSON.stringify(finalSt)}`);
 
-    pass('20 张卡全部有 SRS 状态', finalSt.states === 20);
-    pass('无 new 卡（全部已学习）', !finalSt.stages['new'] || finalSt.stages['new'] === 0);
-    pass('有 review 阶段卡（已毕业）', (finalSt.stages['review']||0) > 0);
+    pass('20 å¼ å¡å…¨éƒ¨æœ‰ SRS çŠ¶æ€', finalSt.states === 20);
+    pass('æ—  new å¡ï¼ˆå…¨éƒ¨å·²å­¦ä¹ ï¼‰', !finalSt.stages['new'] || finalSt.stages['new'] === 0);
+    pass('æœ‰ review é˜¶æ®µå¡ï¼ˆå·²æ¯•ä¸šï¼‰', (finalSt.stages['review']||0) > 0);
 
-    // maximum_interval=7 验证
-    pass('最大间隔 ≤ 7（maximum_interval 生效）', finalSt.maxInterval <= 7);
-    pass('review 平均间隔合理（≥2）', finalSt.avgInterval >= 2);
+    // maximum_interval=7 éªŒè¯
+    pass('æœ€å¤§é—´éš” â‰¤ 7ï¼ˆmaximum_interval ç”Ÿæ•ˆï¼‰', finalSt.maxInterval <= 7);
+    pass('review å¹³å‡é—´éš”åˆç†ï¼ˆâ‰¥2ï¼‰', finalSt.avgInterval >= 2);
 
-    pass('答题记录充足（≥60）', finalSt.trials >= 60);
+    pass('ç­”é¢˜è®°å½•å……è¶³ï¼ˆâ‰¥60ï¼‰', finalSt.trials >= 60);
     if (finalSt.ratings && Object.keys(finalSt.ratings).length > 0) {
-      pass('含 good 评级', (finalSt.ratings['good']||0)>0);
-      pass('含 hard 评级', (finalSt.ratings['hard']||0)>0);
-      pass('含 again 评级', (finalSt.ratings['again']||0)>0);
+      pass('å« good è¯„çº§', (finalSt.ratings['good']||0)>0);
+      pass('å« hard è¯„çº§', (finalSt.ratings['hard']||0)>0);
+      pass('å« again è¯„çº§', (finalSt.ratings['again']||0)>0);
     }
 
-    // 统计页
+    // ç»Ÿè®¡é¡µ
     await run(page, () => { document.querySelector('.home-gear-btn').click(); });
     const kpis = await run(page, () => new Promise(res => {
       let tries = 0;
@@ -295,12 +296,12 @@ function randRating() {
       poll();
     }));
     console.log(`  KPI: ${JSON.stringify(kpis)}`);
-    pass('KPI 已加载', Object.keys(kpis).length >= 3);
+    pass('KPI å·²åŠ è½½', Object.keys(kpis).length >= 3);
 
-    // ═══════════════════ PHASE 5: 清理 ═══════════════════
-    section('PHASE 5: 清理');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 5: æ¸…ç† â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 5: æ¸…ç†');
     await run(page, () => { if(window.__origToday)todayStr=window.__origToday; delete window.__fakeToday; delete window.__origToday; }).catch(() => {});
-    // 清理本地 localStorage 残留
+    // æ¸…ç†æœ¬åœ° localStorage æ®‹ç•™
     await run(page, () => {
       localStorage.removeItem('yihai_deck___test_import__');
       const idx = JSON.parse(localStorage.getItem('yihai_decks_index') || '[]');
@@ -308,11 +309,11 @@ function randRating() {
       localStorage.setItem('yihai_decks_index', JSON.stringify(filtered));
     }).catch(() => {});
 
-    section('结果');
-    console.log(`  通过: ${passed}  失败: ${failed}`);
-    if (failed > 0) console.log(`  失败: ${errors.join(' | ')}`);
-    console.log(`  SRS: ${JSON.stringify(finalSt.stages)}, 最大间隔: ${finalSt.maxInterval}, 平均间隔: ${finalSt.avgInterval}`);
-    console.log(`  答题: ${finalSt.trials}, 评级: ${JSON.stringify(finalSt.ratings)}`);
+    section('ç»“æžœ');
+    console.log(`  é€šè¿‡: ${passed}  å¤±è´¥: ${failed}`);
+    if (failed > 0) console.log(`  å¤±è´¥: ${errors.join(' | ')}`);
+    console.log(`  SRS: ${JSON.stringify(finalSt.stages)}, æœ€å¤§é—´éš”: ${finalSt.maxInterval}, å¹³å‡é—´éš”: ${finalSt.avgInterval}`);
+    console.log(`  ç­”é¢˜: ${finalSt.trials}, è¯„çº§: ${JSON.stringify(finalSt.ratings)}`);
 
   } catch (err) {
     console.error('\nFATAL:', err.message);
@@ -320,6 +321,6 @@ function randRating() {
 
   await page.close();
   await browser.close();
-  console.log(`  测试文件保留: ${YHPACK}`);
+  console.log(`  æµ‹è¯•æ–‡ä»¶ä¿ç•™: ${YHPACK}`);
   process.exit(failed > 0 ? 1 : 0);
 })();

@@ -2,8 +2,31 @@
  * 忆海拾光 Playwright 回归测试公共工具
  *
  * 用法：
- *   const { pass, check, section, wait, run, cloudLogin, cloudLogout, ... } = require('./_playwright_helper');
+ *   const { pass, check, section, wait, run, cloudLogin, cloudLogout, getBaseUrl } = require('./_playwright_helper');
  */
+const fs = require('fs'), path = require('path');
+
+// ── 测试 URL ──
+// 优先读 TEST_URL 环境变量；否则自动扫描根目录找最新 yihai_v*.html（按版本号排序）
+function getBaseUrl() {
+  if (process.env.TEST_URL) return process.env.TEST_URL;
+  const root = path.join(__dirname, '..');
+  const files = fs.readdirSync(root)
+    .filter(f => /^yihai_v[\d.]+\.html$/.test(f))
+    .sort((a, b) => {
+      const va = a.match(/v([\d.]+)/)[1].split('.').map(Number);
+      const vb = b.match(/v([\d.]+)/)[1].split('.').map(Number);
+      for (let i = 0; i < Math.max(va.length, vb.length); i++) {
+        const d = (va[i] || 0) - (vb[i] || 0);
+        if (d) return d;
+      }
+      return 0;
+    });
+  if (!files.length) throw new Error('No yihai_v*.html found in ' + root);
+  const latest = files[files.length - 1];
+  console.log(`  [helper] 测试目标: ${latest}`);
+  return `http://localhost:8080/${latest}`;
+}
 
 // ── 计数器 ──
 let passed = 0, failed = 0, errors = [];
@@ -109,6 +132,7 @@ async function getDeckOverviewStats(page /*, deckKey */) {
 
 module.exports = {
   resetCounters, pass, check, section, wait, run, getCounts,
+  getBaseUrl,
   openSettingsTab, closeSettings,
   cloudLogin, cloudLogout, waitSyncModal,
   getDeckOverviewStats,

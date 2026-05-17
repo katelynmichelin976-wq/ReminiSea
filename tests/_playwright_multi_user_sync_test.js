@@ -1,31 +1,31 @@
-/**
- * 忆海拾光 v4.10 多用户同步隔离回归测试
+﻿/**
+ * å¿†æµ·æ‹¾å…‰ v4.10 å¤šç”¨æˆ·åŒæ­¥éš”ç¦»å›žå½’æµ‹è¯•
  *
- * 模拟同一设备上两个账号交替使用：A→登出→离线→B→登出→离线→A→B
- * 验证 user_id 隔离、离线归属、重新登录后仅同步自身数据。
+ * æ¨¡æ‹ŸåŒä¸€è®¾å¤‡ä¸Šä¸¤ä¸ªè´¦å·äº¤æ›¿ä½¿ç”¨ï¼šAâ†’ç™»å‡ºâ†’ç¦»çº¿â†’Bâ†’ç™»å‡ºâ†’ç¦»çº¿â†’Aâ†’B
+ * éªŒè¯ user_id éš”ç¦»ã€ç¦»çº¿å½’å±žã€é‡æ–°ç™»å½•åŽä»…åŒæ­¥è‡ªèº«æ•°æ®ã€‚
  *
- * 依赖：
+ * ä¾èµ–ï¼š
  *   python -m http.server 8080 --directory /c/code
  *   TEST_PASSWORD=xxx node tests/_playwright_multi_user_sync_test.js
  *
- * 测试账号：zyhacl@gmail.com (A) / zyhaff@gmail.com (B)
+ * æµ‹è¯•è´¦å·ï¼šzyhacl@gmail.com (A) / zyhaff@gmail.com (B)
  */
 const { chromium } = require('playwright');
 
-const CFG = { url: 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now() };
+const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
 const USER_A = { email: 'zyhacl@gmail.com', uid8: '5358bfeb' };
 const USER_B = { email: 'zyhaff@gmail.com', uid8: 'fd0c4941' };
 const CLOUD_DECK = 'cloud_01edbdfd';
 
 let passed = 0, failed = 0, errors = [];
-const pass = (l, v) => { if (v) { passed++; console.log(`  ✓ ${l}`); } else { failed++; errors.push(`✗ ${l}`); console.log(`  ✗ ${l}`); } };
+const pass = (l, v) => { if (v) { passed++; console.log(`  âœ“ ${l}`); } else { failed++; errors.push(`âœ— ${l}`); console.log(`  âœ— ${l}`); } };
 const check = (l, a, e) => pass(l, a === e);
-const section = t => console.log(`\n${'═'.repeat(60)}\n  ${t}\n${'═'.repeat(60)}`);
+const section = t => console.log(`\n${'â•'.repeat(60)}\n  ${t}\n${'â•'.repeat(60)}`);
 const wait = (page, ms) => page.waitForTimeout(ms);
 
 async function simulateAnswer(page, rating) {
-  // 直接调用 app 逻辑，绕开 DOM 事件模拟问题
+  // ç›´æŽ¥è°ƒç”¨ app é€»è¾‘ï¼Œç»•å¼€ DOM äº‹ä»¶æ¨¡æ‹Ÿé—®é¢˜
   return page.evaluate(async (r) => {
     if (!_currentCard || !_currentCard.id) return 'no_card';
     const cardId = _currentCard.id;
@@ -63,7 +63,7 @@ async function simulateAnswer(page, rating) {
       _retrying: false, _warmup: false, _mix_observe: false
     };
     await writeTrialLog(entry);
-    // 更新每日进度
+    // æ›´æ–°æ¯æ—¥è¿›åº¦
     const dp = getDailyProgress();
     dp.reviewed_today = (dp.reviewed_today||0) + 1;
     if (stageBefore === 'new') dp.daily_new_today = (dp.daily_new_today||0) + 1;
@@ -72,7 +72,7 @@ async function simulateAnswer(page, rating) {
     else dp.first_pass_today = (dp.first_pass_today||0) + 1;
     dp.active_duration_sec = (dp.active_duration_sec||0) + 3;
     saveDailyProgress(dp);
-    // 推进队列
+    // æŽ¨è¿›é˜Ÿåˆ—
     _qIdx++;
     if (_qIdx >= _sessionQueue.length) { if (typeof showFinish === 'function') showFinish(); }
     return 'ok';
@@ -80,10 +80,10 @@ async function simulateAnswer(page, rating) {
 }
 
 async function startPracticeSession(page) {
-  // 直接构建练习队列（绕过 DOM 按钮点击）
+  // ç›´æŽ¥æž„å»ºç»ƒä¹ é˜Ÿåˆ—ï¼ˆç»•è¿‡ DOM æŒ‰é’®ç‚¹å‡»ï¼‰
   return page.evaluate(async () => {
     if (typeof buildSessionQueue !== 'function') return false;
-    // 确保 daily_progress 干净
+    // ç¡®ä¿ daily_progress å¹²å‡€
     localStorage.removeItem('yihai_daily_progress');
     _sessionQueue = await buildSessionQueue(currentDeck);
     _qIdx = 0;
@@ -100,7 +100,7 @@ async function login(page, email) {
   await wait(page, 300);
   await page.evaluate(() => {
     const tabs = document.querySelectorAll('.sheet-tab');
-    for (const t of tabs) { if (t.textContent.includes('云端')) { t.click(); return; } }
+    for (const t of tabs) { if (t.textContent.includes('äº‘ç«¯')) { t.click(); return; } }
   });
   await wait(page, 300);
   await page.evaluate(({em, pw}) => {
@@ -109,7 +109,7 @@ async function login(page, email) {
     document.getElementById('cloud-login-btn').click();
   }, { em: email, pw: TEST_PASSWORD });
   await wait(page, 10000);
-  // 等待连接
+  // ç­‰å¾…è¿žæŽ¥
   for (let i = 0; i < 30; i++) {
     const ok = await page.evaluate(() => {
       const sec = document.getElementById('cloud-connected-section');
@@ -118,7 +118,7 @@ async function login(page, email) {
     if (ok) break;
     await wait(page, 500);
   }
-  // 等待同步模态关闭（v4.10 runSync 模态弹窗，替代了旧的云端进度条）
+  // ç­‰å¾…åŒæ­¥æ¨¡æ€å…³é—­ï¼ˆv4.10 runSync æ¨¡æ€å¼¹çª—ï¼Œæ›¿ä»£äº†æ—§çš„äº‘ç«¯è¿›åº¦æ¡ï¼‰
   for (let i = 0; i < 60; i++) {
     const done = await page.evaluate(() => {
       const m = document.getElementById('sync-modal');
@@ -134,7 +134,7 @@ async function logout(page) {
   await wait(page, 300);
   await page.evaluate(() => {
     const tabs = document.querySelectorAll('.sheet-tab');
-    for (const t of tabs) { if (t.textContent.includes('云端')) { t.click(); return; } }
+    for (const t of tabs) { if (t.textContent.includes('äº‘ç«¯')) { t.click(); return; } }
   });
   await wait(page, 300);
   await page.evaluate(() => {
@@ -142,7 +142,7 @@ async function logout(page) {
     for (const b of btns) { if (b.getAttribute('onclick') === 'doCloudLogout()') { b.click(); return; } }
   });
   await wait(page, 2000);
-  // 关闭设置
+  // å…³é—­è®¾ç½®
   await page.evaluate(() => {
     const overlay = document.getElementById('settings-overlay');
     if (overlay) overlay.classList.remove('open');
@@ -158,9 +158,9 @@ async function switchToDeck(page, name) {
   await wait(page, 500);
 }
 
-// IDB + Cloud 查询
+// IDB + Cloud æŸ¥è¯¢
 async function checkTrials(page) {
-  // 等待 SRS 写入完成
+  // ç­‰å¾… SRS å†™å…¥å®Œæˆ
   await page.evaluate(async () => { if (typeof _lastSrsWrite !== 'undefined' && _lastSrsWrite) await _lastSrsWrite; });
   await wait(page, 500);
   return page.evaluate(async () => {
@@ -181,14 +181,14 @@ async function checkTrials(page) {
 }
 
 (async () => {
-  if (!TEST_PASSWORD) { console.error('FATAL: 请设置 TEST_PASSWORD 环境变量'); process.exit(1); }
+  if (!TEST_PASSWORD) { console.error('FATAL: è¯·è®¾ç½® TEST_PASSWORD çŽ¯å¢ƒå˜é‡'); process.exit(1); }
 
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
   try {
-    // ═══════════════════ PHASE 1: 初始化 ═══════════════════
-    section('PHASE 1: 清空本地 + 加载');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 1: åˆå§‹åŒ– â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 1: æ¸…ç©ºæœ¬åœ° + åŠ è½½');
 
     await page.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 2000);
@@ -201,16 +201,16 @@ async function checkTrials(page) {
     await page.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 2000);
 
-    pass('页面加载成功', await page.evaluate(() => document.querySelectorAll('.deck-card').length > 0));
+    pass('é¡µé¢åŠ è½½æˆåŠŸ', await page.evaluate(() => document.querySelectorAll('.deck-card').length > 0));
 
-    // ═══════════════════ PHASE 2: A 登录 + 练习 ═══════════════════
-    section('PHASE 2: A 登录，蔬菜水果练 3 题 (good/hard/good)');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 2: A ç™»å½• + ç»ƒä¹  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 2: A ç™»å½•ï¼Œè”¬èœæ°´æžœç»ƒ 3 é¢˜ (good/hard/good)');
 
     await login(page, USER_A.email);
-    pass('A 登录成功', await page.evaluate(() => !!( _cloudUserId && _syncEnabled)));
+    pass('A ç™»å½•æˆåŠŸ', await page.evaluate(() => !!( _cloudUserId && _syncEnabled)));
     check('A uid', await page.evaluate(() => _cloudUserId.substring(0,8)), USER_A.uid8);
 
-    // 显式下载卡片定义数据（login sync 只下载元数据）
+    // æ˜¾å¼ä¸‹è½½å¡ç‰‡å®šä¹‰æ•°æ®ï¼ˆlogin sync åªä¸‹è½½å…ƒæ•°æ®ï¼‰
     await page.evaluate(async (name) => {
       try {
         const { data: decks } = await _sb.from('server_decks').select('id,name').order('name');
@@ -221,10 +221,10 @@ async function checkTrials(page) {
           else await downloadDeckFromCloud(sd.id, sd.name);
         }
       } catch(e) { console.warn('[test] deck sync error:', e.message); }
-    }, '蔬菜水果');
+    }, 'è”¬èœæ°´æžœ');
     await wait(page, 5000);
 
-    // 等待云牌组下载完成，设置 currentDeck
+    // ç­‰å¾…äº‘ç‰Œç»„ä¸‹è½½å®Œæˆï¼Œè®¾ç½® currentDeck
     let deckReady = false;
     let deckSize = 0;
     for (let i = 0; i < 20; i++) {
@@ -232,14 +232,14 @@ async function checkTrials(page) {
       if (deckSize === 33) { deckReady = true; break; }
       await wait(page, 500);
     }
-    console.log(`  DECKS[cloud_01edbdfd] 长度: ${deckSize}`);
+    console.log(`  DECKS[cloud_01edbdfd] é•¿åº¦: ${deckSize}`);
     await page.evaluate((dk) => { if (DECKS[dk]) currentDeck = dk; }, CLOUD_DECK);
     await wait(page, 300);
-    pass('当前牌组蔬菜水果(33张)', deckReady);
+    pass('å½“å‰ç‰Œç»„è”¬èœæ°´æžœ(33å¼ )', deckReady);
 
     const qSize = await startPracticeSession(page);
-    console.log(`  队列长度: ${qSize}`);
-    pass('练习队列非空', qSize > 0);
+    console.log(`  é˜Ÿåˆ—é•¿åº¦: ${qSize}`);
+    pass('ç»ƒä¹ é˜Ÿåˆ—éžç©º', qSize > 0);
     if (qSize > 0) {
       await simulateAnswer(page, 'good');
       await simulateAnswer(page, 'hard');
@@ -249,16 +249,16 @@ async function checkTrials(page) {
     await wait(page, 500);
 
     const a1 = await checkTrials(page);
-    pass('A 练习后本地 >=3 条', a1.total >= 3);
-    check('A 可见 = 本地', a1.visible, a1.total);
-    // synced 状态取决于实时上传是否完成，在此阶段不强校验
+    pass('A ç»ƒä¹ åŽæœ¬åœ° >=3 æ¡', a1.total >= 3);
+    check('A å¯è§ = æœ¬åœ°', a1.visible, a1.total);
+    // synced çŠ¶æ€å–å†³äºŽå®žæ—¶ä¸Šä¼ æ˜¯å¦å®Œæˆï¼Œåœ¨æ­¤é˜¶æ®µä¸å¼ºæ ¡éªŒ
 
-    // ═══════════════════ PHASE 3: A 登出 → 离线练习 ═══════════════════
-    section('PHASE 3: A 登出，离线下练 1 题');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 3: A ç™»å‡º â†’ ç¦»çº¿ç»ƒä¹  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 3: A ç™»å‡ºï¼Œç¦»çº¿ä¸‹ç»ƒ 1 é¢˜');
 
     await logout(page);
-    pass('A 登出 sync=false', await page.evaluate(() => !_syncEnabled));
-    pass('A 登出 uid 保持', await page.evaluate((uid) => {
+    pass('A ç™»å‡º sync=false', await page.evaluate(() => !_syncEnabled));
+    pass('A ç™»å‡º uid ä¿æŒ', await page.evaluate((uid) => {
       return _cloudUserId && _cloudUserId.substring(0,8) === uid;
     }, USER_A.uid8));
 
@@ -268,22 +268,22 @@ async function checkTrials(page) {
     await wait(page, 500);
 
     const a2 = await checkTrials(page);
-    pass('离线后本地 >=4 条', a2.total >= 4);
-    pass('A离线归属A', a2.byUid[USER_A.uid8] >= 4);
+    pass('ç¦»çº¿åŽæœ¬åœ° >=4 æ¡', a2.total >= 4);
+    pass('Aç¦»çº¿å½’å±žA', a2.byUid[USER_A.uid8] >= 4);
 
-    // ═══════════════════ PHASE 4: B 登录 ═══════════════════
-    section('PHASE 4: B 登录，验证隔离 + 练2题');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 4: B ç™»å½• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 4: B ç™»å½•ï¼ŒéªŒè¯éš”ç¦» + ç»ƒ2é¢˜');
 
     await login(page, USER_B.email);
-    pass('B 登录成功', await page.evaluate(() => !!( _cloudUserId && _syncEnabled)));
+    pass('B ç™»å½•æˆåŠŸ', await page.evaluate(() => !!( _cloudUserId && _syncEnabled)));
     check('B uid', await page.evaluate(() => _cloudUserId.substring(0,8)), USER_B.uid8);
 
     const b1 = await checkTrials(page);
-    pass('B 本地有 A 的遗留', b1.total > 0);
-    check('B 可见 0 条', b1.visible, 0);
-    pass('A trial未被B同步', true);
+    pass('B æœ¬åœ°æœ‰ A çš„é—ç•™', b1.total > 0);
+    check('B å¯è§ 0 æ¡', b1.visible, 0);
+    pass('A trialæœªè¢«BåŒæ­¥', true);
 
-    await switchToDeck(page, '蔬菜水果');
+    await switchToDeck(page, 'è”¬èœæ°´æžœ');
     await startPracticeSession(page);
     await simulateAnswer(page, 'good');
     await simulateAnswer(page, 'good');
@@ -291,16 +291,16 @@ async function checkTrials(page) {
     await wait(page, 500);
 
     const b2 = await checkTrials(page);
-    pass('B 练习后本地增加', b2.total > b1.total);
-    check('B 可见 = 本地B归属', b2.visible, b2.byUid[USER_B.uid8]);
-    pass('B 可见的全 synced', b2.allVisibleSynced);
+    pass('B ç»ƒä¹ åŽæœ¬åœ°å¢žåŠ ', b2.total > b1.total);
+    check('B å¯è§ = æœ¬åœ°Bå½’å±ž', b2.visible, b2.byUid[USER_B.uid8]);
+    pass('B å¯è§çš„å…¨ synced', b2.allVisibleSynced);
 
-    // ═══════════════════ PHASE 5: B 登出 → 离线 ═══════════════════
-    section('PHASE 5: B 登出，离线下练 1 题');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 5: B ç™»å‡º â†’ ç¦»çº¿ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 5: B ç™»å‡ºï¼Œç¦»çº¿ä¸‹ç»ƒ 1 é¢˜');
 
     await logout(page);
-    pass('B 登出 sync=false', await page.evaluate(() => !_syncEnabled));
-    pass('B 登出 uid 保持', await page.evaluate((uid) => {
+    pass('B ç™»å‡º sync=false', await page.evaluate(() => !_syncEnabled));
+    pass('B ç™»å‡º uid ä¿æŒ', await page.evaluate((uid) => {
       const u = _cloudUserId; return u && u.startsWith(uid);
     }, USER_B.uid8));
 
@@ -310,23 +310,23 @@ async function checkTrials(page) {
     await wait(page, 500);
 
     const b3 = await checkTrials(page);
-    pass('B 离线后本地增加', b3.total > b2.total);
-    pass('B 离线归属B', b3.byUid[USER_B.uid8] >= 3);
+    pass('B ç¦»çº¿åŽæœ¬åœ°å¢žåŠ ', b3.total > b2.total);
+    pass('B ç¦»çº¿å½’å±žB', b3.byUid[USER_B.uid8] >= 3);
 
-    // ═══════════════════ PHASE 6: A 重新登录 ═══════════════════
-    section('PHASE 6: A 重新登录，只同步 A');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 6: A é‡æ–°ç™»å½• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 6: A é‡æ–°ç™»å½•ï¼ŒåªåŒæ­¥ A');
 
     await login(page, USER_A.email);
-    // 等待 syncAll 完成
+    // ç­‰å¾… syncAll å®Œæˆ
     await wait(page, 3000);
-    check('A 再登 uid', await page.evaluate(() => _cloudUserId.substring(0,8)), USER_A.uid8);
+    check('A å†ç™» uid', await page.evaluate(() => _cloudUserId.substring(0,8)), USER_A.uid8);
 
     const a3 = await checkTrials(page);
-    pass('A 可见 >=4 条', a3.visible >= 4);
-    pass('A 全部 synced', a3.allVisibleSynced);
+    pass('A å¯è§ >=4 æ¡', a3.visible >= 4);
+    pass('A å…¨éƒ¨ synced', a3.allVisibleSynced);
 
-    // 查云端A
-    // 手动触发一次 syncAll 确保上传完成
+    // æŸ¥äº‘ç«¯A
+    // æ‰‹åŠ¨è§¦å‘ä¸€æ¬¡ syncAll ç¡®ä¿ä¸Šä¼ å®Œæˆ
     await page.evaluate(async (dk) => {
       if (typeof syncAll === 'function') await syncAll(dk, false, true);
     }, CLOUD_DECK);
@@ -340,19 +340,19 @@ async function checkTrials(page) {
       return { count: data.length, allA: data.every(t => (t.user_id||'').startsWith('5358bfeb')) };
     });
     console.log(`  cloudA: ${JSON.stringify(cloudA)}`);
-    pass('云端 A >= 4', cloudA.count >= 4);
-    pass('云端全A', cloudA.allA && cloudA.count > 0);
+    pass('äº‘ç«¯ A >= 4', cloudA.count >= 4);
+    pass('äº‘ç«¯å…¨A', cloudA.allA && cloudA.count > 0);
 
-    // ═══════════════════ PHASE 7: B 重新登录 ═══════════════════
-    section('PHASE 7: B 重新登录，只同步 B');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 7: B é‡æ–°ç™»å½• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 7: B é‡æ–°ç™»å½•ï¼ŒåªåŒæ­¥ B');
 
     await logout(page);
     await login(page, USER_B.email);
     await wait(page, 3000);
 
     const b4 = await checkTrials(page);
-    pass('B 可见 >=3 条', b4.visible >= 3);
-    pass('B 全部 synced', b4.allVisibleSynced);
+    pass('B å¯è§ >=3 æ¡', b4.visible >= 3);
+    pass('B å…¨éƒ¨ synced', b4.allVisibleSynced);
 
     await page.evaluate(async (dk) => {
       if (typeof syncAll === 'function') await syncAll(dk, false, true);
@@ -367,13 +367,13 @@ async function checkTrials(page) {
       return { count: data.length, allB: data.every(t => (t.user_id||'').startsWith('fd0c4941')) };
     });
     console.log(`  cloudB: ${JSON.stringify(cloudB)}`);
-    pass('云端 B >= 3', cloudB.count >= 3);
-    pass('云端全B', cloudB.allB && cloudB.count > 0);
+    pass('äº‘ç«¯ B >= 3', cloudB.count >= 3);
+    pass('äº‘ç«¯å…¨B', cloudB.allB && cloudB.count > 0);
 
-    // ═══════════════════ 结果 ═══════════════════
-    section('结果');
-    console.log(`  通过: ${passed}  失败: ${failed}`);
-    if (failed > 0) console.log(`  失败详情: ${errors.join(' | ')}`);
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ç»“æžœ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('ç»“æžœ');
+    console.log(`  é€šè¿‡: ${passed}  å¤±è´¥: ${failed}`);
+    if (failed > 0) console.log(`  å¤±è´¥è¯¦æƒ…: ${errors.join(' | ')}`);
 
   } catch (err) {
     console.error('\nFATAL:', err.message);

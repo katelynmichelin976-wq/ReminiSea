@@ -1,25 +1,25 @@
-/**
- * 忆海拾光 v4.10 回归测试（统计数据一致性 + 重新登录验证）
+﻿/**
+ * å¿†æµ·æ‹¾å…‰ v4.10 å›žå½’æµ‹è¯•ï¼ˆç»Ÿè®¡æ•°æ®ä¸€è‡´æ€§ + é‡æ–°ç™»å½•éªŒè¯ï¼‰
  *
- * 依赖：
+ * ä¾èµ–ï¼š
  *   python -m http.server 8080 --directory /c/code
  *   TEST_PASSWORD=xxx node tests/_playwright_v4.10_regression_test.js
  *
- * 覆盖：登录 → 统计验证 → user_id 隔离 → 退出保留 → 重新登录
- * 合并自：原 _playwright_v4.10_regression_test.js + _playwright_user_switch_test.js
+ * è¦†ç›–ï¼šç™»å½• â†’ ç»Ÿè®¡éªŒè¯ â†’ user_id éš”ç¦» â†’ é€€å‡ºä¿ç•™ â†’ é‡æ–°ç™»å½•
+ * åˆå¹¶è‡ªï¼šåŽŸ _playwright_v4.10_regression_test.js + _playwright_user_switch_test.js
  */
 const { chromium } = require('playwright');
 const helper = require('./_playwright_helper');
-const { pass, check, section, wait, run } = helper;
+const { pass, check, section, wait, run, getBaseUrl } = helper;
 
-const CFG = { url: 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now() };
+const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
 const CLOUD_DECK_KEY = 'cloud_01edbdfd';
 const CARD_COUNT = 33;
 
 (async () => {
-  if (!TEST_PASSWORD) { console.error('FATAL: 请设置 TEST_PASSWORD 环境变量'); process.exit(1); }
+  if (!TEST_PASSWORD) { console.error('FATAL: è¯·è®¾ç½® TEST_PASSWORD çŽ¯å¢ƒå˜é‡'); process.exit(1); }
 
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -28,8 +28,8 @@ const CARD_COUNT = 33;
   page.on('pageerror', err => consoleLogs.push(`[PAGE ERROR] ${err.message}`));
 
   try {
-    // ═══════════════════ PHASE 1: 清空存储并加载 ═══════════════════
-    section('PHASE 1: 清空存储并加载');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 1: æ¸…ç©ºå­˜å‚¨å¹¶åŠ è½½ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 1: æ¸…ç©ºå­˜å‚¨å¹¶åŠ è½½');
 
     await page.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 2000);
@@ -42,50 +42,50 @@ const CARD_COUNT = 33;
     await page.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 2000);
 
-    pass('页面加载成功', await run(page, () => !!document.querySelector('.home-version')));
-    pass('主页显示内置牌组', await run(page, () => document.querySelectorAll('.deck-card').length > 0));
+    pass('é¡µé¢åŠ è½½æˆåŠŸ', await run(page, () => !!document.querySelector('.home-version')));
+    pass('ä¸»é¡µæ˜¾ç¤ºå†…ç½®ç‰Œç»„', await run(page, () => document.querySelectorAll('.deck-card').length > 0));
 
-    // ═══════════════════ PHASE 2: 登录 ═══════════════════
-    section('PHASE 2: 登录测试账号');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 2: ç™»å½• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 2: ç™»å½•æµ‹è¯•è´¦å·');
 
     await run(page, () => { if (typeof goHome === 'function') goHome(); });
     await wait(page, 300);
 
-    pass('登录成功', await helper.cloudLogin(page, TEST_EMAIL, TEST_PASSWORD));
+    pass('ç™»å½•æˆåŠŸ', await helper.cloudLogin(page, TEST_EMAIL, TEST_PASSWORD));
 
-    pass('显示登录邮箱', (await run(page, () => {
+    pass('æ˜¾ç¤ºç™»å½•é‚®ç®±', (await run(page, () => {
       const el = document.getElementById('cloud-user-email');
       return el ? el.textContent : '';
     })).includes(TEST_EMAIL));
 
-    // ═══════════════════ PHASE 3: 同步并验证主页 ═══════════════════
-    section('PHASE 3: 同步并验证主页数据');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 3: åŒæ­¥å¹¶éªŒè¯ä¸»é¡µ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 3: åŒæ­¥å¹¶éªŒè¯ä¸»é¡µæ•°æ®');
 
     await helper.closeSettings(page);
     await helper.waitSyncModal(page, 60);
-    console.log('  登录同步完成');
+    console.log('  ç™»å½•åŒæ­¥å®Œæˆ');
 
     let hasDeck = false;
     for (let i = 0; i < 20; i++) {
-      hasDeck = await run(page, (name) => DECKS_META.some(m => m.name === name), '蔬菜水果');
+      hasDeck = await run(page, (name) => DECKS_META.some(m => m.name === name), 'è”¬èœæ°´æžœ');
       if (hasDeck) break;
       await wait(page, 500);
     }
 
-    pass('云牌组出现在列表', await run(page, (name) => {
+    pass('äº‘ç‰Œç»„å‡ºçŽ°åœ¨åˆ—è¡¨', await run(page, (name) => {
       for (const c of document.querySelectorAll('.deck-card')) {
         const el = c.querySelector('.deck-name');
         if (el && el.textContent.includes(name)) return true;
       }
       return false;
-    }, '蔬菜水果'));
+    }, 'è”¬èœæ°´æžœ'));
 
-    // 记录首次云牌组数（用于 PH11 重新登录对比）
+    // è®°å½•é¦–æ¬¡äº‘ç‰Œç»„æ•°ï¼ˆç”¨äºŽ PH11 é‡æ–°ç™»å½•å¯¹æ¯”ï¼‰
     const firstCloudDeckCount = await run(page, () =>
       DECKS_META.filter(m => m.source === 'cloud').length
     );
-    pass('首次登录有云牌组', firstCloudDeckCount > 0);
-    console.log(`  首次云牌组: ${firstCloudDeckCount}`);
+    pass('é¦–æ¬¡ç™»å½•æœ‰äº‘ç‰Œç»„', firstCloudDeckCount > 0);
+    console.log(`  é¦–æ¬¡äº‘ç‰Œç»„: ${firstCloudDeckCount}`);
 
     for (let i = 0; i < 30; i++) {
       const val = await run(page, (dk) => {
@@ -94,7 +94,7 @@ const CARD_COUNT = 33;
         const dueEl = card.querySelector('.deck-stat-num.due');
         return dueEl ? dueEl.textContent.trim() : '-2';
       }, CLOUD_DECK_KEY);
-      if (val !== '…' && val !== '-2') break;
+      if (val !== 'â€¦' && val !== '-2') break;
       await wait(page, 200);
     }
 
@@ -105,7 +105,7 @@ const CARD_COUNT = 33;
       const newEl = card.querySelector('.deck-stat-num.new-c');
       return { due: dueEl ? parseInt(dueEl.textContent) : -1, new: newEl ? parseInt(newEl.textContent) : -1 };
     }, CLOUD_DECK_KEY);
-    console.log(`  主页到期: ${homepage?.due}, 主页新卡: ${homepage?.new}`);
+    console.log(`  ä¸»é¡µåˆ°æœŸ: ${homepage?.due}, ä¸»é¡µæ–°å¡: ${homepage?.new}`);
 
     const rawStats = await run(page, async (dk) => {
       const states = await getAllCardStates(dk);
@@ -126,10 +126,10 @@ const CARD_COUNT = 33;
       return { cappedDue: Math.min(due, dueCap), cappedNew: Math.min(unseen, newCap) };
     }, CLOUD_DECK_KEY);
 
-    pass('主页到期数合理', homepage && homepage.due > 0);
-    pass('主页新卡数合理', homepage && homepage.new >= 0);
-    check('到期数匹配后端', homepage && homepage.due, rawStats.cappedDue);
-    check('新卡数匹配后端', homepage && homepage.new, rawStats.cappedNew);
+    pass('ä¸»é¡µåˆ°æœŸæ•°åˆç†', homepage && homepage.due > 0);
+    pass('ä¸»é¡µæ–°å¡æ•°åˆç†', homepage && homepage.new >= 0);
+    check('åˆ°æœŸæ•°åŒ¹é…åŽç«¯', homepage && homepage.due, rawStats.cappedDue);
+    check('æ–°å¡æ•°åŒ¹é…åŽç«¯', homepage && homepage.new, rawStats.cappedNew);
 
     await run(page, (dk) => {
       const card = document.querySelector(`.deck-card[data-deck="${dk}"]`);
@@ -137,8 +137,8 @@ const CARD_COUNT = 33;
     }, CLOUD_DECK_KEY);
     await wait(page, 300);
 
-    // ═══════════════════ PHASE 4: 统计页 — 今日 Tab ═══════════════════
-    section('PHASE 4: 统计页 — 今日 Tab');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 4: ç»Ÿè®¡é¡µ â€” ä»Šæ—¥ Tab â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 4: ç»Ÿè®¡é¡µ â€” ä»Šæ—¥ Tab');
     await run(page, () => { if (typeof goHome === 'function') goHome(); });
     await wait(page, 300);
     await run(page, () => { if (typeof openStats === 'function') openStats(); });
@@ -156,16 +156,16 @@ const CARD_COUNT = 33;
     });
     const dp = await run(page, () => JSON.parse(localStorage.getItem('yihai_daily_progress') || '{}'));
 
-    pass('今日练习=0', (dp.reviewed_today || 0) === 0);
-    check('今日良好=0', parseInt(todayKpi.k1[2] || -1), 0);
-    check('今困难=0', parseInt(todayKpi.k1[4] || -1), 0);
-    check('今重来=0', parseInt(todayKpi.k1[6] || -1), 0);
-    check('时长=0', parseInt(todayKpi.k2[0] || -1), 0);
-    check('新卡=0', parseInt(todayKpi.k2[2] || -1), 0);
-    check('待确认=0', parseInt(todayKpi.k2[4] || -1), 0);
+    pass('ä»Šæ—¥ç»ƒä¹ =0', (dp.reviewed_today || 0) === 0);
+    check('ä»Šæ—¥è‰¯å¥½=0', parseInt(todayKpi.k1[2] || -1), 0);
+    check('ä»Šå›°éš¾=0', parseInt(todayKpi.k1[4] || -1), 0);
+    check('ä»Šé‡æ¥=0', parseInt(todayKpi.k1[6] || -1), 0);
+    check('æ—¶é•¿=0', parseInt(todayKpi.k2[0] || -1), 0);
+    check('æ–°å¡=0', parseInt(todayKpi.k2[2] || -1), 0);
+    check('å¾…ç¡®è®¤=0', parseInt(todayKpi.k2[4] || -1), 0);
 
-    // ═══════════════════ PHASE 5: 统计页 — 牌组 Tab ═══════════════════
-    section('PHASE 5: 统计页 — 牌组 Tab');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 5: ç»Ÿè®¡é¡µ â€” ç‰Œç»„ Tab â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 5: ç»Ÿè®¡é¡µ â€” ç‰Œç»„ Tab');
     await run(page, () => { if (typeof switchStatsTab === 'function') switchStatsTab(1); });
     await wait(page, 500);
 
@@ -178,7 +178,7 @@ const CARD_COUNT = 33;
       for (let i = 0; i < nums.length; i++) out[lbls[i].textContent] = parseInt(nums[i].textContent);
       return out;
     });
-    console.log(`  牌组统计: ${JSON.stringify(deckStats)}`);
+    console.log(`  ç‰Œç»„ç»Ÿè®¡: ${JSON.stringify(deckStats)}`);
 
     const idbStats = await run(page, async (dk) => {
       const states = await getAllCardStates(dk);
@@ -198,11 +198,11 @@ const CARD_COUNT = 33;
       return { total, master: mastered, learn: learning, pend, filterNew, sus };
     }, CLOUD_DECK_KEY);
 
-    check('总卡片=33', deckStats?.['总卡片'], idbStats.total);
-    check('已掌握', deckStats?.['已掌握'], idbStats.master);
-    check('学习中', deckStats?.['学习中'], idbStats.learn);
-    check('待开始', deckStats?.['待开始'], idbStats.pend);
-    check('暂停', deckStats?.['暂停'], idbStats.sus);
+    check('æ€»å¡ç‰‡=33', deckStats?.['æ€»å¡ç‰‡'], idbStats.total);
+    check('å·²æŽŒæ¡', deckStats?.['å·²æŽŒæ¡'], idbStats.master);
+    check('å­¦ä¹ ä¸­', deckStats?.['å­¦ä¹ ä¸­'], idbStats.learn);
+    check('å¾…å¼€å§‹', deckStats?.['å¾…å¼€å§‹'], idbStats.pend);
+    check('æš‚åœ', deckStats?.['æš‚åœ'], idbStats.sus);
 
     const practiceDays = await run(page, async () => {
       const tok = JSON.parse(localStorage.getItem('sb-juzkonrzfyvchqxzmlpr-auth-token') || '{}');
@@ -213,43 +213,43 @@ const CARD_COUNT = 33;
       const ds = all.find(d => d.deck_key === 'cloud_01edbdfd');
       return ds ? ds.practice_days : -1;
     });
-    check('练习天数匹配', deckStats?.['练习天数'], practiceDays);
+    check('ç»ƒä¹ å¤©æ•°åŒ¹é…', deckStats?.['ç»ƒä¹ å¤©æ•°'], practiceDays);
 
-    // ═══════════════════ PHASE 6: 统计页 — 卡片 Tab ═══════════════════
-    section('PHASE 6: 统计页 — 卡片 Tab 筛选一致性');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 6: ç»Ÿè®¡é¡µ â€” å¡ç‰‡ Tab â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 6: ç»Ÿè®¡é¡µ â€” å¡ç‰‡ Tab ç­›é€‰ä¸€è‡´æ€§');
     await run(page, () => { if (typeof switchStatsTab === 'function') switchStatsTab(2); });
     await wait(page, 500);
 
     await run(page, () => {
-      for (const b of document.querySelectorAll('.stats-filter-btn')) { if (b.textContent.includes('待开始')) { b.click(); return; } }
+      for (const b of document.querySelectorAll('.stats-filter-btn')) { if (b.textContent.includes('å¾…å¼€å§‹')) { b.click(); return; } }
     });
     await wait(page, 500);
     const pendCount = await run(page, () => {
       const list = document.getElementById('st-card-list');
       return list ? list.querySelectorAll('.scard').length : -1;
     });
-    console.log(`  待开始筛选: ${pendCount} 张, filterNew=${idbStats.filterNew}`);
-    check('待开始卡片数=筛选待开始', pendCount, idbStats.filterNew);
+    console.log(`  å¾…å¼€å§‹ç­›é€‰: ${pendCount} å¼ , filterNew=${idbStats.filterNew}`);
+    check('å¾…å¼€å§‹å¡ç‰‡æ•°=ç­›é€‰å¾…å¼€å§‹', pendCount, idbStats.filterNew);
 
     await run(page, () => {
-      for (const b of document.querySelectorAll('.stats-filter-btn')) { if (b.textContent.includes('学习中')) { b.click(); return; } }
+      for (const b of document.querySelectorAll('.stats-filter-btn')) { if (b.textContent.includes('å­¦ä¹ ä¸­')) { b.click(); return; } }
     });
     await wait(page, 300);
     const learnCount = await run(page, () => {
       const list = document.getElementById('st-card-list');
       return list ? list.querySelectorAll('.scard').length : -1;
     });
-    console.log(`  学习中筛选: ${learnCount} 张`);
-    check('学习中卡片数=牌组Tab学习中', learnCount, idbStats.learn);
+    console.log(`  å­¦ä¹ ä¸­ç­›é€‰: ${learnCount} å¼ `);
+    check('å­¦ä¹ ä¸­å¡ç‰‡æ•°=ç‰Œç»„Tabå­¦ä¹ ä¸­', learnCount, idbStats.learn);
 
-    // ═══════════════════ PHASE 7: 统计页 — 记录 Tab ═══════════════════
-    section('PHASE 7: 统计页 — 记录 Tab');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 7: ç»Ÿè®¡é¡µ â€” è®°å½• Tab â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 7: ç»Ÿè®¡é¡µ â€” è®°å½• Tab');
     await run(page, () => { if (typeof switchStatsTab === 'function') switchStatsTab(3); });
     await wait(page, 500);
-    pass('记录 Tab 正常（新浏览器无本地记录）', true);
+    pass('è®°å½• Tab æ­£å¸¸ï¼ˆæ–°æµè§ˆå™¨æ— æœ¬åœ°è®°å½•ï¼‰', true);
 
-    // ═══════════════════ PHASE 8: user_id 隔离验证 ═══════════════════
-    section('PHASE 8: user_id 隔离验证');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 8: user_id éš”ç¦»éªŒè¯ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 8: user_id éš”ç¦»éªŒè¯');
 
     const uidCheck = await run(page, async () => {
       const db = await new Promise(resolve => {
@@ -268,13 +268,13 @@ const CARD_COUNT = 33;
       return { cloudUserId: _cloudUserId ? _cloudUserId.substring(0, 8) : 'none', missingUid: missing, wrongUid: wrong, allOk: missing === 0 && wrong === 0 };
     });
 
-    console.log(`  user_id 验证: ${JSON.stringify(uidCheck)}`);
-    pass('所有 CardState 有 user_id', uidCheck.missingUid === 0);
-    pass('所有 CardState user_id 正确', uidCheck.wrongUid === 0);
-    pass('登录后 user_id=cloudUserId', uidCheck.cloudUserId !== 'none');
+    console.log(`  user_id éªŒè¯: ${JSON.stringify(uidCheck)}`);
+    pass('æ‰€æœ‰ CardState æœ‰ user_id', uidCheck.missingUid === 0);
+    pass('æ‰€æœ‰ CardState user_id æ­£ç¡®', uidCheck.wrongUid === 0);
+    pass('ç™»å½•åŽ user_id=cloudUserId', uidCheck.cloudUserId !== 'none');
 
-    // ═══════════════════ PHASE 9: 本地 vs 云端 ═══════════════════
-    section('PHASE 9: 本地 vs 云端数据对比');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 9: æœ¬åœ° vs äº‘ç«¯ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 9: æœ¬åœ° vs äº‘ç«¯æ•°æ®å¯¹æ¯”');
 
     const cloudCompare = await run(page, async (key) => {
       const tok = JSON.parse(localStorage.getItem('sb-juzkonrzfyvchqxzmlpr-auth-token') || '{}');
@@ -289,40 +289,40 @@ const CARD_COUNT = 33;
       return { cloudTotal, localTotal };
     }, CLOUD_DECK_KEY);
 
-    console.log(`  云端: ${cloudCompare.cloudTotal}  本地: ${cloudCompare.localTotal}`);
-    check('card_states 数量一致', cloudCompare.cloudTotal, cloudCompare.localTotal);
+    console.log(`  äº‘ç«¯: ${cloudCompare.cloudTotal}  æœ¬åœ°: ${cloudCompare.localTotal}`);
+    check('card_states æ•°é‡ä¸€è‡´', cloudCompare.cloudTotal, cloudCompare.localTotal);
 
-    // ═══════════════════ PHASE 10: 退出登录 ═══════════════════
-    section('PHASE 10: 退出登录 — 数据保留验证');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 10: é€€å‡ºç™»å½• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 10: é€€å‡ºç™»å½• â€” æ•°æ®ä¿ç•™éªŒè¯');
 
     const uidBeforeLogout = await run(page, () => _cloudUserId);
     const { loggedOut, syncDisabled } = await helper.cloudLogout(page);
-    pass('退出后显示登录表单', loggedOut);
-    pass('退出后 _syncEnabled=false', syncDisabled);
+    pass('é€€å‡ºåŽæ˜¾ç¤ºç™»å½•è¡¨å•', loggedOut);
+    pass('é€€å‡ºåŽ _syncEnabled=false', syncDisabled);
 
-    pass('登出后云牌组保留在列表中', await run(page, (name) => {
+    pass('ç™»å‡ºåŽäº‘ç‰Œç»„ä¿ç•™åœ¨åˆ—è¡¨ä¸­', await run(page, (name) => {
       for (const c of document.querySelectorAll('.deck-card')) {
         if (c.querySelector('.deck-name')?.textContent.includes(name)) return true;
       }
       return false;
-    }, '蔬菜水果'));
+    }, 'è”¬èœæ°´æžœ'));
 
-    pass('登出后 DECKS_META 仍含云牌组', await run(page, (name) =>
-      DECKS_META.some(m => m.name === name), '蔬菜水果'));
+    pass('ç™»å‡ºåŽ DECKS_META ä»å«äº‘ç‰Œç»„', await run(page, (name) =>
+      DECKS_META.some(m => m.name === name), 'è”¬èœæ°´æžœ'));
 
     const uidAfter = await run(page, () => typeof _cloudUserId === 'string' ? _cloudUserId : 'N/A');
-    pass('登出后 cloudUserId 保留（离线数据归属）', uidAfter === uidBeforeLogout);
+    pass('ç™»å‡ºåŽ cloudUserId ä¿ç•™ï¼ˆç¦»çº¿æ•°æ®å½’å±žï¼‰', uidAfter === uidBeforeLogout);
 
-    pass('登出后 IDB 保留（不删库）', await run(page, async () => {
+    pass('ç™»å‡ºåŽ IDB ä¿ç•™ï¼ˆä¸åˆ åº“ï¼‰', await run(page, async () => {
       try { const dbs = await indexedDB.databases(); return dbs.some(d => d.name === 'yihai_srs'); } catch(e) { return false; }
     }));
 
-    // ═══════════════════ PHASE 11: 重新登录验证 ═══════════════════
-    // 合并自 _playwright_user_switch_test.js — re-login deck count >= first
-    section('PHASE 11: 重新登录验证数据从云端拉回');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 11: é‡æ–°ç™»å½•éªŒè¯ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // åˆå¹¶è‡ª _playwright_user_switch_test.js â€” re-login deck count >= first
+    section('PHASE 11: é‡æ–°ç™»å½•éªŒè¯æ•°æ®ä»Žäº‘ç«¯æ‹‰å›ž');
     await helper.closeSettings(page);
 
-    pass('重新登录成功', await helper.cloudLogin(page, TEST_EMAIL, TEST_PASSWORD));
+    pass('é‡æ–°ç™»å½•æˆåŠŸ', await helper.cloudLogin(page, TEST_EMAIL, TEST_PASSWORD));
     await helper.closeSettings(page);
 
     let secondCount = 0;
@@ -333,18 +333,18 @@ const CARD_COUNT = 33;
       if (secondCount > 0) break;
       await wait(page, 500);
     }
-    console.log(`  重新登录云牌组: ${secondCount}`);
-    pass('重新登录后有云牌组', secondCount > 0);
-    console.log(`  牌组数: ${firstCloudDeckCount} → ${secondCount}`);
-    pass('重新登录牌组≥首次', secondCount >= firstCloudDeckCount);
+    console.log(`  é‡æ–°ç™»å½•äº‘ç‰Œç»„: ${secondCount}`);
+    pass('é‡æ–°ç™»å½•åŽæœ‰äº‘ç‰Œç»„', secondCount > 0);
+    console.log(`  ç‰Œç»„æ•°: ${firstCloudDeckCount} â†’ ${secondCount}`);
+    pass('é‡æ–°ç™»å½•ç‰Œç»„â‰¥é¦–æ¬¡', secondCount >= firstCloudDeckCount);
 
-    // ═══════════════════ 结果 ═══════════════════
-    section('结果');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ç»“æžœ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('ç»“æžœ');
     const { passed, failed, errors } = helper.getCounts();
-    console.log(`  通过: ${passed}  失败: ${failed}`);
-    if (failed > 0) console.log(`  失败详情: ${errors.join(' | ')}`);
+    console.log(`  é€šè¿‡: ${passed}  å¤±è´¥: ${failed}`);
+    if (failed > 0) console.log(`  å¤±è´¥è¯¦æƒ…: ${errors.join(' | ')}`);
     const errLogs = consoleLogs.filter(l => l.includes('[error]'));
-    if (errLogs.length > 0) console.log(`  控制台错误: ${errLogs.length} 条`);
+    if (errLogs.length > 0) console.log(`  æŽ§åˆ¶å°é”™è¯¯: ${errLogs.length} æ¡`);
 
   } catch (err) {
     console.error('\nFATAL:', err.message);
