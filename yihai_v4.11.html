@@ -1409,6 +1409,17 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             <input type="range" min="3" max="20" value="8" step="1" id="srs-auto-suspend" oninput="onSrsSlider('auto_suspend_lapses',this.value,this,'次')">
             <span class="sheet-row-val" id="srs-auto-suspend-val">8次</span>
           </div>
+          <div class="sheet-row" style="justify-content:space-between">
+            <div>
+              <span class="sheet-row-lbl">学习阶段 Hard 计入连失</span>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">AD 建议开启，防止反复答 Hard 绕过失败计数</div>
+            </div>
+            <label class="stoggle">
+              <input type="checkbox" id="srs-learning-hard-lapse" onchange="saveSrsConfigKey('learning_hard_counts_lapse',this.checked)">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
         </div>
 
         <div class="sheet-section" style="padding-bottom:16px">
@@ -5750,6 +5761,9 @@ function syncSrsSettingsUI() {
   set('srs-daily-remove',          cfg.daily_remove_lapses,        '次');
   set('srs-auto-suspend',          cfg.auto_suspend_lapses,        '次');
   set('srs-warn-duration',         cfg.warn_duration_sec,          '分', 0, v => v / 60);
+
+  const lhlEl = document.getElementById('srs-learning-hard-lapse');
+  if (lhlEl) lhlEl.checked = !!cfg.learning_hard_counts_lapse;
 
   // learn_ahead_limit（文本输入框）
   const laEl = document.getElementById('srs-learn-ahead');
