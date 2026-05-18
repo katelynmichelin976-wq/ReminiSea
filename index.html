@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.11.4</title>
+<title>忆海拾光 v4.11.5</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -879,7 +879,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.11.4</span>
+        <span class="home-version">v4.11.5</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1627,10 +1627,6 @@ function todayStr() {
   return `${y}-${m}-${day}`;
 }
 // UTC 日期（与 Supabase trial_date 生成列一致，该列用 to_timestamp()::date = UTC）
-function utcTodayStr() {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
-}
 
 function addDays(dateStr, n) {
   const d = new Date(dateStr + 'T00:00:00');
@@ -1675,7 +1671,7 @@ function getCurrentUserId() {
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.11.4';
+const APP_VERSION = '4.11.5';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1752,6 +1748,7 @@ async function restoreCloudSession() {
       _cloudUserId      = data.session.user.id;
       _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
       localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+      migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
       return;
     }
 
@@ -1764,6 +1761,7 @@ async function restoreCloudSession() {
         _cloudUserEmail   = r.data.session.user.email;
         _cloudUserId      = r.data.session.user.id;
         _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
+        migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
         return;
       }
       // 区分：网络失败 vs token 真正失效
@@ -1790,6 +1788,7 @@ async function restoreCloudSession() {
       _cloudUserId      = retry.data.session.user.id;
       _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
       localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+      migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
     }
   } catch(e) {
     if (typeof supabase !== 'undefined') {
@@ -1857,8 +1856,8 @@ async function doCloudLogin() {
     localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     localStorage.setItem('yihai_has_ever_logged_in', '1');
-    // 将本设备离线记录迁移到当前登录用户（非阻塞）
-    migrateDeviceRecordsToUser(_cloudUserId);
+    // 先迁移离线记录再同步，避免 getAllCardStates 按 cloudUserId 过滤时漏掉 deviceId 记录
+    await migrateDeviceRecordsToUser(_cloudUserId);
     updateCloudTabUI();
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
@@ -2216,33 +2215,6 @@ async function cloudPullConfig() {
 }
 
 
-// 判断是否需要同步（有本地脏数据 OR 服务器有更新）
-async function checkSyncNeeded() {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return false;
-  try {
-    // 1. 本地脏数据检查
-    const db = await openSrsDb();
-    const dirtyTrials = await new Promise((res, rej) => {
-      const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
-      req.onsuccess = e => { const all = e.target.result || []; res(all.filter(t => !t.synced_at && t.deck_key)); };
-      req.onerror = e => rej(e.target.error);
-    });
-    if (dirtyTrials.length > 0) return true;
-    // 2. 检查全局同步时间戳 vs 服务器
-    const lastSyncTs = parseInt(localStorage.getItem('yihai_global_sync_ts') || '0') || 0;
-    if (!lastSyncTs) return true;  // 首次同步
-    const { count, error } = await _sb.from('sync_card_states')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', _cloudUserId)
-      .gt('updated_at', lastSyncTs);
-    if (!error && count > 0) return true;
-    // 3. 检查配置更新
-    const { data: cfgData, error: cfgErr } = await _sb.from('sync_config')
-      .select('updated_at').eq('user_id', _cloudUserId).maybeSingle();
-    if (!cfgErr && cfgData && cfgData.updated_at > lastSyncTs) return true;
-    return false;
-  } catch(e) { return true; }  // 网络/数据库错误 → 保守同步
-}
 
 // 统一同步入口（v4.10）：支持模态进度条 + 语音播报 + 不同同步范围：支持模态进度条 + 语音播报 + 不同同步范围
 async function runSync(opts) {
@@ -2529,7 +2501,7 @@ function markEventSynced(eventId) {
 }
 
 
-// syncAll 批量补传
+// 批量补传 AppEvents
 async function syncAppEvents() {
   if (!_syncEnabled || !_sb) return 0;
   var db = await openSrsDb();
@@ -2657,7 +2629,7 @@ async function getAllCardStates(deckKey) {
   });
 }
 
-// CardState 不存在时自动创建（getOrCreate）
+// Playwright test seam（_playwright_multi_user_sync_test.js 通过 page.evaluate 调用）
 async function getOrCreateCardState(deckKey, cardId) {
   let state = await getCardState(deckKey, cardId);
   if (!state) {
@@ -2791,6 +2763,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.due_ts   = 0;
       _advanceReviewMode();
     } else if (rating === 'easy') {
+      state.lapses_streak = 0;
       state.ease_factor = Math.min(3.0, state.ease_factor + 0.15);
       state.interval = Math.max(
         cfg.minimum_interval,

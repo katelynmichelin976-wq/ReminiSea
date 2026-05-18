@@ -129,6 +129,16 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.11.5 — 2026-05-18
+
+**SRS 修复 + 离线登录进度保留**
+- review `easy` 未清零 `lapses_streak`（与 `good` 行为对齐，新增 4-G 单测）
+- 离线练习后登录进度丢失：`doCloudLogin` 改为 `await migrateDeviceRecordsToUser` 后再调 `runSync`，消除竞态；`restoreCloudSession` 三个路径均补加迁移调用
+- 清除 `checkSyncNeeded()` 死代码（含 epoch/ISO 比较 bug）、`utcTodayStr()` 死代码
+- 新增 `tests/_playwright_offline_login_test.js`（10 断言）
+
+---
+
 ### v4.11.4 — 2026-05-18
 
 **死代码清理**
