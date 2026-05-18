@@ -1748,6 +1748,7 @@ async function restoreCloudSession() {
       _cloudUserId      = data.session.user.id;
       _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
       localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+      migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
       return;
     }
 
@@ -1760,6 +1761,7 @@ async function restoreCloudSession() {
         _cloudUserEmail   = r.data.session.user.email;
         _cloudUserId      = r.data.session.user.id;
         _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
+        migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
         return;
       }
       // 区分：网络失败 vs token 真正失效
@@ -1786,6 +1788,7 @@ async function restoreCloudSession() {
       _cloudUserId      = retry.data.session.user.id;
       _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
       localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+      migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
     }
   } catch(e) {
     if (typeof supabase !== 'undefined') {
@@ -1853,8 +1856,8 @@ async function doCloudLogin() {
     localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     localStorage.setItem('yihai_has_ever_logged_in', '1');
-    // 将本设备离线记录迁移到当前登录用户（非阻塞）
-    migrateDeviceRecordsToUser(_cloudUserId);
+    // 先迁移离线记录再同步，避免 getAllCardStates 按 cloudUserId 过滤时漏掉 deviceId 记录
+    await migrateDeviceRecordsToUser(_cloudUserId);
     updateCloudTabUI();
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
