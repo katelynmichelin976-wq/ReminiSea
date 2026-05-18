@@ -146,7 +146,7 @@ async function checkDevice(browser, device) {
 
 // ── 主流程 ────────────────────────────────────────────────────────
 (async () => {
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: !process.env.HEADED });
 
   for (const device of DEVICES) {
     await checkDevice(browser, device);

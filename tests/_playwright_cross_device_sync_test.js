@@ -51,7 +51,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
   if (!TEST_PASSWORD) { console.error('FATAL: 请设置 TEST_PASSWORD 环境变量'); process.exit(1); }
 
   const tStart = ts();
-  const browser = await chromium.launch({ headless: true }); // 无头模式提速
+  const browser = await chromium.launch({ headless: !process.env.HEADED });
   let pageA, pageB, ctxB;
 
   try {

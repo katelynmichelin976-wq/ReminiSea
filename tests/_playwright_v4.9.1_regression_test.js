@@ -60,7 +60,7 @@ async function createTestYhspack() {
 (async () => {
   await createTestYhspack();
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
   try {

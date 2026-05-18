@@ -23,7 +23,7 @@ const CARD_COUNT = 33;
 (async () => {
   if (!TEST_PASSWORD) { console.error('FATAL: 请设置 TEST_PASSWORD 环境变量'); process.exit(1); }
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on('console', msg => { /* ignore */ });
   page.on('pageerror', err => console.log(`  [PAGE ERROR] ${err.message}`));

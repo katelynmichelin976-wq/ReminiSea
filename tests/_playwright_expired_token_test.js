@@ -19,7 +19,7 @@ const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
 
 (async () => {
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 
   try {

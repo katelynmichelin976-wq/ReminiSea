@@ -24,7 +24,7 @@ const FAKE_CARD_ID  = 'card_offline_001';
 (async () => {
   if (!TEST_PASSWORD) { console.error('FATAL: 请设置 TEST_PASSWORD 环境变量'); process.exit(1); }
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on('pageerror', err => console.log(`  [PAGE ERROR] ${err.message}`));
 

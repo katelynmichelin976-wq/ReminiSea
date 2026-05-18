@@ -29,7 +29,7 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
 (async () => {
   if (!TEST_PASSWORD) { console.error('FATAL: è¯·è®¾ç½® TEST_PASSWORD çŽ¯å¢ƒå˜é‡'); process.exit(1); }
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
   // æ”¶é›†æŽ§åˆ¶å°æ—¥å¿—ä¾¿äºŽè¯Šæ–­
