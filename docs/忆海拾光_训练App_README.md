@@ -129,6 +129,15 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.11.6 — 2026-05-18
+
+**安全 + SRS 面板**
+- 外部脚本加 SRI integrity hash：Supabase SDK 锁定 @2.105.4，JSZip 动态加载同步加 integrity
+- SRS「失败保护」面板新增 `learning_hard_counts_lapse` 开关（AD 建议开启）
+- Playwright 回归测试全面无头化，HEADED=1 可恢复有头模式；单机版测试耗时 3 分钟 → 33 秒
+
+---
+
 ### v4.11.5 — 2026-05-18
 
 **SRS 修复 + 离线登录进度保留**
