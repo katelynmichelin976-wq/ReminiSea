@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="忆海拾光">
+<title>忆海拾光 · 设计稿 v5 · 老人版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════════════════
+   设计令牌 — 朱砂·温故 v4
+   主色：朱砂红  辅色：翡翠绿  字体：Noto Serif SC
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg:    #f7f3ec;
+  --bg2:   #ede8de;
+  --surf:  #fefcf7;
+  --surf2: #f2ede2;
+
+  --ink:   #1a1208;
+  --ink2:  #5a4832;
+  --ink3:  #7a6048;
+  --ink4:  #c4b09a;
+
+  --red:    #c23b3b;
+  --red-dk: #9e2e2e;
+  --red-lt: #fdf1ef;
+  --red-bd: rgba(194,59,59,0.22);
+  --red-sh: 0 6px 22px rgba(194,59,59,0.32);
+
+  --jade:    #2a7a58;
+  --jade-dk: #1e5c40;
+  --jade-lt: #eaf5f0;
+
+  --amber:    #b07820;
+  --amber-lt: #fdf6e3;
+
+  --bd:      rgba(90,72,50,0.14);
+  --bd-soft: rgba(90,72,50,0.07);
+  --sh:    0 2px 24px rgba(26,18,8,0.07), 0 1px 4px rgba(26,18,8,0.04);
+  --sh-sm: 0 1px 8px rgba(26,18,8,0.05);
+
+  --r:   20px;
+  --rsm: 14px;
+  --rxs:  8px;
+
+  --fd: 'Ma Shan Zheng', 'Noto Serif SC', serif;
+  --fs: 'Noto Serif SC', 'PingFang SC', serif;
+
+  --cmax: 520px;
+  --pad:  20px;
+  --safe-top:    env(safe-area-inset-top, 44px);
+  --safe-bottom: env(safe-area-inset-bottom, 34px);
+}
+
+@media (min-width: 600px) {
+  :root { --pad: 28px; --cmax: 100%; }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none; user-select: none;
+}
+input, textarea { -webkit-user-select: text; user-select: text; }
+button, [role="button"] { touch-action: manipulation; }
+img { -webkit-user-drag: none; pointer-events: none; }
+
+html { height: -webkit-fill-available; background: var(--bg); }
+html, body { overflow: hidden; }
+body {
+  margin: 0; width: 100%;
+  height: 100dvh; height: -webkit-fill-available;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--fs);
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+/* 纸纹叠层 */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.030'/%3E%3C/svg%3E");
+  background-size: 300px;
+  pointer-events: none; z-index: 9000;
+}
+
+/* ═══ 屏幕切换 ═══ */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  opacity: 0; pointer-events: none;
+  transform: translateX(24px);
+  transition: opacity 0.28s cubic-bezier(0.4,0,0.2,1),
+              transform 0.28s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+.screen.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+
+/* ═══ 演示导航 ═══ */
+#demo-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: var(--cmax);
+  background: rgba(20,14,8,0.90);
+  backdrop-filter: blur(14px) saturate(1.5);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  z-index: 9999; display: flex;
+  padding: 9px 10px calc(9px + env(safe-area-inset-bottom, 14px));
+  gap: 5px;
+}
+.d-btn {
+  flex: 1; padding: 8px 4px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px;
+  color: rgba(255,255,255,0.5);
+  font-family: var(--fs); font-size: 12px;
+  cursor: pointer; text-align: center; transition: background-color 0.15s, transform 0.15s, border-color 0.15s;
+}
+.d-btn:active { transform: scale(0.92); }
+.d-btn.on { background: var(--red); border-color: var(--red); color: white; font-weight: 700; }
+
+/* ═══ 通用组件 ═══ */
+.btn-back {
+  width: 44px; height: 44px; padding: 0;
+  border: 1.5px solid var(--bd); border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink2);
+  cursor: pointer; box-shadow: var(--sh-sm);
+  transition: background-color 0.15s, transform 0.15s; flex-shrink: 0;
+}
+.btn-back svg { width: 20px; height: 20px; }
+.btn-back:active { transform: scale(0.96); background: var(--surf2); }
+
+
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--bd) 15%, var(--bd) 85%, transparent);
+  margin: 0 var(--pad); flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   首页 — 老人版 v4：相册列表（纯文字）+ 底部双按钮
+   ═══════════════════════════════════════════════ */
+.home-topbar {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; align-items: center;
+  padding: calc(var(--safe-top) + 10px) var(--pad) 12px;
+  flex-shrink: 0;
+}
+.home-logo {
+  flex: 1;
+  font-family: var(--fd);
+  font-size: 36px; color: var(--ink);
+  letter-spacing: 3px; line-height: 1;
+}
+.home-version {
+  font-family: var(--fs);
+  font-size: 12px; font-weight: 500;
+  color: var(--ink4); letter-spacing: 0.5px;
+}
+
+/* 可滚动区域 */
+.home-scroll {
+  flex: 1; overflow: hidden;
+  padding-bottom: 12px;
+}
+.home-scroll::-webkit-scrollbar { display: none; }
+
+/* ─── 相册列表 ─── */
+.album-section-lbl {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 14px var(--pad) 8px;
+  font-size: 13px; font-weight: 700; color: var(--ink4);
+  letter-spacing: 2.5px;
+  flex-shrink: 0;
+}
+
+.album-list {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+}
+
+.album-row {
+  display: flex; align-items: center;
+  padding: 14px var(--pad);
+  padding-left: calc(var(--pad) + 13px);
+  border-bottom: 1px solid var(--bd-soft);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+  gap: 14px;
+  animation: slideUpIn 0.35s ease both;
+}
+.album-thumb {
+  width: 54px; height: 54px; flex-shrink: 0;
+  border-radius: var(--rxs);
+  background: var(--surf2);
+  border: 1px solid var(--bd-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px; line-height: 1;
+  transition: transform 0.15s;
+}
+.album-row.selected .album-thumb { background: var(--red-lt); border-color: var(--red-bd); }
+.album-row:active .album-thumb { transform: scale(0.94); }
+.album-row:nth-child(1) { animation-delay: 0.04s; }
+.album-row:nth-child(2) { animation-delay: 0.10s; }
+.album-row:nth-child(3) { animation-delay: 0.16s; }
+.album-row:last-child { border-bottom: none; }
+.album-row:active { background: var(--surf2); }
+
+@keyframes slideUpIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 左侧选中指示条 */
+.album-row::before {
+  content: '';
+  position: absolute; left: var(--pad);
+  top: 50%; transform: translateY(-50%);
+  width: 3px; height: 0;
+  background: var(--red);
+  border-radius: 2px;
+  transition: height 0.22s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.22s;
+  opacity: 0;
+}
+.album-row.selected {
+  background: var(--red-lt);
+}
+.album-row.selected::before {
+  height: 44px;
+  opacity: 1;
+}
+
+.album-info { flex: 1; }
+.album-name {
+  font-size: 20px; font-weight: 600; color: var(--ink);
+  letter-spacing: 0.5px;
+  transition: color 0.15s;
+}
+.album-row.selected .album-name { color: var(--red-dk); }
+
+.album-count {
+  font-size: 14px; color: var(--ink4);
+  font-weight: 500; letter-spacing: 0.5px;
+  flex-shrink: 0; padding-left: 12px;
+}
+
+/* ─── 首页底部 Tab Bar ─── */
+.home-tabbar {
+  flex-shrink: 0;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--surf);
+  border-top: 1px solid var(--bd-soft);
+  box-shadow: 0 -2px 20px rgba(26,18,8,0.06);
+  display: flex; align-items: flex-end;
+  overflow: visible; position: relative; z-index: 10;
+}
+.tab-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  gap: 4px; padding: 10px 4px 12px;
+  background: none; border: none; cursor: pointer;
+  color: var(--ink4); font-family: var(--fs);
+  font-size: 11px; font-weight: 500; letter-spacing: 0.5px;
+  transition: color 0.2s; position: relative;
+}
+.tab-item svg { width: 24px; height: 24px; transition: color 0.2s, opacity 0.2s; }
+.tab-item.active { color: var(--red); }
+.tab-item.active::before {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 32px; height: 3px; border-radius: 0 0 4px 4px;
+  background: var(--red);
+}
+.tab-item:not(.action):active { color: var(--ink2); }
+
+/* 中央悬浮主操作 */
+.tab-item.action { flex: 1.1; gap: 5px; padding-bottom: 12px; }
+.tab-fab {
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--red);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--red-sh), 0 0 0 4px var(--surf);
+  margin-top: -22px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.tab-fab svg { width: 22px; height: 22px; }
+.tab-item.action > span { color: var(--ink2); font-weight: 600; font-size: 11px; }
+.tab-item.action:active .tab-fab { transform: scale(0.92); box-shadow: none; }
+
+/* 照护者入口 */
+.caregiver-row {
+  width: 100%; max-width: var(--cmax); margin: 16px auto 0;
+  padding: 0 var(--pad); text-align: center;
+}
+.caregiver-btn {
+  background: none; border: none;
+  color: var(--ink4); font-family: var(--fs);
+  font-size: 14px; letter-spacing: 2px;
+  cursor: pointer; padding: 12px 20px;
+}
+
+
+/* ═══════════════════════════════════════════════
+   浏览屏 — 宝丽来相册（老人友好：大字，大按钮）
+   ═══════════════════════════════════════════════ */
+.browse-header { flex-shrink: 0; }
+.browse-topbar {
+  padding: calc(var(--safe-top) + 12px) var(--pad) 8px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.browse-topbar-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.browse-album-name {
+  margin-left: auto;
+  font-size: 15px; color: var(--ink3);
+  font-weight: 500; letter-spacing: 0.5px;
+}
+.browse-prog-track {
+  height: 3px; background: var(--bd-soft);
+  border-radius: 2px; overflow: hidden; flex-shrink: 0;
+}
+.browse-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), #e05555);
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.browse-body {
+  flex: 1; overflow: hidden;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding: 4px var(--pad) 0;
+}
+.photo-wrap { width: 100%; flex-shrink: 0; }
+
+.photo-img {
+  aspect-ratio: 1; width: 100%;
+  background: var(--surf);
+  border-radius: var(--rsm);
+  border: 1px solid var(--bd-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(120px, 42vw, 210px);
+  overflow: hidden; position: relative;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07), 0 8px 32px rgba(0,0,0,0.09);
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+.photo-img::after {
+  content: ''; position: absolute; inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(90,72,50,0.06), inset 0 2px 8px rgba(0,0,0,0.04);
+  border-radius: var(--rsm); pointer-events: none;
+}
+.photo-caption {
+  padding: 14px 0 2px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.photo-name {
+  font-family: var(--fd);
+  font-size: 26px; color: var(--ink);
+  letter-spacing: 5px; line-height: 1; text-align: center;
+}
+.photo-pinyin {
+  font-size: 13px; color: var(--ink3);
+  letter-spacing: 4px; margin-top: 2px; text-align: center;
+}
+
+.browse-controls {
+  flex-shrink: 0;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 10px var(--pad) calc(16px + env(safe-area-inset-bottom, 0px));
+}
+.browse-nav-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.btn-nav {
+  flex: 1; height: 64px;
+  border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fs); font-size: 17px; font-weight: 600;
+  color: var(--ink2); letter-spacing: 1px;
+  cursor: pointer; box-shadow: var(--sh-sm);
+  transition: background-color 0.15s, transform 0.15s;
+}
+.btn-nav:active { transform: scale(0.97); background: var(--surf2); }
+.btn-nav:disabled { opacity: 0.3; pointer-events: none; }
+
+.btn-nav-next {
+  flex: 2; height: 64px;
+  background: var(--red); color: white; border: none;
+  border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 17px; font-weight: 700;
+  cursor: pointer; letter-spacing: 2px;
+  box-shadow: var(--red-sh); transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-nav-next:active { transform: scale(0.97); background: var(--red-dk); box-shadow: none; }
+
+
+/* ═══════════════════════════════════════════════
+   练习屏 — 全宽图像 + 2×2 大选项 + 温暖反馈
+   ═══════════════════════════════════════════════ */
+.quiz-header { flex-shrink: 0; }
+.quiz-topbar {
+  padding: calc(var(--safe-top) + 12px) var(--pad) 8px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.quiz-topbar-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.quiz-counter {
+  font-family: var(--fs);
+  font-size: 18px; font-weight: 700; color: var(--ink2);
+  margin-left: auto;
+}
+.quiz-prog-track {
+  height: 3px; background: var(--bd-soft);
+  border-radius: 2px; overflow: hidden; flex-shrink: 0;
+}
+.quiz-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), #e05555);
+  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.quiz-body {
+  flex: 1; overflow: hidden;
+  padding: 8px var(--pad) calc(16px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.quiz-card {
+  flex-shrink: 0;
+  width: 100%; aspect-ratio: 1;
+  background: var(--surf);
+  border: 1px solid var(--bd-soft); border-radius: var(--rsm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(120px, 42vw, 210px);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07), 0 8px 32px rgba(0,0,0,0.09);
+  position: relative; overflow: hidden;
+  transition: width 0.38s cubic-bezier(0.4,0,0.2,1),
+              font-size 0.38s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.18s;
+}
+
+.quiz-card::after {
+  content: ''; position: absolute; inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(90,72,50,0.06), inset 0 2px 8px rgba(0,0,0,0.04);
+  border-radius: var(--rsm); pointer-events: none;
+}
+
+.quiz-question {
+  text-align: center;
+  font-size: 22px; font-weight: 500;
+  color: var(--ink2); letter-spacing: 2px;
+  flex-shrink: 0; transition: opacity 0.2s;
+}
+.quiz-question.hidden { display: none; }
+
+
+/* 选项入场 + 忆海流光 */
+@keyframes optEntry {
+  0%   { transform: scale(0.92); opacity: 0.5; }
+  65%  { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes optGlow {
+  0%   { box-shadow: var(--sh-sm); border-color: var(--bd); }
+  12%  { box-shadow: var(--sh-sm), 0 0 0 2px rgba(176,120,32,0.28), 0 0 22px rgba(176,120,32,0.48); border-color: rgba(176,120,32,0.62); }
+  25%  { box-shadow: var(--sh-sm); border-color: var(--bd); }
+  100% { box-shadow: var(--sh-sm); border-color: var(--bd); }
+}
+/* 顺时针：南瓜(2)→红薯(3)→土豆(5)→胡萝卜(4)，每格 1.6s，周期 6.4s，linear 保证准时熄灭 */
+.opts.animated .opt {
+  animation: optEntry 0.42s cubic-bezier(0.22,0.61,0.36,1) both,
+             optGlow  6.4s linear 0.5s infinite;
+}
+.opts.animated .opt:nth-child(1) { animation-delay: 0.04s, 0.50s; }
+.opts.animated .opt:nth-child(2) { animation-delay: 0.11s, 2.10s; }
+.opts.animated .opt:nth-child(4) { animation-delay: 0.25s, 3.70s; }
+.opts.animated .opt:nth-child(3) { animation-delay: 0.18s, 5.30s; }
+
+.opts {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.opts.collapsed { display: none; }
+
+.opt {
+  background: var(--surf);
+  border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  padding: clamp(12px, 2.2vh, 16px) 10px;
+  font-family: var(--fs);
+  font-size: clamp(20px, 5vw, 28px);
+  font-weight: 600; color: var(--ink);
+  cursor: pointer; text-align: center;
+  transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  box-shadow: var(--sh-sm);
+  line-height: 1.25; min-height: 60px;
+  display: flex; align-items: center; justify-content: center;
+}
+.opt:active:not(.correct):not(.wrong):not(.dim) {
+  transform: scale(0.97); background: var(--surf2);
+}
+.opt.correct { background: var(--jade-lt); border-color: var(--jade); color: var(--jade); }
+.opt.wrong   { background: var(--red-lt);  border-color: var(--red);  color: var(--red); }
+.opt.dim     { opacity: 0.28; pointer-events: none; }
+
+.answer-zone { display: none; flex-direction: column; gap: 10px; }
+.answer-zone.open { display: flex; }
+
+.answer-panel {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft); border-radius: var(--r);
+  padding: 16px 20px; box-shadow: var(--sh); flex-shrink: 0;
+}
+.answer-word-row {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 12px;
+}
+.answer-word {
+  flex: 1;
+  font-size: clamp(22px, 5.5vw, 32px);
+  font-weight: 700; color: var(--ink);
+  letter-spacing: 5px;
+}
+.btn-tts {
+  width: 48px; height: 48px; flex-shrink: 0;
+  border: 1.5px solid var(--bd); border-radius: 50%;
+  background: var(--surf2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: var(--sh-sm);
+  color: var(--ink2); transition: background-color 0.15s, transform 0.15s;
+}
+.btn-tts:active { transform: scale(0.90); background: var(--surf); }
+.btn-tts svg { width: 22px; height: 22px; }
+.answer-divider { height: 1px; background: var(--bd-soft); margin-bottom: 10px; }
+.answer-desc { font-size: 18px; color: var(--ink2); line-height: 1.85; }
+
+.next-btn {
+  flex-shrink: 0;
+  background: var(--red); color: white; border: none;
+  border-radius: var(--rsm);
+  padding: clamp(16px, 2.8vh, 20px);
+  font-family: var(--fs); font-size: 20px; font-weight: 700;
+  cursor: pointer; letter-spacing: 3px;
+  box-shadow: var(--red-sh);
+  transition: transform 0.18s, background 0.18s;
+}
+.next-btn:active { transform: scale(0.97); background: var(--red-dk); }
+
+/* ═══════════════════════════════════════════════
+   完成屏
+   ═══════════════════════════════════════════════ */
+.finish-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: calc(var(--safe-top) + 20px) var(--pad) calc(80px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+}
+.finish-anim {
+  font-size: 88px;
+  animation: popIn 0.65s cubic-bezier(0.22,0.61,0.36,1) both;
+  margin-bottom: 18px;
+}
+@keyframes popIn {
+  0%  { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+  65% { transform: scale(1.14) rotate(4deg); }
+  100%{ transform: scale(1) rotate(0); opacity: 1; }
+}
+.finish-title {
+  font-family: var(--fd);
+  font-size: 52px; letter-spacing: 8px; color: var(--ink);
+  margin-bottom: 10px;
+}
+.finish-family {
+  font-size: 20px; color: var(--amber); font-weight: 600;
+  letter-spacing: 1px; margin-bottom: 6px; line-height: 1.6;
+}
+.finish-sub { font-size: 16px; color: var(--ink3); letter-spacing: 2px; margin-bottom: 28px; }
+
+.red-line {
+  width: 64px; height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+  margin: 0 auto 28px;
+}
+
+.finish-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; width: 100%; margin-bottom: 32px;
+}
+.fc {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft); border-radius: var(--rsm);
+  padding: 18px 8px; box-shadow: var(--sh-sm);
+}
+.fc-num {
+  font-family: var(--fs);
+  font-size: 38px; font-weight: 700;
+  line-height: 1; margin-bottom: 6px;
+}
+.fc-lbl { font-size: 14px; color: var(--ink3); font-weight: 600; letter-spacing: 1.5px; }
+.fc.good .fc-num { color: var(--jade); }
+.fc.bad  .fc-num { color: var(--red); }
+.fc.neu  .fc-num { color: var(--amber); }
+
+.btn-red-lg {
+  width: 100%; padding: 20px;
+  background: var(--red); color: white; border: none;
+  border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 20px; font-weight: 700;
+  cursor: pointer; letter-spacing: 4px;
+  box-shadow: var(--red-sh); transition: background-color 0.18s, transform 0.18s, box-shadow 0.18s;
+}
+.btn-red-lg:active { transform: scale(0.97); background: var(--red-dk); }
+.btn-ghost {
+  width: 100%; padding: 18px;
+  background: none; color: var(--ink2);
+  border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 17px; font-weight: 600;
+  cursor: pointer; letter-spacing: 1px; transition: background-color 0.18s, transform 0.18s; margin-top: 12px;
+}
+.btn-ghost:active { background: var(--surf2); }
+
+/* ═══ 无障碍 ═══ */
+:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+[hidden] { display: none !important; }
+
+/* ═══ 主题变量覆盖 ═══ */
+[data-theme="jade"] {
+  --bg: #f0f7f3; --bg2: #e2f0e8; --surf: #f8fcfa; --surf2: #eaf4ee;
+  --ink: #0d2018; --ink2: #2c5040; --ink3: #4a7060; --ink4: #9abfb0;
+  --red: #1e7a52; --red-dk: #155e3e; --red-lt: #eaf5f0;
+  --red-bd: rgba(30,122,82,0.22); --red-sh: 0 6px 22px rgba(30,122,82,0.32);
+}
+[data-theme="amber"] {
+  --bg: #fdf5ec; --bg2: #f5e8d5; --surf: #fffbf5; --surf2: #f8eedd;
+  --ink: #1a0f05; --ink2: #5c3a18; --ink3: #8c6030; --ink4: #c8a070;
+  --red: #c8600a; --red-dk: #a04808; --red-lt: #fff4e8;
+  --red-bd: rgba(200,96,10,0.22); --red-sh: 0 6px 22px rgba(200,96,10,0.32);
+}
+[data-theme="dark"] {
+  --bg: #1c1c28; --bg2: #141420; --surf: #252535; --surf2: #2e2e42;
+  --ink: #ede8de; --ink2: #c8c0ae; --ink3: #9a9080; --ink4: #5e5850;
+  --bd: rgba(200,192,174,0.14); --bd-soft: rgba(200,192,174,0.07);
+  --sh: 0 2px 24px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.2);
+  --sh-sm: 0 1px 8px rgba(0,0,0,0.2);
+  --red: #e8a030; --red-dk: #c88020; --red-lt: rgba(232,160,48,0.12);
+  --red-bd: rgba(232,160,48,0.22); --red-sh: 0 6px 22px rgba(232,160,48,0.32);
+}
+
+/* ═══ 我的 屏幕 ═══ */
+.mine-topbar {
+  padding: calc(var(--safe-top) + 10px) var(--pad) 12px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  flex-shrink: 0;
+}
+.mine-title {
+  font-family: var(--fd);
+  font-size: 36px; color: var(--ink); letter-spacing: 4px; line-height: 1;
+}
+.mine-scroll { flex: 1; overflow: hidden; }
+.mine-section-lbl {
+  padding: 20px var(--pad) 10px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  font-size: 13px; font-weight: 700; color: var(--ink4); letter-spacing: 2.5px;
+}
+
+/* ─── 主题卡片 ─── */
+.theme-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; padding: 0 var(--pad);
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+}
+.theme-card {
+  background: var(--surf); border: 2px solid var(--bd);
+  border-radius: var(--r); padding: 14px 14px 12px;
+  cursor: pointer; text-align: left; position: relative;
+  transition: border-color 0.2s, background-color 0.2s;
+  touch-action: manipulation;
+}
+.theme-card.active { border-color: var(--red); background: var(--red-lt); }
+.theme-prev {
+  height: 52px; border-radius: 10px; margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.theme-prev-btn { width: 58%; height: 24px; border-radius: 12px; }
+.tp-default { background: #f7f3ec; }
+.tp-default .theme-prev-btn { background: #c23b3b; }
+.tp-jade    { background: #f0f7f3; }
+.tp-jade    .theme-prev-btn { background: #1e7a52; }
+.tp-amber   { background: #fdf5ec; }
+.tp-amber   .theme-prev-btn { background: #c8600a; }
+.tp-dark    { background: #1c1c28; border-color: rgba(255,255,255,0.08); }
+.tp-dark    .theme-prev-btn { background: #e8a030; }
+.theme-name {
+  font-family: var(--fs); font-size: 14px; font-weight: 600;
+  color: var(--ink); letter-spacing: 1px;
+}
+.theme-check {
+  position: absolute; top: 10px; right: 10px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--red); color: white;
+  font-size: 12px; font-weight: 700;
+  display: none; align-items: center; justify-content: center;
+}
+.theme-card.active .theme-check { display: flex; }
+
+/* ─── 我的·列表项 ─── */
+.mine-list {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 0 var(--pad);
+}
+.mine-list-item {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 18px 0; background: none; border: none;
+  border-bottom: 1px solid var(--bd-soft);
+  font-family: var(--fs); font-size: 17px; font-weight: 500;
+  color: var(--ink2); cursor: pointer; touch-action: manipulation;
+  transition: opacity 0.15s;
+}
+.mine-list-item:active { opacity: 0.5; }
+.mine-list-item svg { margin-left: auto; color: var(--ink4); flex-shrink: 0; }
+
+</style>
+</head>
+<body>
+
+<!-- ╔═══════════════════╗
+     ║       首 页       ║
+     ╚═══════════════════╝ -->
+<div id="screen-home" class="screen active">
+
+  <div class="home-topbar">
+    <div class="home-logo">忆海拾光</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 相册列表（纯文字，点击选中） -->
+  <div class="home-scroll">
+    <div class="album-section-lbl">我的相册</div>
+
+    <div class="album-list" id="album-list">
+
+      <div class="album-row selected" onclick="openAlbum(this)" role="button">
+        <div class="album-thumb">🥦</div>
+        <div class="album-info">
+          <div class="album-name">蔬菜水果相册</div>
+        </div>
+        <div class="album-count">20 张</div>
+      </div>
+
+      <div class="album-row" onclick="openAlbum(this)" role="button">
+        <div class="album-thumb">🏠</div>
+        <div class="album-info">
+          <div class="album-name">日常生活用品</div>
+        </div>
+        <div class="album-count">32 张</div>
+      </div>
+
+      <div class="album-row" onclick="openAlbum(this)" role="button">
+        <div class="album-thumb">👨‍👩‍👧</div>
+        <div class="album-info">
+          <div class="album-name">家庭成员称谓</div>
+        </div>
+        <div class="album-count">24 张</div>
+      </div>
+
+    </div>
+
+    <div class="caregiver-row">
+      <button class="caregiver-btn" onclick="openSettings()">照护者模式 ···</button>
+    </div>
+  </div>
+
+  <div class="home-tabbar">
+
+    <!-- 首页 -->
+    <button class="tab-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/>
+        <path d="M9 21V13h6v8"/>
+      </svg>
+      <span>首 页</span>
+    </button>
+
+    <!-- 开始练习 — FAB 悬浮 -->
+    <button class="tab-item action" onclick="showScreen('screen-quiz')">
+      <div class="tab-fab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="6 3 20 12 6 21 6 3"/>
+        </svg>
+      </div>
+      <span>开始练习</span>
+    </button>
+
+    <!-- 我的 -->
+    <button class="tab-item" onclick="showScreen('screen-mine')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/>
+      </svg>
+      <span>我 的</span>
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════╗
+     ║      浏 览 屏     ║
+     ╚═══════════════════╝ -->
+<div id="screen-browse" class="screen">
+
+  <div class="browse-header">
+    <div class="browse-topbar">
+      <div class="browse-topbar-row">
+        <button class="btn-back" onclick="showScreen('screen-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div class="browse-album-name" id="browse-album-name">蔬菜水果相册</div>
+      </div>
+      <div class="browse-prog-track">
+        <div class="browse-prog-fill" id="browse-prog-fill" style="width:15%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="browse-body">
+    <div class="photo-wrap">
+      <div class="photo-img" id="photo-img">🍎</div>
+    </div>
+    <div class="answer-panel" style="margin-top:10px; width:100%; flex-shrink:0">
+      <div class="answer-word-row">
+        <div class="answer-word" id="photo-name">苹 果</div>
+        <button class="btn-tts" onclick="browseTTS()" aria-label="朗读">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+        </button>
+      </div>
+      <div class="answer-divider"></div>
+      <div class="answer-desc" id="photo-desc">蔷薇科植物，果肉甜脆多汁，富含维生素 C 与膳食纤维，是常见水果。</div>
+    </div>
+  </div>
+
+  <div class="browse-controls">
+    <div class="browse-nav-row">
+      <button class="btn-nav" id="browse-prev" onclick="browseNav(-1)">上一张</button>
+      <button class="btn-nav-next" id="browse-next" onclick="browseNav(1)">下一张</button>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════╗
+     ║      练 习 屏     ║
+     ╚═══════════════════╝ -->
+<div id="screen-quiz" class="screen">
+
+  <div class="quiz-header">
+    <div class="quiz-topbar">
+      <div class="quiz-topbar-row">
+        <button class="btn-back" onclick="showScreen('screen-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div class="quiz-counter" id="quiz-counter">还有 3 张</div>
+      </div>
+      <div class="quiz-prog-track">
+        <div class="quiz-prog-fill" id="quiz-prog" style="width:30%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz-body">
+    <div class="quiz-card" id="quiz-card">🥕</div>
+    <div class="quiz-question" id="quiz-question">这是什么？</div>
+
+    <div class="opts animated" id="opts-zone">
+      <div class="opt" onclick="pickOpt(this)" role="button" tabindex="0" data-correct="false">南 瓜</div>
+      <div class="opt" onclick="pickOpt(this)" role="button" tabindex="0" data-correct="false">红 薯</div>
+      <div class="opt" onclick="pickOpt(this)" role="button" tabindex="0" data-correct="true">胡萝卜</div>
+      <div class="opt" onclick="pickOpt(this)" role="button" tabindex="0" data-correct="false">土 豆</div>
+    </div>
+
+    <div class="answer-zone" id="answer-zone">
+      <div class="answer-panel">
+        <div class="answer-word-row">
+          <div class="answer-word" id="ans-word">胡 萝 卜</div>
+          <button class="btn-tts" onclick="doTTS()" aria-label="朗读">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+          </button>
+        </div>
+        <div class="answer-divider"></div>
+        <div class="answer-desc" id="ans-desc">伞形科植物，根肉质鲜橙，富含胡萝卜素与维生素 A，有益眼睛，也是家常蔬菜。</div>
+      </div>
+      <button class="next-btn" onclick="quizNext()">继 续 →</button>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════╗
+     ║      完 成 屏     ║
+     ╚═══════════════════╝ -->
+<div id="screen-finish" class="screen">
+  <div class="finish-body">
+    <div class="finish-anim">🌟</div>
+    <div class="finish-title">太棒了！</div>
+    <div class="finish-family">家人都为您感到骄傲</div>
+    <div class="finish-sub">今天的练习完成了</div>
+    <div class="red-line"></div>
+    <div class="finish-grid">
+      <div class="fc good"><div class="fc-num">17</div><div class="fc-lbl">记起了</div></div>
+      <div class="fc bad"> <div class="fc-num">3</div> <div class="fc-lbl">还在想</div></div>
+      <div class="fc neu"> <div class="fc-num">85%</div><div class="fc-lbl">记忆率</div></div>
+    </div>
+    <button class="btn-red-lg" onclick="showScreen('screen-browse')">继续翻相册</button>
+    <button class="btn-ghost"  onclick="showScreen('screen-home')">回到首页</button>
+  </div>
+</div>
+
+
+<!-- ╔═══════════════════╗
+     ║      我 的 屏     ║
+     ╚═══════════════════╝ -->
+<div id="screen-mine" class="screen">
+
+  <div class="mine-topbar">
+    <div class="mine-title">我 的</div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="mine-scroll">
+
+    <div class="mine-section-lbl">界面主题</div>
+    <div class="theme-grid">
+
+      <button class="theme-card active" data-theme="default" onclick="setTheme(this)">
+        <div class="theme-prev tp-default"><div class="theme-prev-btn"></div></div>
+        <div class="theme-name">朱砂·温故</div>
+        <div class="theme-check">✓</div>
+      </button>
+
+      <button class="theme-card" data-theme="jade" onclick="setTheme(this)">
+        <div class="theme-prev tp-jade"><div class="theme-prev-btn"></div></div>
+        <div class="theme-name">翡翠·清雅</div>
+        <div class="theme-check">✓</div>
+      </button>
+
+      <button class="theme-card" data-theme="amber" onclick="setTheme(this)">
+        <div class="theme-prev tp-amber"><div class="theme-prev-btn"></div></div>
+        <div class="theme-name">夕阳·暖橙</div>
+        <div class="theme-check">✓</div>
+      </button>
+
+      <button class="theme-card" data-theme="dark" onclick="setTheme(this)">
+        <div class="theme-prev tp-dark"><div class="theme-prev-btn"></div></div>
+        <div class="theme-name">深夜·护眼</div>
+        <div class="theme-check">✓</div>
+      </button>
+
+    </div>
+
+    <div class="mine-section-lbl" style="margin-top:8px">照护者</div>
+    <div class="mine-list">
+      <button class="mine-list-item" onclick="openSettings()">
+        <span>照护者模式</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- 底部 tab bar（我的激活） -->
+  <div class="home-tabbar">
+    <button class="tab-item" onclick="showScreen('screen-home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/>
+        <path d="M9 21V13h6v8"/>
+      </svg>
+      <span>首 页</span>
+    </button>
+    <button class="tab-item action" onclick="showScreen('screen-quiz')">
+      <div class="tab-fab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="6 3 20 12 6 21 6 3"/>
+        </svg>
+      </div>
+      <span>开始练习</span>
+    </button>
+    <button class="tab-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/>
+      </svg>
+      <span>我 的</span>
+    </button>
+  </div>
+
+</div>
+
+
+<!-- 演示导航条 -->
+<div id="demo-nav" style="display:none">
+  <button class="d-btn on" onclick="nav('screen-home',this)">首页</button>
+  <button class="d-btn"    onclick="nav('screen-browse',this)">翻阅</button>
+  <button class="d-btn"    onclick="nav('screen-quiz',this)">练习</button>
+  <button class="d-btn"    onclick="nav('screen-finish',this)">完成</button>
+</div>
+
+
+<script>
+/* ─── 屏幕切换 ─── */
+const SCREEN_IDX = {
+  'screen-home': 0, 'screen-browse': 1, 'screen-quiz': 2, 'screen-finish': 3, 'screen-mine': 4
+};
+const INNER_SCREENS = new Set(['screen-home', 'screen-browse', 'screen-quiz', 'screen-mine']);
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const btns = document.querySelectorAll('.d-btn');
+  btns.forEach((b, i) => b.classList.toggle('on', i === SCREEN_IDX[id]));
+  document.getElementById('demo-nav').style.display = INNER_SCREENS.has(id) ? 'none' : 'flex';
+  if (id === 'screen-quiz') startQuizHint();
+}
+function nav(id) { showScreen(id); }
+function openSettings() { alert('照护者模式（此处打开设置面板）'); }
+
+/* ─── 主题切换 ─── */
+function setTheme(card) {
+  const theme = card.dataset.theme;
+  if (theme === 'default') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+  document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+}
+
+/* ─── 点击相册直接进入浏览 ─── */
+function openAlbum(row) {
+  document.getElementById('album-list').querySelectorAll('.album-row').forEach(r => r.classList.remove('selected'));
+  row.classList.add('selected');
+  showScreen('screen-browse');
+}
+
+/* ─── 浏览屏 ─── */
+const CARDS = [
+  { emoji: '🍎', name: '苹 果',  desc: '蔷薇科植物，果肉甜脆多汁，富含维生素 C 与膳食纤维，是常见水果。' },
+  { emoji: '🥕', name: '胡萝卜', desc: '伞形科植物，根肉质鲜橙，富含胡萝卜素与维生素 A，有益眼睛健康。' },
+  { emoji: '🥦', name: '西兰花', desc: '十字花科植物，花蕾碧绿，富含维生素 C 与叶酸，常见绿色蔬菜。' },
+  { emoji: '🍊', name: '橙 子',  desc: '芸香科柑橘类水果，果肉酸甜多汁，富含维生素 C 与膳食纤维。' },
+  { emoji: '🍇', name: '葡 萄',  desc: '葡萄科藤本植物，浆果成串，有紫、绿、红等颜色，甜中带酸。' },
+];
+let browseIdx = 0;
+
+function browseNav(dir) {
+  browseIdx = (browseIdx + dir + CARDS.length) % CARDS.length;
+  const c = CARDS[browseIdx];
+  const img = document.getElementById('photo-img');
+  img.style.opacity = '0';
+  img.style.transform = 'translateX(' + (dir > 0 ? '20px' : '-20px') + ')';
+  setTimeout(() => {
+    img.textContent = c.emoji;
+    document.getElementById('photo-name').textContent = c.name;
+    document.getElementById('photo-desc').textContent = c.desc;
+    document.getElementById('browse-prog-fill').style.width =
+      ((browseIdx + 1) / CARDS.length * 100) + '%';
+    img.style.opacity = '1';
+    img.style.transform = 'translateX(0)';
+  }, 200);
+}
+
+/* ─── 练习屏 — 问题文字定时切换 ─── */
+let _quizHintTimer = null;
+function startQuizHint() {
+  clearTimeout(_quizHintTimer);
+  const q = document.getElementById('quiz-question');
+  q.classList.remove('hidden');
+  q.style.opacity = '1';
+  q.textContent = '这是什么？';
+  _quizHintTimer = setTimeout(() => {
+    q.style.opacity = '0';
+    setTimeout(() => { q.textContent = '请点选一个答案'; q.style.opacity = '1'; }, 250);
+  }, 3000);
+}
+
+function pickOpt(el) {
+  clearTimeout(_quizHintTimer);
+  if (document.getElementById('answer-zone').classList.contains('open')) return;
+  const zone = document.getElementById('opts-zone');
+  zone.classList.remove('animated');
+  zone.classList.add('collapsed');
+  document.getElementById('quiz-question').classList.add('hidden');
+  document.getElementById('answer-zone').classList.add('open');
+}
+
+function doTTS() { /* TTS: ans-word + ans-desc */ }
+function browseTTS() { /* TTS: photo-name + photo-desc */ }
+
+function quizNext() {
+  const zone = document.getElementById('opts-zone');
+  zone.classList.remove('collapsed');
+  zone.querySelectorAll('.opt').forEach(o => o.classList.remove('correct','wrong','dim'));
+  document.getElementById('answer-zone').classList.remove('open');
+  zone.classList.remove('animated');
+  void zone.offsetWidth;
+  zone.classList.add('animated');
+  startQuizHint();
+}
+</script>
+</body>
+</html>
