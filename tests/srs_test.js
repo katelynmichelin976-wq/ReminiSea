@@ -140,6 +140,7 @@ function processAnswer(state, rating, today, nowMs) {
       state.due_date = addDays(today, state.interval);
       state.due_ts   = 0;
     } else if (rating === 'easy') {
+      state.lapses_streak = 0;
       state.ease_factor = Math.min(3.0, state.ease_factor + 0.15);
       state.interval = Math.min(cfg.maximum_interval,
         Math.max(cfg.minimum_interval,
@@ -550,6 +551,18 @@ section('SUITE 4 — lapses 保护机制');
   check('4-F lapses_streak=2', s.lapses_streak, 2);
   check('4-F lapses_total=4', s.lapses_total, 4);
   SRS_CONFIG.learning_hard_counts_lapse = orig;
+}
+
+// 4-G: review easy 应清零 lapses_streak（spec: 答对即清零）
+{
+  const s = makeReviewCard(3, 2.50);
+  processAnswer(s, 'again', TODAY, NOW);  // streak=1
+  s.srs_stage='review'; s.due_date=TODAY;
+  processAnswer(s, 'again', TODAY, NOW);  // streak=2
+  s.srs_stage='review'; s.due_date=TODAY;
+  processAnswer(s, 'easy', TODAY, NOW);   // easy 也是正确，streak 应清零
+  check('4-G lapses_streak=0 after easy', s.lapses_streak, 0);
+  check('4-G lapses_total unchanged=2',   s.lapses_total,  2);
 }
 
 // ═══════════════════════════════════════════════

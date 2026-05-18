@@ -1627,10 +1627,6 @@ function todayStr() {
   return `${y}-${m}-${day}`;
 }
 // UTC 日期（与 Supabase trial_date 生成列一致，该列用 to_timestamp()::date = UTC）
-function utcTodayStr() {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
-}
 
 function addDays(dateStr, n) {
   const d = new Date(dateStr + 'T00:00:00');
@@ -2216,33 +2212,6 @@ async function cloudPullConfig() {
 }
 
 
-// 判断是否需要同步（有本地脏数据 OR 服务器有更新）
-async function checkSyncNeeded() {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return false;
-  try {
-    // 1. 本地脏数据检查
-    const db = await openSrsDb();
-    const dirtyTrials = await new Promise((res, rej) => {
-      const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
-      req.onsuccess = e => { const all = e.target.result || []; res(all.filter(t => !t.synced_at && t.deck_key)); };
-      req.onerror = e => rej(e.target.error);
-    });
-    if (dirtyTrials.length > 0) return true;
-    // 2. 检查全局同步时间戳 vs 服务器
-    const lastSyncTs = parseInt(localStorage.getItem('yihai_global_sync_ts') || '0') || 0;
-    if (!lastSyncTs) return true;  // 首次同步
-    const { count, error } = await _sb.from('sync_card_states')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', _cloudUserId)
-      .gt('updated_at', lastSyncTs);
-    if (!error && count > 0) return true;
-    // 3. 检查配置更新
-    const { data: cfgData, error: cfgErr } = await _sb.from('sync_config')
-      .select('updated_at').eq('user_id', _cloudUserId).maybeSingle();
-    if (!cfgErr && cfgData && cfgData.updated_at > lastSyncTs) return true;
-    return false;
-  } catch(e) { return true; }  // 网络/数据库错误 → 保守同步
-}
 
 // 统一同步入口（v4.10）：支持模态进度条 + 语音播报 + 不同同步范围：支持模态进度条 + 语音播报 + 不同同步范围
 async function runSync(opts) {
@@ -2529,7 +2498,7 @@ function markEventSynced(eventId) {
 }
 
 
-// syncAll 批量补传
+// 批量补传 AppEvents
 async function syncAppEvents() {
   if (!_syncEnabled || !_sb) return 0;
   var db = await openSrsDb();
@@ -2657,7 +2626,7 @@ async function getAllCardStates(deckKey) {
   });
 }
 
-// CardState 不存在时自动创建（getOrCreate）
+// Playwright test seam（_playwright_multi_user_sync_test.js 通过 page.evaluate 调用）
 async function getOrCreateCardState(deckKey, cardId) {
   let state = await getCardState(deckKey, cardId);
   if (!state) {
@@ -2791,6 +2760,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.due_ts   = 0;
       _advanceReviewMode();
     } else if (rating === 'easy') {
+      state.lapses_streak = 0;
       state.ease_factor = Math.min(3.0, state.ease_factor + 0.15);
       state.interval = Math.max(
         cfg.minimum_interval,
