@@ -118,9 +118,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `supabase/functions/` | Edge Functions (8 functions for admin API) |
 | `archive/` | Previous versions (v4.3–v4.8) |
 
-## v5.0 Plan（2026-05-10 更新）
+## v5.0 Plan（2026-05-19 更新）
 
-**从 PWA → uni-app + 腾讯云 CloudBase 迁移。** 一套代码出微信小程序 + H5。预估总工时 12-17 天，SRS 纯逻辑直接复用。完整方案见 `docs/忆海拾光_v5.0_腾讯云迁移设计方案.md`。
+**技术架构不迁移，主线继续 PWA + Capacitor 打包。** 放弃 uni-app + 腾讯云方案。
+
+- 技术栈：单文件 HTML + Supabase + IndexedDB，保持不变
+- 分发：PWA（主屏幕）+ Capacitor 打包 → App Store / Google Play
+- 微信小程序方向暂不推进
+- 旧方案文档保留备查：`docs/忆海拾光_v5.0_腾讯云迁移设计方案.md`
 
 ## Recent Changes
 
@@ -207,7 +212,7 @@ review → again → relearning
 10. **Supabase cloud sync** — all Supabase calls wrapped in try/catch, fire-and-forget. `_syncEnabled` gates all sync; false = offline mode.
 11. **Cloud login** — Supabase SDK persists session in localStorage. `restoreCloudSession()` on startup, `updateCloudTabUI()` toggles login/deck-list UI. 三个 session 状态 flag：`_syncEnabled`（已验证在线）、`_sessionRestoring`（SDK 加载中或 session 恢复中，显示"正在恢复登录…"）、`_sessionOffline`（有凭证但网络失败，显示"📵 邮箱（网络不稳定）"并等 `online` 事件自动重连）。曾登录过的用户页面加载时同步设 `_sessionRestoring=true`，`initCloud()` 完成后清除并调 `updateCloudTabUI()`。
 12. **Incremental sync** — `syncDeckFromCloud` uses `cards_pool.updated_at > lastSyncAt` + `_imgUrl/_audUrl` URL comparison to skip unchanged media.
-13. **Smart sync** — `checkSyncNeeded()` 已实现但未接入 `runSync`（死代码，issue #43）。当前所有同步路径直接调 `runSync`，无跳过逻辑。
+13. **No smart sync skip** — `checkSyncNeeded()` 已在 v4.11.5 删除（含 epoch/ISO 比较 bug，且从未接入 `runSync`）。当前所有同步路径直接调 `runSync`，无跳过逻辑。
 14. **Per-card upload: TrialLog only** — 逐卡仅上传 `sync_trials`（含完整状态快照）；`sync_card_states` 由 DB trigger `fn_trial_to_card_state()` 自动维护；`card_state_log` 已废弃。
 15. **Supabase SDK defer load** — `<script src="supabase" defer>` 不阻塞 DOM 解析和渲染；`initCloud()` 在 SDK 就绪后自动执行。离线下 SDK 加载失败 → `restoreCloudSession()` 静默跳过 → 离线模式。
 16. **runSync 统一同步入口** — 所有同步操作必须通过 `runSync(options)`，不支持直接调旧 `syncAll`。`options.modal` 控制是否显示模态弹窗；`options.decks` 控制是否同步牌组。
