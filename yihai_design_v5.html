@@ -164,11 +164,28 @@ body::before {
   padding: calc(var(--safe-top) + 10px) var(--pad) 12px;
   flex-shrink: 0; gap: 12px;
 }
+.home-logo-wrap {
+  flex: 1; display: flex; align-items: baseline; gap: 6px;
+}
 .home-logo {
-  flex: 1; font-family: var(--fd);
+  font-family: var(--fd);
   font-size: 36px; color: var(--ink);
   letter-spacing: 3px; line-height: 1;
 }
+.home-version {
+  font-size: 11px; font-weight: 600;
+  color: var(--ink4); letter-spacing: .02em;
+}
+.home-refresh-btn {
+  background: none; border: none; cursor: pointer; padding: 3px;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--ink4); display: flex; align-items: center;
+  border-radius: 6px; transition: color .15s;
+  align-self: center;
+}
+.home-refresh-btn:active { color: var(--red); }
+.home-refresh-btn.spinning svg { animation: spin360 .6s ease-out; }
+@keyframes spin360 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .btn-plus {
   width: 40px; height: 40px; flex-shrink: 0;
   border: 1.5px solid var(--bd); border-radius: 50%;
@@ -1013,7 +1030,16 @@ body::before {
 <div id="screen-home" class="screen active">
 
   <div class="home-topbar">
-    <div class="home-logo">忆海拾光</div>
+    <div class="home-logo-wrap">
+      <div class="home-logo">忆海拾光</div>
+      <span class="home-version">v5.0-preview</span>
+      <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <div class="divider"></div>
@@ -2289,6 +2315,26 @@ function initStatsChart() {
   });
 }
 
+function forceRefresh() {
+  const btn = document.querySelector('.home-refresh-btn');
+  if (btn) {
+    btn.classList.add('spinning');
+    btn.addEventListener('animationend', () => btn.classList.remove('spinning'), { once: true });
+  }
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      Promise.all(regs.map(r => r.unregister())).then(() => {
+        if ('caches' in window) {
+          caches.keys().then(keys =>
+            Promise.all(keys.map(k => caches.delete(k)))
+          ).then(() => location.reload(true));
+        } else { location.reload(true); }
+      });
+    });
+  } else {
+    setTimeout(() => location.reload(true), 400);
+  }
+}
 
 </script>
 </body>
