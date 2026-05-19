@@ -56,7 +56,7 @@
   --bd: rgba(200,192,174,0.14); --bd-soft: rgba(200,192,174,0.07);
   --sh: 0 2px 24px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.2);
   --sh-sm: 0 1px 8px rgba(0,0,0,0.2);
-  --red: #e8a030; --red-dk: #c88020; --red-lt: rgba(232,160,48,0.12);
+  --red: #e8a030; --red-dk: #c88020; --red-lt: #2e2518;
   --red-bd: rgba(232,160,48,0.22); --red-sh: 0 6px 22px rgba(232,160,48,0.32);
 }
 
@@ -214,7 +214,8 @@ body::before {
 }
 [data-swipeable] { touch-action: pan-y; }
 .album-row-inner {
-  width: 100%; display: flex; align-items: center; gap: 14px;
+  width: 100%;
+  display: flex; align-items: center; gap: 14px;
   padding: 14px var(--pad);
   padding-left: calc(var(--pad) + 13px);
   background: var(--surf);
@@ -275,10 +276,10 @@ body::before {
 .album-nav-btn:active { opacity: 0.5; }
 .album-row.selected .album-nav-btn { color: var(--red); }
 
-/* Swipe action buttons (behind album-row-inner) */
+/* Swipe action buttons — absolutely positioned at row right edge */
 .album-swipe-btns {
   position: absolute; right: 0; top: 0; bottom: 0;
-  display: flex; z-index: 0;
+  display: flex;
 }
 .swipe-btn {
   width: 72px; border: none; cursor: pointer;
@@ -286,10 +287,10 @@ body::before {
   color: white; letter-spacing: 0.5px;
   display: flex; align-items: center; justify-content: center;
 }
-.swipe-btn-rename { background: var(--amber); }
-.swipe-btn-del    { background: var(--red); }
-.swipe-btn-edit   { background: var(--jade); }
-.swipe-btn-export { background: var(--ink2); }
+.swipe-btn-rename { background: #a06520; }
+.swipe-btn-del    { background: #b83028; }
+.swipe-btn-edit   { background: #287a50; }
+.swipe-btn-export { background: #546e7a; }
 
 
 .caregiver-row {
@@ -564,14 +565,15 @@ body::before {
 .mine-group .mine-menu-item:last-child { border-bottom: none; }
 .mine-menu-item:active { opacity: 0.5; }
 .mine-menu-icon {
-  width: 34px; height: 34px; border-radius: 9px;
+  width: 22px; height: 22px;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; font-size: 17px; line-height: 1;
+  flex-shrink: 0; color: var(--ink3);
 }
-.mi-red    { background: var(--red-lt); }
-.mi-jade   { background: var(--jade-lt); }
-.mi-amber  { background: var(--amber-lt); }
-.mi-surf   { background: var(--surf2); }
+.mi-red    { color: var(--red); }
+.mi-jade   { color: var(--ink3); }
+.mi-amber  { color: var(--ink3); }
+.mi-surf   { color: var(--ink3); }
+.mi-blue   { color: var(--ink3); }
 .mine-menu-chevron { margin-left: auto; color: var(--ink4); flex-shrink: 0; }
 
 /* Mode switch row */
@@ -610,14 +612,14 @@ body::before {
 .mine-menu { width: 100%; max-width: var(--cmax); margin: 8px auto 0; padding: 0 var(--pad); }
 .mine-menu-item {
   width: 100%; display: flex; align-items: center; gap: 14px;
-  padding: 17px 0; background: none; border: none;
+  padding: 14px var(--pad); background: none; border: none;
   border-bottom: 1px solid var(--bd-soft);
   font-family: var(--fs); font-size: 17px; font-weight: 500;
   color: var(--ink2); cursor: pointer; transition: opacity 0.15s; text-align: left;
 }
 .mine-menu-item:active { opacity: 0.5; }
 
-.mode-switch-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--surf2); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.mode-switch-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--ink3); }
 .mode-switch-label { flex: 1; font-family: var(--fs); font-size: 17px; font-weight: 500; color: var(--ink2); }
 .mode-badge {
   font-size: 11px; font-weight: 700;
@@ -748,12 +750,12 @@ body::before {
 }
 .btn-text-sm:active { background: var(--surf2); }
 .btn-add-sm {
-  padding: 8px 16px; background: var(--red); border: none;
-  border-radius: 20px; font-family: var(--fs); font-size: 14px; font-weight: 700;
-  color: white; cursor: pointer; flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(194,59,59,0.3); transition: background 0.15s;
+  background: none; border: none; cursor: pointer; flex-shrink: 0;
+  font-family: var(--fs); font-size: 14px; font-weight: 600;
+  color: var(--red); letter-spacing: 0.5px;
+  padding: 4px 0; transition: opacity 0.15s;
 }
-.btn-add-sm:active { background: var(--red-dk); }
+.btn-add-sm:active { opacity: 0.5; }
 
 .deck-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
 .deck-scroll::-webkit-scrollbar { display: none; }
@@ -768,7 +770,8 @@ body::before {
   border-bottom: 1px solid var(--bd-soft);
 }
 .card-row-inner {
-  width: 100%; display: flex; align-items: center; gap: 14px;
+  width: 100%;
+  display: flex; align-items: center; gap: 14px;
   padding: 14px var(--pad); background: var(--surf);
   position: relative; z-index: 1;
   transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), background 0.15s;
@@ -785,7 +788,8 @@ body::before {
 .card-name-sm { font-size: 17px; font-weight: 600; color: var(--ink); }
 .card-meta { font-size: 13px; color: var(--ink4); margin-top: 3px; letter-spacing: 0.5px; }
 .card-swipe-btns {
-  position: absolute; right: 0; top: 0; bottom: 0; display: flex; z-index: 0;
+  position: absolute; right: 0; top: 0; bottom: 0;
+  display: flex;
 }
 
 /* ═══ 制卡表单屏 ═══ */
@@ -942,7 +946,7 @@ body::before {
   cursor: pointer; transition: background 0.15s; text-align: left;
 }
 .sheet-btn:active { background: var(--surf2); }
-.sheet-btn-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+.sheet-btn-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--ink3); }
 .sheet-sep { height: 1px; background: var(--bd-soft); margin: 4px 0; }
 
 /* ═══ Modal (text input) ═══ */
@@ -1148,8 +1152,8 @@ body::before {
 
   <div class="browse-controls">
     <div class="browse-nav-row">
-      <button class="btn-nav" onclick="browseNav(-1)">上一张</button>
-      <button class="btn-nav-next" onclick="browseNav(1)">下一张</button>
+      <button class="btn-nav" id="btn-browse-prev" onclick="browseNav(-1)">上一张</button>
+      <button class="btn-nav-next" id="btn-browse-next" onclick="browseNav(1)">下一张</button>
     </div>
   </div>
 
@@ -1249,7 +1253,7 @@ body::before {
     <!-- Group A: 统计 -->
     <div class="mine-group">
       <button class="mine-menu-item" onclick="showScreen('screen-stats')">
-        <div class="mine-menu-icon mi-jade">📊</div>
+        <div class="mine-menu-icon mi-jade"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
         <span>统 计</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
@@ -1258,12 +1262,12 @@ body::before {
     <!-- Group B: 设置 + 主题 -->
     <div class="mine-group">
       <button class="mine-menu-item" onclick="showScreen('screen-settings')">
-        <div class="mine-menu-icon mi-amber">⚙️</div>
+        <div class="mine-menu-icon mi-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
         <span>设 置</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
       <button class="mine-menu-item" onclick="showScreen('screen-theme')">
-        <div class="mine-menu-icon mi-surf">🎨</div>
+        <div class="mine-menu-icon mi-red"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 1.657-1.343 3-3 3h-1.5a2 2 0 0 0-2 2 2 2 0 0 1-2 2z"/><circle cx="8.5" cy="10.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="11.5" cy="7" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg></div>
         <span>主 题</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
@@ -1272,7 +1276,7 @@ body::before {
     <!-- Group C: 关于 -->
     <div class="mine-group">
       <button class="mine-menu-item" onclick="alert('关于 忆海拾光')">
-        <div class="mine-menu-icon mi-surf">ℹ️</div>
+        <div class="mine-menu-icon mi-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01" stroke-width="2.5"/></svg></div>
         <span>关 于</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
@@ -1280,7 +1284,7 @@ body::before {
 
     <!-- 模式切换 -->
     <div class="mode-switch-row">
-      <div class="mode-switch-icon">🔄</div>
+      <div class="mode-switch-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <div class="mode-switch-label">模 式</div>
       <span class="mode-badge patient" id="mode-badge">患者</span>
       <button class="toggle-switch" id="mode-toggle" onclick="toggleMode()" aria-label="切换模式">
@@ -1343,12 +1347,12 @@ body::before {
     <!-- 同步状态 -->
     <div class="mine-group">
       <div class="mine-menu-item" style="cursor:default">
-        <div class="mine-menu-icon mi-jade">☁️</div>
+        <div class="mine-menu-icon mi-jade"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8M8 17l4-4 4 4"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
         <span>云端同步</span>
         <span style="margin-left:auto;font-size:13px;font-weight:600;color:var(--jade);padding-right:4px">已连接</span>
       </div>
       <div class="mine-menu-item" style="cursor:default;border-bottom:none">
-        <div class="mine-menu-icon mi-surf">📅</div>
+        <div class="mine-menu-icon mi-surf"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
         <span>最近同步</span>
         <span style="margin-left:auto;font-size:13px;color:var(--ink4);padding-right:4px">今天 14:32</span>
       </div>
@@ -1357,7 +1361,7 @@ body::before {
     <!-- 退出登录 -->
     <div class="mine-group" style="margin-top:12px">
       <button class="mine-menu-item" onclick="alert('退出登录')" style="color:var(--red-dk);border-bottom:none">
-        <div class="mine-menu-icon mi-red">🚪</div>
+        <div class="mine-menu-icon mi-red"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
         <span>退出登录</span>
       </button>
     </div>
@@ -1781,27 +1785,18 @@ body::before {
 
 <div class="sheet" id="sheet-plus">
   <div class="sheet-handle"></div>
-  <div class="sheet-lbl">牌组操作</div>
+  <div class="sheet-lbl">新建牌组</div>
   <button class="sheet-btn" onclick="doNewDeck()">
-    <span class="sheet-btn-icon">📁</span>
+    <span class="sheet-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg></span>
     <span>创建空牌组</span>
   </button>
   <button class="sheet-btn" onclick="doImportFile()">
-    <span class="sheet-btn-icon">📥</span>
+    <span class="sheet-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
     <span>导入文件（.yhspack）</span>
   </button>
   <button class="sheet-btn" onclick="doImportUrl()">
-    <span class="sheet-btn-icon">🔗</span>
+    <span class="sheet-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
     <span>从链接下载</span>
-  </button>
-  <div class="sheet-sep"></div>
-  <button class="sheet-btn" onclick="doExport()">
-    <span class="sheet-btn-icon">📤</span>
-    <span>导出当前牌组</span>
-  </button>
-  <button class="sheet-btn" onclick="doShare()">
-    <span class="sheet-btn-icon">🔗</span>
-    <span>共享牌组</span>
   </button>
 </div>
 
@@ -2123,7 +2118,11 @@ const CARDS = [
 ];
 let browseIdx = 0;
 function browseNav(dir) {
-  browseIdx = (browseIdx + dir + CARDS.length) % CARDS.length;
+  if (dir === 1 && browseIdx === CARDS.length - 1) {
+    showScreen('screen-finish');
+    return;
+  }
+  browseIdx = Math.max(0, Math.min(CARDS.length - 1, browseIdx + dir));
   const c = CARDS[browseIdx];
   const img = document.getElementById('photo-img');
   img.style.opacity = '0';
@@ -2133,6 +2132,8 @@ function browseNav(dir) {
     document.getElementById('photo-desc').textContent = c.desc;
     document.getElementById('browse-prog-fill').style.width = ((browseIdx + 1) / CARDS.length * 100) + '%';
     img.style.opacity = '1';
+    document.getElementById('btn-browse-next').textContent = browseIdx === CARDS.length - 1 ? '完 成' : '下一张';
+    document.getElementById('btn-browse-prev').disabled = browseIdx === 0;
   }, 200);
 }
 function browseTTS() {}
@@ -2188,7 +2189,8 @@ function initSwipe(container) {
     }
     if (locked && dx < 0) {
       const inner = startEl.querySelector('.album-row-inner, .card-row-inner');
-      if (inner) { inner.style.transition = 'none'; inner.style.transform = `translateX(${Math.max(dx, -144)}px)`; }
+      const snapDist = startEl.querySelectorAll('.swipe-btn').length * 72;
+      if (inner) { inner.style.transition = 'none'; inner.style.transform = `translateX(${Math.max(dx, -snapDist)}px)`; }
       return true;
     }
     return false;
@@ -2198,10 +2200,11 @@ function initSwipe(container) {
     if (container.id === 'home-scroll' && _mode !== 'caregiver') { startEl = null; locked = false; return; }
     const dx = clientX - startX;
     const inner = startEl.querySelector('.album-row-inner, .card-row-inner');
+    const snapDist = startEl.querySelectorAll('.swipe-btn').length * 72;
     if (inner) {
       inner.style.transition = 'transform 0.25s cubic-bezier(0.4,0,0.2,1)';
       if (dx < -60) {
-        inner.style.transform = 'translateX(-144px)';
+        inner.style.transform = `translateX(-${snapDist}px)`;
         startEl.classList.add('swiped'); _swipedEl = startEl;
       } else {
         inner.style.transform = 'translateX(0)';
