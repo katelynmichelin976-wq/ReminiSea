@@ -171,7 +171,14 @@ node tests/_playwright_session_mode_test.js        # 游戏模式 UI + 持久化
 node tests/_playwright_session_mode_queue_test.js  # 队列难度曲线（需先启动 HTTP 服务）
 ```
 
-All tests must pass before commit. Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, Playwright 12/39/21/18/13/14（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue）.
+**测试范围规则：**
+- **Bug 修复** → 只跑单元测试（srs + v4.4 + v4.8 + v4.9）
+- **发布** → 单元测试 + 最小回归（`_playwright_test.js` 单机版）
+- **全量回归** → 仅用户明确要求时跑
+- **智能匹配** → 修复涉及哪个模块，优先跑对应模块测试（如 session 改动跑 cloud_test）
+- 确认改动无问题即可，不需要每次都跑全部 8 套 Playwright。
+
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, Playwright 12/39/21/18/13/14（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue）.
 
 ## SRS Architecture
 
