@@ -94,6 +94,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_bookmarklet_diagnose.html` | 书签按钮版诊断工具 |
 | `tests/_diag_sync_state.js` | Playwright 云端 vs 本地数据对比 |
 | `tests/_check_due_count.js` | Node.js Supabase 直接查询到期数 |
+| `tests/_playwright_session_mode_test.js` | Playwright 游戏模式设置 UI + 持久化测试（13 断言） |
+| `tests/_playwright_session_mode_queue_test.js` | Playwright 队列难度曲线验证（14 断言，ef 首尾>中间） |
+| `tests/_check_session_mode_order.js` | Node.js 查询妈妈账号当日卡片，输出三种模式出牌顺序 |
 | `tests/test_data/` | Test .yhspack files |
 
 ### 文档
@@ -164,9 +167,11 @@ $env:TEST_PASSWORD="xxx"; node tests/_playwright_v4.10_regression_test.js  # 文
 $env:TEST_PASSWORD="xxx"; node tests/_playwright_cloud_test.js
 $env:TEST_PASSWORD="xxx"; node tests/_playwright_cross_device_sync_test.js
 # session_restore 和 user_switch 已分别合并入 cloud_test 和 v4.10_regression
+node tests/_playwright_session_mode_test.js        # 游戏模式 UI + 持久化
+node tests/_playwright_session_mode_queue_test.js  # 队列难度曲线（需先启动 HTTP 服务）
 ```
 
-All tests must pass before commit. Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, Playwright 12/39/21/18（单机/v4.10回归/网络/跨设备）.
+All tests must pass before commit. Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, Playwright 12/39/21/18/13/14（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue）.
 
 ## SRS Architecture
 
@@ -197,6 +202,14 @@ review → again → relearning
 - `IndexedDB yihai_srs v5`: CardState (`card_states` store) + TrialLog (`trials` store) + app_events
 
 **Parameter naming rule:** All SRS parameters align with Anki names — no suffixes. E.g. `learn_ahead_limit` not `learn_ahead_secs`.
+
+**游戏难度模式（v4.11.7+）：**
+- `SRS_CONFIG.session_mode`（`'normal'|'hard'|'survival'`，默认 `'normal'`，持久化到 `srs_session_mode`）
+- 三种模式影响 `buildSessionQueue` 的选牌和排序，不影响答题后的 SM-2 算法
+- `difficultyScore(s)` — ef 反转 + lapses 归一 + learning/relearning 阶段 +0.5 bonus（难度未知视同难）
+- `applyCurve(queue)` — 双指针交错排列，产生"首尾易、中间难"的 U 形曲线
+- 普通模式：20 张，hard≤25%（≤5 张），其余填 easy 和 new；困难模式：≤30 张 + curve；生存模式：全量积压 + curve
+- 剧情模式 = 复用现有浏览模式，不走 buildSessionQueue
 
 ## Development Rules
 
