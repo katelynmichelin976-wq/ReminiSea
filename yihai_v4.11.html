@@ -1793,11 +1793,15 @@ async function restoreCloudSession() {
         migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
         return;
       }
-      // 区分：网络失败 vs token 真正失效
-      var netFail = !navigator.onLine ||
-        (r.error && /fetch|network|failed to fetch/i.test(r.error.message));
-      if (netFail && parsed.user && parsed.user.email) {
-        // 保留登录外观，等网络恢复后自动重试
+      // 区分：Supabase 明确拒绝（400 + 凭证无效错误码）才视为真实登出；
+      // 其余失败（网络、超时、message 为 undefined 等）一律走 offline 保留登录态。
+      // iOS PWA reload 后网络栈短暂不稳，refresh 请求容易失败但不代表账号失效。
+      var errMsg    = (r.error && r.error.message) || '';
+      var errStatus = r.error && r.error.status;
+      var isRealLogout = errStatus === 400 &&
+        /invalid.grant|refresh_token_not_found|user_not_found/i.test(errMsg);
+      if (!isRealLogout && parsed.user && parsed.user.email) {
+        // 不确定失败 → offline 模式，等 online 事件自动重试
         _cloudUserEmail = parsed.user.email;
         _cloudUserId    = parsed.user.id || _cloudUserId;
         _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
