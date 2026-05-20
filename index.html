@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.11.13</title>
+<title>忆海拾光 v4.11.14</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -879,7 +879,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.11.13</span>
+        <span class="home-version">v4.11.14</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1700,7 +1700,7 @@ function getCurrentUserId() {
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.11.13';
+const APP_VERSION = '4.11.14';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1778,6 +1778,10 @@ async function restoreCloudSession() {
     var sbKey = 'sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token';
     var parsed = null;
     try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
+    // 如果 SDK key 已被清除（SDK 内部检测到过期后会清理），尝试自有备份
+    if (!parsed) {
+      try { parsed = JSON.parse(localStorage.getItem('yihai_session_backup') || 'null'); } catch(e) {}
+    }
 
     // 第1级：getSession()（SDK 自动用 refresh_token 续签）
     var { data, error } = await _sb.auth.getSession();
@@ -1789,6 +1793,7 @@ async function restoreCloudSession() {
       _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
       localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
       migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
+      localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
       logAppEvent('session_restore_l1_ok', { uid: _cloudUserId });
       return;
     }
@@ -1807,6 +1812,7 @@ async function restoreCloudSession() {
         _cloudUserId      = r.data.session.user.id;
         _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
         migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
+        localStorage.setItem('yihai_session_backup', JSON.stringify(r.data.session));
         logAppEvent('session_restore_l2_ok', { uid: _cloudUserId });
         return;
       }
@@ -1845,6 +1851,7 @@ async function restoreCloudSession() {
       _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
       localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
       migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
+      localStorage.setItem('yihai_session_backup', JSON.stringify(retry.data.session));
       logAppEvent('session_restore_l3_ok', { uid: _cloudUserId });
     }
     if (!_syncEnabled) {
@@ -1931,6 +1938,10 @@ async function doCloudLogin() {
     localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     localStorage.setItem('yihai_has_ever_logged_in', '1');
+    // 备份 session 至自有 key，防 SDK 因 refresh 失败自行清除后无法恢复
+    if (data.session) {
+      localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
+    }
     // 先迁移离线记录再同步，避免 getAllCardStates 按 cloudUserId 过滤时漏掉 deviceId 记录
     await migrateDeviceRecordsToUser(_cloudUserId);
     updateCloudTabUI();
@@ -1962,6 +1973,7 @@ async function doCloudLogout() {
 
   // 登出后等同于离线模式，云牌组保留可用。
   localStorage.removeItem('yihai_global_sync_ts');
+  localStorage.removeItem('yihai_session_backup');
   renderDeckList();
   updateDeckStats();
 
@@ -5303,6 +5315,7 @@ function toggleTheme(checkbox){
           _cloudUserId    = session.user.id;
           _syncEnabled    = true;
           _sessionOffline = false;
+          localStorage.setItem('yihai_session_backup', JSON.stringify(session));
           logAppEvent('session_restore_token_refreshed', { uid: _cloudUserId });
           updateCloudTabUI();
         } else if (event === 'SIGNED_OUT' && _syncEnabled && !_sessionOffline) {

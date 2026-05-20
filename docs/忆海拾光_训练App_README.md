@@ -129,6 +129,14 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.11.14 — 2026-05-20
+
+**Bug 修复**
+- 修复刷新退出登录：自有 `yihai_session_backup` 备份 session token，防 Supabase SDK 因 refresh 失败自行清除 token 后无法恢复
+- 在 `restoreCloudSession`、`doCloudLogin`、`TOKEN_REFRESHED` 各成功路径更新备份
+
+---
+
 ### v4.11.13 — 2026-05-20
 
 **诊断增强**
