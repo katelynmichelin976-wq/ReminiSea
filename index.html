@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.11.12</title>
+<title>忆海拾光 v4.11.13</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -879,7 +879,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.11.12</span>
+        <span class="home-version">v4.11.13</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1700,7 +1700,7 @@ function getCurrentUserId() {
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.11.12';
+const APP_VERSION = '4.11.13';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1789,8 +1789,13 @@ async function restoreCloudSession() {
       _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
       localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
       migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
+      logAppEvent('session_restore_l1_ok', { uid: _cloudUserId });
       return;
     }
+    logAppEvent('session_restore_l1_fail', {
+      hasError: !!error, errMsg: error && error.message,
+      hasToken: !!parsed, hasTokenEmail: !!(parsed && parsed.user && parsed.user.email)
+    });
 
     // 第2级：手动 setSession（处理 SDK 读 localStorage 的竞态）
     if (parsed && parsed.access_token && parsed.refresh_token) {
@@ -1802,6 +1807,7 @@ async function restoreCloudSession() {
         _cloudUserId      = r.data.session.user.id;
         _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
         migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
+        logAppEvent('session_restore_l2_ok', { uid: _cloudUserId });
         return;
       }
       // 区分：Supabase 明确拒绝（400 + 凭证无效错误码）才视为真实登出；
@@ -1813,6 +1819,9 @@ async function restoreCloudSession() {
         /invalid.grant|refresh_token_not_found|user_not_found/i.test(errMsg);
       if (!isRealLogout && parsed.user && parsed.user.email) {
         // 不确定失败 → offline 模式，等 online 事件自动重试
+        logAppEvent('session_restore_l2_offline', {
+          errStatus: errStatus, errMsg: errMsg, hasEmail: true
+        });
         _cloudUserEmail = parsed.user.email;
         _cloudUserId    = parsed.user.id || _cloudUserId;
         _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
@@ -1820,6 +1829,9 @@ async function restoreCloudSession() {
         _scheduleSessionRetry();
         return;
       }
+      logAppEvent('session_restore_l2_real_logout', {
+        errStatus: errStatus, errMsg: errMsg, isRealLogout: isRealLogout
+      });
     }
 
     // 第3级：300ms 重试（CDN 竞态兜底）
@@ -1833,10 +1845,19 @@ async function restoreCloudSession() {
       _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
       localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
       migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
+      logAppEvent('session_restore_l3_ok', { uid: _cloudUserId });
+    }
+    if (!_syncEnabled) {
+      logAppEvent('session_restore_l3_fail', {
+        hasToken: !!parsed, hasTokenEmail: !!(parsed && parsed.user && parsed.user.email)
+      });
     }
 
     // 全级失败兜底：有 localStorage token 但网络不可达 → offline 模式
     if (!_syncEnabled && parsed && parsed.user && parsed.user.email) {
+      logAppEvent('session_restore_offline_fallback', {
+        hasToken: true, hasEmail: true
+      });
       _cloudUserEmail = parsed.user.email;
       _cloudUserId    = parsed.user.id || _cloudUserId;
       _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
@@ -1847,6 +1868,7 @@ async function restoreCloudSession() {
     if (typeof supabase !== 'undefined') {
       _sb = _createSupabaseClient();
     }
+    logAppEvent('session_restore_catch', { errMsg: e.message, supDefined: typeof supabase !== 'undefined' });
     console.warn('[sync] no saved session');
   }
 }
@@ -5265,6 +5287,10 @@ function toggleTheme(checkbox){
       if (_syncEnabled) { _sessionOffline = true; updateCloudTabUI(); _scheduleSessionRetry(); }
     });
 
+    logAppEvent('session_restore_start', {
+      hasEverLoggedIn: localStorage.getItem('yihai_has_ever_logged_in') === '1',
+      SDK: 'supabase-js 2.105.4', app: APP_VERSION
+    });
     try {
       await restoreCloudSession();
     } catch(e) { console.warn('[cloud] session restore error:', e.message); }
@@ -5277,10 +5303,13 @@ function toggleTheme(checkbox){
           _cloudUserId    = session.user.id;
           _syncEnabled    = true;
           _sessionOffline = false;
+          logAppEvent('session_restore_token_refreshed', { uid: _cloudUserId });
           updateCloudTabUI();
-        } else if (event === 'SIGNED_OUT' && _syncEnabled) {
-          // _syncEnabled 仍 true (= 非主动登出, 主动登出在 doCloudLogout 已先置 false)
+        } else if (event === 'SIGNED_OUT' && _syncEnabled && !_sessionOffline) {
+          // _syncEnabled 仍 true → 非主动登出（doCloudLogout 已先置 false）
+          // _sessionOffline 时保留 offline 模式，不覆盖（restoreCloudSession 已判为网络问题）
           // SDK 检测到 token 无法续签 → 静默登出, 显示登录表单
+          logAppEvent('session_restore_sdk_signout', {});
           _syncEnabled    = false;
           _sessionOffline = false;
           _cloudUserEmail = '';
