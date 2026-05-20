@@ -4386,7 +4386,7 @@ async function _writeSrs(q, rating, attempt) {
     due_date            : newState.due_date || '',
     suspended           : newState.suspended,
     suspended_reason    : newState.suspended_reason || '',
-    _retrying            : isRetrying,
+    _retrying            : false,
     _warmup              : false,
     _mix_observe         : false,
   };
