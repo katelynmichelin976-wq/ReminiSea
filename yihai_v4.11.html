@@ -2877,7 +2877,8 @@ function difficultyScore(s) {
   if (!s) return 0;
   const efScore    = Math.max(0, 2.5 - (s.ease_factor || 2.5));   // 0~1.2
   const lapseScore = Math.min(s.lapses || 0, 20) / 20;             // 0~1
-  const stagBonus  = s.srs_stage === 'relearning' ? 0.5 : 0;
+  // learning/relearning 阶段难度未知或正在重学，归入中间段
+  const stagBonus  = (s.srs_stage === 'relearning' || s.srs_stage === 'learning') ? 0.5 : 0;
   return efScore + lapseScore + stagBonus;
 }
 
@@ -2896,10 +2897,10 @@ function applyCurve(queue) {
   return result;
 }
 
-// 普通模式：固定20张上限，hard卡不超过35%，结果过曲线
+// 普通模式：固定20张上限，hard卡不超过25%，结果过曲线
 function applyNormalMode(cards, stateMap, newSlots) {
   const SESSION_SIZE = 20;
-  const HARD_RATIO   = 0.35;
+  const HARD_RATIO   = 0.25;
   const now   = Date.now();
   const today = todayStr();
   const hardCap = Math.floor(SESSION_SIZE * HARD_RATIO);
