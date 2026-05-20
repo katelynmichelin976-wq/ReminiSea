@@ -129,6 +129,16 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.11.12 — 2026-05-20
+
+**Bug 修复**
+- 修复刷新页面退出登录问题：提取 `_createSupabaseClient()` 工厂函数，统一三处 `createClient` 调用
+- 显式配置 `auth.storage=localStorage`，修复 v4.9.5 曾添加但在后续重构中丢失的 session 持久化配置
+- 三级 session 恢复全失败兜底：有 localStorage token 但网络不可达时进入 offline 模式，等待 `online` 事件自动重试
+- 添加 `onAuthStateChange` 监听器，SDK 自动续签 token 或检测被动登出时实时更新 UI
+
+---
+
 ### v4.11.11 — 2026-05-20
 
 **Bug 修复**

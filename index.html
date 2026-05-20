@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.11.11</title>
+<title>忆海拾光 v4.11.12</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -879,7 +879,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.11.11</span>
+        <span class="home-version">v4.11.12</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1700,7 +1700,7 @@ function getCurrentUserId() {
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.11.11';
+const APP_VERSION = '4.11.12';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1757,10 +1757,21 @@ function _scheduleSessionRetry() {
   });
 }
 
+function _createSupabaseClient() {
+  return supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      storage: localStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false
+    }
+  });
+}
+
 // 启动时尝试恢复已有会话
 async function restoreCloudSession() {
   try {
-    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    _sb = _createSupabaseClient();
 
     // 预读 localStorage token — 无需网络，可立即获得用户身份
     // 注意：Supabase SDK 用 projectRef（不含域名）作 key，需与 SDK 保持一致
@@ -1823,9 +1834,18 @@ async function restoreCloudSession() {
       localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
       migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
     }
+
+    // 全级失败兜底：有 localStorage token 但网络不可达 → offline 模式
+    if (!_syncEnabled && parsed && parsed.user && parsed.user.email) {
+      _cloudUserEmail = parsed.user.email;
+      _cloudUserId    = parsed.user.id || _cloudUserId;
+      _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
+      _sessionOffline = true;
+      _scheduleSessionRetry();
+    }
   } catch(e) {
     if (typeof supabase !== 'undefined') {
-      _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      _sb = _createSupabaseClient();
     }
     console.warn('[sync] no saved session');
   }
@@ -1877,7 +1897,7 @@ async function doCloudLogin() {
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '登录中...'; }
   if (msgEl) { msgEl.style.display = 'none'; }
   try {
-    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    _sb = _createSupabaseClient();
     const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
     if (error) throw error;
     _syncEnabled      = true;
@@ -5248,6 +5268,27 @@ function toggleTheme(checkbox){
     try {
       await restoreCloudSession();
     } catch(e) { console.warn('[cloud] session restore error:', e.message); }
+
+    // SDK auth 状态监听 — token 续签 / 过期登出时自动更新 UI
+    if (_sb) {
+      _sb.auth.onAuthStateChange(function(event, session) {
+        if (event === 'TOKEN_REFRESHED' && session) {
+          _cloudUserEmail = session.user.email;
+          _cloudUserId    = session.user.id;
+          _syncEnabled    = true;
+          _sessionOffline = false;
+          updateCloudTabUI();
+        } else if (event === 'SIGNED_OUT' && _syncEnabled) {
+          // _syncEnabled 仍 true (= 非主动登出, 主动登出在 doCloudLogout 已先置 false)
+          // SDK 检测到 token 无法续签 → 静默登出, 显示登录表单
+          _syncEnabled    = false;
+          _sessionOffline = false;
+          _cloudUserEmail = '';
+          updateCloudTabUI();
+        }
+        // 忽略 INITIAL_SESSION — restoreCloudSession 已处理
+      });
+    }
 
     _sessionRestoring = false;
     updateCloudTabUI();
