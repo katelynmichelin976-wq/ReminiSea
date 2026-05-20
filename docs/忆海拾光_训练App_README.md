@@ -129,6 +129,15 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.11.9 — 2026-05-20
+
+**Bug 修复**
+- `reviewed_today` 移入 `firstRatingKey` 首次判断块：learning 重出步骤不消耗日计数槽位
+- `backfillAfterPractice` 加入 `syncAppEvents()`：练习结束自动上传事件日志
+- `difficultyScore` 字段名修正：`s.lapses` → `s.lapses_total`
+
+---
+
 ### v4.11.8 — 2026-05-20
 
 **练习模式算法修正**

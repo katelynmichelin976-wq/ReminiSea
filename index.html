@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.11.8</title>
+<title>忆海拾光 v4.11.9</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -879,7 +879,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.11.8</span>
+        <span class="home-version">v4.11.9</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1700,7 +1700,7 @@ function getCurrentUserId() {
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.11.8';
+const APP_VERSION = '4.11.9';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1793,11 +1793,15 @@ async function restoreCloudSession() {
         migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
         return;
       }
-      // 区分：网络失败 vs token 真正失效
-      var netFail = !navigator.onLine ||
-        (r.error && /fetch|network|failed to fetch/i.test(r.error.message));
-      if (netFail && parsed.user && parsed.user.email) {
-        // 保留登录外观，等网络恢复后自动重试
+      // 区分：Supabase 明确拒绝（400 + 凭证无效错误码）才视为真实登出；
+      // 其余失败（网络、超时、message 为 undefined 等）一律走 offline 保留登录态。
+      // iOS PWA reload 后网络栈短暂不稳，refresh 请求容易失败但不代表账号失效。
+      var errMsg    = (r.error && r.error.message) || '';
+      var errStatus = r.error && r.error.status;
+      var isRealLogout = errStatus === 400 &&
+        /invalid.grant|refresh_token_not_found|user_not_found/i.test(errMsg);
+      if (!isRealLogout && parsed.user && parsed.user.email) {
+        // 不确定失败 → offline 模式，等 online 事件自动重试
         _cloudUserEmail = parsed.user.email;
         _cloudUserId    = parsed.user.id || _cloudUserId;
         _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
@@ -2385,7 +2389,9 @@ async function runSync(opts) {
 // 练习完成后集中补传（仅上传未同步 TrialLog + 最新 CardState，不下拉）
 function backfillAfterPractice(deckKey) {
   if (!_syncEnabled || !_sb || !deckKey) return Promise.resolve();
-  return syncPendingData(deckKey).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
+  return syncPendingData(deckKey)
+    .then(function() { return syncAppEvents(); })
+    .catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
 }
 
 function openSrsDb() {
@@ -2876,7 +2882,7 @@ function saveDailyProgress(dp) {
 function difficultyScore(s) {
   if (!s) return 0;
   const efScore    = Math.max(0, 2.5 - (s.ease_factor || 2.5));   // 0~1.2
-  const lapseScore = Math.min(s.lapses || 0, 20) / 20;             // 0~1
+  const lapseScore = Math.min(s.lapses_total || 0, 20) / 20;        // 0~1
   // learning/relearning 阶段难度未知或正在重学，归入中间段
   const stagBonus  = (s.srs_stage === 'relearning' || s.srs_stage === 'learning') ? 0.5 : 0;
   return efScore + lapseScore + stagBonus;
@@ -4307,15 +4313,13 @@ async function _writeSrs(q, rating, attempt) {
     await saveCardState(newState);
   }
 
-  // DailyProgress 更新
-  const isRetrying = false;
+  // DailyProgress 更新（每卡每日只计首次，learning 步骤重出不重复计数）
   const dp2 = getDailyProgress();
-  dp2.reviewed_today++;
   if (stageBefore === 'new') dp2.daily_new_today++;
-  // 当日首次评级计数（跨 session 累计，每卡每日只计首次评级）
   const firstRatingKey = 'yh_fr_' + todayStr() + '_' + state.card_id;
   if (!localStorage.getItem(firstRatingKey)) {
     localStorage.setItem(firstRatingKey, rating);
+    dp2.reviewed_today++;
     if (rating === 'again') dp2.first_fail_today++;
     else if (rating === 'hard') dp2.first_hard_today++;
     else dp2.first_pass_today++;
