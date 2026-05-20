@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.11.6</title>
+<title>忆海拾光 v4.11.7</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -879,7 +879,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.11.6</span>
+        <span class="home-version">v4.11.7</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1151,6 +1151,21 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
             <span class="sheet-row-lbl">回答正确文案</span>
             <input type="text" id="phrase-correct" class="phrase-input" value="回答正确" oninput="onPhraseChange('correct',this.value)">
+          </div>
+        </div>
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">练习模式</div>
+          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('normal')">
+            <span class="sheet-row-lbl">普通<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px">固定20张，越做越顺</span></span>
+            <span id="mode-check-normal" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+          </div>
+          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('hard')">
+            <span class="sheet-row-lbl">困难<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px">SRS节律，最多30张</span></span>
+            <span id="mode-check-hard" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+          </div>
+          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('survival')">
+            <span class="sheet-row-lbl">生存<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px">清空所有积压</span></span>
+            <span id="mode-check-survival" style="color:var(--blue);font-size:18px;font-weight:700"></span>
           </div>
         </div>
         <div class="sheet-section">
@@ -1589,6 +1604,9 @@ const SRS_CONFIG = {
   // 主队列耗尽后，due_ts 在此窗口内的 learning 卡才追加出题
   // 默认 1200s = 20 分钟，与 Anki 默认一致
   learn_ahead_limit        : 1200,
+
+  // 练习模式：'normal'=普通（体验弧，20张）| 'hard'=困难（SRS节律，30张上限）| 'survival'=生存（清空积压）
+  session_mode             : 'normal',
 };
 
 // ── SRS_CONFIG 持久化覆盖（从 localStorage 恢复用户修改）─────────
@@ -1682,7 +1700,7 @@ function getCurrentUserId() {
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.11.6';
+const APP_VERSION = '4.11.7';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -2853,6 +2871,70 @@ function saveDailyProgress(dp) {
   localStorage.setItem(LS_DAILY, JSON.stringify(dp));
 }
 
+// ── 练习模式：难度曲线工具函数 ──────────────────────────────────────
+
+function difficultyScore(s) {
+  if (!s) return 0;
+  const efScore    = Math.max(0, 2.5 - (s.ease_factor || 2.5));   // 0~1.2
+  const lapseScore = Math.min(s.lapses || 0, 20) / 20;             // 0~1
+  const stagBonus  = s.srs_stage === 'relearning' ? 0.5 : 0;
+  return efScore + lapseScore + stagBonus;
+}
+
+// 将队列重排为"前易→中难→后易"穹顶曲线
+function applyCurve(queue) {
+  if (queue.length < 4) return queue;
+  const sorted = [...queue].sort((a, b) =>
+    difficultyScore(a._srsState) - difficultyScore(b._srsState)
+  );
+  const result = new Array(sorted.length);
+  let lo = 0, hi = sorted.length - 1;
+  for (let i = 0; i < sorted.length; i++) {
+    if (i % 2 === 0) result[lo++] = sorted[i];
+    else             result[hi--] = sorted[i];
+  }
+  return result;
+}
+
+// 普通模式：固定20张上限，hard卡不超过35%，结果过曲线
+function applyNormalMode(cards, stateMap, newSlots) {
+  const SESSION_SIZE = 20;
+  const HARD_RATIO   = 0.35;
+  const now   = Date.now();
+  const today = todayStr();
+  const hardCap = Math.floor(SESSION_SIZE * HARD_RATIO);
+
+  const due = cards.filter(c => {
+    const s = stateMap[c.id];
+    if (!s || s.suspended || _dailyRemovedToday[s.state_key]) return false;
+    if (s.srs_stage === 'review')     return s.due_date && s.due_date <= today;
+    if (s.srs_stage === 'relearning') return s.due_ts   && s.due_ts   <= now;
+    if (s.srs_stage === 'learning')   return s.due_ts   && s.due_ts   <= now;
+    return false;
+  });
+
+  const byDue = (a, b) =>
+    (stateMap[a.id].due_date || '').localeCompare(stateMap[b.id].due_date || '') ||
+    (stateMap[a.id].due_ts || 0) - (stateMap[b.id].due_ts || 0);
+
+  const hard = due.filter(c => difficultyScore(stateMap[c.id]) >= 0.4).sort(byDue);
+  const easy = due.filter(c => difficultyScore(stateMap[c.id]) <  0.4).sort(byDue);
+
+  const selHard = hard.slice(0, hardCap);
+  const selEasy = easy.slice(0, SESSION_SIZE - selHard.length);
+  const remain  = SESSION_SIZE - selHard.length - selEasy.length;
+  const selNew  = cards
+    .filter(c => { const s = stateMap[c.id]; return s && s.srs_stage === 'new' && !s.suspended; })
+    .slice(0, Math.max(0, Math.min(remain, newSlots)));
+
+  return applyCurve(
+    [...selEasy, ...selHard, ...selNew].map(card => {
+      const { options, correct } = buildOptions(card, cards);
+      return { ...card, options, correct, _srsState: stateMap[card.id] };
+    })
+  );
+}
+
 // ── buildSessionQueue ────────────────────────────────────────────
 // 返回当日练习队列（card 对象列表，含 _srsState 字段）
 async function buildSessionQueue(deckKey) {
@@ -2949,14 +3031,26 @@ async function buildSessionQueue(deckKey) {
     })
     .slice(0, Math.max(0, newSlots));
 
-  // 组装完整队列，附上 _srsState
+  // 组装完整队列（生存/困难模式基础队列），附上 _srsState
   const queue = [...mainQueue, ...newCards].map(card => {
     const { options, correct } = buildOptions(card, cards);
     return { ...card, options, correct, _srsState: stateMap[card.id] };
   });
 
-  logAppEvent('build_queue', { deck_key: deckKey, new_cards_created: newCardsCreated, total_cards: cards.length, queue_length: queue.length, used_review: usedReview, review_slots: Math.max(0, reviewSlots), new_slots: newSlots, max_reviews: SRS_CONFIG.maximum_reviews_per_day, max_new: SRS_CONFIG.new_cards_per_day }, deckKey);
-  return queue;
+  // 按练习模式决定最终队列
+  const mode = SRS_CONFIG.session_mode || 'normal';
+  let finalQueue;
+  if (mode === 'normal') {
+    finalQueue = applyNormalMode(cards, stateMap, newSlots);
+  } else if (mode === 'hard') {
+    finalQueue = applyCurve(queue.slice(0, 30));
+  } else {
+    // survival：现有队列全量 + 曲线排列
+    finalQueue = applyCurve(queue);
+  }
+
+  logAppEvent('build_queue', { deck_key: deckKey, new_cards_created: newCardsCreated, total_cards: cards.length, queue_length: finalQueue.length, used_review: usedReview, review_slots: Math.max(0, reviewSlots), new_slots: newSlots, max_reviews: SRS_CONFIG.maximum_reviews_per_day, max_new: SRS_CONFIG.new_cards_per_day, mode }, deckKey);
+  return finalQueue;
 }
 
 // ── 获取 learning/relearning 到期/即将到期卡（主队列耗尽后追加）────
@@ -5772,6 +5866,21 @@ function syncSrsSettingsUI() {
     const laH = document.getElementById('srs-learn-ahead-hint');
     if (laH) laH.textContent = secsToLabel(cfg.learn_ahead_limit);
   }
+
+  // 练习模式勾选
+  const curMode = cfg.session_mode || 'normal';
+  ['normal', 'hard', 'survival'].forEach(m => {
+    const el = document.getElementById('mode-check-' + m);
+    if (el) el.textContent = m === curMode ? '✓' : '';
+  });
+}
+
+function setSrsMode(mode) {
+  saveSrsConfigKey('session_mode', mode);
+  ['normal', 'hard', 'survival'].forEach(m => {
+    const el = document.getElementById('mode-check-' + m);
+    if (el) el.textContent = m === mode ? '✓' : '';
+  });
 }
 
 // SRS Tab 打开时同步一次（通过修改 openSettings 调用链实现）

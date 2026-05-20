@@ -69,7 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v4.11.html` | Main training app (v4.11.6, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.11.html` | Main training app (v4.11.7, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
 | `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
 | `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
@@ -129,7 +129,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v4.11.6**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v4.11.7**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 ## Environment
 
