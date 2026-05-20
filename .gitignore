@@ -19,3 +19,9 @@ Thumbs.db
 
 # External reference projects
 anki-main/
+
+# Dependencies
+node_modules/
+
+# Artifacts from misnamed files (Windows path issue)
+C*codetests_debug_stats.js
