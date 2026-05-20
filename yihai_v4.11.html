@@ -2389,7 +2389,9 @@ async function runSync(opts) {
 // 练习完成后集中补传（仅上传未同步 TrialLog + 最新 CardState，不下拉）
 function backfillAfterPractice(deckKey) {
   if (!_syncEnabled || !_sb || !deckKey) return Promise.resolve();
-  return syncPendingData(deckKey).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
+  return syncPendingData(deckKey)
+    .then(function() { return syncAppEvents(); })
+    .catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
 }
 
 function openSrsDb() {
@@ -2880,7 +2882,7 @@ function saveDailyProgress(dp) {
 function difficultyScore(s) {
   if (!s) return 0;
   const efScore    = Math.max(0, 2.5 - (s.ease_factor || 2.5));   // 0~1.2
-  const lapseScore = Math.min(s.lapses || 0, 20) / 20;             // 0~1
+  const lapseScore = Math.min(s.lapses_total || 0, 20) / 20;        // 0~1
   // learning/relearning 阶段难度未知或正在重学，归入中间段
   const stagBonus  = (s.srs_stage === 'relearning' || s.srs_stage === 'learning') ? 0.5 : 0;
   return efScore + lapseScore + stagBonus;
@@ -4311,15 +4313,13 @@ async function _writeSrs(q, rating, attempt) {
     await saveCardState(newState);
   }
 
-  // DailyProgress 更新
-  const isRetrying = false;
+  // DailyProgress 更新（每卡每日只计首次，learning 步骤重出不重复计数）
   const dp2 = getDailyProgress();
-  dp2.reviewed_today++;
   if (stageBefore === 'new') dp2.daily_new_today++;
-  // 当日首次评级计数（跨 session 累计，每卡每日只计首次评级）
   const firstRatingKey = 'yh_fr_' + todayStr() + '_' + state.card_id;
   if (!localStorage.getItem(firstRatingKey)) {
     localStorage.setItem(firstRatingKey, rating);
+    dp2.reviewed_today++;
     if (rating === 'again') dp2.first_fail_today++;
     else if (rating === 'hard') dp2.first_hard_today++;
     else dp2.first_pass_today++;
