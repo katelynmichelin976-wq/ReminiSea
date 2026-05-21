@@ -3944,6 +3944,19 @@ function tone(t) {
   if (t==='next') { n(880,now,.05,.15);n(1100,now+.06,.08,.11); }
 }
 
+// ── i18n 地基（阶段 0）──────────────────────────────────────────
+const SUPPORTED_LOCALES = ['en', 'zh-CN', 'es'];
+const FALLBACK_LOCALE = 'en';
+
+function detectLocale(navLang, supported, fallback) {
+  if (!navLang) return fallback;
+  const lower = navLang.toLowerCase();
+  for (const s of supported) if (s.toLowerCase() === lower) return s;
+  const prefix = lower.split('-')[0];
+  for (const s of supported) if (s.toLowerCase().split('-')[0] === prefix) return s;
+  return fallback;
+}
+
 // ── Speech ─────────────────────────────────────────────────────
 let voices = [];
 let speechReady = false;
