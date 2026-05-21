@@ -224,7 +224,7 @@ async function createTestYhspack() {
     // éªŒè¯ show_finish äº‹ä»¶å­˜åœ¨
     const hasShowFinish = await run(page, async (deck) => {
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 5);
+        const r = indexedDB.open('yihai_srs', 6);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });
@@ -264,7 +264,7 @@ async function createTestYhspack() {
 
     const trialFields = await run(page, async (deck) => {
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 5);
+        const r = indexedDB.open('yihai_srs', 6);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });
@@ -302,7 +302,7 @@ async function createTestYhspack() {
       // è¯»å– dp å’Œæœ¬åœ° TrialLog ä»Šæ—¥æ•°æ®
       const dp = getDailyProgress();
       const db = await new Promise((res, rej) => {
-        const r = indexedDB.open('yihai_srs', 5);
+        const r = indexedDB.open('yihai_srs', 6);
         r.onsuccess = e => res(e.target.result);
         r.onerror = e => rej(e.target.error);
       });
@@ -365,3 +365,4 @@ async function createTestYhspack() {
     process.exit(failed > 0 ? 1 : 0);
   }
 })();
+

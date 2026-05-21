@@ -164,7 +164,7 @@ async function checkTrials(page) {
   await page.evaluate(async () => { if (typeof _lastSrsWrite !== 'undefined' && _lastSrsWrite) await _lastSrsWrite; });
   await wait(page, 500);
   return page.evaluate(async () => {
-    const req = indexedDB.open('yihai_srs', 5);
+    const req = indexedDB.open('yihai_srs', 6);
     const db = await new Promise(r => { req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
     if (!db) return { idbError: true };
     const trials = await new Promise(r => {
@@ -383,3 +383,4 @@ async function checkTrials(page) {
   await browser.close();
   process.exit(failed > 0 ? 1 : 0);
 })();
+

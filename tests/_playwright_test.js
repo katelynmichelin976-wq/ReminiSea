@@ -159,7 +159,7 @@ async function createTestYhspack() {
     section('PHASE 3: 验证 SRS 状态');
 
     const finalSt = await run(page, () => new Promise(res => {
-      const r = indexedDB.open('yihai_srs', 5);
+      const r = indexedDB.open('yihai_srs', 6);
       r.onsuccess = e => {
         const db = e.target.result;
         const tx = db.transaction('card_states', 'readonly');

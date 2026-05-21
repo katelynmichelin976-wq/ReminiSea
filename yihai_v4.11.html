@@ -1680,10 +1680,11 @@ function minsToTs(mins) {
 
 // ── IndexedDB：yihai_srs（v5: user_id 多用户隔离）────────────────
 const SRS_DB_NAME    = 'yihai_srs';
-const SRS_DB_VER     = 5;
+const SRS_DB_VER     = 6;
 const CS_STORE       = 'card_states';
 const TRIAL_STORE    = 'trials';
 const EVT_STORE      = 'app_events';
+const LOG_STORE      = 'yh_logs';
 
 let _srsDb = null;
 let _srsDbPromise = null;
@@ -1744,6 +1745,7 @@ function _scheduleSessionRetry() {
   if (_onlineListenerActive) return;
   _onlineListenerActive = true;
   window.addEventListener('online', function _onOnline() {
+    log.info('sync', 'network online — retrying session restore');
     _onlineListenerActive = false;
     window.removeEventListener('online', _onOnline);
     _sessionRestoring = true;
@@ -2399,7 +2401,7 @@ async function runSync(opts) {
           try {
             meta = DECKS_META.find(function(m) { return m.name === sd.name; });
             if (meta) { syncStats.states_merged += await syncCardStatesFromCloud(meta.key); }
-          } catch(e) {}
+          } catch(e) { log.warn('sync', 'syncCardStatesFromCloud skip', e.message); }
         }
         renderDeckList();
         updateDeckStats();
@@ -2475,6 +2477,14 @@ function openSrsDb() {
         if (!trStore.indexNames.contains('user_id')) trStore.createIndex('user_id', 'user_id');
         localStorage.setItem('yihai_v5_migration_pending', '1');
       }
+      if (oldVer < 6) {
+        if (!db.objectStoreNames.contains(LOG_STORE)) {
+          const ls = db.createObjectStore(LOG_STORE, { keyPath: 'log_id', autoIncrement: true });
+          ls.createIndex('timestamp', 'timestamp');
+          ls.createIndex('level', 'level');
+        }
+        console.log('[idb] upgraded yihai_srs v5→v6: yh_logs store created');
+      }
     };
     req.onsuccess = e => { _srsDb = e.target.result; _srsDbPromise = null; res(_srsDb); };
     req.onerror   = e => { _srsDbPromise = null; rej(e.target.error); };
@@ -2500,7 +2510,7 @@ async function migrateV5IfNeeded() {
     let trUpdated = 0;
     trAll.forEach(t => { if (!t.user_id) { t.user_id = uid; trStore.put(t); trUpdated++; } });
     await new Promise((resolve, reject) => { trTx.oncomplete = resolve; trTx.onerror = reject; });
-  } catch(e) {}
+  } catch(e) { log.error('idb', 'migrateV5 failed', e.message); }
   localStorage.removeItem('yihai_v5_migration_pending');
   _v5MigrationDone = true;
 }
@@ -2525,8 +2535,86 @@ async function migrateDeviceRecordsToUser(cloudUserId) {
     var trN = 0;
     trAll.forEach(function(t) { if (t.user_id === did) { t.user_id = cloudUserId; trStore.put(t); trN++; } });
     await new Promise(function(resolve, reject) { trTx.oncomplete = resolve; trTx.onerror = reject; });
-  } catch(e) {}
+  } catch(e) { log.error('idb', 'migrateDeviceId failed', e.message); }
 }
+
+// ── 诊断日志系统 ────────────────────────────────────────────────────
+// 等级优先级：URL ?log=debug > localStorage yihai_log_level > 默认 warn
+// IDB 写入：info 及以上；console 彩色输出：全等级可见（取决于当前等级）
+// DevTools 工具：window.yhLog.setLevel / show / showErrors / clear / export
+const _LOG_LEVELS  = { debug: 0, info: 1, warn: 2, error: 3 };
+const _LOG_COLORS  = { debug: 'color:#888', info: 'color:#0ea5e9', warn: 'color:#f59e0b', error: 'color:#ef4444' };
+const _urlLogParam = new URLSearchParams(location.search).get('log');
+let _logLevel = _LOG_LEVELS[_urlLogParam || localStorage.getItem('yihai_log_level') || 'warn'] ?? 2;
+
+function _writeLogToIdb(entry) {
+  openSrsDb().then(function(db) {
+    var tx = db.transaction(LOG_STORE, 'readwrite');
+    tx.objectStore(LOG_STORE).add(entry);
+    tx.oncomplete = function() { trimStore(db, LOG_STORE, 300); };
+  }).catch(function(){});
+}
+
+function _doLog(levelName, module, msg, data) {
+  var levelNum = _LOG_LEVELS[levelName] ?? 0;
+  if (levelNum < _logLevel) return;
+  var prefix = '[' + levelName.toUpperCase() + '][' + module + ']';
+  if (data !== undefined) {
+    console.log('%c' + prefix, _LOG_COLORS[levelName], msg, data);
+  } else {
+    console.log('%c' + prefix, _LOG_COLORS[levelName], msg);
+  }
+  if (levelNum >= _LOG_LEVELS.info) {
+    _writeLogToIdb({ level: levelName, module: module, msg: msg, data: data !== undefined ? JSON.stringify(data) : undefined, timestamp: Date.now(), synced_at: null });
+  }
+}
+
+var log = {
+  debug: function(mod, msg, data) { _doLog('debug', mod, msg, data); },
+  info:  function(mod, msg, data) { _doLog('info',  mod, msg, data); },
+  warn:  function(mod, msg, data) { _doLog('warn',  mod, msg, data); },
+  error: function(mod, msg, data) { _doLog('error', mod, msg, data); },
+  setLevel: function(name) {
+    if (_LOG_LEVELS[name] === undefined) { console.warn('yhLog: unknown level', name); return; }
+    _logLevel = _LOG_LEVELS[name];
+    localStorage.setItem('yihai_log_level', name);
+    console.log('%c[LOG] level set to ' + name, _LOG_COLORS[name]);
+  }
+};
+
+window.yhLog = {
+  setLevel: log.setLevel,
+  show: function(n) {
+    openSrsDb().then(function(db) {
+      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
+      r.onsuccess = function(e) {
+        var rows = e.target.result || [];
+        rows.slice(-(n || 50)).forEach(function(r) { console.log('[' + r.level + '][' + r.module + ']', r.msg, r.data || ''); });
+        console.log('── total', rows.length, 'entries ──');
+      };
+    }).catch(console.error);
+  },
+  showErrors: function() {
+    openSrsDb().then(function(db) {
+      var idx = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).index('level');
+      var r = idx.getAll('error');
+      r.onsuccess = function(e) { (e.target.result || []).forEach(function(r) { console.error('[' + r.module + ']', r.msg, r.data || ''); }); };
+    }).catch(console.error);
+  },
+  clear: function() {
+    openSrsDb().then(function(db) { db.transaction(LOG_STORE, 'readwrite').objectStore(LOG_STORE).clear(); }).catch(console.error);
+    console.log('[LOG] yh_logs cleared');
+  },
+  export: function() {
+    openSrsDb().then(function(db) {
+      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
+      r.onsuccess = function(e) {
+        var blob = new Blob([JSON.stringify(e.target.result, null, 2)], { type: 'application/json' });
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'yh_logs_' + Date.now() + '.json'; a.click();
+      };
+    }).catch(console.error);
+  }
+};
 
 // ── 数据埋点：应用事件日志 ──────────────────────────────────────────
 function isMember() {
@@ -2534,6 +2622,7 @@ function isMember() {
 }
 
 function logAppEvent(type, payload, deckKey) {
+  log.debug('evt', type, payload);
   var event = {
     event_id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     event_type: type,
@@ -2566,38 +2655,95 @@ async function upsertDeviceRegistry() {
       user_id: _cloudUserId, device_id: _deviceId,
       device_info: getDeviceInfo(), last_seen: new Date().toISOString()
     }, { onConflict: 'user_id,device_id' });
-  } catch(e) {}
+  } catch(e) { log.warn('sync', 'upsertDeviceRegistry failed', e.message); }
 }
 
 async function uploadAppEvent(event) {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  if (!_syncEnabled || !_sb || !_cloudUserId) return false;
   try {
     var payload = { event_id: event.event_id, user_id: _cloudUserId, event_type: event.event_type, deck_key: event.deck_key, payload: event.payload, device_id: event.device_id, timestamp: event.timestamp };
     var _a = await _sb.from('app_events').insert(payload);
-    // 23505 = 记录已存在（logAppEvent 立即上传后 syncAppEvents 竞态重读导致）
-    if (!_a.error || _a.error.code === '23505') { event.synced_at = Date.now(); markEventSynced(event.event_id); }
-  } catch(e) {}
+    // 23505 = 记录已存在（重复上传，视为成功）
+    if (!_a.error || _a.error.code === '23505') { event.synced_at = Date.now(); return true; }
+    log.warn('sync', 'uploadAppEvent error', _a.error);
+    return false;
+  } catch(e) { log.warn('sync', 'uploadAppEvent exception', e.message); return false; }
 }
 
 
-// 标记事件已同步（写回 IndexedDB）
-function markEventSynced(eventId) {
-  openSrsDb().then(function(db) {
-    var tx = db.transaction(EVT_STORE, 'readwrite');
-    var req = tx.objectStore(EVT_STORE).get(eventId);
-    req.onsuccess = function() { if (req.result) { req.result.synced_at = Date.now(); tx.objectStore(EVT_STORE).put(req.result); } };
-  }).catch(function(){});
-}
-
-
-// 批量补传 AppEvents
+// 批量补传 AppEvents（含 warn/error 诊断日志）
 async function syncAppEvents() {
   if (!_syncEnabled || !_sb) return 0;
   var db = await openSrsDb();
-  var all = await new Promise(function(res, rej) { var r = db.transaction(EVT_STORE, 'readonly').objectStore(EVT_STORE).getAll(); r.onsuccess = function(e) { res(e.target.result || []); }; r.onerror = function(e) { rej(e.target.error); }; });
-  var uploaded = 0;
-  for (var i = 0; i < all.length; i++) { if (!all[i].synced_at) { try { await uploadAppEvent(all[i]); uploaded++; } catch(e) {} } }
-  return uploaded;
+
+  // 读取未同步业务事件
+  var evtAll = await new Promise(function(res, rej) {
+    var r = db.transaction(EVT_STORE, 'readonly').objectStore(EVT_STORE).getAll();
+    r.onsuccess = function(e) { res(e.target.result || []); };
+    r.onerror   = function(e) { rej(e.target.error); };
+  });
+  var pending = evtAll.filter(function(e) { return !e.synced_at; });
+
+  // 上传业务事件，收集成功 ID
+  var syncedIds = [];
+  for (var i = 0; i < pending.length; i++) {
+    var ok = await uploadAppEvent(pending[i]);
+    if (ok) syncedIds.push(pending[i].event_id);
+  }
+
+  // 单事务批量写回 synced_at（修复 markEventSynced 遗漏）
+  if (syncedIds.length > 0) {
+    var now = Date.now();
+    await new Promise(function(res, rej) {
+      var tx = db.transaction(EVT_STORE, 'readwrite');
+      var store = tx.objectStore(EVT_STORE);
+      syncedIds.forEach(function(id) {
+        var req = store.get(id);
+        req.onsuccess = function() { if (req.result) { req.result.synced_at = now; store.put(req.result); } };
+      });
+      tx.oncomplete = res;
+      tx.onerror = function(e) { log.error('sync', 'batch markSynced failed', e.target.error && e.target.error.message); rej(e.target.error); };
+    });
+  }
+
+  // 上传 warn/error 诊断日志（封装为 app_events 格式）
+  if (db.objectStoreNames.contains(LOG_STORE)) {
+    var logAll = await new Promise(function(res, rej) {
+      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
+      r.onsuccess = function(e) { res(e.target.result || []); };
+      r.onerror   = function(e) { rej(e.target.error); };
+    });
+    var pendingLogs = logAll.filter(function(l) { return !l.synced_at && (l.level === 'warn' || l.level === 'error'); });
+    var syncedLogIds = [];
+    for (var j = 0; j < pendingLogs.length; j++) {
+      var l = pendingLogs[j];
+      var syntheticEvt = {
+        event_id:   'log_' + (l.log_id || Date.now()) + '_' + Math.random().toString(36).slice(2, 5),
+        event_type: 'log:' + l.level,
+        deck_key:   '',
+        payload:    { module: l.module, msg: l.msg, data: l.data },
+        device_id:  _deviceId || '',
+        timestamp:  l.timestamp
+      };
+      var ok2 = await uploadAppEvent(syntheticEvt);
+      if (ok2) syncedLogIds.push(l.log_id);
+    }
+    if (syncedLogIds.length > 0) {
+      var now2 = Date.now();
+      await new Promise(function(res2, rej2) {
+        var tx2 = db.transaction(LOG_STORE, 'readwrite');
+        var s2 = tx2.objectStore(LOG_STORE);
+        syncedLogIds.forEach(function(id) {
+          var req2 = s2.get(id);
+          req2.onsuccess = function() { if (req2.result) { req2.result.synced_at = now2; s2.put(req2.result); } };
+        });
+        tx2.oncomplete = res2;
+        tx2.onerror = rej2;
+      });
+    }
+  }
+
+  return syncedIds.length;
 }
 
 
@@ -2627,7 +2773,7 @@ async function purgeOldLogs() {
     var evtTx = db.transaction(EVT_STORE, 'readwrite');
     var evtReq = evtTx.objectStore(EVT_STORE).openCursor();
     evtReq.onsuccess = function(e) { var c = e.target.result; if (c && c.value.timestamp < cutoff30) { c.delete(); c.continue(); } };
-  } catch(e) {}
+  } catch(e) { log.warn('idb', 'purgeOldLogs failed', e.message); }
 }
 
 // ── CardState CRUD ───────────────────────────────────────────────
@@ -2924,7 +3070,7 @@ function getDailyProgress() {
     const dp = JSON.parse(raw);
     if (dp.date !== todayStr()) return newDailyProgress();  // 新的一天，重置
     return dp;
-  } catch(e) { return newDailyProgress(); }
+  } catch(e) { log.warn('idb', 'getDailyProgress parse error', e.message); return newDailyProgress(); }
 }
 
 function saveDailyProgress(dp) {
@@ -5296,7 +5442,7 @@ function toggleTheme(checkbox){
   // 2. 云端初始化 — Supabase SDK 加载完成后执行
   async function initCloud() {
     window.addEventListener('offline', function() {
-      if (_syncEnabled) { _sessionOffline = true; updateCloudTabUI(); _scheduleSessionRetry(); }
+      if (_syncEnabled) { log.info('sync', 'network offline — entering offline mode'); _sessionOffline = true; updateCloudTabUI(); _scheduleSessionRetry(); }
     });
 
     logAppEvent('session_restore_start', {

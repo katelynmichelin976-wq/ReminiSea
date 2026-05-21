@@ -1,27 +1,27 @@
-/**
- * 忆海拾光 云端同步回归测试（登录 → 练习 → 配置同步 → 刷新恢复 → 退出）
+﻿/**
+ * å¿†æµ·æ‹¾å…‰ äº‘ç«¯åŒæ­¥å›žå½’æµ‹è¯•ï¼ˆç™»å½• â†’ ç»ƒä¹  â†’ é…ç½®åŒæ­¥ â†’ åˆ·æ–°æ¢å¤ â†’ é€€å‡ºï¼‰
  *
- * 依赖：
+ * ä¾èµ–ï¼š
  *   python -m http.server 8080 --directory /c/code
  *   TEST_PASSWORD=xxx node tests/_playwright_cloud_test.js
  *
- * 覆盖：登录 → 下载牌组 → 练习 → 配置 → 刷新恢复 → 多设备 → 退出
- * 合并自：原 _playwright_cloud_test.js + _playwright_session_restore_test.js（v4.10.1）
+ * è¦†ç›–ï¼šç™»å½• â†’ ä¸‹è½½ç‰Œç»„ â†’ ç»ƒä¹  â†’ é…ç½® â†’ åˆ·æ–°æ¢å¤ â†’ å¤šè®¾å¤‡ â†’ é€€å‡º
+ * åˆå¹¶è‡ªï¼šåŽŸ _playwright_cloud_test.js + _playwright_session_restore_test.jsï¼ˆv4.10.1ï¼‰
  */
 const { chromium } = require('playwright');
 const helper = require('./_playwright_helper');
 const { pass, check, section, wait, run, getBaseUrl } = helper;
-// cloud_test & session_restore 共 17+8=25 断言
+// cloud_test & session_restore å…± 17+8=25 æ–­è¨€
 
 const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
-const TEST_DECK_NAME = '蔬菜水果';
+const TEST_DECK_NAME = 'è”¬èœæ°´æžœ';
 const CLOUD_DECK_KEY = 'cloud_01edbdfd';
 const CARD_COUNT = 33;
 
 (async () => {
-  if (!TEST_PASSWORD) { console.error('FATAL: 请设置 TEST_PASSWORD 环境变量'); process.exit(1); }
+  if (!TEST_PASSWORD) { console.error('FATAL: è¯·è®¾ç½® TEST_PASSWORD çŽ¯å¢ƒå˜é‡'); process.exit(1); }
 
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -29,20 +29,20 @@ const CARD_COUNT = 33;
   page.on('pageerror', err => console.log(`  [PAGE ERROR] ${err.message}`));
 
   try {
-    // ═══════════════════ PHASE 1: 登录 ═══════════════════
-    section('PHASE 1: 登录');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 1: ç™»å½• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 1: ç™»å½•');
     await page.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 2000);
 
-    pass('登录成功，显示已连接界面', await helper.cloudLogin(page, TEST_EMAIL, TEST_PASSWORD));
+    pass('ç™»å½•æˆåŠŸï¼Œæ˜¾ç¤ºå·²è¿žæŽ¥ç•Œé¢', await helper.cloudLogin(page, TEST_EMAIL, TEST_PASSWORD));
 
-    pass('显示登录邮箱', (await run(page, () => {
+    pass('æ˜¾ç¤ºç™»å½•é‚®ç®±', (await run(page, () => {
       const el = document.getElementById('cloud-user-email');
       return el ? el.textContent : '';
     })).includes(TEST_EMAIL));
 
-    // ═══════════════════ PHASE 2: 下载云端牌组 ═══════════════════
-    section('PHASE 2: 下载云端牌组');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 2: ä¸‹è½½äº‘ç«¯ç‰Œç»„ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 2: ä¸‹è½½äº‘ç«¯ç‰Œç»„');
     await helper.closeSettings(page);
 
     await run(page, async (name) => {
@@ -71,16 +71,16 @@ const CARD_COUNT = 33;
       if (deckFound) break;
       await wait(page, 500);
     }
-    pass('云端牌组出现在首页列表', deckFound);
+    pass('äº‘ç«¯ç‰Œç»„å‡ºçŽ°åœ¨é¦–é¡µåˆ—è¡¨', deckFound);
 
     const deckData = await run(page, (name) => {
       const meta = (DECKS_META || []).find(m => m.name === name);
       if (!meta) return null;
       return { key: meta.key, cardCount: (DECKS[meta.key] || []).length };
     }, TEST_DECK_NAME);
-    pass('DECKS_META 包含牌组', deckData !== null);
-    check(`${CARD_COUNT} 张卡片`, deckData && deckData.cardCount, CARD_COUNT);
-    console.log(`  key: ${deckData ? deckData.key : 'N/A'}, 卡片: ${deckData ? deckData.cardCount : 0}`);
+    pass('DECKS_META åŒ…å«ç‰Œç»„', deckData !== null);
+    check(`${CARD_COUNT} å¼ å¡ç‰‡`, deckData && deckData.cardCount, CARD_COUNT);
+    console.log(`  key: ${deckData ? deckData.key : 'N/A'}, å¡ç‰‡: ${deckData ? deckData.cardCount : 0}`);
 
     await run(page, (key) => {
       const c = document.querySelector(`.deck-card[data-deck="${key}"]`);
@@ -88,17 +88,17 @@ const CARD_COUNT = 33;
     }, CLOUD_DECK_KEY);
     await wait(page, 300);
 
-    check('currentDeck 为云端牌组', await run(page, () => currentDeck), CLOUD_DECK_KEY);
+    check('currentDeck ä¸ºäº‘ç«¯ç‰Œç»„', await run(page, () => currentDeck), CLOUD_DECK_KEY);
 
-    // ═══════════════════ PHASE 3: 练习并验证同步 ═══════════════════
-    section('PHASE 3: 练习并验证同步');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 3: ç»ƒä¹ å¹¶éªŒè¯åŒæ­¥ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 3: ç»ƒä¹ å¹¶éªŒè¯åŒæ­¥');
 
     const uid = await run(page, () => _cloudUserId);
     await run(page, async (u, dk) => {
       await _sb.from('sync_card_states').delete().eq('user_id', u).eq('deck_key', dk);
     }, uid, CLOUD_DECK_KEY);
     await run(page, (dk) => new Promise((res) => {
-      const r = indexedDB.open('yihai_srs', 5);
+      const r = indexedDB.open('yihai_srs', 6);
       r.onsuccess = e => {
         const db = e.target.result;
         const tx = db.transaction('card_states', 'readwrite');
@@ -110,14 +110,14 @@ const CARD_COUNT = 33;
       };
     }), CLOUD_DECK_KEY);
     await run(page, () => localStorage.removeItem('yihai_daily_progress'));
-    console.log('  旧状态+DP 已清理');
+    console.log('  æ—§çŠ¶æ€+DP å·²æ¸…ç†');
 
     await run(page, () => {
-      for (const b of document.querySelectorAll('button')) { if (b.textContent.includes('开始练习')) { b.click(); return; } }
+      for (const b of document.querySelectorAll('button')) { if (b.textContent.includes('å¼€å§‹ç»ƒä¹ ')) { b.click(); return; } }
     });
     await wait(page, 5000);
 
-    pass('进入练习屏', await run(page, () =>
+    pass('è¿›å…¥ç»ƒä¹ å±', await run(page, () =>
       document.getElementById('screen-quiz').classList.contains('active')));
 
     let practiced = 0;
@@ -174,16 +174,16 @@ const CARD_COUNT = 33;
       if (!done) break;
       practiced++;
     }
-    pass('练习了卡片', practiced >= 2);
-    console.log(`  完成 ${practiced} 张`);
+    pass('ç»ƒä¹ äº†å¡ç‰‡', practiced >= 2);
+    console.log(`  å®Œæˆ ${practiced} å¼ `);
 
     await run(page, () => {
-      for (const b of document.querySelectorAll('button')) { if (b.textContent.includes('返回首页')) { b.click(); return; } }
+      for (const b of document.querySelectorAll('button')) { if (b.textContent.includes('è¿”å›žé¦–é¡µ')) { b.click(); return; } }
     });
     await wait(page, 500);
 
     const localData = await run(page, (key) => new Promise(res => {
-      const r = indexedDB.open('yihai_srs', 5);
+      const r = indexedDB.open('yihai_srs', 6);
       r.onsuccess = e => {
         const db = e.target.result;
         const g1 = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
@@ -197,47 +197,47 @@ const CARD_COUNT = 33;
         };
       };
     }), CLOUD_DECK_KEY);
-    pass('本地有 CardState', localData.states > 0);
-    pass('本地有 TrialLog', localData.trials > 0);
-    console.log(`  CardState: ${localData.states} 条, TrialLog: ${localData.trials} 条`);
+    pass('æœ¬åœ°æœ‰ CardState', localData.states > 0);
+    pass('æœ¬åœ°æœ‰ TrialLog', localData.trials > 0);
+    console.log(`  CardState: ${localData.states} æ¡, TrialLog: ${localData.trials} æ¡`);
 
-    // ═══════════════════ PHASE 4: 配置同步 ═══════════════════
-    section('PHASE 4: 参数配置同步');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 4: é…ç½®åŒæ­¥ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 4: å‚æ•°é…ç½®åŒæ­¥');
     await helper.openSettingsTab(page, 'SRS');
 
     const origNewPerDay = await run(page, () => SRS_CONFIG.new_cards_per_day);
-    console.log(`  原 new_cards_per_day = ${origNewPerDay}`);
+    console.log(`  åŽŸ new_cards_per_day = ${origNewPerDay}`);
     const testNewVal = origNewPerDay === 5 ? 3 : 5;
     await run(page, ({ key, val }) => { saveSrsConfigKey(key, val); }, { key: 'new_cards_per_day', val: testNewVal });
     await wait(page, 1500);
-    check('本地配置已更新', await run(page, () => SRS_CONFIG.new_cards_per_day), testNewVal);
+    check('æœ¬åœ°é…ç½®å·²æ›´æ–°', await run(page, () => SRS_CONFIG.new_cards_per_day), testNewVal);
     await run(page, () => runSync({ deckKey: currentDeck, modal: false, decks: false, showToast: false }).catch(e => console.warn('[test] sync cfg:', e.message)));
     await wait(page, 4000);
-    console.log(`  已推送配置 (new_cards_per_day: ${testNewVal})`);
+    console.log(`  å·²æŽ¨é€é…ç½® (new_cards_per_day: ${testNewVal})`);
     await run(page, ({ key, val }) => { saveSrsConfigKey(key, val); }, { key: 'new_cards_per_day', val: origNewPerDay });
     await wait(page, 1500);
 
-    // ═══════════════════ PHASE 5: 刷新后登录恢复 ═══════════════════
-    // 合并自 _playwright_session_restore_test.js — 放在多设备之前，避免多设备干扰 session
-    section('PHASE 5: 刷新后登录恢复');
-    console.log('  正在 reload...');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 5: åˆ·æ–°åŽç™»å½•æ¢å¤ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // åˆå¹¶è‡ª _playwright_session_restore_test.js â€” æ”¾åœ¨å¤šè®¾å¤‡ä¹‹å‰ï¼Œé¿å…å¤šè®¾å¤‡å¹²æ‰° session
+    section('PHASE 5: åˆ·æ–°åŽç™»å½•æ¢å¤');
+    console.log('  æ­£åœ¨ reload...');
     await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 1000);
 
-    pass('刷新后 UI 已渲染', !!await run(page, () => {
+    pass('åˆ·æ–°åŽ UI å·²æ¸²æŸ“', !!await run(page, () => {
       const v = document.querySelector('.home-version');
       return v ? v.textContent : null;
     }));
 
-    // 打开设置 → 云端 Tab 触发 updateCloudTabUI()（session restore 仅在切换到云端 Tab 时更新 UI）
+    // æ‰“å¼€è®¾ç½® â†’ äº‘ç«¯ Tab è§¦å‘ updateCloudTabUI()ï¼ˆsession restore ä»…åœ¨åˆ‡æ¢åˆ°äº‘ç«¯ Tab æ—¶æ›´æ–° UIï¼‰
     await run(page, () => {
-      const b = document.querySelector('[aria-label="设置"]');
+      const b = document.querySelector('[aria-label="è®¾ç½®"]');
       if (b) b.click();
     });
     await wait(page, 500);
     await run(page, () => {
       const tabs = document.querySelectorAll('.sheet-tab');
-      for (const t of tabs) { if (t.textContent.includes('云端')) { t.click(); return; } }
+      for (const t of tabs) { if (t.textContent.includes('äº‘ç«¯')) { t.click(); return; } }
     });
     await wait(page, 500);
 
@@ -250,25 +250,25 @@ const CARD_COUNT = 33;
       if (restored) break;
       await wait(page, 500);
     }
-    pass('刷新后自动恢复登录，显示已连接界面', restored);
+    pass('åˆ·æ–°åŽè‡ªåŠ¨æ¢å¤ç™»å½•ï¼Œæ˜¾ç¤ºå·²è¿žæŽ¥ç•Œé¢', restored);
 
-    pass('刷新后邮箱显示正确', (await run(page, () => {
+    pass('åˆ·æ–°åŽé‚®ç®±æ˜¾ç¤ºæ­£ç¡®', (await run(page, () => {
       const el = document.getElementById('cloud-user-email');
       return el ? el.textContent : '';
     })).includes(TEST_EMAIL));
 
-    pass('刷新后牌组列表不为空', await run(page, () => document.querySelectorAll('.deck-card').length > 0));
+    pass('åˆ·æ–°åŽç‰Œç»„åˆ—è¡¨ä¸ä¸ºç©º', await run(page, () => document.querySelectorAll('.deck-card').length > 0));
 
-    pass('刷新后不显示空状态占位', !await run(page, () => {
+    pass('åˆ·æ–°åŽä¸æ˜¾ç¤ºç©ºçŠ¶æ€å ä½', !await run(page, () => {
       const el = document.querySelector('.empty-state');
       return el && window.getComputedStyle(el).display !== 'none';
     }));
 
-    // ═══════════════════ PHASE 6: 多设备 ═══════════════════
-    section('PHASE 6: 多设备同步（深色模式）');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 6: å¤šè®¾å¤‡ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 6: å¤šè®¾å¤‡åŒæ­¥ï¼ˆæ·±è‰²æ¨¡å¼ï¼‰');
 
     const deviceAThemeBefore = await run(page, () => document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-    console.log(`  Device A 当前主题: ${deviceAThemeBefore}`);
+    console.log(`  Device A å½“å‰ä¸»é¢˜: ${deviceAThemeBefore}`);
     const targetTheme = deviceAThemeBefore === 'dark' ? 'light' : 'dark';
 
     const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -276,7 +276,7 @@ const CARD_COUNT = 33;
     await page2.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page2, 2000);
 
-    await helper.openSettingsTab(page2, '云端');
+    await helper.openSettingsTab(page2, 'äº‘ç«¯');
     const e2 = await page2.$('#cloud-email');
     if (e2) { await e2.fill(''); await e2.fill(TEST_EMAIL); }
     await page2.fill('#cloud-password', TEST_PASSWORD);
@@ -291,10 +291,10 @@ const CARD_COUNT = 33;
       if (connected2) break;
       await wait(page2, 500);
     }
-    pass('Device B 登录成功', connected2);
+    pass('Device B ç™»å½•æˆåŠŸ', connected2);
     await helper.waitSyncModal(page2, 40);
 
-    console.log(`  Device B 初始主题: ${await run(page2, () => document.documentElement.classList.contains('dark') ? 'dark' : 'light')}`);
+    console.log(`  Device B åˆå§‹ä¸»é¢˜: ${await run(page2, () => document.documentElement.classList.contains('dark') ? 'dark' : 'light')}`);
 
     await run(page, () => {
       const tog = document.getElementById('dark-toggle');
@@ -302,15 +302,15 @@ const CARD_COUNT = 33;
       toggleTheme(document.getElementById('dark-toggle'));
     });
     await wait(page, 1500);
-    console.log(`  Device A 切换为: ${targetTheme}`);
+    console.log(`  Device A åˆ‡æ¢ä¸º: ${targetTheme}`);
 
-    pass('Device A 配置推送成功', await run(page, async () => { try { await cloudPushConfig(); return true; } catch(e) { return false; } }));
+    pass('Device A é…ç½®æŽ¨é€æˆåŠŸ', await run(page, async () => { try { await cloudPushConfig(); return true; } catch(e) { return false; } }));
     await run(page2, () => cloudPullConfig().catch(e => console.warn('[test] B pull:', e.message)));
     await wait(page2, 2000);
 
     const deviceBTheme = await run(page2, () => document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-    pass(`Device B 主题已同步为 ${targetTheme}`, deviceBTheme === targetTheme);
-    console.log(`  Device B 主题: ${deviceBTheme}`);
+    pass(`Device B ä¸»é¢˜å·²åŒæ­¥ä¸º ${targetTheme}`, deviceBTheme === targetTheme);
+    console.log(`  Device B ä¸»é¢˜: ${deviceBTheme}`);
     await page2.close();
     await ctx2.close();
 
@@ -321,17 +321,17 @@ const CARD_COUNT = 33;
     });
     await wait(page, 1000);
 
-    // ═══════════════════ PHASE 7: 退出 ═══════════════════
-    section('PHASE 7: 退出登录');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PHASE 7: é€€å‡º â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('PHASE 7: é€€å‡ºç™»å½•');
     const { loggedOut, syncDisabled } = await helper.cloudLogout(page);
-    pass('退出后显示登录表单', loggedOut);
-    pass('_syncEnabled 为 false', syncDisabled);
+    pass('é€€å‡ºåŽæ˜¾ç¤ºç™»å½•è¡¨å•', loggedOut);
+    pass('_syncEnabled ä¸º false', syncDisabled);
 
-    // ═══════════════════ 结果 ═══════════════════
-    section('结果');
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ç»“æžœ â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    section('ç»“æžœ');
     const { passed, failed, errors } = helper.getCounts();
-    console.log(`  通过: ${passed}  失败: ${failed}`);
-    if (failed > 0) console.log(`  失败: ${errors.join(' | ')}`);
+    console.log(`  é€šè¿‡: ${passed}  å¤±è´¥: ${failed}`);
+    if (failed > 0) console.log(`  å¤±è´¥: ${errors.join(' | ')}`);
 
   } catch (err) {
     console.error('\nFATAL:', err.message);
@@ -342,3 +342,4 @@ const CARD_COUNT = 33;
   const { failed } = helper.getCounts();
   process.exit(failed > 0 ? 1 : 0);
 })();
+
