@@ -1983,11 +1983,11 @@ async function doCloudLogout() {
 // 采集设备信息用于问题定位
 function getDeviceInfo() {
   try {
-    return JSON.stringify({
+    return {
       ua:     navigator.userAgent,
       screen: screen.width + 'x' + screen.height,
       lang:   navigator.language
-    });
+    };
   } catch(e) { return null; }
 }
 
