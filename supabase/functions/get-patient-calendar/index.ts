@@ -70,10 +70,62 @@ Deno.serve(async (req: Request) => {
 
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-    const { userId, year, month, date } = await req.json();
+    const { userId, year, month, date, days } = await req.json();
 
-    if (!userId || !year || !month) {
-      return errorResponse(400, "Missing required parameters: userId, year, month");
+    if (!userId) {
+      return errorResponse(400, "Missing required parameter: userId");
+    }
+
+    // days 路径：跨天答题流水（用于日志查询 Tab）
+    if (days && !year && !month) {
+      const today = new Date();
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - (Number(days) - 1));
+      const startStr = startDate.toISOString().split("T")[0];
+
+      const { data: trials } = await supabase
+        .from("sync_trials")
+        .select("trial_id, card_id, deck_key, rating, is_correct, response_time_ms, srs_stage_before, srs_stage_after, timestamp")
+        .eq("user_id", userId)
+        .gte("trial_date", startStr)
+        .order("timestamp", { ascending: false })
+        .limit(200);
+
+      const nameMap = new Map<string, string>();
+      const cardIds = [...new Set((trials || []).map(t => t.card_id))];
+      if (cardIds.length > 0) {
+        const { data: cardsPool } = await supabase
+          .from("cards_pool")
+          .select("card_id, card_name")
+          .in("card_id", cardIds);
+        if (cardsPool) {
+          for (const c of cardsPool) nameMap.set(c.card_id, c.card_name);
+        }
+      }
+
+      const response: CalendarResponse = {
+        year: 0, month: 0, days: [],
+        trials: (trials || []).map(t => ({
+          trialId: t.trial_id,
+          cardId: t.card_id,
+          cardName: nameMap.get(t.card_id) || t.card_id,
+          deckKey: t.deck_key,
+          rating: t.rating,
+          isCorrect: t.is_correct,
+          responseTimeMs: t.response_time_ms,
+          srsStageBefore: t.srs_stage_before,
+          srsStageAfter: t.srs_stage_after,
+          timestamp: t.timestamp,
+        })),
+      };
+      return new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      });
+    }
+
+    if (!year || !month) {
+      return errorResponse(400, "Missing required parameters: year, month");
     }
 
     // Build date range for the month
