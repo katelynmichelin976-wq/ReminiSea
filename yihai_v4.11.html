@@ -1990,7 +1990,7 @@ function getDeviceInfo() {
       screen: screen.width + 'x' + screen.height,
       lang:   navigator.language
     };
-  } catch(e) { return null; }
+  } catch(e) { return {}; }
 }
 
 async function syncTrialLog(entry) {
@@ -5210,7 +5210,9 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 5. 刷新 UI（切换到新牌组）
     currentDeck = key;
     renderDeckList();
-    updateDeckStats();
+    // noToast=true 表示从 runSync 内部调用，runSync 会在状态同步后统一调用 updateDeckStats()
+    // 避免此处 IDB 状态未就绪时的竞态覆盖
+    if (!noToast) updateDeckStats();
 
     if (!noToast) showCloudToast('✓ 已导入「' + deckName + '」' + deckCards.length + ' 张');
   } catch(e) {
@@ -5369,7 +5371,8 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     const metaIdx = DECKS_META.findIndex(m => m.key === localKey);
     if (metaIdx >= 0) DECKS_META[metaIdx].source = 'cloud';
     renderDeckList();
-    updateDeckStats();
+    // noToast=true 表示从 runSync 内部调用，runSync 会在状态同步后统一调用 updateDeckStats()
+    if (!noToast) updateDeckStats();
 
     let msg;
     if (!lastSyncAt) {
