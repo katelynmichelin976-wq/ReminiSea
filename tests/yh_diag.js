@@ -35,8 +35,8 @@
       <span style="color:#38bdf8;font-weight:bold;font-size:14px">🔍 忆海诊断</span>
       <span id="_yh_ver" style="color:#475569;font-size:11px"></span>
       <div style="flex:1"></div>
-      <button id="_yh_refresh" style="background:#1d4ed8;color:#fff;border:none;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:12px">↺ 刷新</button>
-      <button id="_yh_close" style="background:#374151;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:12px">✕</button>
+      <button id="_yh_refresh" style="background:#1d4ed8;color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px;touch-action:none">↺ 刷新</button>
+      <button id="_yh_close" style="background:#374151;color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px;touch-action:none">✕</button>
     </div>
     <div id="_yh_tabs" style="display:flex;background:#1e293b;border-bottom:2px solid #0f172a;flex-shrink:0"></div>
     <div id="_yh_body" style="flex:1;overflow:auto;padding:12px 14px"></div>`;
