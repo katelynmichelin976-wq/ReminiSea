@@ -129,6 +129,13 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.11.17 — 2026-05-21
+
+**Bug 修复**
+- 修复 session_restore L2 正则误判：`refresh_token_not_found`（下划线）匹配不到 SDK 实际返回的空格写法 `Refresh Token Not Found`，导致 token 服务端过期时走 offline 分支显示"网络不稳定"而非登录界面；修复后检测到真实登出时清除 `yihai_session_backup` 并直接返回，跳过 L3 和 offline 兜底
+
+---
+
 ### v4.11.16 — 2026-05-21
 
 **诊断增强 + Bug 修复**

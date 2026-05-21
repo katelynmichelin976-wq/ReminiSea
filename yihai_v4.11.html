@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.11.16</title>
+<title>忆海拾光 v4.11.17</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -879,7 +879,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.11.16</span>
+        <span class="home-version">v4.11.17</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1701,7 +1701,7 @@ function getCurrentUserId() {
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.11.16';
+const APP_VERSION = '4.11.17';
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1823,8 +1823,9 @@ async function restoreCloudSession() {
       // iOS PWA reload 后网络栈短暂不稳，refresh 请求容易失败但不代表账号失效。
       var errMsg    = (r.error && r.error.message) || '';
       var errStatus = r.error && r.error.status;
+      // Supabase 错误 message 可能是下划线（refresh_token_not_found）或空格（Refresh Token Not Found）
       var isRealLogout = errStatus === 400 &&
-        /invalid.grant|refresh_token_not_found|user_not_found/i.test(errMsg);
+        /invalid.grant|refresh.token.not.found|user.not.found/i.test(errMsg);
       if (!isRealLogout && parsed.user && parsed.user.email) {
         // 不确定失败 → offline 模式，等 online 事件自动重试
         logAppEvent('session_restore_l2_offline', {
@@ -1837,9 +1838,12 @@ async function restoreCloudSession() {
         _scheduleSessionRetry();
         return;
       }
+      // 真实登出（token 服务端已失效）：清除备份，直接返回，显示登录界面
+      localStorage.removeItem('yihai_session_backup');
       logAppEvent('session_restore_l2_real_logout', {
         errStatus: errStatus, errMsg: errMsg, isRealLogout: isRealLogout
       });
+      return;
     }
 
     // 第3级：300ms 重试（CDN 竞态兜底）
