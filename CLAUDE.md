@@ -132,7 +132,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v4.11.15**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v4.11.16**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 ## Environment
 

@@ -2,6 +2,14 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v4.11.16 Key Changes
+
+- **分级诊断日志系统**: 新增 `log.*`（debug/info/warn/error）两层架构。IDB 升级 v5→v6，新增 `yh_logs` store（keyPath: log_id autoIncrement，timestamp 索引，保留最近 300 条）。等级配置：URL `?log=debug` > `localStorage yihai_log_level` > 默认 `'warn'`。`window.yhLog` DevTools 工具（setLevel/show/showErrors/export/clear）。
+- **warn/error 上传 Supabase**: `syncAppEvents` 读取 `yh_logs` 中未同步的 warn/error，封装为 `app_events`（event_type=`'log:warn'`/`'log:error'`）上传。
+- **markEventSynced 批量写回修复**: 改为单事务批量写回 `synced_at`，删除旧的 fire-and-forget 调用；`uploadAppEvent` 返回 bool。
+- **runSync 竞态修复**: `downloadDeckFromCloud`/`syncDeckFromCloud` 在 `noToast=true`（由 runSync 调用）时跳过 `updateDeckStats()`，避免 IDB 状态未就绪时覆盖 runSync 后续写入的正确值。
+- **getDeviceInfo catch 修复**: catch 块返回 `{}` 而非 `null`，避免 `device_registry.device_info` 存入 SQL NULL。
+
 ## v4.11.15 Key Changes
 
 - **getDeviceInfo 格式修复**: 原先返回 `JSON.stringify({...})` 字符串，Supabase JS SDK 将其存为 jsonb `string` 类型而非 `object`，导致 `->>` 操作符无法提取字段。改为直接返回对象，SDK 自动处理序列化。同步用 `(device_info #>> '{}')::jsonb` 修复线上 sync_trials（433行）和 device_registry 历史数据。

@@ -129,6 +129,16 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.11.16 — 2026-05-21
+
+**诊断增强 + Bug 修复**
+- 新增分级诊断日志系统（`log.debug/info/warn/error`），IDB v5→v6 新增 `yh_logs` store，`window.yhLog` DevTools 工具
+- warn/error 自动上传 Supabase（`syncAppEvents`），`markEventSynced` 改为批量单事务写回
+- 修复 `runSync` 竞态：deck 下载/同步时跳过 `updateDeckStats()`，由 `runSync` 统一在状态同步后调用
+- 修复 `getDeviceInfo()` catch 块返回 `null` 导致 `device_registry.device_info` 存 NULL
+
+---
+
 ### v4.11.15 — 2026-05-21
 
 **Bug 修复**
