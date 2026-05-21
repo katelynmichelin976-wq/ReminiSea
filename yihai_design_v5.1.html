@@ -1,0 +1,2998 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-mode="patient">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="忆海拾光">
+<title>忆海拾光 · 设计稿 v5.1 · 双模式</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════════════════
+   设计令牌 — 朱砂·温故 v4 + 4套主题
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg:    #f7f3ec; --bg2:   #ede8de;
+  --surf:  #fefcf7; --surf2: #f2ede2;
+  --ink:   #1a1208; --ink2:  #5a4832;
+  --ink3:  #7a6048; --ink4:  #c4b09a;
+  --red:    #c23b3b; --red-dk: #9e2e2e;
+  --red-lt: #fdf1ef; --red-bd: rgba(194,59,59,0.22);
+  --red-sh: 0 6px 22px rgba(194,59,59,0.32);
+  --jade:    #2a7a58; --jade-dk: #1e5c40; --jade-lt: #eaf5f0;
+  --amber:   #b07820; --amber-lt: #fdf6e3;
+  --bd:      rgba(90,72,50,0.14); --bd-soft: rgba(90,72,50,0.07);
+  --sh:    0 2px 24px rgba(26,18,8,0.07), 0 1px 4px rgba(26,18,8,0.04);
+  --sh-sm: 0 1px 8px rgba(26,18,8,0.05);
+  --r:   20px; --rsm: 14px; --rxs: 8px;
+  --fd: 'Ma Shan Zheng', 'Noto Serif SC', serif;
+  --fs: 'Noto Serif SC', 'PingFang SC', serif;
+  --fh: 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', -apple-system, sans-serif;
+  --cmax: 520px; --pad: 20px;
+  --safe-top: env(safe-area-inset-top, 44px);
+  --safe-bottom: env(safe-area-inset-bottom, 34px);
+}
+@media (min-width: 600px) { :root { --pad: 28px; --cmax: 100%; } }
+
+[data-theme="jade"] {
+  --bg: #f0f7f3; --bg2: #e2f0e8; --surf: #f8fcfa; --surf2: #eaf4ee;
+  --ink: #0d2018; --ink2: #2c5040; --ink3: #4a7060; --ink4: #9abfb0;
+  --red: #1e7a52; --red-dk: #155e3e; --red-lt: #eaf5f0;
+  --red-bd: rgba(30,122,82,0.22); --red-sh: 0 6px 22px rgba(30,122,82,0.32);
+}
+[data-theme="amber"] {
+  --bg: #fdf5ec; --bg2: #f5e8d5; --surf: #fffbf5; --surf2: #f8eedd;
+  --ink: #1a0f05; --ink2: #5c3a18; --ink3: #8c6030; --ink4: #c8a070;
+  --red: #c8600a; --red-dk: #a04808; --red-lt: #fff4e8;
+  --red-bd: rgba(200,96,10,0.22); --red-sh: 0 6px 22px rgba(200,96,10,0.32);
+}
+[data-theme="dark"] {
+  --bg: #1c1c28; --bg2: #141420; --surf: #252535; --surf2: #2e2e42;
+  --ink: #ede8de; --ink2: #c8c0ae; --ink3: #9a9080; --ink4: #5e5850;
+  --bd: rgba(200,192,174,0.14); --bd-soft: rgba(200,192,174,0.07);
+  --sh: 0 2px 24px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.2);
+  --sh-sm: 0 1px 8px rgba(0,0,0,0.2);
+  --red: #e8a030; --red-dk: #c88020; --red-lt: #2e2518;
+  --red-bd: rgba(232,160,48,0.22); --red-sh: 0 6px 22px rgba(232,160,48,0.32);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none; user-select: none;
+}
+input, textarea { -webkit-user-select: text; user-select: text; }
+button, [role="button"] { touch-action: manipulation; }
+img { -webkit-user-drag: none; pointer-events: none; }
+
+html { height: 100%; background: var(--bg); }
+html, body { overflow: hidden; }
+body {
+  margin: 0; width: 100%; height: 100%;
+  background: var(--bg); color: var(--ink);
+  font-family: var(--fs); -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.030'/%3E%3C/svg%3E");
+  background-size: 300px; pointer-events: none; z-index: 9000;
+}
+
+/* ═══ 屏幕切换 ═══ */
+.screen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  opacity: 0; pointer-events: none;
+  transform: translateX(24px);
+  transition: opacity 0.28s cubic-bezier(0.4,0,0.2,1),
+              transform 0.28s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+.screen.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+
+/* ═══ 通用组件 ═══ */
+.btn-back {
+  width: 44px; height: 44px; padding: 0;
+  border: 1.5px solid var(--bd); border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink2); cursor: pointer; box-shadow: var(--sh-sm);
+  transition: background 0.15s, transform 0.15s; flex-shrink: 0;
+}
+.btn-back svg { width: 20px; height: 20px; }
+.btn-back:active { transform: scale(0.96); background: var(--surf2); }
+
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--bd) 15%, var(--bd) 85%, transparent);
+  margin: 0 var(--pad); flex-shrink: 0;
+}
+
+/* ═══ Tab Bar ═══ */
+.home-tabbar {
+  flex-shrink: 0;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--surf); border-top: 1px solid var(--bd-soft);
+  box-shadow: 0 -2px 20px rgba(26,18,8,0.06);
+  display: flex; align-items: flex-end;
+  overflow: visible; position: relative; z-index: 10;
+}
+.tab-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  gap: 4px; padding: 10px 4px 12px;
+  background: none; border: none; cursor: pointer;
+  color: var(--ink4); font-family: var(--fs);
+  font-size: 11px; font-weight: 500; letter-spacing: 0.5px;
+  transition: color 0.2s; position: relative;
+}
+.tab-item svg { width: 24px; height: 24px; }
+.tab-item.active { color: var(--red); }
+.tab-item.active::before {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 32px; height: 3px; border-radius: 0 0 4px 4px;
+  background: var(--red);
+}
+.tab-item.action { flex: 1.1; gap: 5px; padding-bottom: 12px; }
+.tab-fab {
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--red);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--red-sh), 0 0 0 4px var(--surf);
+  margin-top: -22px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.tab-fab svg { width: 22px; height: 22px; }
+.tab-item.action > span { color: var(--ink2); font-weight: 600; font-size: 11px; }
+.tab-item.action:active .tab-fab { transform: scale(0.92); box-shadow: none; }
+
+/* ═══ 首页 ═══ */
+.home-topbar {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; align-items: center;
+  padding: calc(var(--safe-top) + 10px) var(--pad) 12px;
+  flex-shrink: 0; gap: 12px;
+}
+.home-logo-wrap {
+  flex: 1; display: flex; align-items: baseline; gap: 6px;
+}
+.home-logo {
+  font-family: var(--fd);
+  font-size: 36px; color: var(--ink);
+  letter-spacing: 3px; line-height: 1;
+}
+.home-version {
+  font-size: 11px; font-weight: 600;
+  color: var(--ink4); letter-spacing: .02em;
+}
+.home-refresh-btn {
+  background: none; border: none; cursor: pointer; padding: 3px;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--ink4); display: flex; align-items: center;
+  border-radius: 6px; transition: color .15s;
+  align-self: center;
+}
+.home-refresh-btn:active { color: var(--red); }
+.home-refresh-btn.spinning svg { animation: spin360 .6s ease-out; }
+@keyframes spin360 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.btn-plus {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border: 1.5px solid var(--bd); border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--red); cursor: pointer; box-shadow: var(--sh-sm);
+  transition: background 0.15s, transform 0.15s;
+  font-size: 22px; line-height: 1;
+}
+.btn-plus:active { transform: scale(0.94); background: var(--surf2); }
+.btn-new-deck {
+  margin-left: auto; flex-shrink: 0;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--fs); font-size: 14px; font-weight: 600;
+  color: var(--red); letter-spacing: 0.5px;
+  padding: 4px 0; transition: opacity 0.15s;
+}
+.btn-new-deck:active { opacity: 0.5; }
+
+/* Caregiver-only / patient-only visibility */
+[data-mode="patient"] .caregiver-only { display: none !important; }
+[data-mode="caregiver"] .patient-only { display: none !important; }
+
+.home-scroll {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding-bottom: 12px;
+}
+.home-scroll::-webkit-scrollbar { display: none; }
+
+.album-section-lbl {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 14px var(--pad) 8px;
+  font-size: 13px; font-weight: 700; color: var(--ink4);
+  letter-spacing: 2.5px; flex-shrink: 0;
+  display: flex; align-items: center;
+}
+.album-list { width: 100%; max-width: var(--cmax); margin: 0 auto; }
+
+/* Album row — supports swipe in caregiver mode */
+.album-row {
+  position: relative; overflow: hidden;
+  border-bottom: 1px solid var(--bd-soft);
+}
+[data-swipeable] { touch-action: pan-y; }
+.album-row-inner {
+  width: 100%;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px var(--pad);
+  padding-left: calc(var(--pad) + 13px);
+  background: var(--surf);
+  position: relative; z-index: 1;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), background 0.15s;
+}
+.album-row-inner:active { background: var(--surf2); }
+.album-row.selected .album-row-inner { background: var(--red-lt); }
+
+/* Selected indicator */
+.album-row-inner::before {
+  content: '';
+  position: absolute; left: var(--pad);
+  top: 50%; transform: translateY(-50%);
+  width: 3px; height: 0; background: var(--red);
+  border-radius: 2px;
+  transition: height 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.22s;
+  opacity: 0;
+}
+.album-row.selected .album-row-inner::before { height: 32px; opacity: 1; }
+
+.album-info { flex: 1; min-width: 0; }
+.album-name {
+  font-size: 18px; font-weight: 600; color: var(--ink);
+  letter-spacing: 0.5px; transition: color 0.15s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.album-row.selected .album-name { color: var(--red-dk); }
+
+/* 到期 / 新卡 双数字 */
+.album-stats {
+  display: none;
+}
+.album-stat {
+  font-size: 14px; font-weight: 700; line-height: 1;
+  min-width: 20px; text-align: right;
+}
+.album-stat.due  { color: var(--red); }
+.album-stat.new  { color: var(--jade); }
+.album-stat.zero { opacity: 0.28; }
+/* Patient mode: CSS chevron; Caregiver mode: HTML button */
+.album-row-inner::after {
+  content: ''; display: block; flex-shrink: 0;
+  width: 7px; height: 7px; margin-right: 4px;
+  border-right: 2px solid var(--ink4); border-top: 2px solid var(--ink4);
+  transform: rotate(45deg);
+}
+[data-mode="caregiver"] .album-row-inner::after { display: none; }
+
+.album-nav-btn {
+  align-self: stretch; flex-shrink: 0;
+  min-width: 44px; display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer;
+  color: var(--ink4); padding: 0; margin-right: -4px;
+  transition: opacity 0.15s;
+}
+.album-nav-btn:active { opacity: 0.5; }
+.album-row.selected .album-nav-btn { color: var(--red); }
+
+/* Swipe action buttons — absolutely positioned at row right edge */
+.album-swipe-btns {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  display: flex;
+}
+.swipe-btn {
+  width: 72px; border: none; cursor: pointer;
+  font-family: var(--fs); font-size: 14px; font-weight: 700;
+  color: white; letter-spacing: 0.5px;
+  display: flex; align-items: center; justify-content: center;
+}
+.swipe-btn-rename { background: #a06520; }
+.swipe-btn-del    { background: #b83028; }
+.swipe-btn-edit   { background: #287a50; }
+.swipe-btn-export { background: #546e7a; }
+
+
+.caregiver-row {
+  width: 100%; max-width: var(--cmax); margin: 16px auto 0;
+  padding: 0 var(--pad); text-align: center;
+}
+.caregiver-btn {
+  background: none; border: none; color: var(--ink4);
+  font-family: var(--fs); font-size: 14px; letter-spacing: 2px;
+  cursor: pointer; padding: 12px 20px;
+}
+
+/* ═══ 浏览屏 ═══ */
+.browse-topbar {
+  padding: calc(var(--safe-top) + 12px) var(--pad) 8px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+}
+.browse-topbar-row { display: flex; align-items: center; gap: 12px; }
+.browse-album-name { margin-left: auto; font-size: 15px; color: var(--ink3); font-weight: 500; }
+.browse-prog-track { height: 3px; background: var(--bd-soft); border-radius: 2px; overflow: hidden; }
+.browse-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), #e05555);
+  border-radius: 2px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.browse-body {
+  flex: 1; overflow: hidden;
+  display: flex; flex-direction: column;
+  align-items: center; padding: 4px var(--pad) 0;
+}
+.photo-wrap { width: 100%; flex-shrink: 0; }
+.photo-img {
+  aspect-ratio: 1; width: 100%; background: var(--surf);
+  border-radius: var(--rsm); border: 1px solid var(--bd-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(120px, 42vw, 210px); overflow: hidden; position: relative;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07), 0 8px 32px rgba(0,0,0,0.09);
+  transition: opacity 0.22s ease;
+}
+.photo-img::after {
+  content: ''; position: absolute; inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(90,72,50,0.06), inset 0 2px 8px rgba(0,0,0,0.04);
+  border-radius: var(--rsm); pointer-events: none;
+}
+.photo-caption { padding: 14px 0 2px; display: flex; flex-direction: column; align-items: center; }
+.photo-name {
+  font-family: var(--fd);
+  font-size: 26px; color: var(--ink); letter-spacing: 5px; line-height: 1; text-align: center;
+}
+.browse-controls {
+  flex-shrink: 0; width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 10px var(--pad) calc(16px + env(safe-area-inset-bottom, 0px));
+}
+.browse-nav-row { display: flex; align-items: center; gap: 12px; }
+.btn-nav {
+  flex: 1; height: 64px;
+  border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fs); font-size: 17px; font-weight: 600;
+  color: var(--ink2); cursor: pointer; box-shadow: var(--sh-sm);
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-nav:active { transform: scale(0.97); background: var(--surf2); }
+.btn-nav-next {
+  flex: 2; height: 64px;
+  background: var(--red); color: white; border: none;
+  border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 17px; font-weight: 700;
+  cursor: pointer; letter-spacing: 2px;
+  box-shadow: var(--red-sh); transition: background 0.15s, transform 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-nav-next:active { transform: scale(0.97); background: var(--red-dk); }
+
+/* ═══ 练习屏 ═══ */
+.quiz-topbar {
+  padding: calc(var(--safe-top) + 12px) var(--pad) 8px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+}
+.quiz-topbar-row { display: flex; align-items: center; gap: 12px; }
+.quiz-counter { font-family: var(--fs); font-size: 18px; font-weight: 700; color: var(--ink2); margin-left: auto; }
+.quiz-prog-track { height: 3px; background: var(--bd-soft); border-radius: 2px; overflow: hidden; }
+.quiz-prog-fill {
+  height: 100%; background: linear-gradient(90deg, var(--red), #e05555);
+  border-radius: 3px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.quiz-body {
+  flex: 1; overflow: hidden;
+  padding: 8px var(--pad) calc(16px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 10px;
+}
+.quiz-card {
+  flex-shrink: 0; width: 100%; aspect-ratio: 1;
+  background: var(--surf); border: 1px solid var(--bd-soft); border-radius: var(--rsm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(120px, 42vw, 210px);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07), 0 8px 32px rgba(0,0,0,0.09);
+  position: relative; overflow: hidden;
+}
+.quiz-card::after {
+  content: ''; position: absolute; inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(90,72,50,0.06), inset 0 2px 8px rgba(0,0,0,0.04);
+  border-radius: var(--rsm); pointer-events: none;
+}
+.quiz-question {
+  text-align: center; font-size: 22px; font-weight: 500;
+  color: var(--ink2); letter-spacing: 2px; flex-shrink: 0; transition: opacity 0.2s;
+}
+.quiz-question.hidden { display: none; }
+
+@keyframes optEntry {
+  0%   { transform: scale(0.92); opacity: 0.5; }
+  65%  { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes optGlow {
+  0%   { box-shadow: var(--sh-sm); border-color: var(--bd); }
+  12%  { box-shadow: var(--sh-sm), 0 0 0 2px rgba(176,120,32,0.28), 0 0 22px rgba(176,120,32,0.48); border-color: rgba(176,120,32,0.62); }
+  25%  { box-shadow: var(--sh-sm); border-color: var(--bd); }
+  100% { box-shadow: var(--sh-sm); border-color: var(--bd); }
+}
+.opts.animated .opt {
+  animation: optEntry 0.42s cubic-bezier(0.22,0.61,0.36,1) both,
+             optGlow  6.4s linear 0.5s infinite;
+}
+.opts.animated .opt:nth-child(1) { animation-delay: 0.04s, 0.50s; }
+.opts.animated .opt:nth-child(2) { animation-delay: 0.11s, 2.10s; }
+.opts.animated .opt:nth-child(4) { animation-delay: 0.25s, 3.70s; }
+.opts.animated .opt:nth-child(3) { animation-delay: 0.18s, 5.30s; }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.opts.collapsed { display: none; }
+.opt {
+  background: var(--surf); border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  padding: clamp(12px, 2.2vh, 16px) 10px;
+  font-family: var(--fs); font-size: clamp(20px, 5vw, 28px);
+  font-weight: 600; color: var(--ink); cursor: pointer; text-align: center;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  box-shadow: var(--sh-sm); line-height: 1.25; min-height: 60px;
+  display: flex; align-items: center; justify-content: center;
+}
+.opt:active:not(.correct):not(.wrong):not(.dim) { transform: scale(0.97); background: var(--surf2); }
+.opt.correct { background: var(--jade-lt); border-color: var(--jade); color: var(--jade); }
+.opt.wrong   { background: var(--red-lt);  border-color: var(--red);  color: var(--red); }
+.opt.dim     { opacity: 0.28; pointer-events: none; }
+
+.answer-zone { display: none; flex-direction: column; gap: 10px; }
+.answer-zone.open { display: flex; }
+.answer-panel {
+  background: var(--surf); border: 1px solid var(--bd-soft); border-radius: var(--r);
+  padding: 16px 20px; box-shadow: var(--sh); flex-shrink: 0;
+}
+.answer-word-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.answer-word { flex: 1; font-size: clamp(22px, 5.5vw, 32px); font-weight: 700; color: var(--ink); letter-spacing: 5px; }
+.btn-tts {
+  width: 48px; height: 48px; flex-shrink: 0;
+  border: 1.5px solid var(--bd); border-radius: 50%;
+  background: var(--surf2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: var(--sh-sm); color: var(--ink2);
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-tts:active { transform: scale(0.90); }
+.btn-tts svg { width: 22px; height: 22px; }
+.answer-divider { height: 1px; background: var(--bd-soft); margin-bottom: 10px; }
+.answer-desc { font-size: 18px; color: var(--ink2); line-height: 1.85; }
+.next-btn {
+  flex-shrink: 0; background: var(--red); color: white; border: none;
+  border-radius: var(--rsm); padding: clamp(16px, 2.8vh, 20px);
+  font-family: var(--fs); font-size: 20px; font-weight: 700;
+  cursor: pointer; letter-spacing: 3px; box-shadow: var(--red-sh);
+  transition: transform 0.18s, background 0.18s;
+}
+.next-btn:active { transform: scale(0.97); background: var(--red-dk); }
+
+/* ═══ 完成屏 ═══ */
+.finish-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: calc(var(--safe-top) + 20px) var(--pad) calc(80px + env(safe-area-inset-bottom, 0px));
+  text-align: center; width: 100%; max-width: var(--cmax); margin: 0 auto;
+}
+.finish-anim { font-size: 88px; animation: popIn 0.65s cubic-bezier(0.22,0.61,0.36,1) both; margin-bottom: 18px; }
+@keyframes popIn {
+  0%  { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+  65% { transform: scale(1.14) rotate(4deg); }
+  100%{ transform: scale(1) rotate(0); opacity: 1; }
+}
+.finish-title { font-family: var(--fd); font-size: 52px; letter-spacing: 8px; color: var(--ink); margin-bottom: 10px; }
+.finish-family { font-size: 20px; color: var(--amber); font-weight: 600; letter-spacing: 1px; margin-bottom: 6px; line-height: 1.6; }
+.finish-sub { font-size: 16px; color: var(--ink3); letter-spacing: 2px; margin-bottom: 28px; }
+.red-line { width: 64px; height: 1.5px; background: linear-gradient(90deg, transparent, var(--red), transparent); margin: 0 auto 28px; }
+.finish-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; margin-bottom: 32px; }
+.fc { background: var(--surf); border: 1px solid var(--bd-soft); border-radius: var(--rsm); padding: 18px 8px; box-shadow: var(--sh-sm); }
+.fc-num { font-family: var(--fs); font-size: 38px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+.fc-lbl { font-size: 14px; color: var(--ink3); font-weight: 600; letter-spacing: 1.5px; }
+.fc.good .fc-num { color: var(--jade); }
+.fc.bad  .fc-num { color: var(--red); }
+.fc.neu  .fc-num { color: var(--amber); }
+.btn-red-lg {
+  width: 100%; padding: 20px;
+  background: var(--red); color: white; border: none;
+  border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 20px; font-weight: 700;
+  cursor: pointer; letter-spacing: 4px;
+  box-shadow: var(--red-sh); transition: background 0.18s, transform 0.18s;
+}
+.btn-red-lg:active { transform: scale(0.97); background: var(--red-dk); }
+.btn-ghost {
+  width: 100%; padding: 18px; background: none; color: var(--ink2);
+  border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 17px; font-weight: 600;
+  cursor: pointer; letter-spacing: 1px; transition: background 0.18s, transform 0.18s; margin-top: 12px;
+}
+.btn-ghost:active { background: var(--surf2); }
+
+/* ═══ 我的屏 ═══ */
+.mine-topbar {
+  padding: calc(var(--safe-top) + 4px) var(--pad) 6px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto; flex-shrink: 0;
+  background: var(--surf2);
+}
+.mine-scroll { flex: 1; overflow-y: auto; background: var(--surf2); padding: 4px 0 28px; }
+.mine-scroll::-webkit-scrollbar { display: none; }
+.mine-section-lbl {
+  padding: 20px var(--pad) 10px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  font-size: 13px; font-weight: 700; color: var(--ink4); letter-spacing: 2.5px;
+}
+
+/* Profile card */
+.mine-profile {
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px var(--pad); background: var(--surf);
+  border-radius: 16px; margin: 0 var(--pad) 16px;
+  cursor: pointer; border: 1px solid var(--bd-soft);
+  transition: opacity 0.15s; text-align: left; width: calc(100% - 2 * var(--pad));
+  max-width: calc(var(--cmax) - 2 * var(--pad));
+}
+.mine-profile:active { opacity: 0.65; }
+.mine-profile-avatar {
+  width: 64px; height: 64px; border-radius: 16px;
+  background: var(--red-lt); border: 2px solid var(--red-bd);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 800; color: var(--red-dk);
+  font-family: var(--fs); flex-shrink: 0; letter-spacing: 0;
+}
+.mine-profile-info { flex: 1; min-width: 0; }
+.mine-profile-name { font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: 0.5px; }
+.mine-profile-sub { font-size: 13px; color: var(--ink4); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mine-profile-chevron { color: var(--ink4); flex-shrink: 0; }
+
+/* Grouped menu blocks */
+.mine-group {
+  background: var(--surf); border-radius: 14px;
+  margin: 0 var(--pad); overflow: hidden;
+  border: 1px solid var(--bd-soft);
+}
+.mine-group + .mine-group { margin-top: 12px; }
+
+/* Mine menu */
+.mine-menu { width: 100%; max-width: var(--cmax); margin: 8px auto 0; padding: 0 var(--pad); }
+.mine-menu-item {
+  width: 100%; display: flex; align-items: center; gap: 14px;
+  padding: 14px 20px; background: none; border: none;
+  border-bottom: 1px solid var(--bd-soft);
+  font-family: var(--fs); font-size: 16px; font-weight: 500;
+  color: var(--ink2); cursor: pointer; transition: opacity 0.15s; text-align: left;
+}
+.mine-group .mine-menu-item:last-child { border-bottom: none; }
+.mine-menu-item:active { opacity: 0.5; }
+.mine-menu-icon {
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--ink3);
+}
+.mi-red    { color: var(--red); }
+.mi-jade   { color: var(--ink3); }
+.mi-amber  { color: var(--ink3); }
+.mi-surf   { color: var(--ink3); }
+.mi-blue   { color: var(--ink3); }
+.mine-menu-chevron { margin-left: auto; color: var(--ink4); flex-shrink: 0; }
+
+/* Mode switch row */
+.mode-switch-row {
+  margin: 12px var(--pad) 0; padding: 14px var(--pad);
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surf); border-radius: 14px;
+  border: 1px solid var(--bd-soft);
+}
+
+/* Theme grid */
+.theme-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; padding: 0 var(--pad);
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+}
+.theme-card {
+  background: var(--surf); border: 2px solid var(--bd);
+  border-radius: var(--r); padding: 14px 14px 12px;
+  cursor: pointer; text-align: left; position: relative;
+  transition: border-color 0.2s, background 0.2s;
+}
+.theme-card.active { border-color: var(--red); background: var(--red-lt); }
+.theme-prev { height: 52px; border-radius: 10px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.06); }
+.theme-prev-btn { width: 58%; height: 24px; border-radius: 12px; }
+.tp-default { background: #f7f3ec; } .tp-default .theme-prev-btn { background: #c23b3b; }
+.tp-jade    { background: #f0f7f3; } .tp-jade    .theme-prev-btn { background: #1e7a52; }
+.tp-amber   { background: #fdf5ec; } .tp-amber   .theme-prev-btn { background: #c8600a; }
+.tp-dark    { background: #1c1c28; border-color: rgba(255,255,255,0.08); }
+.tp-dark    .theme-prev-btn { background: #e8a030; }
+.theme-name { font-family: var(--fs); font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: 1px; }
+.theme-check { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--red); color: white; font-size: 12px; font-weight: 700; display: none; align-items: center; justify-content: center; }
+.theme-card.active .theme-check { display: flex; }
+
+/* Mine menu */
+.mine-menu { width: 100%; max-width: var(--cmax); margin: 8px auto 0; padding: 0 var(--pad); }
+.mine-menu-item {
+  width: 100%; display: flex; align-items: center; gap: 14px;
+  padding: 14px var(--pad); background: none; border: none;
+  border-bottom: 1px solid var(--bd-soft);
+  font-family: var(--fs); font-size: 17px; font-weight: 500;
+  color: var(--ink2); cursor: pointer; transition: opacity 0.15s; text-align: left;
+}
+.mine-menu-item:active { opacity: 0.5; }
+
+.mode-switch-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--ink3); }
+.mode-switch-label { flex: 1; font-family: var(--fs); font-size: 17px; font-weight: 500; color: var(--ink2); }
+.mode-badge {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 10px; letter-spacing: 1px; margin-right: 8px;
+}
+.mode-badge.patient   { background: var(--jade-lt); color: var(--jade); }
+.mode-badge.caregiver { background: var(--red-lt); color: var(--red-dk); }
+.toggle-switch {
+  width: 46px; height: 26px; border-radius: 13px;
+  background: var(--bd); border: none; cursor: pointer;
+  position: relative; transition: background 0.2s; flex-shrink: 0;
+}
+.toggle-switch.on { background: var(--red); }
+.toggle-knob {
+  position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  transition: left 0.2s;
+}
+.toggle-switch.on .toggle-knob { left: 23px; }
+
+/* ═══ 统计屏 ═══ */
+.stats-topbar {
+  padding: calc(var(--safe-top) + 10px) var(--pad) 12px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.stats-title { flex: 1; font-family: var(--fh); font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: 0.5px; }
+.stats-scroll { flex: 1; overflow-y: auto; padding-bottom: 32px; }
+.stats-scroll::-webkit-scrollbar { display: none; }
+.stats-section { width: 100%; max-width: var(--cmax); margin: 0 auto; padding: 16px var(--pad) 0; }
+.stats-section-lbl { font-size: 12px; font-weight: 700; color: var(--ink4); letter-spacing: 2.5px; margin-bottom: 12px; }
+.stats-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 0; }
+.stat-card {
+  background: var(--surf); border: 1px solid var(--bd-soft);
+  border-radius: var(--rsm); padding: 14px 8px; text-align: center; box-shadow: var(--sh-sm);
+}
+.stat-num { font-size: 30px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+.stat-lbl { font-size: 12px; color: var(--ink4); letter-spacing: 1px; font-weight: 600; }
+.stat-num.good { color: var(--jade); }
+.stat-num.neu  { color: var(--amber); }
+.stat-num.red-c { color: var(--red); }
+.stats-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-card-wide {
+  background: var(--surf); border: 1px solid var(--bd-soft);
+  border-radius: var(--rsm); padding: 16px var(--pad); box-shadow: var(--sh-sm);
+}
+.chart-wrap { display: flex; align-items: flex-end; gap: 6px; height: 72px; margin-bottom: 8px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bar { width: 100%; background: var(--red-bd); border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.4s cubic-bezier(0.4,0,0.2,1); }
+.bar.today { background: var(--red); }
+.bar-day { font-size: 10px; color: var(--ink4); letter-spacing: 0.5px; }
+.chart-today-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--red); }
+
+/* ═══ 设置屏 ═══ */
+.settings-topbar {
+  padding: calc(var(--safe-top) + 10px) var(--pad) 0;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.settings-title { flex: 1; font-family: var(--fh); font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: 0.5px; }
+.settings-tabs {
+  display: flex; border-bottom: 1px solid var(--bd);
+  width: 100%; max-width: var(--cmax); margin: 14px auto 0; flex-shrink: 0;
+}
+.settings-tab {
+  flex: 1; padding: 12px; background: none; border: none;
+  font-family: var(--fs); font-size: 15px; font-weight: 600; color: var(--ink4);
+  cursor: pointer; position: relative; transition: color 0.2s;
+}
+.settings-tab.active { color: var(--red); }
+.settings-tab.active::after {
+  content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+  width: 40px; height: 2px; background: var(--red); border-radius: 1px;
+}
+.settings-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.settings-pane { display: none; flex: 1; overflow-y: auto; }
+.settings-pane.active { display: block; }
+.settings-pane::-webkit-scrollbar { display: none; }
+.setting-group { width: 100%; max-width: var(--cmax); margin: 0 auto; padding: 20px var(--pad) 0; }
+.setting-group-lbl { font-size: 12px; font-weight: 700; color: var(--ink4); letter-spacing: 2.5px; margin-bottom: 4px; }
+.setting-row {
+  width: 100%; display: flex; align-items: center;
+  padding: 16px 0; border-bottom: 1px solid var(--bd-soft); gap: 12px;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-label-col { flex: 1; }
+.setting-label { font-family: var(--fs); font-size: 16px; font-weight: 500; color: var(--ink2); }
+.setting-hint { font-size: 12px; color: var(--ink4); margin-top: 2px; letter-spacing: 0.5px; }
+.setting-value-tag { font-size: 15px; color: var(--red); font-weight: 700; flex-shrink: 0; letter-spacing: 1px; }
+.stepper { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.stepper-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1.5px solid var(--bd); background: var(--surf2);
+  font-size: 18px; font-weight: 700; color: var(--ink2);
+  cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; line-height: 1;
+}
+.stepper-btn:active { background: var(--bd); }
+.stepper-val { min-width: 38px; text-align: center; font-weight: 700; font-size: 17px; color: var(--ink); }
+.seg-ctrl {
+  display: flex; gap: 3px; background: var(--bg2);
+  border-radius: 10px; padding: 3px; flex-shrink: 0;
+}
+.seg-btn {
+  padding: 7px 12px; border: none; border-radius: 8px;
+  font-family: var(--fs); font-size: 13px; font-weight: 600;
+  color: var(--ink3); cursor: pointer;
+  transition: background 0.2s, color 0.2s; background: none;
+}
+.seg-btn.active { background: var(--surf); color: var(--ink); box-shadow: var(--sh-sm); }
+
+/* ═══ 牌组详情屏 ═══ */
+.deck-topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(var(--safe-top) + 10px) var(--pad) 12px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto; flex-shrink: 0;
+}
+.deck-title {
+  flex: 1; font-size: 18px; font-weight: 700; color: var(--ink);
+  letter-spacing: 0.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.btn-text-sm {
+  padding: 8px 14px; background: none; border: 1.5px solid var(--bd);
+  border-radius: 20px; font-family: var(--fs); font-size: 14px; font-weight: 600;
+  color: var(--ink2); cursor: pointer; transition: background 0.15s; flex-shrink: 0;
+}
+.btn-text-sm:active { background: var(--surf2); }
+.btn-add-sm {
+  background: none; border: none; cursor: pointer; flex-shrink: 0;
+  font-family: var(--fs); font-size: 14px; font-weight: 600;
+  color: var(--red); letter-spacing: 0.5px;
+  padding: 4px 0; transition: opacity 0.15s;
+}
+.btn-add-sm:active { opacity: 0.5; }
+
+.deck-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+.deck-scroll::-webkit-scrollbar { display: none; }
+.deck-empty {
+  padding: 60px var(--pad); text-align: center;
+  font-size: 16px; color: var(--ink4); letter-spacing: 1px; line-height: 2;
+}
+
+/* Card rows */
+.card-row {
+  position: relative; overflow: hidden;
+  border-bottom: 1px solid var(--bd-soft);
+}
+.card-row-inner {
+  width: 100%;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px var(--pad); background: var(--surf);
+  position: relative; z-index: 1;
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), background 0.15s;
+  cursor: pointer;
+}
+.card-row-inner:active { background: var(--surf2); }
+.card-thumb-sm {
+  width: 48px; height: 48px; flex-shrink: 0;
+  border-radius: var(--rxs); background: var(--bg2);
+  border: 1px solid var(--bd-soft);
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+}
+.card-info-col { flex: 1; }
+.card-name-sm { font-size: 17px; font-weight: 600; color: var(--ink); }
+.card-meta { font-size: 13px; color: var(--ink4); margin-top: 3px; letter-spacing: 0.5px; }
+.card-swipe-btns {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  display: flex;
+}
+
+/* ═══ 制卡表单屏 ═══ */
+.form-topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: calc(var(--safe-top) + 10px) var(--pad) 12px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto; flex-shrink: 0;
+}
+.form-deck-tag {
+  flex: 1; display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; background: var(--red-lt);
+  border: 1.5px solid var(--red-bd); border-radius: 20px;
+  font-family: var(--fs); font-size: 14px; font-weight: 700;
+  color: var(--red-dk); cursor: pointer; transition: opacity 0.15s;
+  overflow: hidden;
+}
+.form-deck-tag span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.form-deck-tag:active { opacity: 0.7; }
+.form-deck-arrow { flex-shrink: 0; font-size: 12px; }
+
+.form-scroll {
+  flex: 1; overflow-y: auto;
+  padding: 0 var(--pad) 16px;
+}
+.form-scroll::-webkit-scrollbar { display: none; }
+
+.photo-zone {
+  aspect-ratio: 1; width: 100%;
+  background: var(--surf); border: 2px dashed var(--bd);
+  border-radius: var(--rsm);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  cursor: pointer; margin-bottom: 20px;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative; overflow: hidden;
+}
+.photo-zone:active { border-color: var(--red); background: var(--red-lt); }
+.photo-zone-icon { font-size: 48px; }
+.photo-zone-lbl { font-size: 15px; color: var(--ink3); letter-spacing: 1px; }
+.photo-zone-sub { font-size: 12px; color: var(--ink4); letter-spacing: 0.5px; }
+
+.form-field { margin-bottom: 20px; }
+.form-lbl {
+  font-size: 12px; font-weight: 700; color: var(--ink4);
+  letter-spacing: 2.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+}
+.form-opt { font-weight: 500; color: var(--ink4); font-size: 11px; opacity: 0.7; }
+.form-text-input {
+  width: 100%; padding: 14px 16px;
+  background: var(--bg); border: 1.5px solid var(--bd);
+  border-radius: var(--rsm); font-family: var(--fs);
+  font-size: 20px; color: var(--ink); letter-spacing: 1px;
+  -webkit-user-select: text; user-select: text;
+  transition: border-color 0.15s;
+}
+.form-text-input:focus { outline: none; border-color: var(--red); }
+.form-text-input::placeholder { color: var(--ink4); font-size: 16px; letter-spacing: 0.5px; }
+
+.record-row { display: flex; align-items: center; gap: 10px; }
+.btn-record {
+  flex: 1; height: 52px;
+  background: var(--surf); border: 1.5px solid var(--bd);
+  border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 15px; font-weight: 600;
+  color: var(--ink2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn-record.recording {
+  background: var(--red-lt); border-color: var(--red-bd); color: var(--red);
+}
+.record-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: currentColor;
+}
+.btn-record.recording .record-dot { animation: pulse 1s ease infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(0.6); }
+}
+.record-preview {
+  margin-top: 10px;
+  display: none; align-items: center; gap: 10px;
+  background: var(--surf2); border-radius: var(--rsm); padding: 10px 14px;
+}
+.record-preview.show { display: flex; }
+.record-play {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--red); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  color: white; font-size: 13px;
+}
+.record-bar {
+  flex: 1; height: 4px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--red) 30%, var(--bd) 100%);
+}
+.btn-redo {
+  background: none; border: none; font-family: var(--fs);
+  font-size: 13px; color: var(--ink4); cursor: pointer; flex-shrink: 0;
+}
+
+.form-actions {
+  flex-shrink: 0;
+  padding: 12px var(--pad) calc(20px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 10px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  border-top: 1px solid var(--bd-soft);
+  background: var(--surf);
+}
+.btn-save-main {
+  width: 100%; padding: 18px;
+  background: var(--red); color: white; border: none; border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 18px; font-weight: 700;
+  cursor: pointer; letter-spacing: 2px; box-shadow: var(--red-sh);
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-save-main:active { background: var(--red-dk); transform: scale(0.98); }
+.btn-save-sec {
+  width: 100%; padding: 15px;
+  background: none; color: var(--ink2);
+  border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 16px; font-weight: 600;
+  cursor: pointer; letter-spacing: 1px; transition: background 0.15s;
+}
+.btn-save-sec:active { background: var(--surf2); }
+
+/* ═══ Bottom Sheet ═══ */
+.sheet-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(26,18,8,0.48);
+  z-index: 500; opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.sheet-backdrop.open { opacity: 1; pointer-events: all; }
+.sheet {
+  position: fixed; bottom: 0;
+  left: 50%; transform: translateX(-50%) translateY(calc(100% + 40px));
+  width: 100%; max-width: var(--cmax);
+  background: var(--surf);
+  border-radius: var(--r) var(--r) 0 0;
+  z-index: 501;
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+  transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 -4px 40px rgba(26,18,8,0.14);
+}
+.sheet.open { transform: translateX(-50%) translateY(0); }
+.sheet-handle { width: 40px; height: 4px; background: var(--bd); border-radius: 2px; margin: 12px auto 4px; }
+.sheet-lbl { font-size: 12px; font-weight: 700; color: var(--ink4); letter-spacing: 2.5px; padding: 12px var(--pad) 6px; }
+.sheet-btn {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px var(--pad);
+  background: none; border: none; width: 100%;
+  font-family: var(--fs); font-size: 17px; color: var(--ink2);
+  cursor: pointer; transition: background 0.15s; text-align: left;
+}
+.sheet-btn:active { background: var(--surf2); }
+.sheet-btn-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--ink3); }
+.sheet-sep { height: 1px; background: var(--bd-soft); margin: 4px 0; }
+
+/* ═══ Modal (text input) ═══ */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(26,18,8,0.5);
+  z-index: 600;
+  display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-backdrop.open { opacity: 1; pointer-events: all; }
+.modal-box {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  background: var(--surf);
+  border-radius: var(--r) var(--r) 0 0;
+  padding: 20px var(--pad) calc(20px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.modal-backdrop.open .modal-box { transform: translateY(0); }
+.modal-title { font-family: var(--fs); font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 14px; }
+.modal-input {
+  width: 100%; padding: 14px 16px;
+  background: var(--bg2); border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 18px; color: var(--ink);
+  margin-bottom: 14px;
+  -webkit-user-select: text; user-select: text;
+  transition: border-color 0.15s;
+}
+.modal-input:focus { outline: none; border-color: var(--red); }
+.modal-row { display: flex; gap: 10px; }
+.modal-cancel {
+  flex: 1; padding: 14px; background: var(--surf2);
+  border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 16px; font-weight: 600;
+  color: var(--ink2); cursor: pointer; transition: background 0.15s;
+}
+.modal-cancel:active { background: var(--bg2); }
+.modal-confirm {
+  flex: 2; padding: 14px; background: var(--red); border: none;
+  border-radius: var(--rsm); font-family: var(--fs);
+  font-size: 16px; font-weight: 700; color: white;
+  cursor: pointer; letter-spacing: 1px; box-shadow: var(--red-sh);
+  transition: background 0.15s;
+}
+.modal-confirm:active { background: var(--red-dk); }
+
+/* ═══ 无障碍 ═══ */
+:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+[hidden] { display: none !important; }
+
+/* ════════════════════════════════════════
+   v5.1 新增样式
+   ════════════════════════════════════════ */
+
+/* ─── 统计屏 4 Tabs ─── */
+.stats-tabs-bar {
+  display: flex; border-bottom: 1px solid var(--bd);
+  width: 100%; max-width: var(--cmax); margin: 0 auto; flex-shrink: 0;
+}
+.stats-stab {
+  flex: 1; padding: 11px 4px; background: none; border: none;
+  font-family: var(--fs); font-size: 14px; font-weight: 600; color: var(--ink4);
+  cursor: pointer; position: relative; transition: color 0.2s; letter-spacing: 1px;
+}
+.stats-stab.active { color: var(--red); }
+.stats-stab.active::after {
+  content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+  width: 28px; height: 2px; background: var(--red); border-radius: 1px;
+}
+.stats-body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.stats-pane { display: none; flex: 1; overflow-y: auto; padding-bottom: 32px; }
+.stats-pane.active { display: block; }
+.stats-pane::-webkit-scrollbar { display: none; }
+.stats-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stats-grid-4 .stat-card { padding: 10px 4px; }
+.stats-grid-4 .stat-num { font-size: 24px; }
+
+/* ─── 预测图（--red 柱子）─── */
+.forecast-chart-wrap { display: flex; align-items: flex-end; gap: 5px; height: 72px; margin-bottom: 8px; }
+.forecast-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.forecast-bar { width: 100%; background: var(--red-bd); border-radius: 3px 3px 0 0; min-height: 4px; }
+.forecast-bar.today-f { background: var(--red); }
+.forecast-bar-day { font-size: 10px; color: var(--ink4); }
+.forecast-today-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--red); }
+
+/* ─── 卡片筛选胶囊 ─── */
+.filter-chips { display: flex; gap: 8px; overflow-x: auto; padding: 12px var(--pad) 8px; flex-shrink: 0; }
+.filter-chips::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+  font-family: var(--fs); font-size: 13px; font-weight: 600; letter-spacing: 0.3px;
+  border: 1.5px solid var(--bd); background: var(--surf); color: var(--ink3);
+  cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.filter-chip.active { background: var(--red); border-color: var(--red); color: white; }
+
+/* ─── 统计卡片列表 ─── */
+.stats-card-list { padding-bottom: 12px; }
+.stats-card-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px var(--pad); background: var(--surf);
+  border-bottom: 1px solid var(--bd-soft); cursor: pointer; transition: background 0.15s;
+}
+.stats-card-row:active { background: var(--surf2); }
+.stats-card-thumb {
+  width: 40px; height: 40px; border-radius: var(--rxs);
+  background: var(--bg2); border: 1px solid var(--bd-soft);
+  display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
+}
+.stats-card-info { flex: 1; min-width: 0; }
+.stats-card-name { font-size: 16px; font-weight: 600; color: var(--ink); }
+.stats-card-status { font-size: 12px; color: var(--ink4); margin-top: 3px; }
+
+/* ─── 记录列表 ─── */
+.record-list-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px var(--pad); background: var(--surf); border-bottom: 1px solid var(--bd-soft);
+}
+.record-thumb {
+  width: 32px; height: 32px; border-radius: var(--rxs);
+  background: var(--bg2); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.record-card-name { flex: 1; font-size: 14px; font-weight: 500; color: var(--ink); }
+.record-tag {
+  font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 12px; flex-shrink: 0;
+}
+.record-tag.good  { background: var(--jade-lt); color: var(--jade); }
+.record-tag.hard  { background: var(--amber-lt); color: var(--amber); }
+.record-tag.again { background: var(--red-lt);   color: var(--red);  }
+.record-time { font-size: 11px; color: var(--ink4); flex-shrink: 0; min-width: 58px; text-align: right; }
+.records-subtitle { padding: 14px var(--pad) 2px; font-size: 12px; color: var(--ink4); letter-spacing: 0.3px; }
+.records-empty { text-align: center; padding: 60px var(--pad); font-size: 16px; color: var(--ink4); letter-spacing: 1px; }
+
+/* ─── 练习模式单选 ─── */
+.session-mode-row {
+  display: flex; align-items: center;
+  padding: 15px 0; border-bottom: 1px solid var(--bd-soft); cursor: pointer;
+}
+.session-mode-row:last-child { border-bottom: none; }
+.session-mode-info { flex: 1; }
+.session-mode-name { font-size: 16px; font-weight: 600; color: var(--ink); display: block; line-height: 1.3; }
+.session-mode-desc { font-size: 12px; color: var(--ink4); margin-top: 3px; display: block; }
+.session-mode-check { font-size: 18px; font-weight: 700; color: var(--red); flex-shrink: 0; visibility: hidden; }
+.session-mode-row.active .session-mode-check { visibility: visible; }
+
+/* ─── SRS 预设按钮 ─── */
+.srs-preset-group { padding: 20px var(--pad) 4px; width: 100%; max-width: var(--cmax); margin: 0 auto; }
+.srs-preset-btn {
+  display: block; width: 100%; padding: 14px;
+  border-radius: var(--rsm); font-family: var(--fs); font-size: 15px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.5px; transition: background 0.15s, transform 0.12s; margin-bottom: 10px;
+}
+.srs-preset-btn:active { transform: scale(0.98); }
+.srs-preset-btn.primary  { background: var(--red); color: white; border: none; box-shadow: var(--red-sh); }
+.srs-preset-btn.primary:active { background: var(--red-dk); }
+.srs-preset-btn.secondary { background: none; color: var(--ink2); border: 1.5px solid var(--bd); }
+.srs-preset-btn.secondary:active { background: var(--surf2); }
+.srs-step-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.srs-step-input {
+  width: 80px; height: 40px; padding: 0 10px; border-radius: var(--rxs);
+  background: var(--bg2); border: 1.5px solid var(--bd);
+  font-family: var(--fs); font-size: 16px; font-weight: 600; color: var(--ink);
+  text-align: center; -webkit-user-select: text; user-select: text; transition: border-color 0.15s;
+}
+.srs-step-input:focus { outline: none; border-color: var(--red); }
+.srs-step-parse { font-size: 11px; color: var(--red); font-weight: 600; min-width: 54px; flex-shrink: 0; }
+.srs-adv-toggle {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 14px 0; background: none; border: none; cursor: pointer;
+  font-family: var(--fs); font-size: 12px; font-weight: 700; color: var(--ink4);
+  letter-spacing: 2.5px; text-align: left;
+}
+.srs-adv-toggle .adv-arrow { margin-left: auto; color: var(--ink4); transition: transform 0.2s; }
+.srs-adv-toggle.open .adv-arrow { transform: rotate(180deg); }
+.srs-adv-rows { display: none; }
+.srs-adv-rows.open { display: block; }
+
+/* ─── 账户屏 3 状态 ─── */
+.demo-state-bar {
+  display: flex; gap: 6px; padding: 10px var(--pad);
+  background: var(--bg2); border-bottom: 1px solid var(--bd-soft); flex-shrink: 0;
+}
+.demo-state-btn {
+  flex: 1; padding: 7px 4px; border-radius: var(--rxs);
+  border: 1.5px solid var(--bd); background: var(--surf);
+  font-family: var(--fs); font-size: 11px; font-weight: 600; color: var(--ink3);
+  cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.demo-state-btn.active { background: var(--red); border-color: var(--red); color: white; }
+.acct-state { display: none; flex: 1; flex-direction: column; overflow: hidden; min-height: 0; }
+.acct-state.active { display: flex; }
+.acct-login-scroll { flex: 1; overflow-y: auto; padding: 24px var(--pad) 40px; }
+.acct-login-scroll::-webkit-scrollbar { display: none; }
+.acct-login-desc { font-size: 14px; color: var(--ink4); line-height: 1.9; margin-bottom: 20px; }
+.acct-input {
+  width: 100%; padding: 14px 16px; margin-bottom: 12px;
+  background: var(--bg2); border: 1.5px solid var(--bd);
+  border-radius: var(--rsm); font-family: var(--fs);
+  font-size: 16px; color: var(--ink);
+  -webkit-user-select: text; user-select: text; transition: border-color 0.15s;
+}
+.acct-input:focus { outline: none; border-color: var(--red); }
+.acct-input::placeholder { color: var(--ink4); }
+.btn-login {
+  width: 100%; padding: 18px; margin-top: 4px;
+  background: var(--red); color: white; border: none; border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 18px; font-weight: 700;
+  cursor: pointer; letter-spacing: 3px; box-shadow: var(--red-sh);
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-login:active { background: var(--red-dk); transform: scale(0.98); }
+.acct-loading {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+}
+.spinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid var(--bd); border-top-color: var(--red); animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.acct-loading-text { font-size: 16px; color: var(--ink4); letter-spacing: 1px; }
+.btn-sync-sm {
+  padding: 4px 12px; border-radius: 14px; margin-left: auto;
+  border: 1.5px solid var(--red); background: none;
+  font-family: var(--fs); font-size: 12px; font-weight: 700; color: var(--red);
+  cursor: pointer; flex-shrink: 0; transition: background 0.15s;
+}
+.btn-sync-sm:active { background: var(--red-lt); }
+
+/* ─── 同步进度弹窗 ─── */
+.sync-modal-overlay {
+  position: fixed; inset: 0; background: rgba(26,18,8,0.5);
+  z-index: 800; display: flex; align-items: center; justify-content: center;
+  padding: var(--pad); opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.sync-modal-overlay.open { opacity: 1; pointer-events: all; }
+.sync-modal-box {
+  background: var(--surf); border-radius: var(--r);
+  padding: 32px 24px; width: 100%; max-width: 320px;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.18); text-align: center;
+}
+.sync-modal-title { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+.sync-modal-sub { font-size: 14px; color: var(--ink4); margin-bottom: 20px; min-height: 20px; }
+.sync-prog-track { height: 8px; background: var(--bg2); border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+.sync-prog-fill { height: 100%; background: var(--red); border-radius: 4px; transition: width 0.4s ease; }
+.sync-prog-pct { font-size: 14px; font-weight: 700; color: var(--red); }
+
+/* ─── 练习屏倒计时环 ─── */
+.next-btn-countdown { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.countdown-ring { width: 30px; height: 30px; flex-shrink: 0; transform: rotate(-90deg); }
+@keyframes countdown-drain { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 107; } }
+.countdown-arc.draining { animation: countdown-drain 5s linear forwards; }
+
+</style>
+</head>
+<body>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           首 页                  ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-home" class="screen active">
+
+  <div class="home-topbar">
+    <div class="home-logo-wrap">
+      <div class="home-logo">忆海拾光</div>
+      <span class="home-version">v5.1-preview</span>
+      <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="home-scroll" id="home-scroll">
+    <div class="album-section-lbl">
+      <span id="album-section-lbl">我的相册</span>
+      <button class="btn-new-deck caregiver-only" onclick="showSheet('sheet-plus')" aria-label="新建牌组">＋ 新建</button>
+    </div>
+
+    <div class="album-list" id="album-list">
+
+      <div class="album-row selected" data-deck="蔬菜水果相册" data-swipeable>
+        <div class="album-row-inner" onclick="onAlbumRowTap(this.parentElement)">
+          <div class="album-info"><div class="album-name">蔬菜水果相册</div></div>
+          <div class="album-stats">
+            <div class="album-stat due">8</div>
+            <div class="album-stat new">3</div>
+          </div>
+          <button class="album-nav-btn caregiver-only" onclick="event.stopPropagation(); openAlbum(this.closest('.album-row'))">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div class="album-swipe-btns">
+          <button class="swipe-btn swipe-btn-export" onclick="exportAlbum(this)">导出</button>
+          <button class="swipe-btn swipe-btn-rename" onclick="renameAlbum(this)">重命名</button>
+          <button class="swipe-btn swipe-btn-del" onclick="deleteAlbum(this)">删除</button>
+        </div>
+      </div>
+
+      <div class="album-row" data-deck="日常生活用品" data-swipeable>
+        <div class="album-row-inner" onclick="onAlbumRowTap(this.parentElement)">
+          <div class="album-info"><div class="album-name">日常生活用品</div></div>
+          <div class="album-stats">
+            <div class="album-stat due">12</div>
+            <div class="album-stat new">5</div>
+          </div>
+          <button class="album-nav-btn caregiver-only" onclick="event.stopPropagation(); openAlbum(this.closest('.album-row'))">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div class="album-swipe-btns">
+          <button class="swipe-btn swipe-btn-export" onclick="exportAlbum(this)">导出</button>
+          <button class="swipe-btn swipe-btn-rename" onclick="renameAlbum(this)">重命名</button>
+          <button class="swipe-btn swipe-btn-del" onclick="deleteAlbum(this)">删除</button>
+        </div>
+      </div>
+
+      <div class="album-row" data-deck="家庭成员称谓" data-swipeable>
+        <div class="album-row-inner" onclick="onAlbumRowTap(this.parentElement)">
+          <div class="album-info"><div class="album-name">家庭成员称谓</div></div>
+          <div class="album-stats">
+            <div class="album-stat due zero">0</div>
+            <div class="album-stat new">2</div>
+          </div>
+          <button class="album-nav-btn caregiver-only" onclick="event.stopPropagation(); openAlbum(this.closest('.album-row'))">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div class="album-swipe-btns">
+          <button class="swipe-btn swipe-btn-export" onclick="exportAlbum(this)">导出</button>
+          <button class="swipe-btn swipe-btn-rename" onclick="renameAlbum(this)">重命名</button>
+          <button class="swipe-btn swipe-btn-del" onclick="deleteAlbum(this)">删除</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="home-tabbar">
+    <button class="tab-item active" onclick="showScreen('screen-home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/>
+        <path d="M9 21V13h6v8"/>
+      </svg>
+      <span>首 页</span>
+    </button>
+
+    <button class="tab-item action" onclick="onFabTap()">
+      <div class="tab-fab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="6 3 20 12 6 21 6 3"/>
+        </svg>
+      </div>
+      <span id="fab-label">开始练习</span>
+    </button>
+
+    <button class="tab-item" onclick="showScreen('screen-mine')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/>
+      </svg>
+      <span>我 的</span>
+    </button>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           浏 览 屏               ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-browse" class="screen">
+
+  <div class="browse-topbar">
+    <div class="browse-topbar-row">
+      <button class="btn-back" onclick="goBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="browse-album-name" id="browse-album-name">蔬菜水果相册</div>
+    </div>
+    <div class="browse-prog-track">
+      <div class="browse-prog-fill" id="browse-prog-fill" style="width:20%"></div>
+    </div>
+  </div>
+
+  <div class="browse-body">
+    <div class="photo-wrap">
+      <div class="photo-img" id="photo-img">🍎</div>
+    </div>
+    <div class="answer-panel" style="margin-top:10px; width:100%; flex-shrink:0">
+      <div class="answer-word-row">
+        <div class="answer-word" id="photo-name">苹 果</div>
+        <button class="btn-tts" onclick="browseTTS()" aria-label="朗读">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+        </button>
+      </div>
+      <div class="answer-divider"></div>
+      <div class="answer-desc" id="photo-desc">蔷薇科植物，果肉甜脆多汁，富含维生素 C 与膳食纤维，是常见水果。</div>
+    </div>
+  </div>
+
+  <div class="browse-controls">
+    <div class="browse-nav-row">
+      <button class="btn-nav" id="btn-browse-prev" onclick="browseNav(-1)">上一张</button>
+      <button class="btn-nav-next" id="btn-browse-next" onclick="browseNav(1)">下一张</button>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           练 习 屏               ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-quiz" class="screen">
+
+  <div class="quiz-topbar">
+    <div class="quiz-topbar-row">
+      <button class="btn-back" onclick="goBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="quiz-counter" id="quiz-counter">还有 3 张</div>
+    </div>
+    <div class="quiz-prog-track">
+      <div class="quiz-prog-fill" id="quiz-prog" style="width:30%"></div>
+    </div>
+  </div>
+
+  <div class="quiz-body">
+    <div class="quiz-card" id="quiz-card">🥕</div>
+    <div class="quiz-question" id="quiz-question">这是什么？</div>
+
+    <div class="opts animated" id="opts-zone">
+      <div class="opt" onclick="pickOpt(this)" role="button" tabindex="0" data-correct="false">南 瓜</div>
+      <div class="opt" onclick="pickOpt(this)" role="button" tabindex="0" data-correct="false">红 薯</div>
+      <div class="opt" onclick="pickOpt(this)" role="button" tabindex="0" data-correct="true">胡萝卜</div>
+      <div class="opt" onclick="pickOpt(this)" role="button" tabindex="0" data-correct="false">土 豆</div>
+    </div>
+
+    <div class="answer-zone" id="answer-zone">
+      <div class="answer-panel">
+        <div class="answer-word-row">
+          <div class="answer-word">胡 萝 卜</div>
+          <button class="btn-tts" aria-label="朗读">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+          </button>
+        </div>
+        <div class="answer-divider"></div>
+        <div class="answer-desc">伞形科植物，根肉质鲜橙，富含胡萝卜素与维生素 A，有益眼睛，也是家常蔬菜。</div>
+      </div>
+      <button class="next-btn next-btn-countdown" id="next-btn-cd" onclick="skipCountdown()">
+        <svg class="countdown-ring" viewBox="0 0 44 44" aria-hidden="true">
+          <circle cx="22" cy="22" r="17" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3.5"/>
+          <circle cx="22" cy="22" r="17" fill="none" stroke="white" stroke-width="3.5"
+                  stroke-dasharray="107" stroke-dashoffset="107"
+                  id="countdown-arc" class="countdown-arc"/>
+        </svg>
+        <span id="countdown-num">5</span>
+        <span>继 续</span>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           完 成 屏               ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-finish" class="screen">
+  <div class="finish-body">
+    <div class="finish-anim">🌟</div>
+    <div class="finish-title">太棒了！</div>
+    <div class="finish-family">家人都为您感到骄傲</div>
+    <div class="finish-sub">今天的练习完成了</div>
+    <div class="red-line"></div>
+    <div class="finish-grid">
+      <div class="fc good"><div class="fc-num">17</div><div class="fc-lbl">记起了</div></div>
+      <div class="fc bad"> <div class="fc-num">3</div> <div class="fc-lbl">还在想</div></div>
+      <div class="fc neu"> <div class="fc-num">85%</div><div class="fc-lbl">记忆率</div></div>
+    </div>
+    <button class="btn-red-lg" onclick="showScreen('screen-browse')">继续翻相册</button>
+    <button class="btn-ghost"  onclick="showScreen('screen-home')">回到首页</button>
+  </div>
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           我 的 屏               ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-mine" class="screen">
+
+  <div class="mine-topbar"></div>
+
+  <div class="mine-scroll">
+
+    <!-- 账户卡片 -->
+    <button class="mine-profile" onclick="showScreen('screen-account')">
+      <div class="mine-profile-avatar">陈</div>
+      <div class="mine-profile-info">
+        <div class="mine-profile-name">陈先生</div>
+        <div class="mine-profile-sub">chenlian@263.net</div>
+      </div>
+      <svg class="mine-profile-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <!-- Group A: 统计 -->
+    <div class="mine-group">
+      <button class="mine-menu-item" onclick="showScreen('screen-stats')">
+        <div class="mine-menu-icon mi-jade"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
+        <span>统 计</span>
+        <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <!-- Group B: 设置 + 主题 -->
+    <div class="mine-group">
+      <button class="mine-menu-item" onclick="showScreen('screen-settings')">
+        <div class="mine-menu-icon mi-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+        <span>设 置</span>
+        <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="mine-menu-item" onclick="showScreen('screen-theme')">
+        <div class="mine-menu-icon mi-red"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 1.657-1.343 3-3 3h-1.5a2 2 0 0 0-2 2 2 2 0 0 1-2 2z"/><circle cx="8.5" cy="10.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="11.5" cy="7" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+        <span>主 题</span>
+        <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <!-- Group C: 关于 -->
+    <div class="mine-group">
+      <button class="mine-menu-item" onclick="alert('关于 忆海拾光')">
+        <div class="mine-menu-icon mi-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01" stroke-width="2.5"/></svg></div>
+        <span>关 于</span>
+        <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <!-- 模式切换 -->
+    <div class="mode-switch-row">
+      <div class="mode-switch-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="mode-switch-label">模 式</div>
+      <span class="mode-badge patient" id="mode-badge">患者</span>
+      <button class="toggle-switch" id="mode-toggle" onclick="toggleMode()" aria-label="切换模式">
+        <div class="toggle-knob"></div>
+      </button>
+    </div>
+
+  </div>
+
+  <div class="home-tabbar">
+    <button class="tab-item" onclick="showScreen('screen-home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/>
+        <path d="M9 21V13h6v8"/>
+      </svg>
+      <span>首 页</span>
+    </button>
+    <button class="tab-item action" onclick="onFabTap()">
+      <div class="tab-fab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="6 3 20 12 6 21 6 3"/>
+        </svg>
+      </div>
+      <span id="fab-label-mine">开始练习</span>
+    </button>
+    <button class="tab-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/>
+      </svg>
+      <span>我 的</span>
+    </button>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           账 户 屏               ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-account" class="screen">
+
+  <div class="stats-topbar">
+    <button class="btn-back" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="stats-title">账 户</div>
+  </div>
+  <div class="divider"></div>
+
+  <!-- 原型状态切换（仅设计稿可见） -->
+  <div class="demo-state-bar">
+    <button class="demo-state-btn" onclick="setAccountState('a')">未登录</button>
+    <button class="demo-state-btn" onclick="setAccountState('b')">恢复中</button>
+    <button class="demo-state-btn active" onclick="setAccountState('c')">已登录</button>
+  </div>
+
+  <!-- 状态 A · 未登录 -->
+  <div id="acct-state-a" class="acct-state">
+    <div class="acct-login-scroll">
+      <p class="acct-login-desc">登录后可同步服务器牌组，训练记录自动上传。<br>未登录仅支持手工导入，数据完全离线。</p>
+      <input class="acct-input" type="email" placeholder="邮箱">
+      <input class="acct-input" type="password" placeholder="密码">
+      <button class="btn-login">登  录</button>
+    </div>
+  </div>
+
+  <!-- 状态 B · Session 恢复中 -->
+  <div id="acct-state-b" class="acct-state">
+    <div class="acct-loading">
+      <div class="spinner"></div>
+      <div class="acct-loading-text">正在恢复登录…</div>
+    </div>
+  </div>
+
+  <!-- 状态 C · 已登录 -->
+  <div id="acct-state-c" class="acct-state active">
+    <div class="stats-scroll">
+
+      <!-- 头像 + 信息 -->
+      <div style="display:flex;flex-direction:column;align-items:center;padding:32px var(--pad) 24px">
+        <div style="width:80px;height:80px;border-radius:20px;background:var(--red-lt);border:2px solid var(--red-bd);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:var(--red-dk);font-family:var(--fs)">陈</div>
+        <div style="margin-top:14px;font-size:20px;font-weight:700;color:var(--ink);letter-spacing:0.5px">陈先生</div>
+        <div style="margin-top:5px;font-size:14px;color:var(--ink4)">chenlian@263.net</div>
+      </div>
+
+      <!-- 同步状态 + 操作 -->
+      <div class="mine-group">
+        <div class="mine-menu-item" style="cursor:default">
+          <div class="mine-menu-icon mi-jade"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8M8 17l4-4 4 4"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
+          <span>云端同步</span>
+          <span style="margin-left:8px;font-size:13px;font-weight:600;color:var(--jade)">已连接</span>
+          <button class="btn-sync-sm" onclick="triggerSync()">同步</button>
+        </div>
+        <div class="mine-menu-item" style="cursor:default;border-bottom:none">
+          <div class="mine-menu-icon mi-surf"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <span>最近同步</span>
+          <span style="margin-left:auto;font-size:13px;color:var(--ink4);padding-right:4px">今天 14:32</span>
+        </div>
+      </div>
+
+      <!-- 学习实时上传 -->
+      <div class="mine-group" style="margin-top:12px">
+        <div class="mine-menu-item" style="cursor:default;border-bottom:none">
+          <div class="mine-menu-icon mi-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
+          <div class="setting-label-col" style="flex:1">
+            <div class="setting-label">学习实时上传</div>
+            <div class="setting-hint">关闭后仅打开 / 练习完成时同步，更省电</div>
+          </div>
+          <button class="toggle-switch on" id="toggle-realtime" onclick="this.classList.toggle('on')" aria-label="实时上传">
+            <div class="toggle-knob"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- 退出登录 -->
+      <div class="mine-group" style="margin-top:12px">
+        <button class="mine-menu-item" onclick="alert('退出登录')" style="color:var(--red-dk);border-bottom:none">
+          <div class="mine-menu-icon mi-red"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+          <span>退出登录</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           统 计 屏               ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-stats" class="screen">
+
+  <div class="stats-topbar">
+    <button class="btn-back" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="stats-title">统 计</div>
+  </div>
+  <div class="divider"></div>
+
+  <!-- 4-Tab 切换器 -->
+  <div class="stats-tabs-bar">
+    <button class="stats-stab active" onclick="switchStatsTab('today', this)">今日</button>
+    <button class="stats-stab" onclick="switchStatsTab('deck', this)">牌组</button>
+    <button class="stats-stab" onclick="switchStatsTab('cards', this)">卡片</button>
+    <button class="stats-stab" onclick="switchStatsTab('records', this)">记录</button>
+  </div>
+
+  <div class="stats-body">
+
+    <!-- Tab 0 · 今日 -->
+    <div class="stats-pane active" id="stats-pane-today">
+      <div class="stats-section">
+        <div class="stats-section-lbl">今日练习</div>
+        <div class="stats-grid-3">
+          <div class="stat-card"><div class="stat-num">20</div><div class="stat-lbl">练习</div></div>
+          <div class="stat-card"><div class="stat-num good">14</div><div class="stat-lbl">良好</div></div>
+          <div class="stat-card"><div class="stat-num neu">4</div><div class="stat-lbl">困难</div></div>
+        </div>
+        <div class="stats-grid-4" style="margin-top:10px">
+          <div class="stat-card"><div class="stat-num red-c">2</div><div class="stat-lbl">重来</div></div>
+          <div class="stat-card"><div class="stat-num">8</div><div class="stat-lbl">时长(分)</div></div>
+          <div class="stat-card"><div class="stat-num neu">3</div><div class="stat-lbl">新卡</div></div>
+          <div class="stat-card"><div class="stat-num red-c">1</div><div class="stat-lbl">待确认</div></div>
+        </div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-section-lbl">近 7 天</div>
+        <div class="stat-card-wide">
+          <div class="chart-wrap" id="chart-bars"><!-- JS 生成 --></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 1 · 牌组 -->
+    <div class="stats-pane" id="stats-pane-deck">
+      <div class="stats-section">
+        <div class="stats-section-lbl">牌组概况</div>
+        <div class="stats-grid-3">
+          <div class="stat-card"><div class="stat-num">60</div><div class="stat-lbl">总卡片</div></div>
+          <div class="stat-card"><div class="stat-num good">38</div><div class="stat-lbl">已掌握</div></div>
+          <div class="stat-card"><div class="stat-num neu">12</div><div class="stat-lbl">学习中</div></div>
+        </div>
+        <div class="stats-grid-3" style="margin-top:10px">
+          <div class="stat-card"><div class="stat-num" style="color:var(--ink3)">5</div><div class="stat-lbl">待开始</div></div>
+          <div class="stat-card"><div class="stat-num" style="color:var(--ink4)">5</div><div class="stat-lbl">暂停</div></div>
+          <div class="stat-card"><div class="stat-num good">24</div><div class="stat-lbl">练习天数</div></div>
+        </div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-section-lbl">未来 7 天到期预测</div>
+        <div class="stat-card-wide">
+          <div class="forecast-chart-wrap" id="forecast-bars"><!-- JS 生成 --></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2 · 卡片 -->
+    <div class="stats-pane" id="stats-pane-cards">
+      <div class="filter-chips" id="filter-chips">
+        <button class="filter-chip active" onclick="filterCards(this,'all')">全部</button>
+        <button class="filter-chip" onclick="filterCards(this,'pending')">待确认</button>
+        <button class="filter-chip" onclick="filterCards(this,'learning')">学习中</button>
+        <button class="filter-chip" onclick="filterCards(this,'review')">复习中</button>
+        <button class="filter-chip" onclick="filterCards(this,'mastered')">已掌握</button>
+        <button class="filter-chip" onclick="filterCards(this,'new')">待开始</button>
+      </div>
+      <div class="stats-card-list" id="stats-card-list">
+        <div class="stats-card-row" onclick="showCardDetail('🍎','苹果','复习中','3天后','2.5','1','review')">
+          <div class="stats-card-thumb">🍎</div>
+          <div class="stats-card-info"><div class="stats-card-name">苹果</div><div class="stats-card-status">复习中</div></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="stats-card-row" onclick="showCardDetail('🥕','胡萝卜','学习中','今天','2.5','0','learning')">
+          <div class="stats-card-thumb">🥕</div>
+          <div class="stats-card-info"><div class="stats-card-name">胡萝卜</div><div class="stats-card-status">学习中</div></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="stats-card-row" onclick="showCardDetail('🥦','西兰花','已掌握','7天后','2.8','0','review')">
+          <div class="stats-card-thumb">🥦</div>
+          <div class="stats-card-info"><div class="stats-card-name">西兰花</div><div class="stats-card-status">已掌握</div></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="stats-card-row" onclick="showCardDetail('🍊','橙子','已掌握','14天后','3.1','0','review')">
+          <div class="stats-card-thumb">🍊</div>
+          <div class="stats-card-info"><div class="stats-card-name">橙子</div><div class="stats-card-status">已掌握</div></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="stats-card-row" onclick="showCardDetail('🍇','葡萄','待开始','—','2.5','0','new')">
+          <div class="stats-card-thumb">🍇</div>
+          <div class="stats-card-info"><div class="stats-card-name">葡萄</div><div class="stats-card-status">待开始</div></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="stats-card-row" onclick="showCardDetail('🍌','香蕉','学习中','今天','2.3','2','relearning')">
+          <div class="stats-card-thumb">🍌</div>
+          <div class="stats-card-info"><div class="stats-card-name">香蕉</div><div class="stats-card-status">学习中</div></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3 · 记录 -->
+    <div class="stats-pane" id="stats-pane-records">
+      <p class="records-subtitle">最近 100 条（7天内，不含步长内重现）</p>
+      <div id="records-list">
+        <div class="record-list-row">
+          <div class="record-thumb">🍎</div>
+          <div class="record-card-name">苹果</div>
+          <span class="record-tag good">良好</span>
+          <span class="record-time">今天 14:32</span>
+        </div>
+        <div class="record-list-row">
+          <div class="record-thumb">🥕</div>
+          <div class="record-card-name">胡萝卜</div>
+          <span class="record-tag hard">困难</span>
+          <span class="record-time">今天 14:31</span>
+        </div>
+        <div class="record-list-row">
+          <div class="record-thumb">🥦</div>
+          <div class="record-card-name">西兰花</div>
+          <span class="record-tag good">良好</span>
+          <span class="record-time">今天 14:29</span>
+        </div>
+        <div class="record-list-row">
+          <div class="record-thumb">🍊</div>
+          <div class="record-card-name">橙子</div>
+          <span class="record-tag again">重来</span>
+          <span class="record-time">今天 14:27</span>
+        </div>
+        <div class="record-list-row">
+          <div class="record-thumb">🍇</div>
+          <div class="record-card-name">葡萄</div>
+          <span class="record-tag good">良好</span>
+          <span class="record-time">昨天 19:05</span>
+        </div>
+        <div class="record-list-row">
+          <div class="record-thumb">🍌</div>
+          <div class="record-card-name">香蕉</div>
+          <span class="record-tag hard">困难</span>
+          <span class="record-time">昨天 18:58</span>
+        </div>
+        <div class="record-list-row">
+          <div class="record-thumb">🍎</div>
+          <div class="record-card-name">苹果</div>
+          <span class="record-tag good">良好</span>
+          <span class="record-time">昨天 18:52</span>
+        </div>
+        <div class="record-list-row">
+          <div class="record-thumb">🥦</div>
+          <div class="record-card-name">西兰花</div>
+          <span class="record-tag good">良好</span>
+          <span class="record-time">3天前 10:14</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           主 题 屏               ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-theme" class="screen">
+
+  <div class="stats-topbar">
+    <button class="btn-back" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="stats-title">主 题</div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="stats-scroll">
+    <div class="theme-grid" style="padding-top:20px">
+      <button class="theme-card active" data-theme="default" onclick="setTheme(this)">
+        <div class="theme-prev tp-default"><div class="theme-prev-btn"></div></div>
+        <div class="theme-name">朱砂·温故</div>
+        <div class="theme-check">✓</div>
+      </button>
+      <button class="theme-card" data-theme="jade" onclick="setTheme(this)">
+        <div class="theme-prev tp-jade"><div class="theme-prev-btn"></div></div>
+        <div class="theme-name">翡翠·清雅</div>
+        <div class="theme-check">✓</div>
+      </button>
+      <button class="theme-card" data-theme="amber" onclick="setTheme(this)">
+        <div class="theme-prev tp-amber"><div class="theme-prev-btn"></div></div>
+        <div class="theme-name">夕阳·暖橙</div>
+        <div class="theme-check">✓</div>
+      </button>
+      <button class="theme-card" data-theme="dark" onclick="setTheme(this)">
+        <div class="theme-prev tp-dark"><div class="theme-prev-btn"></div></div>
+        <div class="theme-name">深夜·护眼</div>
+        <div class="theme-check">✓</div>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           设 置 屏               ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-settings" class="screen">
+
+  <div class="settings-topbar">
+    <button class="btn-back" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="settings-title">设 置</div>
+  </div>
+
+  <div class="settings-tabs">
+    <button class="settings-tab active" onclick="switchSettingsTab('general', this)">通用</button>
+    <button class="settings-tab" onclick="switchSettingsTab('srs', this)">SRS 参数</button>
+  </div>
+
+  <div class="settings-body">
+
+    <!-- 通用 Tab -->
+    <div class="settings-pane active" id="pane-general">
+      <div class="setting-group">
+        <div class="setting-group-lbl">学习</div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">每日学习目标</div>
+            <div class="setting-hint">每天最多学习新卡</div>
+          </div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="stepperChange('daily-goal', -5)">−</button>
+            <div class="stepper-val" id="daily-goal-val">10</div>
+            <button class="stepper-btn" onclick="stepperChange('daily-goal', 5)">＋</button>
+          </div>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-lbl">语音</div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">TTS 朗读速度</div>
+            <div class="setting-hint">影响自动朗读节奏</div>
+          </div>
+          <div class="seg-ctrl">
+            <button class="seg-btn" onclick="setSeg(this)">慢</button>
+            <button class="seg-btn active" onclick="setSeg(this)">正常</button>
+            <button class="seg-btn" onclick="setSeg(this)">快</button>
+          </div>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-lbl">练习模式</div>
+        <div class="session-mode-row active" onclick="setSessionMode(this)">
+          <div class="session-mode-info">
+            <span class="session-mode-name">普通</span>
+            <span class="session-mode-desc">固定 20 张，越做越顺</span>
+          </div>
+          <span class="session-mode-check">✓</span>
+        </div>
+        <div class="session-mode-row" onclick="setSessionMode(this)">
+          <div class="session-mode-info">
+            <span class="session-mode-name">困难</span>
+            <span class="session-mode-desc">SRS 节律，最多 30 张</span>
+          </div>
+          <span class="session-mode-check">✓</span>
+        </div>
+        <div class="session-mode-row" onclick="setSessionMode(this)">
+          <div class="session-mode-info">
+            <span class="session-mode-name">生存</span>
+            <span class="session-mode-desc">清空所有积压</span>
+          </div>
+          <span class="session-mode-check">✓</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SRS Tab -->
+    <div class="settings-pane" id="pane-srs">
+      <!-- 预设按钮 -->
+      <div class="srs-preset-group">
+        <button class="srs-preset-btn primary" onclick="alert('已应用 AD 建议值')">一键应用 AD 建议值</button>
+        <button class="srs-preset-btn secondary" onclick="alert('已恢复 Anki 默认值')">恢复 Anki 默认值</button>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-lbl">新卡学习</div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">新卡步骤</div>
+            <div class="setting-hint">分钟，空格分隔</div>
+          </div>
+          <div class="srs-step-wrap">
+            <input class="srs-step-input" type="text" value="1 10" id="new-steps-input" oninput="parseSteps(this,'new-steps-parse')">
+            <span class="srs-step-parse" id="new-steps-parse">1m · 10m</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">重学步骤</div>
+            <div class="setting-hint">再学习步骤，分钟</div>
+          </div>
+          <div class="srs-step-wrap">
+            <input class="srs-step-input" type="text" value="10" id="relearn-steps-input" oninput="parseSteps(this,'relearn-steps-parse')">
+            <span class="srs-step-parse" id="relearn-steps-parse">10m</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">简单间隔</div>
+            <div class="setting-hint">Easy 毕业间隔，天</div>
+          </div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="stepperChange('easy-interval', -1)">−</button>
+            <div class="stepper-val" id="easy-interval-val">4</div>
+            <button class="stepper-btn" onclick="stepperChange('easy-interval', 1)">＋</button>
+          </div>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-lbl">间隔</div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">毕业间隔</div>
+            <div class="setting-hint">首次进入复习，天</div>
+          </div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="stepperChange('grad-interval', -1)">−</button>
+            <div class="stepper-val" id="grad-interval-val">1</div>
+            <button class="stepper-btn" onclick="stepperChange('grad-interval', 1)">＋</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">最大间隔</div>
+            <div class="setting-hint">复习间隔上限，天</div>
+          </div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="stepperChange('max-interval', -30)">−</button>
+            <div class="stepper-val" id="max-interval-val">365</div>
+            <button class="stepper-btn" onclick="stepperChange('max-interval', 30)">＋</button>
+          </div>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-lbl">每日上限</div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">每日新卡上限</div>
+            <div class="setting-hint">每天学习的新卡数量</div>
+          </div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="stepperChange('daily-new', -1)">−</button>
+            <div class="stepper-val" id="daily-new-val">10</div>
+            <button class="stepper-btn" onclick="stepperChange('daily-new', 1)">＋</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">每日复习上限</div>
+            <div class="setting-hint">每天最多复习卡片数</div>
+          </div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="stepperChange('daily-rev', -10)">−</button>
+            <div class="stepper-val" id="daily-rev-val">100</div>
+            <button class="stepper-btn" onclick="stepperChange('daily-rev', 10)">＋</button>
+          </div>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-lbl">保护机制</div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">每日暂停阈值</div>
+            <div class="setting-hint">连续失败移出当日队列</div>
+          </div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="stepperChange('daily-remove', -1)">−</button>
+            <div class="stepper-val" id="daily-remove-val">3</div>
+            <button class="stepper-btn" onclick="stepperChange('daily-remove', 1)">＋</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">自动暂停阈值</div>
+            <div class="setting-hint">累计失败后暂停卡片</div>
+          </div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="stepperChange('auto-suspend', -1)">−</button>
+            <div class="stepper-val" id="auto-suspend-val">8</div>
+            <button class="stepper-btn" onclick="stepperChange('auto-suspend', 1)">＋</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">时长提醒</div>
+            <div class="setting-hint">单次练习时长提醒，分钟</div>
+          </div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="stepperChange('dur-alert', -5)">−</button>
+            <div class="stepper-val" id="dur-alert-val">20</div>
+            <button class="stepper-btn" onclick="stepperChange('dur-alert', 5)">＋</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <div class="setting-label">Hard 计入失败</div>
+            <div class="setting-hint">学习/再学习阶段</div>
+          </div>
+          <div class="seg-ctrl">
+            <button class="seg-btn active" onclick="setSeg(this)">关</button>
+            <button class="seg-btn" onclick="setSeg(this)">开</button>
+          </div>
+        </div>
+      </div>
+      <!-- 高级（可折叠） -->
+      <div class="setting-group" style="padding-bottom:16px">
+        <button class="srs-adv-toggle" id="srs-adv-toggle" onclick="toggleSrsAdv()">
+          高级参数
+          <svg class="adv-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="srs-adv-rows" id="srs-adv-rows">
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <div class="setting-label">初始易度</div>
+              <div class="setting-hint">新卡初始 Ease Factor</div>
+            </div>
+            <div class="stepper">
+              <button class="stepper-btn" onclick="stepperChangeFl('init-ef', -0.1)">−</button>
+              <div class="stepper-val" id="init-ef-val">2.5</div>
+              <button class="stepper-btn" onclick="stepperChangeFl('init-ef', 0.1)">＋</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <div class="setting-label">全局间隔乘数</div>
+              <div class="setting-hint">缩放所有复习间隔</div>
+            </div>
+            <div class="stepper">
+              <button class="stepper-btn" onclick="stepperChangeFl('interval-mult', -0.05)">−</button>
+              <div class="stepper-val" id="interval-mult-val">1.00</div>
+              <button class="stepper-btn" onclick="stepperChangeFl('interval-mult', 0.05)">＋</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║        牌 组 详 情               ║
+     ║      （照护者视图）               ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-deck-detail" class="screen">
+
+  <div class="deck-topbar">
+    <button class="btn-back" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="deck-title" id="deck-title">蔬菜水果相册</div>
+    <button class="btn-add-sm" onclick="showScreen('screen-card-form')">＋ 添加</button>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="deck-scroll" id="card-list">
+
+    <div class="card-row" data-swipeable>
+      <div class="card-row-inner" onclick="editCard(this)">
+        <div class="card-thumb-sm">🍎</div>
+        <div class="card-info-col">
+          <div class="card-name-sm">苹果</div>
+          <div class="card-meta">有图片 · 有录音</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="card-swipe-btns">
+        <button class="swipe-btn swipe-btn-edit" onclick="editCard(this)">编辑</button>
+        <button class="swipe-btn swipe-btn-del"  onclick="deleteCard(this)">删除</button>
+      </div>
+    </div>
+
+    <div class="card-row" data-swipeable>
+      <div class="card-row-inner" onclick="editCard(this)">
+        <div class="card-thumb-sm">🥕</div>
+        <div class="card-info-col">
+          <div class="card-name-sm">胡萝卜</div>
+          <div class="card-meta">有图片 · TTS 朗读</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="card-swipe-btns">
+        <button class="swipe-btn swipe-btn-edit" onclick="editCard(this)">编辑</button>
+        <button class="swipe-btn swipe-btn-del"  onclick="deleteCard(this)">删除</button>
+      </div>
+    </div>
+
+    <div class="card-row" data-swipeable>
+      <div class="card-row-inner" onclick="editCard(this)">
+        <div class="card-thumb-sm">🥦</div>
+        <div class="card-info-col">
+          <div class="card-name-sm">西兰花</div>
+          <div class="card-meta">有图片 · 有录音</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="card-swipe-btns">
+        <button class="swipe-btn swipe-btn-edit" onclick="editCard(this)">编辑</button>
+        <button class="swipe-btn swipe-btn-del"  onclick="deleteCard(this)">删除</button>
+      </div>
+    </div>
+
+    <div class="card-row" data-swipeable>
+      <div class="card-row-inner" onclick="editCard(this)">
+        <div class="card-thumb-sm">🍊</div>
+        <div class="card-info-col">
+          <div class="card-name-sm">橙子</div>
+          <div class="card-meta">有图片 · TTS 朗读</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="card-swipe-btns">
+        <button class="swipe-btn swipe-btn-edit" onclick="editCard(this)">编辑</button>
+        <button class="swipe-btn swipe-btn-del"  onclick="deleteCard(this)">删除</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           制 卡 表 单            ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-card-form" class="screen">
+
+  <div class="form-topbar">
+    <button class="btn-back" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="form-deck-tag" onclick="alert('切换牌组（选单）')">
+      <span id="form-deck-name">蔬菜水果相册</span>
+      <span class="form-deck-arrow">▾</span>
+    </button>
+  </div>
+
+  <div class="form-scroll">
+
+    <!-- 拍照区 -->
+    <div class="photo-zone" onclick="alert('调用系统相机 / 相册')">
+      <div class="photo-zone-icon">📷</div>
+      <div class="photo-zone-lbl">点击拍照 / 选图</div>
+      <div class="photo-zone-sub">必填</div>
+    </div>
+
+    <!-- 名称 -->
+    <div class="form-field">
+      <div class="form-lbl">名 称</div>
+      <input class="form-text-input" type="text" placeholder="输入卡片名称" id="card-name-input">
+    </div>
+
+    <!-- 录音 -->
+    <div class="form-field">
+      <div class="form-lbl">
+        录 音
+        <span class="form-opt">可选</span>
+      </div>
+      <div class="record-row">
+        <button class="btn-record" id="record-btn" onclick="toggleRecord()">
+          <div class="record-dot"></div>
+          <span>开始录音</span>
+        </button>
+      </div>
+      <div class="record-preview" id="record-preview">
+        <button class="record-play">▶</button>
+        <div class="record-bar"></div>
+        <button class="btn-redo" onclick="redoRecord()">重录</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="form-actions">
+    <button class="btn-save-main" onclick="saveAndContinue()">保存并继续添加</button>
+    <button class="btn-save-sec"  onclick="saveAndDone()">保存并完成</button>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║     底部 Action Sheet — 「+」    ║
+     ╚═══════════════════════════════════╝ -->
+<div class="sheet-backdrop" id="sheet-backdrop" onclick="closeSheet()"></div>
+
+<div class="sheet" id="sheet-plus">
+  <div class="sheet-handle"></div>
+  <div class="sheet-lbl">新建牌组</div>
+  <button class="sheet-btn" onclick="doNewDeck()">
+    <span class="sheet-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg></span>
+    <span>创建空牌组</span>
+  </button>
+  <button class="sheet-btn" onclick="doImportFile()">
+    <span class="sheet-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+    <span>导入文件（.yhspack）</span>
+  </button>
+  <button class="sheet-btn" onclick="doImportUrl()">
+    <span class="sheet-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+    <span>从链接下载</span>
+  </button>
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║     卡片详情 Sheet               ║
+     ╚═══════════════════════════════════╝ -->
+<div class="sheet" id="sheet-card-detail">
+  <div class="sheet-handle"></div>
+  <div style="padding:16px var(--pad) 0;display:flex;align-items:flex-start;gap:16px">
+    <div id="card-detail-emoji" style="font-size:72px;line-height:1.1">🍎</div>
+    <div style="flex:1;padding-top:8px">
+      <div id="card-detail-name" style="font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px">苹果</div>
+      <div id="card-detail-stage" style="font-size:13px;font-weight:600;color:var(--red)">复习中</div>
+    </div>
+  </div>
+  <div style="padding:16px var(--pad) 8px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="stat-card"><div class="stat-num" id="card-detail-next" style="font-size:20px;color:var(--ink2)">3天后</div><div class="stat-lbl">下次复习</div></div>
+    <div class="stat-card"><div class="stat-num" id="card-detail-ef" style="font-size:20px">2.5</div><div class="stat-lbl">Ease Factor</div></div>
+    <div class="stat-card"><div class="stat-num red-c" id="card-detail-lapses" style="font-size:20px">1</div><div class="stat-lbl">累计失败</div></div>
+    <div class="stat-card"><div class="stat-num good" id="card-detail-phase" style="font-size:18px">review</div><div class="stat-lbl">当前阶段</div></div>
+  </div>
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║     同步进度弹窗                 ║
+     ╚═══════════════════════════════════╝ -->
+<div class="sync-modal-overlay" id="sync-modal-overlay" onclick="closeSyncModal()">
+  <div class="sync-modal-box" onclick="event.stopPropagation()">
+    <div class="sync-modal-title">正在同步数据</div>
+    <div class="sync-modal-sub" id="sync-modal-sub">正在同步配置…</div>
+    <div class="sync-prog-track">
+      <div class="sync-prog-fill" id="sync-prog-fill" style="width:0%"></div>
+    </div>
+    <div class="sync-prog-pct" id="sync-prog-pct">0%</div>
+  </div>
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║      文字输入 Modal              ║
+     ╚═══════════════════════════════════╝ -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="onModalBackdropClick(event)">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">创建空牌组</div>
+    <input class="modal-input" id="modal-input" type="text" placeholder="输入名称"
+           onkeydown="if(event.key==='Enter') confirmModal()">
+    <div class="modal-row">
+      <button class="modal-cancel" onclick="closeModal()">取消</button>
+      <button class="modal-confirm" onclick="confirmModal()">确认</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/* ─── 状态 ─── */
+let _mode   = localStorage.getItem('yh_mode')  || 'patient';
+let _theme  = localStorage.getItem('yh_theme') || 'default';
+let _currentDeck = '蔬菜水果相册';
+let _screenHistory = [];
+let _recording   = false;
+let _modalCb     = null;
+let _swipedEl    = null;  // 当前展开的左滑行
+
+/* ─── 初始化 ─── */
+window.addEventListener('DOMContentLoaded', () => {
+  applyMode(_mode);
+  applyTheme(_theme);
+  initSwipe(document.getElementById('home-scroll'));
+  initSwipe(document.getElementById('card-list'));
+});
+
+/* ─── 屏幕切换 ─── */
+function showScreen(id) {
+  const current = document.querySelector('.screen.active')?.id;
+  if (current && current !== id) {
+    _screenHistory.push(current);
+    if (_screenHistory.length > 30) _screenHistory.shift();
+  }
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  collapseAllSwipe();
+  if (id === 'screen-stats') initStatsChart();
+}
+function goBack() {
+  const prev = _screenHistory.pop() || 'screen-home';
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(prev)?.classList.add('active');
+  collapseAllSwipe();
+  if (prev === 'screen-stats') initStatsChart();
+}
+
+
+/* ─── 模式管理 ─── */
+function applyMode(mode) {
+  document.documentElement.dataset.mode = mode;
+  const lbl = mode === 'caregiver' ? '开始制卡' : '开始练习';
+  document.querySelectorAll('#fab-label, #fab-label-mine').forEach(el => el.textContent = lbl);
+  document.getElementById('album-section-lbl').textContent =
+    mode === 'caregiver' ? '我的牌组' : '我的相册';
+  updateModeBadge();
+}
+function setMode(mode) {
+  _mode = mode;
+  localStorage.setItem('yh_mode', mode);
+  applyMode(mode);
+  showScreen('screen-home');
+}
+function toggleMode() {
+  setMode(_mode === 'patient' ? 'caregiver' : 'patient');
+}
+function updateModeBadge() {
+  const badge  = document.getElementById('mode-badge');
+  const toggle = document.getElementById('mode-toggle');
+  if (!badge || !toggle) return;
+  const isCare = _mode === 'caregiver';
+  badge.textContent  = isCare ? '照护者' : '患者';
+  badge.className    = 'mode-badge ' + _mode;
+  toggle.className   = 'toggle-switch ' + (isCare ? 'on' : '');
+}
+
+/* ─── FAB 点击 ─── */
+function onFabTap() {
+  if (_mode === 'caregiver') {
+    const hasDeck = document.getElementById('album-list').children.length > 0;
+    if (!hasDeck) {
+      showModal({ title: '先创建一个牌组', placeholder: '输入牌组名称',
+        onConfirm: n => { if (n) { addDeckRow(n); _currentDeck = n; } }
+      });
+    } else {
+      document.getElementById('form-deck-name').textContent = _currentDeck;
+      showScreen('screen-card-form');
+    }
+  } else {
+    showScreen('screen-quiz');
+    startQuizHint();
+  }
+}
+
+/* ─── 牌组列表 ─── */
+function onAlbumRowTap(row) {
+  if (row.classList.contains('swiped')) return;
+  if (_mode === 'caregiver') {
+    document.querySelectorAll('.album-row').forEach(r => r.classList.remove('selected'));
+    row.classList.add('selected');
+    _currentDeck = row.dataset.deck || row.querySelector('.album-name')?.textContent || '';
+  } else {
+    openAlbum(row);
+  }
+}
+
+function openAlbum(row) {
+  if (row.classList.contains('swiped')) return;
+  document.querySelectorAll('.album-row').forEach(r => r.classList.remove('selected'));
+  row.classList.add('selected');
+  _currentDeck = row.dataset.deck || row.querySelector('.album-name')?.textContent || '';
+
+  if (_mode === 'caregiver') {
+    document.getElementById('deck-title').textContent = _currentDeck;
+    document.getElementById('form-deck-name').textContent = _currentDeck;
+    showScreen('screen-deck-detail');
+  } else {
+    document.getElementById('browse-album-name').textContent = _currentDeck;
+    showScreen('screen-browse');
+  }
+}
+
+/* ─── 牌组操作 ─── */
+function exportAlbum(btn) {
+  const name = btn.closest('.album-row').querySelector('.album-name').textContent;
+  collapseSwipe(btn.closest('.album-row'));
+  setTimeout(() => alert('导出「' + name + '」为 .yhspack 文件'), 220);
+}
+function renameAlbum(btn) {
+  const row = btn.closest('.album-row');
+  collapseSwipe(row);
+  showModal({
+    title: '重命名牌组',
+    value: row.querySelector('.album-name').textContent,
+    placeholder: '输入新名称',
+    onConfirm: newName => { row.querySelector('.album-name').textContent = newName; row.dataset.deck = newName; }
+  });
+}
+function deleteAlbum(btn) {
+  const row = btn.closest('.album-row');
+  const name = row.querySelector('.album-name').textContent;
+  showModal({
+    title: `删除「${name}」？`,
+    placeholder: '此操作不可恢复，输入牌组名确认',
+    onConfirm: () => row.remove()
+  });
+}
+
+/* ─── 卡片操作 ─── */
+function editCard(el) {
+  const row = el.closest('.card-row');
+  if (row?.classList.contains('swiped')) return;
+  const name = el.closest('.card-row')?.querySelector('.card-name-sm')?.textContent || '';
+  document.getElementById('card-name-input').value = name;
+  document.getElementById('form-deck-name').textContent = _currentDeck;
+  showScreen('screen-card-form');
+}
+function deleteCard(btn) {
+  const row = btn.closest('.card-row');
+  const name = row.querySelector('.card-name-sm').textContent;
+  showModal({
+    title: `删除卡片「${name}」？`,
+    placeholder: '此操作不可恢复',
+    onConfirm: () => row.remove()
+  });
+}
+
+/* ─── 制卡表单 ─── */
+function toggleRecord() {
+  _recording = !_recording;
+  const btn = document.getElementById('record-btn');
+  const preview = document.getElementById('record-preview');
+  if (_recording) {
+    btn.classList.add('recording');
+    btn.innerHTML = '<div class="record-dot"></div><span>停止录音</span>';
+    preview.classList.remove('show');
+  } else {
+    btn.classList.remove('recording');
+    btn.innerHTML = '<div class="record-dot"></div><span>重新录音</span>';
+    preview.classList.add('show');
+  }
+}
+function redoRecord() {
+  document.getElementById('record-preview').classList.remove('show');
+  document.getElementById('record-btn').innerHTML = '<div class="record-dot"></div><span>开始录音</span>';
+  _recording = false;
+}
+function saveAndContinue() {
+  document.getElementById('card-name-input').value = '';
+  document.getElementById('record-preview').classList.remove('show');
+  document.getElementById('record-btn').innerHTML = '<div class="record-dot"></div><span>开始录音</span>';
+  document.getElementById('record-btn').classList.remove('recording');
+  _recording = false;
+  // 滚到顶部
+  document.querySelector('.form-scroll').scrollTo({ top: 0, behavior: 'smooth' });
+}
+function saveAndDone() { goBack(); }
+
+/* ─── Sheet ─── */
+function showSheet(id) {
+  document.getElementById('sheet-backdrop').classList.add('open');
+  document.getElementById(id).classList.add('open');
+}
+function closeSheet() {
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('open'));
+  document.getElementById('sheet-backdrop').classList.remove('open');
+}
+
+/* ─── Sheet 操作 ─── */
+function doNewDeck() {
+  closeSheet();
+  setTimeout(() => showModal({
+    title: '创建空牌组',
+    placeholder: '输入牌组名称',
+    onConfirm: name => addDeckRow(name)
+  }), 220);
+}
+function doImportFile() {
+  closeSheet();
+  setTimeout(() => alert('调用系统文件选择器，选取 .yhspack 文件'), 220);
+}
+function doImportUrl() {
+  closeSheet();
+  setTimeout(() => showModal({
+    title: '从链接下载',
+    placeholder: '粘贴 .yhspack 下载链接',
+    onConfirm: url => alert('正在下载：' + url)
+  }), 220);
+}
+function doExport() {
+  closeSheet();
+  setTimeout(() => alert('导出「' + _currentDeck + '」为 .yhspack 文件'), 220);
+}
+function doShare() {
+  closeSheet();
+  setTimeout(() => alert('共享功能开发中'), 220);
+}
+
+function addDeckRow(name) {
+  const list = document.getElementById('album-list');
+  const row = document.createElement('div');
+  row.className = 'album-row';
+  row.dataset.deck = name;
+  row.dataset.swipeable = '';
+  const initial = name[0] || '📁';
+  row.innerHTML = `
+    <div class="album-row-inner" onclick="onAlbumRowTap(this.parentElement)">
+      <div class="album-info"><div class="album-name">${name}</div></div>
+      <div class="album-stats">
+        <div class="album-stat due zero">0</div>
+        <div class="album-stat new zero">0</div>
+      </div>
+      <button class="album-nav-btn caregiver-only" onclick="event.stopPropagation(); openAlbum(this.closest('.album-row'))">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div class="album-swipe-btns">
+      <button class="swipe-btn swipe-btn-export" onclick="exportAlbum(this)">导出</button>
+      <button class="swipe-btn swipe-btn-rename" onclick="renameAlbum(this)">重命名</button>
+      <button class="swipe-btn swipe-btn-del" onclick="deleteAlbum(this)">删除</button>
+    </div>`;
+  list.appendChild(row);
+}
+
+/* ─── Modal ─── */
+function showModal(cfg) {
+  _modalCb = cfg.onConfirm;
+  document.getElementById('modal-title').textContent = cfg.title || '';
+  const inp = document.getElementById('modal-input');
+  inp.value = cfg.value || '';
+  inp.placeholder = cfg.placeholder || '';
+  document.getElementById('modal-backdrop').classList.add('open');
+  setTimeout(() => inp.focus(), 300);
+}
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+  _modalCb = null;
+}
+function confirmModal() {
+  const val = document.getElementById('modal-input').value.trim();
+  if (_modalCb) _modalCb(val);
+  closeModal();
+}
+function onModalBackdropClick(e) {
+  if (e.target === document.getElementById('modal-backdrop')) closeModal();
+}
+
+/* ─── 主题 ─── */
+function setTheme(card) {
+  _theme = card.dataset.theme;
+  localStorage.setItem('yh_theme', _theme);
+  applyTheme(_theme);
+}
+function applyTheme(theme) {
+  if (theme === 'default') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.theme === theme);
+  });
+}
+
+/* ─── 浏览屏 ─── */
+const CARDS = [
+  { emoji: '🍎', name: '苹 果',  desc: '蔷薇科植物，果肉甜脆多汁，富含维生素 C 与膳食纤维，是常见水果。' },
+  { emoji: '🥕', name: '胡萝卜', desc: '伞形科植物，根肉质鲜橙，富含胡萝卜素与维生素 A，有益眼睛健康。' },
+  { emoji: '🥦', name: '西兰花', desc: '十字花科植物，花蕾碧绿，富含维生素 C 与叶酸，常见绿色蔬菜。' },
+  { emoji: '🍊', name: '橙 子',  desc: '芸香科柑橘类水果，果肉酸甜多汁，富含维生素 C 与膳食纤维。' },
+  { emoji: '🍇', name: '葡 萄',  desc: '葡萄科藤本植物，浆果成串，有紫、绿、红等颜色，甜中带酸。' },
+];
+let browseIdx = 0;
+function browseNav(dir) {
+  if (dir === 1 && browseIdx === CARDS.length - 1) {
+    showScreen('screen-finish');
+    return;
+  }
+  browseIdx = Math.max(0, Math.min(CARDS.length - 1, browseIdx + dir));
+  const c = CARDS[browseIdx];
+  const img = document.getElementById('photo-img');
+  img.style.opacity = '0';
+  setTimeout(() => {
+    img.textContent = c.emoji;
+    document.getElementById('photo-name').textContent = c.name;
+    document.getElementById('photo-desc').textContent = c.desc;
+    document.getElementById('browse-prog-fill').style.width = ((browseIdx + 1) / CARDS.length * 100) + '%';
+    img.style.opacity = '1';
+    document.getElementById('btn-browse-next').textContent = browseIdx === CARDS.length - 1 ? '完 成' : '下一张';
+    document.getElementById('btn-browse-prev').disabled = browseIdx === 0;
+  }, 200);
+}
+function browseTTS() {}
+
+/* ─── 练习屏 ─── */
+let _quizTimer = null;
+function startQuizHint() {
+  clearTimeout(_quizTimer);
+  const q = document.getElementById('quiz-question');
+  q.classList.remove('hidden'); q.style.opacity = '1'; q.textContent = '这是什么？';
+  _quizTimer = setTimeout(() => {
+    q.style.opacity = '0';
+    setTimeout(() => { q.textContent = '请点选一个答案'; q.style.opacity = '1'; }, 250);
+  }, 3000);
+}
+function pickOpt(el) {
+  clearTimeout(_quizTimer);
+  if (document.getElementById('answer-zone').classList.contains('open')) return;
+  document.getElementById('opts-zone').classList.remove('animated');
+  document.getElementById('opts-zone').classList.add('collapsed');
+  document.getElementById('quiz-question').classList.add('hidden');
+  document.getElementById('answer-zone').classList.add('open');
+  startCountdown();
+}
+function quizNext() {
+  stopCountdown();
+  const zone = document.getElementById('opts-zone');
+  zone.classList.remove('collapsed');
+  zone.querySelectorAll('.opt').forEach(o => o.classList.remove('correct','wrong','dim'));
+  document.getElementById('answer-zone').classList.remove('open');
+  zone.classList.remove('animated');
+  void zone.offsetWidth;
+  zone.classList.add('animated');
+  startQuizHint();
+}
+
+/* ─── 左滑手势（touch + mouse 双轨）─── */
+function initSwipe(container) {
+  if (!container) return;
+  let startX = 0, startY = 0, startEl = null, locked = false;
+
+  function _start(clientX, clientY, target) {
+    const el = target.closest('[data-swipeable]');
+    if (!el) return;
+    if (_swipedEl && _swipedEl !== el) { collapseSwipe(_swipedEl); _swipedEl = null; }
+    startX = clientX; startY = clientY; startEl = el; locked = false;
+  }
+  function _move(clientX, clientY) {
+    if (!startEl) return false;
+    if (container.id === 'home-scroll' && _mode !== 'caregiver') { startEl = null; return false; }
+    const dx = clientX - startX, dy = clientY - startY;
+    if (!locked) {
+      if (Math.abs(dy) > Math.abs(dx) + 2) { startEl = null; return false; } // 竖向优先
+      if (Math.abs(dx) > 5) locked = true;
+    }
+    if (locked && dx < 0) {
+      const inner = startEl.querySelector('.album-row-inner, .card-row-inner');
+      const snapDist = startEl.querySelectorAll('.swipe-btn').length * 72;
+      if (inner) { inner.style.transition = 'none'; inner.style.transform = `translateX(${Math.max(dx, -snapDist)}px)`; }
+      return true;
+    }
+    return false;
+  }
+  function _end(clientX) {
+    if (!startEl) return;
+    if (container.id === 'home-scroll' && _mode !== 'caregiver') { startEl = null; locked = false; return; }
+    const dx = clientX - startX;
+    const inner = startEl.querySelector('.album-row-inner, .card-row-inner');
+    const snapDist = startEl.querySelectorAll('.swipe-btn').length * 72;
+    if (inner) {
+      inner.style.transition = 'transform 0.25s cubic-bezier(0.4,0,0.2,1)';
+      if (dx < -60) {
+        inner.style.transform = `translateX(-${snapDist}px)`;
+        startEl.classList.add('swiped'); _swipedEl = startEl;
+      } else {
+        inner.style.transform = 'translateX(0)';
+        startEl.classList.remove('swiped'); _swipedEl = null;
+      }
+    }
+    startEl = null; locked = false;
+  }
+
+  // Touch 事件（真机）：非 passive，以便在横滑时 preventDefault 阻止父容器滚动拦截
+  container.addEventListener('touchstart', e => _start(e.touches[0].clientX, e.touches[0].clientY, e.target), { passive: true });
+  container.addEventListener('touchmove',  e => { if (_move(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault(); }, { passive: false });
+  container.addEventListener('touchend',   e => _end(e.changedTouches[0].clientX), { passive: true });
+
+  // Pointer/Mouse 事件（桌面预览，跳过 touch pointer 以免与上面重复）
+  container.addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') _start(e.clientX, e.clientY, e.target); });
+  container.addEventListener('pointermove', e => { if (e.pointerType !== 'touch' && (e.buttons & 1)) _move(e.clientX, e.clientY); });
+  container.addEventListener('pointerup',   e => { if (e.pointerType !== 'touch') _end(e.clientX); });
+  container.addEventListener('pointercancel', () => { startEl = null; locked = false; });
+}
+
+function collapseSwipe(el) {
+  if (!el) return;
+  const inner = el.querySelector('.album-row-inner, .card-row-inner');
+  if (inner) {
+    inner.style.transition = 'transform 0.25s cubic-bezier(0.4,0,0.2,1)';
+    inner.style.transform = 'translateX(0)';
+  }
+  el.classList.remove('swiped');
+}
+
+function collapseAllSwipe() {
+  document.querySelectorAll('.album-row.swiped, .card-row.swiped').forEach(el => collapseSwipe(el));
+  _swipedEl = null;
+}
+
+/* ─── 设置页 ─── */
+function switchSettingsTab(pane, btn) {
+  document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.settings-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('pane-' + pane).classList.add('active');
+}
+
+const _stepperCfg = {
+  'daily-goal':    { min: 5,   max: 50,  step: 5,  id: 'daily-goal-val' },
+  'easy-interval': { min: 1,   max: 7,   step: 1,  id: 'easy-interval-val' },
+  'grad-interval': { min: 1,   max: 14,  step: 1,  id: 'grad-interval-val' },
+  'max-interval':  { min: 30,  max: 999, step: 30, id: 'max-interval-val' },
+  'daily-new':     { min: 1,   max: 20,  step: 1,  id: 'daily-new-val' },
+  'daily-rev':     { min: 10,  max: 200, step: 10, id: 'daily-rev-val' },
+  'daily-remove':  { min: 1,   max: 10,  step: 1,  id: 'daily-remove-val' },
+  'auto-suspend':  { min: 3,   max: 30,  step: 1,  id: 'auto-suspend-val' },
+  'dur-alert':     { min: 5,   max: 60,  step: 5,  id: 'dur-alert-val' },
+};
+function stepperChange(key, delta) {
+  const cfg = _stepperCfg[key];
+  const el = document.getElementById(cfg.id);
+  let v = parseInt(el.textContent) + delta;
+  v = Math.max(cfg.min, Math.min(cfg.max, v));
+  el.textContent = v;
+}
+function setSeg(btn) {
+  btn.closest('.seg-ctrl').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ─── 统计页 ─── */
+function initStatsChart() {
+  const el = document.getElementById('chart-bars');
+  if (!el || el.children.length > 0) return;
+  const days = ['日', '一', '二', '三', '四', '五', '六'];
+  const counts = [5, 12, 8, 0, 15, 10, 8];
+  const max = Math.max(...counts, 1);
+  const today = new Date().getDay();
+  counts.forEach((c, i) => {
+    const isToday = i === today;
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    const pct = Math.round((c / max) * 68);
+    col.innerHTML = `
+      <div class="bar${isToday ? ' today' : ''}" style="height:${pct}px"></div>
+      <div class="bar-day">${days[i]}</div>
+      ${isToday ? '<div class="chart-today-dot"></div>' : ''}`;
+    el.appendChild(col);
+  });
+}
+
+/* ─── 统计页 4 Tabs ─── */
+function switchStatsTab(pane, btn) {
+  document.querySelectorAll('.stats-stab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.stats-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('stats-pane-' + pane).classList.add('active');
+  if (pane === 'today') initStatsChart();
+  if (pane === 'deck')  initForecastChart();
+}
+
+function initForecastChart() {
+  const el = document.getElementById('forecast-bars');
+  if (!el || el.children.length > 0) return;
+  const days = ['日', '一', '二', '三', '四', '五', '六'];
+  const counts = [8, 5, 14, 3, 11, 7, 6];
+  const max = Math.max(...counts, 1);
+  const todayIdx = 0;
+  counts.forEach((c, i) => {
+    const isToday = i === todayIdx;
+    const col = document.createElement('div');
+    col.className = 'forecast-bar-col';
+    const pct = Math.round((c / max) * 68);
+    col.innerHTML = `
+      <div class="forecast-bar${isToday ? ' today-f' : ''}" style="height:${pct}px"></div>
+      <div class="forecast-bar-day">${days[(new Date().getDay() + i) % 7]}</div>
+      ${isToday ? '<div class="forecast-today-dot"></div>' : ''}`;
+    el.appendChild(col);
+  });
+}
+
+/* ─── 卡片列表筛选 ─── */
+function filterCards(chip, filter) {
+  document.querySelectorAll('#filter-chips .filter-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+}
+
+function showCardDetail(emoji, name, stage, next, ef, lapses, phase) {
+  document.getElementById('card-detail-emoji').textContent  = emoji;
+  document.getElementById('card-detail-name').textContent   = name;
+  document.getElementById('card-detail-stage').textContent  = stage;
+  document.getElementById('card-detail-next').textContent   = next;
+  document.getElementById('card-detail-ef').textContent     = ef;
+  document.getElementById('card-detail-lapses').textContent = lapses;
+  document.getElementById('card-detail-phase').textContent  = phase;
+  showSheet('sheet-card-detail');
+}
+
+/* ─── 倒计时 ─── */
+let _cdInterval = null;
+let _cdSec = 5;
+
+function startCountdown() {
+  stopCountdown();
+  _cdSec = 5;
+  const num = document.getElementById('countdown-num');
+  const arc = document.getElementById('countdown-arc');
+  if (!num || !arc) return;
+  num.textContent = _cdSec;
+  arc.classList.remove('draining');
+  void arc.offsetWidth;
+  arc.style.strokeDashoffset = '0';
+  void arc.offsetWidth;
+  arc.classList.add('draining');
+  _cdInterval = setInterval(() => {
+    _cdSec--;
+    if (num) num.textContent = Math.max(0, _cdSec);
+    if (_cdSec <= 0) { stopCountdown(); quizNext(); }
+  }, 1000);
+}
+
+function stopCountdown() {
+  clearInterval(_cdInterval);
+  _cdInterval = null;
+  const arc = document.getElementById('countdown-arc');
+  if (arc) { arc.classList.remove('draining'); arc.style.strokeDashoffset = '107'; }
+}
+
+function skipCountdown() {
+  stopCountdown();
+  quizNext();
+}
+
+/* ─── 账户屏状态切换 ─── */
+function setAccountState(state) {
+  document.querySelectorAll('#screen-account .demo-state-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.acct-state').forEach(s => s.classList.remove('active'));
+  const idx = { a: 0, b: 1, c: 2 }[state];
+  document.querySelectorAll('#screen-account .demo-state-btn')[idx]?.classList.add('active');
+  document.getElementById('acct-state-' + state)?.classList.add('active');
+}
+
+/* ─── 同步弹窗 demo ─── */
+function triggerSync() {
+  const overlay = document.getElementById('sync-modal-overlay');
+  const fill = document.getElementById('sync-prog-fill');
+  const pct  = document.getElementById('sync-prog-pct');
+  const sub  = document.getElementById('sync-modal-sub');
+  overlay.classList.add('open');
+  const steps = [
+    { p: 10, t: '正在连接服务器…' },
+    { p: 30, t: '正在同步配置…' },
+    { p: 55, t: '正在下载牌组数据…' },
+    { p: 80, t: '正在上传训练记录…' },
+    { p: 100, t: '同步完成' },
+  ];
+  let i = 0;
+  const run = () => {
+    if (i >= steps.length) { setTimeout(() => overlay.classList.remove('open'), 800); return; }
+    const s = steps[i++];
+    fill.style.width = s.p + '%';
+    pct.textContent  = s.p + '%';
+    sub.textContent  = s.t;
+    setTimeout(run, 600);
+  };
+  run();
+}
+function closeSyncModal() {
+  document.getElementById('sync-modal-overlay').classList.remove('open');
+}
+
+/* ─── 练习模式单选 ─── */
+function setSessionMode(row) {
+  row.closest('.setting-group').querySelectorAll('.session-mode-row')
+    .forEach(r => r.classList.remove('active'));
+  row.classList.add('active');
+}
+
+/* ─── SRS 高级折叠 ─── */
+function toggleSrsAdv() {
+  const toggle = document.getElementById('srs-adv-toggle');
+  const rows   = document.getElementById('srs-adv-rows');
+  toggle.classList.toggle('open');
+  rows.classList.toggle('open');
+}
+
+/* ─── 步骤字段解析 ─── */
+function parseSteps(input, parseId) {
+  const parts = input.value.trim().split(/\s+/).filter(Boolean);
+  const labels = parts.map(p => {
+    const n = parseFloat(p);
+    if (isNaN(n)) return '?';
+    if (n < 1) return Math.round(n * 60) + 's';
+    return n + 'm';
+  });
+  const el = document.getElementById(parseId);
+  if (el) el.textContent = labels.join(' · ') || '—';
+}
+
+/* ─── Float stepper ─── */
+const _flCfg = {
+  'init-ef':       { min: 1.3, max: 3.0, step: 0.1,  dp: 1, id: 'init-ef-val' },
+  'interval-mult': { min: 0.5, max: 2.0, step: 0.05, dp: 2, id: 'interval-mult-val' },
+};
+function stepperChangeFl(key, delta) {
+  const cfg = _flCfg[key];
+  const el  = document.getElementById(cfg.id);
+  let v = parseFloat(el.textContent) + delta;
+  v = Math.max(cfg.min, Math.min(cfg.max, v));
+  el.textContent = v.toFixed(cfg.dp);
+}
+
+function forceRefresh() {
+  const btn = document.querySelector('.home-refresh-btn');
+  if (btn) {
+    btn.classList.add('spinning');
+    btn.addEventListener('animationend', () => btn.classList.remove('spinning'), { once: true });
+  }
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      Promise.all(regs.map(r => r.unregister())).then(() => {
+        if ('caches' in window) {
+          caches.keys().then(keys =>
+            Promise.all(keys.map(k => caches.delete(k)))
+          ).then(() => location.reload(true));
+        } else { location.reload(true); }
+      });
+    });
+  } else {
+    setTimeout(() => location.reload(true), 400);
+  }
+}
+
+</script>
+</body>
+</html>
