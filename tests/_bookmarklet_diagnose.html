@@ -52,7 +52,7 @@
 
 <script>
 // ── 书签 1：诊断面板（loader 模式，从 GitHub Pages 加载 yh_diag.js）──
-const PANEL_CODE = `(function(){if(window._yhDiag){window._yhDiag.toggle();return;}var s=document.createElement('script');s.src='https://katelynmichelin976-wq.github.io/gemi/tests/yh_diag.js?t='+Date.now();document.head.appendChild(s);})()`;
+const PANEL_CODE = `(function(){if(window._yhDiag){window._yhDiag.toggle();return;}var s=document.createElement('script');s.src='https://katelynmichelin976-wq.github.io/ReminiSea/tests/yh_diag.js?t='+Date.now();document.head.appendChild(s);})()`;
 document.getElementById('bm_panel').href = 'javascript:' + encodeURIComponent(PANEL_CODE);
 
 // ── 书签 2：快速诊断（自包含，IDB v6 修复）──
