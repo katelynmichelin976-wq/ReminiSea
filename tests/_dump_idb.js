@@ -6,21 +6,24 @@
  * 然后把控制台输出发给我，帮你定位问题。
  */
 (async () => {
-  const DB = 'yihai_srs', VER = 5;
+  const DB = 'yihai_srs', VER = 6;
   const db = await new Promise((res, rej) => {
     const r = indexedDB.open(DB, VER);
+    r.onupgradeneeded = () => {}; // 只读，不触发升级
     r.onsuccess = e => res(e.target.result);
     r.onerror = e => rej(e.target.error);
   });
 
-  const states = await new Promise(res => {
-    const tx = db.transaction('card_states', 'readonly');
-    tx.objectStore('card_states').getAll().onsuccess = e => res(e.target.result);
+  const gs = name => new Promise(res => {
+    if (!db.objectStoreNames.contains(name)) { res([]); return; }
+    const r = db.transaction(name, 'readonly').objectStore(name).getAll();
+    r.onsuccess = e => res(e.target.result || []);
+    r.onerror = () => res([]);
   });
-  const trials = await new Promise(res => {
-    const tx = db.transaction('trials', 'readonly');
-    tx.objectStore('trials').getAll().onsuccess = e => res(e.target.result);
-  });
+
+  const states    = await gs('card_states');
+  const trials    = await gs('trials');
+  const allEvents = await gs('app_events');
   db.close();
 
   const uid = typeof _cloudUserId !== 'undefined' ? _cloudUserId : localStorage.getItem('yihai_device_id');
@@ -106,16 +109,6 @@
   // ── session / sync 事件日志（最近 24h）──
   L('');
   L('── session / sync 事件日志（最近 24h）──');
-  const db2 = await new Promise((res, rej) => {
-    const r = indexedDB.open('yihai_srs', 6);
-    r.onsuccess = e => res(e.target.result);
-    r.onerror   = e => rej(e.target.error);
-  });
-  const allEvents = await new Promise(res => {
-    const tx = db2.transaction('app_events', 'readonly');
-    tx.objectStore('app_events').getAll().onsuccess = e => res(e.target.result);
-  });
-  db2.close();
   const SESSION_TYPES = {
     session_restore_start:1, session_restore_l1_ok:1, session_restore_l1_fail:1,
     session_restore_l2_ok:1, session_restore_l2_offline:1, session_restore_l2_real_logout:1,
