@@ -103,6 +103,43 @@
     anomalies.forEach(a => L(`  ⚠️ ${a}`));
   }
 
+  // ── session / sync 事件日志（最近 24h）──
+  L('');
+  L('── session / sync 事件日志（最近 24h）──');
+  const db2 = await new Promise((res, rej) => {
+    const r = indexedDB.open('yihai_srs', 5);
+    r.onsuccess = e => res(e.target.result);
+    r.onerror   = e => rej(e.target.error);
+  });
+  const allEvents = await new Promise(res => {
+    const tx = db2.transaction('app_events', 'readonly');
+    tx.objectStore('app_events').getAll().onsuccess = e => res(e.target.result);
+  });
+  db2.close();
+  const SESSION_TYPES = {
+    session_restore_start:1, session_restore_l1_ok:1, session_restore_l1_fail:1,
+    session_restore_l2_ok:1, session_restore_l2_offline:1, session_restore_l2_real_logout:1,
+    session_restore_l3_ok:1, session_restore_l3_fail:1, session_restore_offline_fallback:1,
+    session_restore_catch:1, session_restore_token_refreshed:1, session_restore_sdk_signout:1,
+    login:1, logout:1, sync_started:1, sync_done:1
+  };
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const sessionLogs = allEvents
+    .filter(e => SESSION_TYPES[e.event_type] && e.timestamp >= cutoff)
+    .sort((a, b) => a.timestamp - b.timestamp);
+  if (sessionLogs.length === 0) {
+    L('  （无记录）');
+  } else {
+    sessionLogs.forEach(e => {
+      const t = new Date(e.timestamp).toLocaleTimeString('zh-CN');
+      const p = e.payload ? JSON.stringify(e.payload) : '';
+      const ok   = e.event_type.indexOf('ok') >= 0 || e.event_type === 'login' || e.event_type === 'sync_done';
+      const fail = e.event_type.indexOf('fail') >= 0 || e.event_type.indexOf('offline') >= 0 || e.event_type.indexOf('catch') >= 0;
+      const flag = ok ? '[OK]' : fail ? '[!!]' : '[  ]';
+      L(`  ${flag} ${t}  ${e.event_type}  ${p}`);
+    });
+  }
+
   L('');
   L('══════════ 诊断结束 ══════════');
   L('将此输出完整复制发给我即可。');
