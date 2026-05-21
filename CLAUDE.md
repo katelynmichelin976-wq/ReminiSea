@@ -69,7 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v4.11.html` | Main training app (v4.11.15, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.11.html` | Main training app (v4.11.19, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
 | `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
 | `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
@@ -77,7 +77,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 测试
 | File | Purpose |
 |------|---------|
-| `tests/srs_test.js` | Node.js SRS unit tests (83 cases) |
+| `tests/srs_test.js` | Node.js SRS unit tests (85 cases) |
 | `tests/yihai_v4.4_test.js` | v4.4 utility tests (98 cases) |
 | `tests/yihai_v4.8_test.js` | v4.8 utility tests (46 cases) |
 | `tests/yihai_v4.9_test.js` | v4.9 config merge tests (48 cases) |
@@ -132,7 +132,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v4.11.18**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v4.11.19**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 ## Environment
 

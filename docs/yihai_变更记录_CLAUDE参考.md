@@ -2,6 +2,11 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v4.11.19 Key Changes
+
+- **PWA 诊断面板入口**: 版本号连击 5 次即可在 PWA standalone 模式（无书签栏）打开诊断面板，不再依赖 bookmarklet 注入。加载 `https://katelynmichelin976-wq.github.io/ReminiSea/tests/yh_diag.js`，支持 toggle 显示/隐藏。
+- **诊断面板拖拽**: yh_diag.js 改为 `position:fixed` + `left` 定位（原 `right:0`），标题栏使用 pointer events 实现拖拽，支持鼠标/触摸，并限制边界防止拖出视口。
+
 ## v4.11.18 Key Changes
 
 - **登录后同步补 events:true**: `doCloudLogin` 触发的 `runSync` 加入 `events: true`，与手动「🔄 同步」按钮行为一致，登录时自动上传本地积压的 app_events 日志（包含 session_restore 诊断事件）。
