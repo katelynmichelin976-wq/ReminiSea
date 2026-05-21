@@ -13,21 +13,18 @@
   a.bm { display: inline-block; background: #1d4ed8; color: #fff; text-decoration: none; border-radius: 6px; padding: 8px 20px; font-size: 14px; font-weight: bold; }
   a.bm:hover { background: #2563eb; }
   .how { margin-top: 12px; color: #475569; font-size: 12px; }
-  .tag-new { background: #15803d; color: #fff; border-radius: 3px; padding: 1px 6px; font-size: 10px; margin-left: 6px; }
-  .tag-fix { background: #92400e; color: #fff; border-radius: 3px; padding: 1px 6px; font-size: 10px; margin-left: 6px; }
 </style>
 </head>
 <body>
-<h1>🔍 忆海拾光 — 浏览器诊断工具集</h1>
+<h1>🔍 忆海拾光 — 浏览器诊断工具</h1>
 <h2>将下方书签拖到浏览器收藏栏，在 App 页面点击即可使用</h2>
 
-<!-- 工具 1：诊断面板 -->
 <div class="card">
-  <h3>🔍 诊断面板 <span class="tag-new">推荐</span></h3>
-  <p>全功能浮层面板，右侧抽屉布局，可访问所有本地数据和 App 全局变量。再次点击书签切换显示/隐藏。</p>
+  <h3>🔍 诊断面板</h3>
+  <p>全功能浮层面板，右侧抽屉布局。再次点击书签切换显示/隐藏。</p>
   <div class="covers">
     <span>📊 Session & 同步状态</span>
-    <span>📋 事件日志（过滤+未同步高亮）</span>
+    <span>📋 事件日志（过滤 + 未同步高亮）</span>
     <span>⚠️ 诊断日志（yh_logs warn/error）</span>
     <span>🃏 CardState 分组 + 异常检测</span>
     <span>⚙️ SRS 配置 + 日志等级切换</span>
@@ -36,92 +33,9 @@
   <div class="how">拖到收藏栏 → 在 <strong>App 页面</strong>点击注入面板</div>
 </div>
 
-<!-- 工具 2：快速诊断（原有，已修复 IDB v6） -->
-<div class="card">
-  <h3>📊 快速诊断 <span class="tag-fix">IDB v6 已修复</span></h3>
-  <p>轻量弹窗，适合快速确认 CardState 和 localStorage 基础状态，结果自动复制到剪贴板。</p>
-  <div class="covers">
-    <span>CardState 分组统计</span>
-    <span>localStorage SRS 参数</span>
-    <span>每日进度</span>
-    <span>Session/Sync 事件（24h）</span>
-  </div>
-  <a class="bm" id="bm_quick" href="#">📊 忆海·快诊</a>
-  <div class="how">拖到收藏栏 → 在 <strong>App 页面</strong>点击弹出浮层</div>
-</div>
-
 <script>
-// ── 书签 1：诊断面板（loader 模式，从 GitHub Pages 加载 yh_diag.js）──
 const PANEL_CODE = `(function(){if(window._yhDiag){window._yhDiag.toggle();return;}var s=document.createElement('script');s.src='https://katelynmichelin976-wq.github.io/ReminiSea/tests/yh_diag.js?t='+Date.now();document.head.appendChild(s);})()`;
 document.getElementById('bm_panel').href = 'javascript:' + encodeURIComponent(PANEL_CODE);
-
-// ── 书签 2：快速诊断（自包含，IDB v6 修复）──
-const QUICK_CODE = `(async()=>{
-  const out=document.createElement('div');
-  out.style='position:fixed;top:10px;right:10px;z-index:99999;background:#1a1a2e;color:#00ff88;font:12px monospace;padding:16px;border-radius:8px;max-width:700px;max-height:80vh;overflow:auto;white-space:pre;box-shadow:0 4px 20px rgba(0,0,0,0.5)';
-  const h=document.createElement('div');
-  h.style='display:flex;justify-content:space-between;margin-bottom:8px;font-weight:bold;color:#fff';
-  h.innerHTML='<span>📊 忆海·快诊</span><span style="cursor:pointer" onclick="this.parentElement.parentElement.remove()">✕</span>';
-  out.appendChild(h);
-  const body=document.createElement('div');
-  out.appendChild(body);
-  document.body.appendChild(out);
-  const log=m=>{const d=document.createElement('div');d.textContent=m;body.appendChild(d);};
-  try{
-    const db=await new Promise((res,rej)=>{const r=indexedDB.open('yihai_srs',6);r.onsuccess=e=>res(e.target.result);r.onerror=e=>rej(e.target.error);r.onupgradeneeded=()=>{};});
-    const gs=s=>new Promise(res=>{const r=db.transaction(s,'readonly').objectStore(s).getAll();r.onsuccess=e=>res(e.target.result||[]);r.onerror=()=>res([]);});
-    const states=await gs('card_states');
-    const trials=await gs('trials');
-    const events=await gs('app_events');
-    db.close();
-    const uid=typeof _cloudUserId!=='undefined'?_cloudUserId:localStorage.getItem('yihai_device_id');
-    const today=new Date().toISOString().slice(0,10);
-    const now=Date.now();
-    const short=u=>u?u.substring(0,8):'N/A';
-    log('══════════ 忆海·快诊 ══════════');
-    log('v'+(typeof APP_VERSION!=='undefined'?APP_VERSION:'?')+'  sync='+(typeof _syncEnabled!=='undefined'?_syncEnabled:'N/A')+'  email='+(typeof _cloudUserEmail!=='undefined'?_cloudUserEmail:'N/A'));
-    log('card_states:'+states.length+'  trials:'+trials.length+'  events:'+events.length);
-    log('');
-    const groups={};
-    const anomalies=[];
-    states.forEach(s=>{
-      const k=s.deck_key||'(无deck_key)';
-      if(!groups[k])groups[k]={total:0,review:0,learning:0,relearning:0,new:0,suspended:0,due:0,noUid:0,wrongUid:0,cards:[]};
-      const g=groups[k];g.total++;
-      if(!s.user_id)g.noUid++;else if(uid&&s.user_id!==uid)g.wrongUid++;
-      if(s.suspended){g.suspended++;g.cards.push(s.card_id+'=SUS');return;}
-      g[s.srs_stage]=(g[s.srs_stage]||0)+1;
-      g.cards.push(s.card_id+'='+s.srs_stage+(s.user_id?'':'(?)'));
-      if(s.srs_stage==='review'&&(!s.due_date||s.due_date<=today))g.due++;
-      else if((s.srs_stage==='learning'||s.srs_stage==='relearning')&&(!s.due_ts||s.due_ts<=now))g.due++;
-    });
-    for(const[key,g]of Object.entries(groups)){
-      let f='';if(g.noUid)f+=' ⚠uid无×'+g.noUid;if(g.wrongUid)f+=' ⚠uid不匹配×'+g.wrongUid;
-      log('【'+key+'】'+g.total+' R='+g.review+' L='+g.learning+' RL='+g.relearning+' N='+g.new+' S='+g.suspended+' 到期='+g.due+f);
-      log('  '+g.cards.join(' '));
-    }
-    log('');
-    log('── localStorage ──');
-    log('new_per_day='+(localStorage.getItem('srs_new_cards_per_day')||'5(默认)'));
-    log('max_reviews='+(localStorage.getItem('srs_maximum_reviews_per_day')||'50(默认)'));
-    const dp=localStorage.getItem('yihai_daily_progress');
-    log('daily_progress='+(dp||'无'));
-    const gst=localStorage.getItem('yihai_global_sync_ts');
-    log('last_sync='+(gst?new Date(parseInt(gst)).toLocaleString('zh-CN'):'无'));
-    log('');
-    log('── session/sync 事件（24h）──');
-    const ST=new Set(['session_restore_start','session_restore_l1_ok','session_restore_l1_fail','session_restore_l2_ok','session_restore_l2_offline','session_restore_l2_real_logout','session_restore_l3_ok','session_restore_l3_fail','session_restore_offline_fallback','session_restore_sdk_signout','login','logout','sync_started','sync_done']);
-    const cutoff=Date.now()-86400000;
-    events.filter(e=>ST.has(e.event_type)&&e.timestamp>=cutoff).sort((a,b)=>a.timestamp-b.timestamp).forEach(e=>{
-      const ok=e.event_type.includes('_ok')||e.event_type==='login'||e.event_type==='sync_done';
-      const fail=e.event_type.includes('_fail')||e.event_type.includes('offline')||e.event_type==='logout'||e.event_type==='session_restore_sdk_signout';
-      log((ok?'[OK] ':fail?'[!!] ':'[  ] ')+new Date(e.timestamp).toLocaleTimeString('zh-CN')+'  '+e.event_type+'  '+(e.payload?JSON.stringify(e.payload):''));
-    });
-    log('');log('══════════ 诊断结束 ══════════');
-    navigator.clipboard.writeText(body.textContent).catch(()=>{});
-  }catch(e){log('执行失败: '+e.message);}
-})()`;
-document.getElementById('bm_quick').href = 'javascript:' + encodeURIComponent(QUICK_CODE);
 </script>
 </body>
 </html>
