@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v4.11.18 Key Changes
+
+- **登录后同步补 events:true**: `doCloudLogin` 触发的 `runSync` 加入 `events: true`，与手动「🔄 同步」按钮行为一致，登录时自动上传本地积压的 app_events 日志（包含 session_restore 诊断事件）。
+
 ## v4.11.17 Key Changes
 
 - **session_restore L2 正则修复**: `isRealLogout` 正则 `refresh_token_not_found`（下划线）匹配不到 Supabase SDK 实际返回的空格写法 `"Invalid Refresh Token: Refresh Token Not Found"`，导致 `isRealLogout=false`，进入 offline 分支显示"网络不稳定"。改为 `refresh.token.not.found`（`.` 匹配任意字符，兼容下划线和空格两种格式）。检测到真实登出后增加 `localStorage.removeItem('yihai_session_backup')` + `return`，清除失效备份并跳过 L3/offline 兜底，直接显示登录界面。
