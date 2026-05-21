@@ -306,6 +306,14 @@
       const now   = Date.now();
       const SC    = {review:'#22c55e',learning:'#60a5fa',relearning:'#f59e0b',new:'#94a3b8'};
 
+      // 从 window.DECKS 建 card_id → name 查找表
+      const nameMap = {};
+      if (typeof DECKS !== 'undefined') {
+        Object.values(DECKS).forEach(arr => {
+          (arr||[]).forEach(c => { if (c.id && c.name) nameMap[c.id] = c.name; });
+        });
+      }
+
       const groups = {};
       states.forEach(s => {
         const k = s.deck_key || '(无 deck_key)';
@@ -323,10 +331,11 @@
             ? (!s.due_date || s.due_date<=today)
             : (!s.due_ts   || s.due_ts<=now);
           if (isDue) st.due++;
+          const cid = nameMap[s.card_id] || shortId(s.card_id);
           if ((s.srs_stage==='learning'||s.srs_stage==='relearning') && s.due_ts===0)
-            st.anomaly.push(shortId(s.card_id)+':due_ts=0');
+            st.anomaly.push(cid+':due_ts=0');
           if (uid && s.user_id && s.user_id!==uid)
-            st.anomaly.push(shortId(s.card_id)+':uid不匹配');
+            st.anomaly.push(cid+':uid不匹配');
         });
 
         // 摘要行
@@ -350,9 +359,10 @@
           const bg   = s.suspended ? '#374151' : isDue ? '#1e3a8a' : '#1e293b';
           const tc   = s.suspended ? '#64748b' : SC[s.srs_stage]||'#e2e8f0';
           const abbr = {review:'R',learning:'L',relearning:'RL',new:'N'}[s.srs_stage]||'?';
+          const cname = nameMap[s.card_id] || shortId(s.card_id);
           const pill = el('span',
-            `background:${bg};color:${tc};border:1px solid #334155;border-radius:3px;padding:1px 5px;font-size:10px;cursor:default`);
-          pill.textContent = shortId(s.card_id) + '·' + abbr + (isDue?'*':'');
+            `background:${bg};color:${tc};border:1px solid #334155;border-radius:3px;padding:1px 6px;font-size:11px;cursor:default`);
+          pill.textContent = cname + (isDue?' *':'') + ' ' + abbr;
           pill.title = JSON.stringify({
             stage:s.srs_stage, ef:s.ease_factor, lapses:s.lapses_total,
             due_date:s.due_date, due_ts:s.due_ts?fmtDt(s.due_ts):null,
