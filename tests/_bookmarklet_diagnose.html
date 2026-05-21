@@ -1,19 +1,19 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>è¯Šæ–­ä¹¦ç­¾</title></head>
+<head><meta charset="utf-8"><title>诊断书签</title></head>
 <body>
-<p>å°†æ­¤é“¾æŽ¥æ‹–åˆ°ä¹¦ç­¾æ ï¼š</p>
-<p><a id="bm" href="#">ðŸ“Š è¯Šæ–­æœ¬åœ°æ•°æ®</a></p>
-<p>åœ¨ App é¡µé¢ç‚¹å‡»ä¹¦ç­¾ï¼Œä¼šè‡ªåŠ¨å¼¹å‡ºè¯Šæ–­ç»“æžœã€‚</p>
+<p>将此链接拖到书签栏：</p>
+<p><a id="bm" href="#">📊 诊断本地数据</a></p>
+<p>在 App 页面点击书签，会自动弹出诊断结果。</p>
 <script>
-// ç”Ÿæˆä¹¦ç­¾ä»£ç ï¼ˆè‡ªåŒ…å«ï¼Œä¸ä¾èµ–æœåŠ¡å™¨ï¼‰
+// 生成书签代码（自包含，不依赖服务器）
 const code = `(async()=>{
   const L=(s,t)=>{const d=document.createElement('div');d.textContent=s;t.appendChild(d);};
   const out=document.createElement('div');
   out.style='position:fixed;top:10px;right:10px;z-index:99999;background:#1a1a2e;color:#00ff88;font:12px monospace;padding:16px;border-radius:8px;max-width:700px;max-height:80vh;overflow:auto;white-space:pre;box-shadow:0 4px 20px rgba(0,0,0,0.5)';
   const h=document.createElement('div');
   h.style='display:flex;justify-content:space-between;margin-bottom:8px;font-weight:bold;color:#fff';
-  h.innerHTML='<span>ðŸ“Š æœ¬åœ°æ•°æ®åº“è¯Šæ–­</span><span style="cursor:pointer" onclick="this.parentElement.parentElement.remove()">âœ•</span>';
+  h.innerHTML='<span>📊 本地数据库诊断</span><span style="cursor:pointer" onclick="this.parentElement.parentElement.remove()">✕</span>';
   out.appendChild(h);
   const body=document.createElement('div');
   out.appendChild(body);
@@ -28,14 +28,14 @@ const code = `(async()=>{
     const today=new Date().toISOString().slice(0,10);
     const now=Date.now();
     const short=u=>u?u.substring(0,8):'N/A';
-    log('â•â•â•â•â•â•â•â•â•â• æœ¬åœ°æ•°æ®åº“è¯Šæ–­ â•â•â•â•â•â•â•â•â•â•');
+    log('══════════ 本地数据库诊断 ══════════');
     log('user_id: '+short(uid)+'  syncEnabled: '+(typeof _syncEnabled!=='undefined'?_syncEnabled:'N/A')+'  email: '+(typeof _cloudUserEmail!=='undefined'?_cloudUserEmail:'N/A'));
-    log('card_states: '+states.length+'æ¡  trials: '+trials.length+'æ¡');
+    log('card_states: '+states.length+'条  trials: '+trials.length+'条');
     log('');
     const groups={};
     const anomalies=[];
     states.forEach(s=>{
-      const k=s.deck_key||'(æ— deck_key)';
+      const k=s.deck_key||'(无deck_key)';
       if(!groups[k]) groups[k]={total:0,review:0,learning:0,relearning:0,new:0,suspended:0,due:0,noUid:0,wrongUid:0,cards:[]};
       const g=groups[k];g.total++;
       if(!s.user_id) g.noUid++; else if(uid&&s.user_id!==uid) g.wrongUid++;
@@ -46,31 +46,30 @@ const code = `(async()=>{
       else if((s.srs_stage==='learning'||s.srs_stage==='relearning')&&(!s.due_ts||s.due_ts<=now)) g.due++;
     });
     for(const[key,g]of Object.entries(groups)){
-      let f='';if(g.noUid)f+=' âš ï¸æ— user_idÃ—'+g.noUid;if(g.wrongUid)f+=' âš ï¸user_idä¸åŒ¹é…Ã—'+g.wrongUid;
-      log('ã€'+key+'ã€‘'+g.total+'æ¡ R='+g.review+' L='+g.learning+' RL='+g.relearning+' N='+g.new+' SUS='+g.suspended+' åˆ°æœŸ='+g.due+f);
+      let f='';if(g.noUid)f+=' ⚠️无user_id×'+g.noUid;if(g.wrongUid)f+=' ⚠️user_id不匹配×'+g.wrongUid;
+      log('【'+key+'】'+g.total+'条 R='+g.review+' L='+g.learning+' RL='+g.relearning+' N='+g.new+' SUS='+g.suspended+' 到期='+g.due+f);
       log('  '+g.cards.join(' '));
-      if(g.noUid)anomalies.push(key+': '+g.noUid+'æ¡æ— user_id(æ—§ç‰ˆæœ¬é—ç•™)');
-      if(g.wrongUid)anomalies.push(key+': '+g.wrongUid+'æ¡user_idä¸åŒ¹é…(ç™»å½•åŽä¸å¯è§)');
+      if(g.noUid)anomalies.push(key+': '+g.noUid+'条无user_id(旧版本遗留)');
+      if(g.wrongUid)anomalies.push(key+': '+g.wrongUid+'条user_id不匹配(登录后不可见)');
     }
     log('');
-    log('â”€â”€ localStorage â”€â”€');
-    log('srs_new_cards_per_day='+(localStorage.getItem('srs_new_cards_per_day')||'5(é»˜è®¤)'));
-    log('srs_maximum_reviews_per_day='+(localStorage.getItem('srs_maximum_reviews_per_day')||'50(é»˜è®¤)'));
+    log('── localStorage ──');
+    log('srs_new_cards_per_day='+(localStorage.getItem('srs_new_cards_per_day')||'5(默认)'));
+    log('srs_maximum_reviews_per_day='+(localStorage.getItem('srs_maximum_reviews_per_day')||'50(默认)'));
     const dp=localStorage.getItem('yihai_daily_progress');
-    log('daily_progress='+(dp||'æ— '));
+    log('daily_progress='+(dp||'无'));
     const gst=localStorage.getItem('yihai_global_sync_ts');
-    log('sync_ts='+(gst?new Date(parseInt(gst)).toLocaleString('zh-CN'):'æ— '));
+    log('sync_ts='+(gst?new Date(parseInt(gst)).toLocaleString('zh-CN'):'无'));
     const di=localStorage.getItem('yihai_decks_index');
-    if(di){try{log('ç‰Œç»„åˆ—è¡¨: '+JSON.parse(di).map(m=>m.name).join(', '));}catch(e){}}
-    if(anomalies.length){log('');log('â”€â”€ å¼‚å¸¸ â”€â”€');anomalies.forEach(a=>log('âš ï¸ '+a));}
-    log('');log('â•â•â•â•â•â•â•â•â•â• è¯Šæ–­ç»“æŸ â•â•â•â•â•â•â•â•â•â•');
-    log('ç‚¹å³ä¸Šè§’ âœ• å…³é—­');
+    if(di){try{log('牌组列表: '+JSON.parse(di).map(m=>m.name).join(', '));}catch(e){}}
+    if(anomalies.length){log('');log('── 异常 ──');anomalies.forEach(a=>log('⚠️ '+a));}
+    log('');log('══════════ 诊断结束 ══════════');
+    log('点右上角 ✕ 关闭');
     navigator.clipboard.writeText(body.textContent).catch(()=>{});
-  }catch(e){log('æ‰§è¡Œå¤±è´¥: '+e.message);}
+  }catch(e){log('执行失败: '+e.message);}
 })()`;
 
 document.getElementById('bm').href = 'javascript:' + encodeURIComponent(code);
 </script>
 </body>
 </html>
-

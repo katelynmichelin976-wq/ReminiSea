@@ -1,4 +1,4 @@
-﻿(async function() {
+(async function() {
   var db = await new Promise(function(res, rej) {
     var r = indexedDB.open('yihai_srs', 6);
     r.onsuccess = function(e) { res(e.target.result); };
@@ -23,7 +23,7 @@
     .filter(function(e) { return SESSION_TYPES[e.event_type] && e.timestamp >= cutoff; })
     .sort(function(a, b) { return a.timestamp - b.timestamp; });
 
-  console.log('====== session/sync æ—¥å¿—ï¼ˆæœ€è¿‘ 24hï¼Œå…± ' + filtered.length + ' æ¡ï¼‰======');
+  console.log('====== session/sync 日志（最近 24h，共 ' + filtered.length + ' 条）======');
   filtered.forEach(function(e) {
     var t = new Date(e.timestamp).toLocaleTimeString('zh-CN');
     var p = e.payload ? JSON.stringify(e.payload) : '';
@@ -32,6 +32,5 @@
     var flag = ok ? '[OK]' : fail ? '[!!]' : '[  ]';
     console.log(flag + ' ' + t + '  ' + e.event_type + '  ' + p);
   });
-  console.log('====== ç»“æŸ ======');
+  console.log('====== 结束 ======');
 })();
-

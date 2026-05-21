@@ -383,4 +383,3 @@ async function checkTrials(page) {
   await browser.close();
   process.exit(failed > 0 ? 1 : 0);
 })();
-

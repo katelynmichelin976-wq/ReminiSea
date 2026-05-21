@@ -1,7 +1,7 @@
-﻿/**
- * è¯Šæ–­ï¼šå¯¹æ¯” IndexedDB vs Supabase çš„ CardState æ•°é‡
+/**
+ * 诊断：对比 IndexedDB vs Supabase 的 CardState 数量
  *
- * ç”¨æ³•ï¼š
+ * 用法：
  *   node tests/_diag_sync_state.js
  */
 const { chromium } = require('playwright');
@@ -15,13 +15,13 @@ const CLOUD_DECK_KEY = 'cloud_01edbdfd';
 const URL = 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now();
 
 (async () => {
-  // 1. Supabaseï¼šæŸ¥äº‘ç«¯æœ‰å‡ æ¡
+  // 1. Supabase：查云端有几条
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   await sb.auth.signInWithPassword({ email: TEST_EMAIL, password: TEST_PASSWORD });
   const { data: cloudStates } = await sb.from('sync_card_states')
     .select('*')
     .eq('deck_key', CLOUD_DECK_KEY);
-  console.log(`\nã€äº‘ç«¯ã€‘sync_card_states (${CLOUD_DECK_KEY}): ${cloudStates.length} æ¡`);
+  console.log(`\n【云端】sync_card_states (${CLOUD_DECK_KEY}): ${cloudStates.length} 条`);
   let due = 0, newC = 0;
   const today = new Date().toISOString().slice(0, 10);
   const now = Date.now();
@@ -31,10 +31,10 @@ const URL = 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now();
     else if (s.srs_stage === 'review' && (!s.due_date || s.due_date <= today)) due++;
     else if ((s.srs_stage === 'learning' || s.srs_stage === 'relearning') && (!s.due_ts || s.due_ts <= now)) due++;
   });
-  console.log(`  åˆ°æœŸ(äº‘ç«¯): ${due}, æ–°å¡(äº‘ç«¯): ${newC}`);
+  console.log(`  到期(云端): ${due}, 新卡(云端): ${newC}`);
   await sb.auth.signOut();
 
-  // 2. æµè§ˆå™¨ï¼šæŸ¥ IndexedDB æœ‰å‡ æ¡
+  // 2. 浏览器：查 IndexedDB 有几条
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on('console', msg => { if (msg.type() === 'error') console.log(`  [console.error] ${msg.text()}`); });
@@ -42,7 +42,7 @@ const URL = 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now();
   await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
   await page.waitForTimeout(2000);
 
-  // æ¸…ç©º IndexedDB æ¨¡æ‹Ÿå…¨æ–°ç™»å½•
+  // 清空 IndexedDB 模拟全新登录
   await page.evaluate(() => {
     localStorage.clear();
     const dbs = indexedDB.databases ? indexedDB.databases() : Promise.resolve([]);
@@ -53,17 +53,17 @@ const URL = 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now();
   await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
   await page.waitForTimeout(2000);
 
-  // ç™»å½•
+  // 登录
   const helper = require('./_playwright_helper');
   await helper.cloudLogin(page, TEST_EMAIL, TEST_PASSWORD);
   await helper.closeSettings(page);
   await helper.waitSyncModal(page, 60);
-  console.log('\nã€æµè§ˆå™¨ã€‘ç™»å½•åŒæ­¥å®Œæˆ');
+  console.log('\n【浏览器】登录同步完成');
 
-  // ç­‰ä¸»é¡µåˆ·æ–°
+  // 等主页刷新
   await page.waitForTimeout(2000);
 
-  // æŸ¥ IndexedDB
+  // 查 IndexedDB
   const idbInfo = await page.evaluate((key) => {
     return new Promise((resolve) => {
       const r = indexedDB.open('yihai_srs', 6);
@@ -96,25 +96,25 @@ const URL = 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now();
     });
   }, CLOUD_DECK_KEY);
 
-  console.log(`  IndexedDB æ€»æ¡æ•°: ${idbInfo.totalInDb}`);
-  console.log(`  ${CLOUD_DECK_KEY} æ¡æ•°: ${idbInfo.deckStates}`);
-  console.log(`  åˆ°æœŸæ•°(æµè§ˆå™¨è®¡ç®—): ${idbInfo.dueCount}`);
+  console.log(`  IndexedDB 总条数: ${idbInfo.totalInDb}`);
+  console.log(`  ${CLOUD_DECK_KEY} 条数: ${idbInfo.deckStates}`);
+  console.log(`  到期数(浏览器计算): ${idbInfo.dueCount}`);
   console.log(`  user_id: ${idbInfo.userId}`);
-  console.log(`  æ‰€æœ‰ user_id: ${idbInfo.allUserIds}`);
-  console.log(`  é˜¶æ®µåˆ†å¸ƒ: ${idbInfo.stages}`);
+  console.log(`  所有 user_id: ${idbInfo.allUserIds}`);
+  console.log(`  阶段分布: ${idbInfo.stages}`);
 
-  // æŸ¥ localStorage ä¸Šé™
+  // 查 localStorage 上限
   const lsInfo = await page.evaluate(() => {
     return {
-      newCardsPerDay: localStorage.getItem('srs_new_cards_per_day') || '5(é»˜è®¤)',
-      maxReviews: localStorage.getItem('srs_maximum_reviews_per_day') || '50(é»˜è®¤)',
+      newCardsPerDay: localStorage.getItem('srs_new_cards_per_day') || '5(默认)',
+      maxReviews: localStorage.getItem('srs_maximum_reviews_per_day') || '50(默认)',
       dailyProgress: localStorage.getItem('yihai_daily_progress') || '{}',
     };
   });
-  console.log(`\n  SRS ä¸Šé™: new=${lsInfo.newCardsPerDay}, max_review=${lsInfo.maxReviews}`);
-  console.log(`  æ¯æ—¥è¿›åº¦: ${lsInfo.dailyProgress}`);
+  console.log(`\n  SRS 上限: new=${lsInfo.newCardsPerDay}, max_review=${lsInfo.maxReviews}`);
+  console.log(`  每日进度: ${lsInfo.dailyProgress}`);
 
-  // æŸ¥ä¸»é¡µå®žé™…æ˜¾ç¤º
+  // 查主页实际显示
   const displayInfo = await page.evaluate((key) => {
     const card = document.querySelector(`.deck-card[data-deck="${key}"]`);
     if (!card) return { error: 'deck card not found' };
@@ -125,19 +125,18 @@ const URL = 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now();
       displayedNew: newEl ? newEl.textContent : 'N/A',
     };
   }, CLOUD_DECK_KEY);
-  console.log(`  ä¸»é¡µæ˜¾ç¤º: åˆ°æœŸ=${displayInfo.displayedDue}, æ–°å¡=${displayInfo.displayedNew}`);
+  console.log(`  主页显示: 到期=${displayInfo.displayedDue}, 新卡=${displayInfo.displayedNew}`);
 
   await page.close();
   await browser.close();
 
-  // ç»“è®º
-  console.log('\nâ•â•â•â•â•â•â•â•â•â•â• è¯Šæ–­ç»“è®º â•â•â•â•â•â•â•â•â•â•â•');
+  // 结论
+  console.log('\n═══════════ 诊断结论 ═══════════');
   if (idbInfo.deckStates < cloudStates.length) {
-    console.log(`  âŒ IndexedDB(${idbInfo.deckStates}) < äº‘ç«¯(${cloudStates.length})ï¼ŒåŒæ­¥ä¸å®Œæ•´`);
+    console.log(`  ❌ IndexedDB(${idbInfo.deckStates}) < 云端(${cloudStates.length})，同步不完整`);
   } else {
-    console.log(`  âœ… IndexedDB(${idbInfo.deckStates}) == äº‘ç«¯(${cloudStates.length})ï¼ŒåŒæ­¥å®Œæ•´`);
+    console.log(`  ✅ IndexedDB(${idbInfo.deckStates}) == 云端(${cloudStates.length})，同步完整`);
   }
-  console.log(`  åˆ°æœŸ: æµè§ˆå™¨=${idbInfo.dueCount}, äº‘ç«¯=${due}`);
+  console.log(`  到期: 浏览器=${idbInfo.dueCount}, 云端=${due}`);
   process.exit(0);
 })();
-
