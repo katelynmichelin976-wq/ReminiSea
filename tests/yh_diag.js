@@ -23,14 +23,15 @@
   // ── 面板骨架 ──────────────────────────────────────────────
   const panel = document.createElement('div');
   panel.style.cssText = [
-    'position:fixed', 'top:0', 'right:0', 'width:min(680px,100vw)', 'height:100vh',
+    'position:fixed', 'top:0', 'width:min(680px,100vw)', 'height:100vh',
     'background:#0f172a', 'color:#e2e8f0', 'font:13px/1.5 "SF Mono",Menlo,monospace',
     'z-index:2147483647', 'display:flex', 'flex-direction:column',
     'box-shadow:-4px 0 24px rgba(0,0,0,0.6)', 'border-left:1px solid #1e293b'
   ].join(';');
 
   panel.innerHTML = `
-    <div id="_yh_hdr" style="display:flex;align-items:center;padding:10px 14px;background:#1e293b;gap:8px;flex-shrink:0">
+    <div id="_yh_hdr" style="display:flex;align-items:center;padding:10px 14px;background:#1e293b;gap:8px;flex-shrink:0;cursor:grab">
+      <span style="color:#475569;font-size:18px;line-height:1;user-select:none">⠿</span>
       <span style="color:#38bdf8;font-weight:bold;font-size:14px">🔍 忆海诊断</span>
       <span id="_yh_ver" style="color:#475569;font-size:11px"></span>
       <div style="flex:1"></div>
@@ -40,6 +41,29 @@
     <div id="_yh_tabs" style="display:flex;background:#1e293b;border-bottom:2px solid #0f172a;flex-shrink:0"></div>
     <div id="_yh_body" style="flex:1;overflow:auto;padding:12px 14px"></div>`;
   document.body.appendChild(panel);
+
+  // 初始定位：贴右边
+  panel.style.left = Math.max(0, window.innerWidth - panel.offsetWidth) + 'px';
+  panel.style.top = '0px';
+
+  // 拖拽支持
+  const hdr = document.getElementById('_yh_hdr');
+  let _drag = null;
+  hdr.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    _drag = { ox: e.clientX - panel.offsetLeft, oy: e.clientY - panel.offsetTop };
+    hdr.style.cursor = 'grabbing';
+    hdr.setPointerCapture(e.pointerId);
+  });
+  hdr.addEventListener('pointermove', e => {
+    if (!_drag) return;
+    const x = Math.max(-(panel.offsetWidth - 80), Math.min(window.innerWidth - 80, e.clientX - _drag.ox));
+    const y = Math.max(0, Math.min(window.innerHeight - 48, e.clientY - _drag.oy));
+    panel.style.left = x + 'px';
+    panel.style.top = y + 'px';
+  });
+  hdr.addEventListener('pointerup', () => { _drag = null; hdr.style.cursor = 'grab'; });
+  hdr.addEventListener('pointercancel', () => { _drag = null; hdr.style.cursor = 'grab'; });
 
   const $ = id => document.getElementById(id);
   const body = $('_yh_body');
