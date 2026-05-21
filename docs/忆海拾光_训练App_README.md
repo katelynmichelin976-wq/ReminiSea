@@ -129,6 +129,13 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v4.11.15 — 2026-05-21
+
+**Bug 修复**
+- 修复 `getDeviceInfo()` 返回 `JSON.stringify(...)` 字符串导致 `device_info` jsonb 列双编码，`->>'ua'` 等操作符全部返回 NULL，Admin 看板设备解析失效
+
+---
+
 ### v4.11.14 — 2026-05-20
 
 **Bug 修复**
