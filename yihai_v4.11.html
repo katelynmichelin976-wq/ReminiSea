@@ -217,37 +217,98 @@ body {
 .deck-stat-num.new-c { color: var(--green); }
 .deck-stat-lbl { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; }
 
-/* Start footer — browse (secondary) + start (primary) */
-.home-footer {
-  width: 100%; max-width: 500px; flex-shrink: 0;
-  padding: 14px 16px calc(12px + var(--safe-bottom));
-  background: var(--bg);
+
+/* ═══ Tab Bar ═══ */
+.home-tabbar {
+  flex-shrink: 0;
+  width: 100%; max-width: 500px; margin: 0 auto;
+  padding-bottom: var(--safe-bottom);
+  background: var(--surf); border-top: 1px solid var(--bd);
+  box-shadow: 0 -2px 16px rgba(14,165,233,0.06);
+  display: flex; align-items: flex-end;
+  overflow: visible; position: relative; z-index: 10;
 }
-.footer-btns {
-  display: flex; gap: 10px; align-items: stretch;
+.tab-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  gap: 4px; padding: 10px 4px 12px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text3); font-size: 11px; font-weight: 500;
+  transition: color .2s; position: relative;
+  -webkit-tap-highlight-color: transparent;
 }
-.browse-btn {
-  flex: 1;          /* 1/3 of total width (1 vs 2) */
-  height: 62px; border-radius: var(--r);
-  border: 2px solid var(--bd2);
-  background: var(--surf); color: var(--text2);
-  font-family: inherit; font-size: 16px; font-weight: 700;
-  cursor: pointer; outline: none;
-  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-  transition: background .15s, transform .1s;
+.tab-item svg { width: 24px; height: 24px; }
+.tab-item.active { color: var(--ocean); }
+.tab-item.active::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 32px; height: 3px; border-radius: 0 0 4px 4px;
+  background: var(--ocean);
 }
-.browse-btn:active { transform: scale(.97); background: var(--surf2); }
-.start-btn {
-  flex: 2;          /* 2/3 of total width */
-  height: 62px; border-radius: var(--r); border: none;
-  background: var(--ocean); color: #fff;
-  font-family: inherit; font-size: 18px; font-weight: 800;
-  cursor: pointer; outline: none;
-  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-  transition: transform .1s;
-  box-shadow: 0 4px 0 var(--ocean-dk);
+.tab-item.action { flex: 1.1; gap: 5px; padding-bottom: 12px; }
+.tab-item.action > span { color: var(--text2); font-weight: 600; font-size: 11px; }
+.tab-fab {
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--ocean);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 18px rgba(14,165,233,0.35), 0 0 0 4px var(--surf);
+  margin-top: -22px;
+  transition: transform .15s, box-shadow .15s;
 }
-.start-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ocean-dk); }
+.tab-fab svg { width: 22px; height: 22px; }
+.tab-item.action:active .tab-fab { transform: scale(.93); box-shadow: none; }
+
+/* ═══ 我的屏 ═══ */
+.mine-topbar {
+  padding: calc(var(--safe-top) + 4px) 16px 6px;
+  width: 100%; max-width: 500px; margin: 0 auto; flex-shrink: 0;
+  background: var(--surf);
+}
+.mine-scroll {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--bg); padding: 12px 0 28px;
+}
+.mine-profile {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px; background: var(--surf);
+  border-radius: var(--r); margin: 0 16px 14px;
+  border: 1px solid var(--bd); cursor: pointer;
+  transition: opacity .15s; text-align: left;
+  width: calc(100% - 32px); max-width: calc(500px - 32px);
+}
+.mine-profile:active { opacity: .65; }
+.mine-profile-avatar {
+  width: 56px; height: 56px; border-radius: var(--rsm);
+  background: var(--ocean-lt); border: 2px solid var(--bd2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 800; color: var(--ocean-dk);
+  flex-shrink: 0;
+}
+.mine-profile-info { flex: 1; min-width: 0; }
+.mine-profile-name { font-size: 17px; font-weight: 700; color: var(--text); }
+.mine-profile-sub {
+  font-size: 13px; color: var(--text2); margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mine-profile-chevron { color: var(--text3); flex-shrink: 0; }
+.mine-group {
+  background: var(--surf); border-radius: var(--rsm);
+  margin: 0 16px; overflow: hidden; border: 1px solid var(--bd);
+}
+.mine-group + .mine-group { margin-top: 10px; }
+.mine-menu-item {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; background: none; border: none;
+  border-bottom: 1px solid var(--bd);
+  font-size: 16px; font-weight: 500; color: var(--text);
+  cursor: pointer; transition: opacity .15s; text-align: left;
+}
+.mine-group .mine-menu-item:last-child { border-bottom: none; }
+.mine-menu-item:active { opacity: .5; }
+.mine-menu-icon {
+  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--ocean);
+}
+.mine-menu-chevron { margin-left: auto; color: var(--text3); flex-shrink: 0; }
 
 /* 自制确认弹窗（替代 iOS PWA 下被屏蔽的 confirm()）*/
 .yh-dialog-mask {
@@ -855,14 +916,14 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
 /* ── iPad / tablet (≥600px) ── */
 @media (min-width: 600px) {
-  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-footer {
+  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-tabbar {
     max-width: min(90vw, 720px);
   }
   .target-card { max-height: var(--img-max-h, 58vh); }
 }
 /* ── iPad Pro / large tablet (≥900px) ── */
 @media (min-width: 900px) {
-  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-footer {
+  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-tabbar {
     max-width: min(92vw, 960px);
   }
 }
@@ -887,30 +948,8 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           </svg>
         </button>
       </div>
-      <div class="home-icons">
-        <!-- stats -->
-        <button class="home-gear-btn" onclick="openStats()" aria-label="统计">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-          </svg>
-        </button>
-        <!-- import yhspack -->
-        <label class="home-gear-btn" style="cursor:pointer" aria-label="导入牌组" title="导入 .yhspack">
-          <input type="file" accept=".yhspack" style="display:none" onchange="importYhspack(this.files[0]).then(()=>this.value='')">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-        </label>
-        <!-- settings gear -->
-        <button class="home-gear-btn" onclick="openSettingsWithSrs()" aria-label="设置">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        </button>
-      </div>
+      <!-- 隐藏文件输入（我的屏"导入文件"按钮触发） -->
+      <input type="file" id="importFile" accept=".yhspack" style="display:none" onchange="importYhspack(this.files[0]).then(()=>this.value='')" aria-hidden="true">
     </div>
 
     <div class="home-section">
@@ -920,12 +959,22 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     </div>
   </div>
 
-  <!-- Sticky footer: browse (secondary) + start (primary) -->
-  <div class="home-footer">
-    <div class="footer-btns">
-      <button class="browse-btn" onclick="startBrowse()">浏览</button>
-      <button class="start-btn"  onclick="startQuiz()">开始练习</button>
-    </div>
+  <!-- Tab Bar（首页激活） -->
+  <div class="home-tabbar">
+    <button class="tab-item active" onclick="showScreen('screen-home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
+      <span>首页</span>
+    </button>
+    <button class="tab-item action" onclick="onFabTap()">
+      <div class="tab-fab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+      </div>
+      <span>开始练习</span>
+    </button>
+    <button class="tab-item" onclick="showScreen('screen-mine')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
+      <span>我的</span>
+    </button>
   </div>
 
 </div>
@@ -1067,6 +1116,60 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <div class="card-detail-handle"></div>
       <div class="card-detail-body" id="card-detail-body"></div>
     </div>
+  </div>
+</div>
+
+<!-- ══════════════ MINE SCREEN ══════════════ -->
+<div class="screen" id="screen-mine">
+  <div class="mine-topbar"></div>
+  <div class="mine-scroll">
+    <!-- 账号卡（登录状态由 updateMineProfile 动态更新） -->
+    <button class="mine-profile" id="mine-profile-card" onclick="openSettingsWithSrs(); setTimeout(()=>switchTab(4),50)">
+      <div class="mine-profile-avatar" id="mine-avatar">?</div>
+      <div class="mine-profile-info">
+        <div class="mine-profile-name" id="mine-profile-name">点击登录</div>
+        <div class="mine-profile-sub" id="mine-profile-sub">登录后可同步牌组与记录</div>
+      </div>
+      <svg class="mine-profile-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <!-- 统计 -->
+    <div class="mine-group">
+      <button class="mine-menu-item" onclick="openStats()">
+        <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
+        <span>统计</span>
+        <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <!-- 设置 + 导入 -->
+    <div class="mine-group">
+      <button class="mine-menu-item" onclick="openSettingsWithSrs()">
+        <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+        <span>设置</span>
+        <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="mine-menu-item" onclick="document.getElementById('importFile').click()">
+        <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <span>导入文件</span>
+        <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+  <!-- Tab Bar（我的激活） -->
+  <div class="home-tabbar">
+    <button class="tab-item" onclick="showScreen('screen-home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
+      <span>首页</span>
+    </button>
+    <button class="tab-item action" onclick="onFabTap()">
+      <div class="tab-fab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+      </div>
+      <span>开始练习</span>
+    </button>
+    <button class="tab-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
+      <span>我的</span>
+    </button>
   </div>
 </div>
 
@@ -1915,6 +2018,7 @@ function updateCloudTabUI() {
       emailEl.value = localStorage.getItem('yihai_last_cloud_email') || '';
     }
   }
+  updateMineProfile();
 }
 
 async function doCloudLogin() {
@@ -3868,6 +3972,28 @@ function _launch(mode) {
       _launchBusy = false;
       showFinish();
     });
+  }
+}
+function onFabTap() {
+  if (_launchBusy) return;
+  if (!currentDeck) return;
+  _launchBusy = true;
+  warmupSpeech();
+  _launch('quiz');
+}
+function updateMineProfile() {
+  const nameEl = document.getElementById('mine-profile-name');
+  const subEl  = document.getElementById('mine-profile-sub');
+  const avEl   = document.getElementById('mine-avatar');
+  if (!nameEl) return;
+  if (_cloudUserEmail) {
+    nameEl.textContent = _cloudUserEmail;
+    subEl.textContent  = '已登录，数据自动同步';
+    avEl.textContent   = _cloudUserEmail[0].toUpperCase();
+  } else {
+    nameEl.textContent = '点击登录';
+    subEl.textContent  = '登录后可同步牌组与记录';
+    avEl.textContent   = '?';
   }
 }
 function goHome() {
