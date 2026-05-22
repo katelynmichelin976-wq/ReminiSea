@@ -1008,6 +1008,121 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 @media (min-width: 900px) {
   .browse-topbar, .browse-prog-wrap, .browse-body, .browse-nav { max-width: min(92vw, 960px); }
 }
+
+/* ═══ Account Screen ═══ */
+#screen-account { justify-content: flex-start; overflow: hidden; align-items: center; }
+.account-topbar {
+  width: 100%; max-width: 500px;
+  padding: calc(var(--safe-top) + 8px) 12px 6px;
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.account-topbar-title { flex: 1; text-align: center; font-size: 17px; font-weight: 700; color: var(--text); }
+.account-body {
+  flex: 1; min-height: 0; overflow-y: auto;
+  width: 100%; max-width: 500px;
+  padding: 12px 16px;
+}
+.account-section { margin-bottom: 20px; }
+.account-section-lbl {
+  font-size: 12px; font-weight: 600; color: var(--text3);
+  letter-spacing: 0.5px; margin-bottom: 8px; text-transform: uppercase;
+}
+
+/* ── State A: logged out ── */
+.account-desc { font-size: 13px; color: var(--text3); line-height: 1.7; margin-bottom: 16px; }
+.account-field {
+  width: 100%; padding: 14px 16px; border-radius: var(--rsm);
+  border: 1.5px solid var(--bd2); background: var(--surf);
+  font-size: 16px; font-family: inherit; color: var(--text);
+  outline: none; transition: border-color 0.2s;
+  -webkit-appearance: none; appearance: none;
+}
+.account-field:focus { border-color: var(--ocean); }
+.account-field + .account-field { margin-top: 10px; }
+.account-btn {
+  width: 100%; padding: 16px; border-radius: var(--rsm); border: none;
+  font-size: 17px; font-weight: 700; font-family: inherit; cursor: pointer;
+  transition: transform 0.12s, opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.account-btn:active { transform: scale(0.98); }
+.account-btn-primary { background: var(--ocean); color: #fff; box-shadow: 0 4px 14px rgba(14,165,233,0.3); }
+.account-btn-primary:disabled { opacity: 0.5; }
+.account-btn-danger { background: none; border: 1.5px solid var(--bd2); color: var(--text2); }
+.account-msg { font-size: 13px; margin-top: 10px; text-align: center; }
+
+/* ── State B: restoring ── */
+.account-restoring {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 60px 20px; color: var(--text3);
+}
+.account-spinner {
+  width: 32px; height: 32px; border: 3px solid var(--bd2);
+  border-top-color: var(--ocean); border-radius: 50%;
+  animation: acc-spin 0.8s linear infinite;
+}
+@keyframes acc-spin { to { transform: rotate(360deg); } }
+.account-restoring-txt { font-size: 15px; }
+
+/* ── State C: logged in ── */
+.account-hero {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px; background: var(--surf); border-radius: var(--r);
+  border: 1px solid var(--bd); margin-bottom: 16px;
+}
+.account-hero-avatar {
+  width: 56px; height: 56px; border-radius: var(--rsm);
+  background: var(--ocean-lt); border: 2px solid var(--bd2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 800; color: var(--ocean-dk); flex-shrink: 0;
+}
+.account-hero-info { flex: 1; min-width: 0; }
+.account-hero-name { font-size: 17px; font-weight: 700; color: var(--text); }
+.account-hero-sub  { font-size: 13px; color: var(--text3); margin-top: 2px; }
+.account-hero-badge { font-size: 12px; color: var(--ocean); font-weight: 600; }
+
+.account-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: var(--surf); border-radius: var(--rsm);
+  border: 1px solid var(--bd); margin-bottom: 8px;
+}
+.account-row-lbl { font-size: 15px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.account-row-lbl .acc-sub { font-size: 12px; color: var(--text3); font-weight: 400; }
+.account-sync-btn {
+  padding: 6px 16px; border-radius: 20px; border: 1.5px solid var(--ocean);
+  background: none; color: var(--ocean); font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.account-sync-btn:active { background: var(--ocean-lt); }
+.account-sync-btn:disabled { opacity: 0.4; }
+
+.account-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: var(--surf); border-radius: var(--rsm);
+  border: 1px solid var(--bd); margin-bottom: 8px;
+}
+
+@media (min-width: 600px) {
+  .account-topbar, .account-body { max-width: min(90vw, 720px); }
+}
+@media (min-width: 900px) {
+  .account-topbar, .account-body { max-width: min(92vw, 960px); }
+}
+
+/* Sync progress modal — improve existing modal */
+#sync-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.45); z-index:999; align-items:center; justify-content:center; }
+#sync-modal.show { display:flex; }
+#sync-modal-box {
+  background:var(--surf); border-radius:var(--r); padding:28px 24px; width:min(320px,88vw);
+  text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.15);
+}
+#sync-modal-title { font-size:17px; font-weight:700; color:var(--text); margin-bottom:8px; }
+#sync-modal-text { font-size:13px; color:var(--text3); margin-bottom:16px; min-height:20px; }
+#sync-modal-prog-wrap { margin-top:4px; display:flex; align-items:center; gap:8px; }
+#sync-modal-track { flex:1; height:6px; border-radius:3px; background:var(--bd2); overflow:hidden; }
+#sync-modal-bar { height:100%; width:0%; background:var(--ocean); border-radius:3px; transition:width .3s ease; }
+#sync-modal-pct { font-size:12px; font-weight:600; color:var(--ocean); min-width:36px; text-align:right; }
 </style>
 </head>
 <body>
@@ -1245,7 +1360,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="mine-topbar"></div>
   <div class="mine-scroll">
     <!-- 账号卡（登录状态由 updateMineProfile 动态更新） -->
-    <button class="mine-profile" id="mine-profile-card" onclick="openSettingsWithSrs(); setTimeout(()=>switchTab(4),50)">
+    <button class="mine-profile" id="mine-profile-card" onclick="showAccount()">
       <div class="mine-profile-avatar" id="mine-avatar">?</div>
       <div class="mine-profile-info">
         <div class="mine-profile-name" id="mine-profile-name">点击登录</div>
@@ -1291,6 +1406,79 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
       <span>我的</span>
     </button>
+  </div>
+</div>
+
+<!-- ══════════════ ACCOUNT SCREEN ══════════════ -->
+<div class="screen" id="screen-account">
+
+  <div class="account-topbar">
+    <button class="back-btn" onclick="goHome()" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="account-topbar-title">账户</span>
+    <div style="width:30px"></div>
+  </div>
+
+  <div class="account-body" id="account-body">
+
+    <!-- State A: not logged in (rendered when _cloudUserEmail is empty and not restoring) -->
+    <div id="account-state-logged-out" style="display:none">
+      <div class="account-section">
+        <div class="account-desc">登录后可同步服务器牌组，训练记录自动上传。未登录仅支持手工导入，数据完全离线。</div>
+        <input class="account-field" type="email" id="account-email" placeholder="邮箱" autocomplete="email" inputmode="email">
+        <input class="account-field" type="password" id="account-password" placeholder="密码" autocomplete="current-password">
+        <button class="account-btn account-btn-primary" id="account-login-btn" onclick="doAccountLogin()">登 录</button>
+        <div class="account-msg" id="account-msg" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- State B: session restoring -->
+    <div id="account-state-restoring" style="display:none">
+      <div class="account-restoring">
+        <div class="account-spinner"></div>
+        <div class="account-restoring-txt">正在恢复登录…</div>
+      </div>
+    </div>
+
+    <!-- State C: logged in -->
+    <div id="account-state-logged-in" style="display:none">
+      <div class="account-hero">
+        <div class="account-hero-avatar" id="account-avatar">?</div>
+        <div class="account-hero-info">
+          <div class="account-hero-name" id="account-hero-name"></div>
+          <div class="account-hero-sub">已登录，数据自动同步</div>
+        </div>
+      </div>
+
+      <div class="account-section">
+        <div class="account-row">
+          <span class="account-row-lbl">云端同步</span>
+          <button class="account-sync-btn" id="account-sync-btn" onclick="doAccountSync()">同 步</button>
+        </div>
+      </div>
+
+      <div class="account-section">
+        <div class="account-row">
+          <div class="account-toggle-row">
+            <span class="account-row-lbl">
+              学习实时上传
+              <span class="acc-sub">关闭后仅在练习完成或打开 App 时同步</span>
+            </span>
+            <label class="stoggle">
+              <input type="checkbox" id="account-realtime-toggle" onchange="onAccountRealtimeToggle(this)">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="account-section">
+        <button class="account-btn account-btn-danger" onclick="doAccountLogout()">退出登录</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1745,17 +1933,13 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 </div>
 
 <!-- 同步进度 Modal -->
-<div id="sync-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:999;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:280px;width:85%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
-    <div id="sync-modal-title" style="font-size:17px;font-weight:700;color:#333;margin-bottom:12px">正在同步</div>
-    <div id="sync-modal-text" style="font-size:13px;color:#888;margin-bottom:10px"></div>
-    <div id="sync-modal-prog-wrap" style="margin-top:4px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-        <span id="sync-modal-pct" style="font-size:12px;font-weight:600;color:var(--blue)"></span>
-      </div>
-      <div style="height:4px;background:#e8e8e8;border-radius:2px;overflow:hidden">
-        <div id="sync-modal-bar" style="height:100%;background:var(--blue);border-radius:2px;width:0%"></div>
-      </div>
+<div id="sync-modal">
+  <div id="sync-modal-box">
+    <div id="sync-modal-title">正在同步</div>
+    <div id="sync-modal-text"></div>
+    <div id="sync-modal-prog-wrap">
+      <div id="sync-modal-track"><div id="sync-modal-bar"></div></div>
+      <span id="sync-modal-pct">0%</span>
     </div>
   </div>
 </div>
@@ -2140,6 +2324,9 @@ function updateCloudTabUI() {
     }
   }
   updateMineProfile();
+  // if account screen is visible, refresh its state too
+  var _acc_el = document.getElementById('screen-account');
+  if (_acc_el && _acc_el.classList.contains('active')) renderAccount();
 }
 
 async function doCloudLogin() {
@@ -4183,6 +4370,111 @@ function updateMineProfile() {
     avEl.textContent   = '?';
   }
 }
+
+// ── Account Screen ─────────────────────────────────────────────────
+function showAccount() {
+  renderAccount();
+  showScreen('screen-account');
+}
+
+function renderAccount() {
+  const outEl  = document.getElementById('account-state-logged-out');
+  const resEl  = document.getElementById('account-state-restoring');
+  const inEl   = document.getElementById('account-state-logged-in');
+
+  outEl.style.display = 'none';
+  resEl.style.display = 'none';
+  inEl.style.display  = 'none';
+
+  if (_sessionRestoring) {
+    resEl.style.display = '';
+    return;
+  }
+  if (_cloudUserEmail) {
+    inEl.style.display = '';
+    document.getElementById('account-avatar').textContent = _cloudUserEmail[0].toUpperCase();
+    document.getElementById('account-hero-name').textContent = _cloudUserEmail;
+    document.getElementById('account-sync-btn').disabled = false;
+    const rtToggle = document.getElementById('account-realtime-toggle');
+    if (rtToggle) rtToggle.checked = _realtimeUpload;
+    return;
+  }
+  // Not logged in
+  outEl.style.display = '';
+  document.getElementById('account-email').value = localStorage.getItem('yihai_last_cloud_email') || '';
+  document.getElementById('account-password').value = '';
+  document.getElementById('account-msg').style.display = 'none';
+  document.getElementById('account-login-btn').disabled = false;
+  document.getElementById('account-login-btn').textContent = '登 录';
+}
+
+async function doAccountLogin() {
+  const emailEl = document.getElementById('account-email');
+  const pwdEl   = document.getElementById('account-password');
+  const btnEl   = document.getElementById('account-login-btn');
+  const msgEl   = document.getElementById('account-msg');
+  const email   = emailEl.value.trim();
+  const pwd     = pwdEl.value;
+  if (!email || !pwd) {
+    msgEl.style.display = ''; msgEl.textContent = '请输入邮箱和密码'; msgEl.style.color = 'var(--text3)';
+    return;
+  }
+  btnEl.disabled = true; btnEl.textContent = '登录中...';
+  msgEl.style.display = 'none';
+  try {
+    // Copy to cloud tab fields so shared state stays consistent
+    const ce = document.getElementById('cloud-email');
+    const cp = document.getElementById('cloud-password');
+    if (ce) ce.value = email;
+    if (cp) cp.value = pwd;
+    _sb = _createSupabaseClient();
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
+    if (error) throw error;
+    _syncEnabled      = true;
+    _sessionOffline   = false;
+    _sessionRestoring = false;
+    _cloudUserEmail = data.user.email;
+    _cloudUserId = data.user.id;
+    localStorage.setItem('yihai_last_cloud_user_id', _cloudUserId);
+    localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+    _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
+    localStorage.setItem('yihai_has_ever_logged_in', '1');
+    if (data.session) {
+      localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
+    }
+    await migrateDeviceRecordsToUser(_cloudUserId);
+    updateCloudTabUI();
+    logAppEvent('login', { email: email });
+    upsertDeviceRegistry();
+    runSync({ modal: true, decks: true, events: true, title: '正在同步数据', voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
+  } catch(e) {
+    _syncEnabled = false;
+    msgEl.style.display = ''; msgEl.textContent = '登录失败：' + e.message; msgEl.style.color = '#9B3A2A';
+    console.warn('[sync] login failed:', e.message);
+  } finally {
+    btnEl.disabled = false; btnEl.textContent = '登 录';
+  }
+}
+
+function doAccountLogout() {
+  doCloudLogout();
+  renderAccount();
+  updateMineProfile();
+}
+
+function doAccountSync() {
+  const btn = document.getElementById('account-sync-btn');
+  if (btn) btn.disabled = true;
+  runSync({ modal: true, decks: true, events: true, showToast: true, voice: true, deckKey: currentDeck })
+    .catch(function(e){ console.warn('[sync] account sync error:', e.message); })
+    .finally(function() { if (btn) btn.disabled = false; });
+}
+
+function onAccountRealtimeToggle(el) {
+  _realtimeUpload = el.checked;
+  localStorage.setItem('yihai_realtime_upload', el.checked ? 'true' : 'false');
+}
+
 function goHome() {
   sessionId++;
   logAppEvent('go_home', { deck_key: currentDeck }, currentDeck);
