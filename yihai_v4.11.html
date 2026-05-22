@@ -927,6 +927,87 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     max-width: min(92vw, 960px);
   }
 }
+
+/* ═══ Browse Screen ═══ */
+#screen-browse { justify-content: flex-start; overflow: hidden; align-items: center; }
+.browse-topbar {
+  width: 100%; max-width: 500px;
+  padding: calc(var(--safe-top) + 8px) 12px 6px;
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.browse-deck-name {
+  flex: 1; text-align: center; font-size: 15px; font-weight: 600;
+  color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.browse-prog-wrap {
+  width: 100%; max-width: 500px;
+  padding: 0 16px 6px; flex-shrink: 0;
+}
+.browse-prog-track { height: 4px; background: var(--bd2); border-radius: 2px; overflow: hidden; }
+.browse-prog-fill {
+  height: 100%; background: var(--ocean); border-radius: 2px;
+  transition: width 0.45s cubic-bezier(0.4,0,0.2,1); width: 0%;
+}
+.browse-body {
+  flex: 1; min-height: 0; overflow: hidden;
+  width: 100%; max-width: 500px;
+  padding: 0 16px; display: flex; flex-direction: column; gap: 10px;
+}
+.browse-photo {
+  width: 100%; aspect-ratio: 1;
+  background: var(--surf2); border-radius: var(--rsm);
+  border: 1px solid var(--bd);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(80px, 35vw, 160px);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(14,165,233,0.06);
+  flex-shrink: 0;
+}
+.browse-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.browse-answer { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.browse-answer-row { display: flex; align-items: center; gap: 10px; }
+.browse-name {
+  flex: 1; font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: 2px;
+}
+.browse-tts-btn {
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--ocean-lt); border: none; cursor: pointer;
+  color: var(--ocean); display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; transition: background 0.15s;
+}
+.browse-tts-btn:active { background: var(--bd2); }
+.browse-divider { height: 1px; background: var(--bd); flex-shrink: 0; }
+.browse-desc { font-size: 14px; color: var(--text3); line-height: 1.7; overflow: auto; }
+.browse-nav {
+  flex-shrink: 0; width: 100%; max-width: 500px;
+  padding: 8px 16px calc(14px + var(--safe-bottom));
+  display: flex; gap: 12px;
+}
+.browse-btn-prev {
+  flex: 1; height: 56px;
+  background: var(--surf); border: 1.5px solid var(--bd2); border-radius: var(--rsm);
+  font-size: 16px; font-weight: 600; color: var(--text2); cursor: pointer;
+  font-family: inherit; -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.12s;
+}
+.browse-btn-prev:active { transform: scale(0.97); background: var(--surf2); }
+.browse-btn-prev:disabled { opacity: 0.3; }
+.browse-btn-next {
+  flex: 2; height: 56px;
+  background: var(--ocean); border: none; border-radius: var(--rsm);
+  font-size: 16px; font-weight: 700; color: #fff; cursor: pointer;
+  letter-spacing: 1px; font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 18px rgba(14,165,233,0.35);
+  transition: background 0.15s, transform 0.12s;
+}
+.browse-btn-next:active { transform: scale(0.97); background: var(--ocean-dk); }
+@media (min-width: 600px) {
+  .browse-topbar, .browse-prog-wrap, .browse-body, .browse-nav { max-width: min(90vw, 720px); }
+}
+@media (min-width: 900px) {
+  .browse-topbar, .browse-prog-wrap, .browse-body, .browse-nav { max-width: min(92vw, 960px); }
+}
 </style>
 </head>
 <body>
@@ -975,6 +1056,46 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
       <span>我的</span>
     </button>
+  </div>
+
+</div>
+
+<!-- ══════════════ BROWSE SCREEN ══════════════ -->
+<div class="screen" id="screen-browse">
+
+  <div class="browse-topbar">
+    <button class="back-btn" onclick="goHome()" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="browse-deck-name" id="browse-deck-name"></span>
+    <div style="width:30px"></div>
+  </div>
+
+  <div class="browse-prog-wrap">
+    <div class="browse-prog-track"><div class="browse-prog-fill" id="browse-prog-fill"></div></div>
+  </div>
+
+  <div class="browse-body">
+    <div class="browse-photo" id="browse-photo"></div>
+    <div class="browse-answer">
+      <div class="browse-answer-row">
+        <div class="browse-name" id="browse-name"></div>
+        <button class="browse-tts-btn" onclick="browseTTS()" aria-label="朗读">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+        </button>
+      </div>
+      <div class="browse-divider"></div>
+      <div class="browse-desc" id="browse-desc"></div>
+    </div>
+  </div>
+
+  <div class="browse-nav">
+    <button class="browse-btn-prev" id="browse-btn-prev" onclick="browseNav(-1)">上一张</button>
+    <button class="browse-btn-next" id="browse-btn-next" onclick="browseNav(1)">下一张</button>
   </div>
 
 </div>
@@ -3847,7 +3968,9 @@ let tOptHintTimer    = null;
 let tAnswerTimer     = null;  // 答案播报延迟 timer
 let sessionId        = 0;     // 每次进入练习页自增，语音链检查id终止跨页面播报
 let _lastSrsWrite    = Promise.resolve(); // 最近一次 _writeSrs 的 Promise，用于等待写完
-let _launchBusy = false; // 防止重复点击开始练习
+let _launchBusy  = false; // 防止重复点击开始练习
+let _browseCards = [];
+let _browseIdx   = 0;
 
 // ── 练习模式 SRS 状态 ──────────────────────────────────────────
 let _cardStartTs     = 0;     // 当前卡片显示时间戳（response_time 计算用）
@@ -3906,6 +4029,70 @@ function startBrowse() {
   warmupSpeech();
   _launch('browse');
 }
+
+function _enterBrowse() {
+  _browseCards = getDeck(currentDeck).map(q => ({ ...q }));
+  _browseIdx = 0;
+  const deck = DECKS_META.find(m => m.key === currentDeck);
+  document.getElementById('browse-deck-name').textContent = deck ? deck.name : '';
+  _renderBrowseCard();
+  showScreen('screen-browse');
+  requestWakeLock();
+  _launchBusy = false;
+}
+
+function _renderBrowseCard() {
+  const q = _browseCards[_browseIdx];
+  if (!q) return;
+  const total = _browseCards.length;
+
+  document.getElementById('browse-prog-fill').style.width = `${(_browseIdx + 1) / total * 100}%`;
+
+  const photoEl = document.getElementById('browse-photo');
+  const imgSrc = q.img || '';
+  if (imgSrc && !imgSrc.startsWith('blob:') && !imgSrc.startsWith('http') && [...imgSrc].length <= 4) {
+    photoEl.textContent = imgSrc;
+  } else if (imgSrc) {
+    photoEl.innerHTML = '';
+    const img = document.createElement('img');
+    img.alt = q.name || '';
+    img.src = imgSrc;
+    photoEl.appendChild(img);
+  } else {
+    photoEl.textContent = '📷';
+  }
+
+  document.getElementById('browse-name').textContent = q.name || '';
+
+  const desc = (q.details && q.details[0]) || '';
+  const descEl = document.getElementById('browse-desc');
+  descEl.textContent = desc;
+  descEl.style.display = desc ? '' : 'none';
+
+  document.getElementById('browse-btn-prev').disabled = _browseIdx === 0;
+  document.getElementById('browse-btn-next').textContent = _browseIdx === total - 1 ? '完 成' : '下一张';
+
+  const sid = sessionId;
+  setTimeout(() => { if (sid === sessionId) playAnswer(q, () => {}); }, 500);
+}
+
+function browseNav(dir) {
+  const total = _browseCards.length;
+  if (dir === 1 && _browseIdx === total - 1) { goHome(); return; }
+  const next = _browseIdx + dir;
+  if (next < 0 || next >= total) return;
+  speechSynthesis.cancel();
+  if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
+  _browseIdx = next;
+  _renderBrowseCard();
+}
+
+function browseTTS() {
+  speechSynthesis.cancel();
+  if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
+  const q = _browseCards[_browseIdx];
+  if (q) playAnswer(q, () => {});
+}
 function startQuiz() {
   if (_launchBusy) return;
   if (!currentDeck) return;
@@ -3926,8 +4113,10 @@ function releaseWakeLock() {
 }
 // 页面重新可见时（从后台切回）重新申请
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && document.getElementById('screen-quiz').classList.contains('active')) {
-    requestWakeLock();
+  if (document.visibilityState === 'visible') {
+    const quizActive   = document.getElementById('screen-quiz')?.classList.contains('active');
+    const browseActive = document.getElementById('screen-browse')?.classList.contains('active');
+    if (quizActive || browseActive) requestWakeLock();
   } else if (document.visibilityState === 'hidden') {
     releaseWakeLock();
   }
@@ -3940,11 +4129,7 @@ function _launch(mode) {
   document.getElementById('nxt-lbl').textContent = mode === 'browse' ? '下一张' : '下一题';
 
   if (mode === 'browse') {
-    // 浏览模式：原有逻辑，完全不改
-    Qs = getDeck(currentDeck).map(q => ({ ...q, browse: true }));
-    showScreen('screen-quiz');
-    requestWakeLock();
-    render();
+    _enterBrowse();
   } else {
     // 练习模式：使用 SRS 队列
     _sessionId       = 'sess_' + Date.now();

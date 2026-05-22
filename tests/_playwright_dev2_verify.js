@@ -19,10 +19,10 @@ const { chromium } = require('playwright');
   if (hasDeck) {
     await page.locator('.deck-card').first().click();
     await page.waitForTimeout(600);
-    const quizActive = await page.evaluate(() =>
-      document.getElementById('screen-quiz')?.classList.contains('active')
+    const browseActive = await page.evaluate(() =>
+      document.getElementById('screen-browse')?.classList.contains('active')
     );
-    A('点牌组行 → screen-quiz (浏览/练习) active', quizActive);
+    A('点牌组行 → screen-browse (浏览屏) active', browseActive);
 
     const homeInactive = await page.evaluate(() =>
       !document.getElementById('screen-home')?.classList.contains('active')
