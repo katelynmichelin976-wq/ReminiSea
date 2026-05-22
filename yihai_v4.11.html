@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="zh">
+<html lang="zh" data-mode="patient">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -11,6 +11,9 @@
 <meta name="description" content="记忆练习 — 看图识物">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <title>忆海拾光 v4.11.18</title>
 <style>
@@ -47,6 +50,9 @@ img { -webkit-user-drag: none; pointer-events: none; }
   --green-bd:   #6ee7b7;
   --diamond:    #0ea5e9;
   --diamond2:   #bae6fd;
+  --red:        #c23b3b;
+  --red-lt:     #fdf1ef;
+  --red-dk:     #9e2e2e;
   --r:          22px;
   --rsm:        16px;
   --sh:         0 1px 10px rgba(14,165,233,0.1), 0 3px 20px rgba(14,165,233,0.06);
@@ -85,6 +91,7 @@ html[data-theme="jade"] {
   --blue:       #1e7a52; --blue-bg: #eaf5f0; --blue-lt: rgba(30,122,82,0.13);
   --green:      #1e7a52;
   --diamond:    #1e7a52; --diamond2: #b8dfc8;
+  --red:        #1e7a52; --red-lt: #eaf5f0; --red-dk: #155e3e;
   --sh:         0 1px 10px rgba(30,122,82,0.1), 0 3px 20px rgba(30,122,82,0.06);
 }
 html[data-theme="amber"] {
@@ -96,6 +103,7 @@ html[data-theme="amber"] {
   --blue:       #c8600a; --blue-bg: #fff4e8; --blue-lt: rgba(200,96,10,0.13);
   --green:      #1e7a52;
   --diamond:    #c8600a; --diamond2: #f0d4b8;
+  --red:        #c8600a; --red-lt: #fff4e8; --red-dk: #a04808;
   --sh:         0 1px 10px rgba(200,96,10,0.1), 0 3px 20px rgba(200,96,10,0.06);
 }
 html[data-theme="dark"] {
@@ -107,7 +115,19 @@ html[data-theme="dark"] {
   --blue:       #e8a030; --blue-bg: #2e2518; --blue-lt: rgba(232,160,48,0.15);
   --green-bg:   #1a2e20; --green-bd: #2a5a40;
   --diamond:    #e8a030; --diamond2: #6e4a18;
+  --red:        #e8a030; --red-lt: #2e2518; --red-dk: #c88020;
   --sh:         0 2px 20px rgba(0,0,0,0.4);
+}
+html[data-theme="cinnabar"] {
+  --ocean:      #c43a31; --ocean-dk: #9e2b24;
+  --ocean-bg:   #fdf3f2; --ocean-lt: rgba(196,58,49,0.12);
+  --bg:         #fdf4f2; --surf: #fffaf8; --surf2: #f7e8e6;
+  --text:       #1a0808; --text2: #5c2824; --text3: #b87872;
+  --bd:         rgba(196,58,49,0.14); --bd2: rgba(196,58,49,0.25);
+  --blue:       #c43a31; --blue-bg: #fdf3f2; --blue-lt: rgba(196,58,49,0.13);
+  --diamond:    #c43a31; --diamond2: #e8b8b4;
+  --red:        #c43a31; --red-lt: #fdf3f2; --red-dk: #9e2b24;
+  --sh:         0 1px 10px rgba(196,58,49,0.1), 0 3px 20px rgba(196,58,49,0.06);
 }
 
 html {
@@ -150,11 +170,11 @@ body {
 .home-scroll {
   flex: 1; width: 100%; max-width: 500px;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 0 16px;
+  padding: 10px 16px 0;
   display: flex; flex-direction: column;
 }
 
-/* ── Ocean-blue top bar ── */
+/* ── Top bar ── */
 .home-topbar {
   width: 100%;
   padding: calc(10px + var(--safe-top)) 16px 14px;
@@ -163,8 +183,9 @@ body {
   background: var(--bg);
 }
 .home-title {
-  font-size: 24px; font-weight: 800; letter-spacing: -.4px;
-  color: var(--ocean);
+  font-family: 'Ma Shan Zheng', 'Noto Serif SC', 'PingFang SC', serif;
+  font-size: 36px; color: var(--text);
+  letter-spacing: 3px; line-height: 1;
 }
 .home-title-wrap {
   display: flex; align-items: baseline; gap: 6px;
@@ -217,7 +238,24 @@ body {
 }
 .home-gear-btn:active { background: var(--surf2); }
 
-.home-section { width: 100%; padding: 16px 0 0; flex: 1; display: flex; flex-direction: column; }
+.home-section { width: 100%; flex: 1; display: flex; flex-direction: column; }
+
+/* Section label */
+.album-section-lbl {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px; flex-shrink: 0;
+}
+.album-section-lbl span {
+  font-size: 14px; font-weight: 600; color: var(--text3); letter-spacing: 0.3px;
+}
+.btn-new-deck {
+  margin-left: auto; flex-shrink: 0;
+  background: none; border: none; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  color: var(--red); letter-spacing: 0.5px;
+  padding: 4px 0; transition: opacity 0.15s;
+}
+.btn-new-deck:active { opacity: 0.5; }
 
 /* Deck cards */
 .deck-grid {
@@ -234,13 +272,20 @@ body {
   background: var(--surf); cursor: pointer;
   -webkit-tap-highlight-color: transparent; touch-action: pan-y;
   transition: background .12s, transform .28s cubic-bezier(.25,.46,.45,.94);
-  display: flex; align-items: center; padding: 20px 18px;
+  display: flex; align-items: center; padding: 14px 18px 14px 34px;
   border-bottom: 0.5px solid var(--bd); position: relative; z-index: 2;
 }
 .deck-card:last-child .deck-card-inner { border-bottom: none; }
 .deck-card-inner:active { background: var(--surf2); }
-.deck-card-inner.selected { background: var(--blue-bg); }
-.deck-card-inner.selected .deck-name { color: var(--blue); }
+[data-mode="patient"] .caregiver-only { display: none !important; }
+.deck-card-inner.selected { background: var(--red-lt); }
+.deck-card-inner.selected .deck-name { color: var(--red-dk); }
+.deck-card-inner::before {
+  content: ''; position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 0; background: var(--red); border-radius: 2px;
+  transition: height 0.22s, opacity 0.22s; opacity: 0;
+}
+.deck-card-inner.selected::before { height: 32px; opacity: 1; }
 .deck-card-inner.no-transition { transition: none !important; }
 .deck-info { flex:1; min-width: 0; }
 .deck-name { font-size: 18px; font-weight: 600; color: var(--text); transition: color .15s; }
@@ -249,9 +294,17 @@ body {
 .deck-stats { display: flex; gap: 22px; align-items: center; flex-shrink: 0; }
 .deck-stat  { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 32px; }
 .deck-stat-num { font-size: 18px; font-weight: 700; line-height: 1; }
-.deck-stat-num.due   { color: var(--blue); }
+.deck-stat-num.due   { color: var(--red); }
+.deck-stat-num.zero  { opacity: 0.28; }
 .deck-stat-num.new-c { color: var(--green); }
 .deck-stat-lbl { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; }
+.album-nav-btn {
+  flex-shrink: 0; background: none; border: none; cursor: pointer;
+  color: var(--text3); padding: 4px 0 4px 8px; display: flex; align-items: center;
+  -webkit-tap-highlight-color: transparent; transition: color .15s;
+}
+.album-nav-btn:active { color: var(--red); }
+.deck-card-inner.selected .album-nav-btn { color: var(--red); }
 
 
 /* ═══ Tab Bar ═══ */
@@ -260,7 +313,7 @@ body {
   width: 100%; max-width: 500px; margin: 0 auto;
   padding-bottom: var(--safe-bottom);
   background: var(--surf); border-top: 1px solid var(--bd);
-  box-shadow: 0 -2px 16px rgba(14,165,233,0.06);
+  box-shadow: 0 -2px 20px rgba(26,18,8,0.06);
   display: flex; align-items: flex-end;
   overflow: visible; position: relative; z-index: 10;
 }
@@ -274,19 +327,19 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .tab-item svg { width: 24px; height: 24px; }
-.tab-item.active { color: var(--ocean); }
+.tab-item.active { color: var(--red); }
 .tab-item.active::before {
   content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
   width: 32px; height: 3px; border-radius: 0 0 4px 4px;
-  background: var(--ocean);
+  background: var(--red);
 }
 .tab-item.action { flex: 1.1; gap: 5px; padding-bottom: 12px; }
 .tab-item.action > span { color: var(--text2); font-weight: 600; font-size: 11px; }
 .tab-fab {
   width: 54px; height: 54px; border-radius: 50%;
-  background: var(--ocean);
+  background: var(--red);
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 18px rgba(14,165,233,0.35), 0 0 0 4px var(--surf);
+  box-shadow: 0 4px 18px rgba(194,59,59,0.32), 0 0 0 4px var(--surf);
   margin-top: -22px;
   transition: transform .15s, box-shadow .15s;
 }
@@ -723,6 +776,7 @@ body {
   font-family: inherit; padding: 0;
 }
 .swipe-action-btn:active { opacity: .8; }
+.swipe-action-btn.swipe-export { background: var(--ocean); }
 .swipe-action-btn.swipe-del { background: #e53e3e; }
 .swipe-action-btn.swipe-rename { background: var(--ocean); }
 .swipe-action-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
@@ -1100,46 +1154,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 .dd-topbar-add:active { transform: scale(0.88); }
 .dd-body {
   flex: 1; min-height: 0; overflow-y: auto;
-  width: 100%; max-width: 500px; padding: 16px;
-  display: flex; flex-direction: column; gap: 20px;
-}
-.dd-stats-row { display: flex; gap: 10px; flex-shrink: 0; }
-.dd-stat-card {
-  flex: 1; background: var(--surf); border-radius: var(--rsm);
-  border: 1px solid var(--bd); padding: 16px 10px;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  box-shadow: var(--sh);
-}
-.dd-stat-num { font-size: 28px; font-weight: 800; line-height: 1; }
-.dd-stat-num.total { color: var(--text); }
-.dd-stat-num.due   { color: var(--blue); }
-.dd-stat-num.new-c { color: var(--green); }
-.dd-stat-lbl { font-size: 12px; font-weight: 600; color: var(--text3); }
-.dd-actions { display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
-.dd-btn {
-  width: 100%; height: 52px; border-radius: var(--rsm);
-  font-family: inherit; font-size: 16px; font-weight: 700;
-  cursor: pointer; border: none; -webkit-tap-highlight-color: transparent;
-  transition: transform .12s, opacity .15s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.dd-btn:active { transform: scale(0.97); }
-.dd-btn.primary {
-  background: var(--ocean); color: #fff;
-  box-shadow: 0 4px 14px rgba(14,165,233,0.3);
-}
-.dd-btn.secondary {
-  background: var(--surf); color: var(--text2);
-  border: 1.5px solid var(--bd2);
-}
-.dd-btn.danger {
-  background: var(--surf); color: #e53e3e;
-  border: 1.5px solid rgba(229,62,62,0.25);
-}
-.dd-card-list { margin-top: 16px; flex-shrink: 0; }
-.dd-card-list-title {
-  font-size: 13px; font-weight: 700; color: var(--text3);
-  margin-bottom: 8px; letter-spacing: 0.3px;
+  width: 100%; max-width: 500px; padding: 0 16px 16px;
 }
 .dd-card-row {
   position: relative; overflow: hidden; border-radius: var(--rsm);
@@ -1160,29 +1175,30 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 .dd-card-act-del  { background: #e53e3e; }
 .dd-card-inner {
   position: relative; z-index: 2; background: var(--surf2);
-  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  display: flex; align-items: center; gap: 14px; padding: 14px 18px;
   transition: transform .25s cubic-bezier(.4,0,.2,1); touch-action: pan-y;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   border: 1px solid var(--bd); border-radius: var(--rsm);
 }
 .dd-card-inner.no-transition { transition: none; }
 .dd-card-img {
-  width: 40px; height: 40px; border-radius: 8px; object-fit: cover;
+  width: 48px; height: 48px; border-radius: 8px; object-fit: cover;
   background: var(--surf); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px; overflow: hidden;
+  font-size: 22px; overflow: hidden;
 }
 .dd-card-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 .dd-card-info { flex: 1; min-width: 0; }
 .dd-card-name {
-  font-size: 14px; font-weight: 600; color: var(--text);
+  font-size: 17px; font-weight: 600; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.dd-card-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.dd-card-meta { font-size: 13px; color: var(--text3); margin-top: 3px; }
 .dd-card-chevron { color: var(--text3); flex-shrink: 0; }
 .dd-card-empty {
   text-align: center; padding: 24px; color: var(--text3); font-size: 13px;
 }
+.divider { height: 1px; background: linear-gradient(90deg, transparent, var(--bd) 15%, var(--bd) 85%, transparent); margin: 0 16px; flex-shrink: 0; }
 @media (min-width: 600px) {
   .dd-topbar, .dd-body { max-width: min(90vw, 720px); }
 }
@@ -1375,6 +1391,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 .tp-jade    { background: #f0f7f3; } .tp-jade    .theme-prev-btn { background: #1e7a52; }
 .tp-amber   { background: #fdf5ec; } .tp-amber   .theme-prev-btn { background: #c8600a; }
 .tp-dark    { background: #1c1c28; } .tp-dark    .theme-prev-btn { background: #e8a030; }
+.tp-cinnabar { background: #fdf3f2; } .tp-cinnabar .theme-prev-btn { background: #c43a31; }
 
 /* ═══ 关于页 ═══ */
 .screen-about { justify-content: flex-start; overflow: hidden; align-items: center; }
@@ -1391,27 +1408,33 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <!-- ══════════════ HOME SCREEN ══════════════ -->
 <div class="screen active" id="screen-home">
 
-  <div class="home-scroll">
-    <!-- Duolingo-style top bar -->
-    <div class="home-topbar">
-      <div class="home-title-wrap">
-        <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.11.18</span>
-        <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"/>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-          </svg>
-        </button>
-      </div>
-      <!-- 照护者模式：＋ 按钮 -->
-      <button class="home-plus-btn" id="home-plus-btn" style="display:none" onclick="openActionSheet()" aria-label="更多操作">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+  <!-- Fixed topbar -->
+  <div class="home-topbar">
+    <div class="home-title-wrap">
+      <span class="home-title">忆海拾光</span>
+      <span class="home-version">v4.11.18</span>
+      <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
       </button>
-      <!-- 隐藏文件输入 -->
-      <input type="file" id="importFile" accept=".yhspack" style="display:none" onchange="importYhspack(this.files[0]).then(()=>this.value='')" aria-hidden="true">
     </div>
+    <!-- 照护者模式：＋ 按钮 -->
+    <button class="home-plus-btn" id="home-plus-btn" style="display:none" onclick="openActionSheet()" aria-label="更多操作">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+    </button>
+    <!-- 隐藏文件输入 -->
+    <input type="file" id="importFile" accept=".yhspack" style="display:none" onchange="importYhspack(this.files[0]).then(()=>this.value='')" aria-hidden="true">
+  </div>
 
+  <div class="divider"></div>
+
+  <div class="home-scroll" id="home-scroll">
+    <div class="album-section-lbl">
+      <span id="album-section-lbl">我的相册</span>
+      <button class="btn-new-deck caregiver-only" onclick="openActionSheet()" aria-label="新建牌组">＋ 新建</button>
+    </div>
     <div class="home-section">
       <div class="deck-grid" id="deck-grid">
         <!-- rendered by JS from DECKS_META -->
@@ -1423,7 +1446,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-tabbar">
     <button class="tab-item active" onclick="showScreen('screen-home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
-      <span>首页</span>
+      <span>首 页</span>
     </button>
     <button class="tab-item action" onclick="onFabTap()">
       <div class="tab-fab">
@@ -1433,7 +1456,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     </button>
     <button class="tab-item" onclick="showScreen('screen-mine')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
-      <span>我的</span>
+      <span>我 的</span>
     </button>
   </div>
 
@@ -1724,6 +1747,11 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="theme-name">深夜·护眼</div>
         <div class="theme-check">✓</div>
       </button>
+      <button class="theme-card" data-theme="cinnabar" onclick="setTheme(this)">
+        <div class="theme-prev tp-cinnabar"><div class="theme-prev-btn"></div></div>
+        <div class="theme-name">朱砂·红韵</div>
+        <div class="theme-check">✓</div>
+      </button>
     </div>
   </div>
 </div>
@@ -1758,41 +1786,8 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
   </div>
-  <div class="dd-body">
-    <div class="dd-stats-row">
-      <div class="dd-stat-card">
-        <span class="dd-stat-num total" id="dd-total">0</span>
-        <span class="dd-stat-lbl">总卡片</span>
-      </div>
-      <div class="dd-stat-card">
-        <span class="dd-stat-num due" id="dd-due">—</span>
-        <span class="dd-stat-lbl">到期</span>
-      </div>
-      <div class="dd-stat-card">
-        <span class="dd-stat-num new-c" id="dd-new">—</span>
-        <span class="dd-stat-lbl">新卡</span>
-      </div>
-    </div>
-    <div class="dd-actions" id="dd-actions">
-      <button class="dd-btn primary" onclick="startBrowse()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        浏览
-      </button>
-      <button class="dd-btn primary" onclick="startQuiz()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-        练习
-      </button>
-      <button class="dd-btn secondary" onclick="exportDeck()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        导出
-      </button>
-      <button class="dd-btn secondary" onclick="shareDeck()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        共享
-      </button>
-    </div>
-    <div class="dd-card-list" id="dd-card-list">
-      <div class="dd-card-list-title">卡片列表</div>
+  <div class="divider"></div>
+  <div class="dd-body" id="card-list">
       <div id="dd-card-items"></div>
     </div>
   </div>
@@ -4753,6 +4748,7 @@ document.addEventListener('visibilitychange', () => {
 function onAppModeToggle(el) {
   _appMode = el.checked ? 'caregiver' : 'patient';
   localStorage.setItem('yihai_app_mode', _appMode);
+  document.documentElement.setAttribute('data-mode', _appMode);
   updateTabBarMode();
   updateHomeTopbar();
   renderDeckList();
@@ -5273,46 +5269,18 @@ function onAccountRealtimeToggle(el) {
 }
 
 // ── 牌组详情屏 ─────────────────────────────────────────────────
+function showDeckDetailFor(key) {
+  currentDeck = key;
+  showDeckDetail();
+}
 function showDeckDetail() {
   if (!currentDeck) return;
   const meta = DECKS_META.find(m => m.key === currentDeck);
   if (!meta) return;
   document.getElementById('dd-deck-name').textContent = meta.name;
-  const deck = DECKS[currentDeck] || [];
-  document.getElementById('dd-total').textContent = String(deck.length);
-  renderDeckDetailActions(meta);
   showScreen('screen-deck-detail');
-  updateDeckDetailStats();
   _ddRenderSid = sessionId;
   renderDeckCards();
-}
-
-function renderDeckDetailActions(meta) {
-  const container = document.getElementById('dd-actions');
-  var delBtn = container.querySelector('.dd-btn.danger');
-  if (meta && meta.builtin) {
-    if (delBtn) delBtn.remove();
-  } else if (!delBtn) {
-    var btn = document.createElement('button');
-    btn.className = 'dd-btn danger';
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> 删除';
-    btn.onclick = deleteDeckFromDetail;
-    container.appendChild(btn);
-  }
-}
-
-async function updateDeckDetailStats() {
-  var sid = sessionId;
-  await _lastSrsWrite;
-  if (sid !== sessionId) return;
-  var screen = document.getElementById('screen-deck-detail');
-  if (!screen.classList.contains('active')) return;
-  try {
-    var st = await getDeckStatsSrs(currentDeck);
-    if (sid !== sessionId) return;
-    document.getElementById('dd-due').textContent = st.due != null ? String(st.due) : '—';
-    document.getElementById('dd-new').textContent = st.new != null ? String(st.new) : '—';
-  } catch(e) { /* stats not available */ }
 }
 
 // ── 卡片列表 ───────────────────────────────────────────────────
@@ -5327,25 +5295,8 @@ function renderDeckCards() {
     el.innerHTML = '<div class="dd-card-empty">暂无卡片</div>';
     return;
   }
-  // 获取状态标注
-  getAllCardStates(currentDeck).then(function(states) {
-    if (sessionId !== _ddRenderSid) return;
-    var stateMap = {};
-    (states || []).forEach(function(s) { stateMap[s.card_id] = s; });
-    var today = todayStr();
-    el.innerHTML = cards.map(function(c) {
-      var s = stateMap[c.id];
-      var badge = '';
-      if (!s || s.srs_stage === 'new') badge = '<span style="color:var(--blue)">待开始</span>';
-      else if (s.suspended)            badge = '<span style="color:#7c3aed">待确认</span>';
-      else if (s.srs_stage === 'learning' || s.srs_stage === 'relearning') badge = '<span style="color:var(--ocean)">学习中</span>';
-      else if (s.srs_stage === 'review') {
-        var thresh = SRS_CONFIG.maximum_interval;
-        badge = s.interval >= thresh
-          ? '<span style="color:var(--green)">已掌握</span>'
-          : '<span style="color:var(--text2)">复习中</span>';
-      }
-      var imgHtml = c.img && c.img.length > 4
+  el.innerHTML = cards.map(function(c) {
+    var imgHtml = c.img && c.img.length > 4
         ? '<img src="'+escAttr(c.img)+'" alt="">'
         : '<span>🃏</span>';
       var mediaInfo = [];
@@ -5365,14 +5316,13 @@ function renderDeckCards() {
           '<div class="dd-card-img">'+imgHtml+'</div>' +
           '<div class="dd-card-info">' +
             '<div class="dd-card-name">'+esc(c.name || c.id)+'</div>' +
-            '<div class="dd-card-meta">'+badge + (mediaInfo.length ? ' · '+mediaInfo.join(' / ') : '')+'</div>' +
+            '<div class="dd-card-meta">'+(mediaInfo.length ? mediaInfo.join(' / ') : '')+'</div>' +
           '</div>' +
           '<svg class="dd-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
         '</div>' +
       '</div>';
     }).join('');
     initDdCardSwipe();
-  });
 }
 
 function initDdCardSwipe() {
@@ -5453,8 +5403,6 @@ async function deleteCardFromDeck(cardId) {
   if (card.audioUrl && card.audioUrl.startsWith('blob:')) URL.revokeObjectURL(card.audioUrl);
   DECKS[currentDeck] = cards.filter(function(c) { return c.id !== cardId; });
   saveDeckCards(currentDeck);
-  // 更新详情屏统计
-  document.getElementById('dd-total').textContent = String(DECKS[currentDeck].length);
   renderDeckCards();
   renderDeckList();
   showToastMsg('卡片已删除');
@@ -5485,27 +5433,6 @@ function showPromptDialog(msg, defaultValue) {
     mask.onclick = function(e) { if (e.target === mask) close(null); };
     inp.onkeydown = function(e) { if (e.key === 'Enter') close(inp.value); if (e.key === 'Escape') close(null); };
   });
-}
-
-async function deleteDeckFromDetail() {
-  var key = currentDeck;
-  var meta = DECKS_META.find(m => m.key === key);
-  if (!meta || meta.builtin) return;
-  var ok = await showConfirmDialog('删除牌组「' + esc(meta.name) + '」？');
-  if (!ok) return;
-  (DECKS[key] || []).forEach(function(c) {
-    if (c.img && c.img.startsWith('blob:')) URL.revokeObjectURL(c.img);
-    if (c.audioUrl && c.audioUrl.startsWith('blob:')) URL.revokeObjectURL(c.audioUrl);
-  });
-  delete DECKS[key];
-  DECKS_META = DECKS_META.filter(function(m) { return m.key !== key; });
-  localStorage.removeItem(LS_DECK_PREFIX + key);
-  saveDeckIndex();
-  deleteMediaForDeck(key).catch(function() {});
-  if (currentDeck === key) currentDeck = null;
-  renderDeckList();
-  updateDeckStats();
-  goHome();
 }
 
 function goHome() {
@@ -7197,6 +7124,7 @@ function showAbout() {
         currentDeck = DECKS_META[0].key;
       }
       renderDeckList();
+      document.documentElement.setAttribute('data-mode', _appMode);
       updateTabBarMode();
       updateHomeTopbar();
       await updateDeckStats();
@@ -7918,6 +7846,10 @@ function renderDeckList() {
     const stats  = getDeckStats(m.key);
     const dueVal  = stats.due;
     const newVal  = stats.new;
+    const swipeExport = '<button class="swipe-action-btn swipe-export" onclick="event.stopPropagation();exportDeck(\''+m.key+'\')">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+        '<span>导出</span>' +
+      '</button>';
     const swipeRename = '<button class="swipe-action-btn swipe-rename" onclick="event.stopPropagation();renameDeck(\''+m.key+'\')">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
         '<span>重命名</span>' +
@@ -7927,14 +7859,18 @@ function renderDeckList() {
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
         '<span>删除</span>' +
       '</button>';
-    return '<div class="deck-card" data-deck="'+m.key+'">' +
-      '<div class="deck-card-actions">'+swipeRename+swipeDel+'</div>' +
+    const navChevron = '<button class="album-nav-btn caregiver-only" onclick="event.stopPropagation();showDeckDetailFor(\''+m.key+'\')" aria-label="牌组管理">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+      '</button>';
+    return '<div class="deck-card" data-deck="'+m.key+'" data-swipeable>' +
+      '<div class="deck-card-actions">'+swipeExport+swipeRename+swipeDel+'</div>' +
       '<div class="deck-card-inner'+(m.key === currentDeck ? ' selected' : '')+'" data-deck="'+m.key+'">' +
-        '<div class="deck-info"><div class="deck-name">'+sourceIcon(m.source)+esc(m.name)+'</div></div>' +
+        '<div class="deck-info"><div class="deck-name">'+esc(m.name)+'</div></div>' +
         '<div class="deck-stats">' +
-          '<div class="deck-stat"><span class="deck-stat-num due" data-deck="'+m.key+'">'+dueVal+'</span><span class="deck-stat-lbl">到期</span></div>' +
-          '<div class="deck-stat"><span class="deck-stat-num new-c" data-deck="'+m.key+'">'+newVal+'</span><span class="deck-stat-lbl">新卡</span></div>' +
+          '<div class="deck-stat"><span class="deck-stat-num due'+(dueVal===0?' zero':'')+'" data-deck="'+m.key+'">'+dueVal+'</span><span class="deck-stat-lbl">到期</span></div>' +
+          '<div class="deck-stat"><span class="deck-stat-num new-c'+(newVal===0?' zero':'')+'" data-deck="'+m.key+'">'+newVal+'</span><span class="deck-stat-lbl">新卡</span></div>' +
         '</div>' +
+        navChevron +
       '</div>' +
     '</div>';
   }).join('');
@@ -7949,7 +7885,7 @@ function renderDeckList() {
 }
 
 // ── 左滑手势 ───────────────────────────────────────────────────
-var SWIPE_ACTIONS_WIDTH = 128; // 2 buttons × 64px
+var SWIPE_ACTIONS_WIDTH = 192; // 3 buttons × 64px
 var SWIPE_THRESHOLD     = 40;
 var _swipeState = null;
 var _ddRenderSid = 0;

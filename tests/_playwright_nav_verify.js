@@ -22,7 +22,7 @@ const { chromium } = require('playwright');
   A('.tab-fab (FAB 圆按钮) 存在', fabCount >= 1);
 
   const activeTab = await page.locator('.tab-item.active').first().textContent();
-  A('首页 Tab 初始激活', activeTab.includes('首页'));
+  A('首页 Tab 初始激活', activeTab.includes('首 页'));
 
   // ── 2. 旧按钮已移除 ──────────────────────────────────
   console.log('\n── 旧按钮清理 ──');

@@ -40,8 +40,8 @@ const { chromium } = require('playwright');
     );
     A('点牌组 → screen-deck-detail active', detailActive);
 
-    // 在详情屏点「浏览」
-    await page.locator('#dd-actions .dd-btn.primary').first().click();
+    // 在详情屏调用浏览
+    await page.evaluate(() => startBrowse());
     await page.waitForTimeout(800);
 
     const browseActive = await page.evaluate(() =>

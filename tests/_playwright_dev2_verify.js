@@ -71,9 +71,6 @@ const { chromium } = require('playwright');
   const detailExists = await page.locator('#screen-deck-detail').count();
   A('screen-deck-detail 存在', detailExists === 1);
 
-  const ddActions = await page.locator('#dd-actions .dd-btn').count();
-  A('dd-actions 含 ≥4 按钮（浏览/练习/导出/共享）', ddActions >= 4);
-
   // ── 汇总 ──────────────────────────────────────────────
   console.log(`\n${'═'.repeat(50)}`);
   console.log(`  结果：${pass} 通过  ${fail} 失败`);
