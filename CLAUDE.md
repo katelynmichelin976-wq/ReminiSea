@@ -154,6 +154,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Wave 1 dev.7：牌组详情屏 screen-deck-detail（统计三列 + 浏览/练习/导出/共享/删除操作） + 左滑手势（导出/共享/删除）
 - 照护者制卡表单：screen-create-card（牌组选择/卡片名称/图片/详情/录音 + 连续制卡）
 - 我的屏补全：主题选择器（screen-theme，4 套视觉主题）+ 关于页（screen-about）
+- 牌组详情屏补全：卡片列表 + 左滑编辑/删除 + 添加卡片按钮
+- 左滑牌组行：重命名 + 删除（替换导出/共享）
+- exportDeck/shareDeck 实际实现（.yhspack 导出下载 / Web Share）
 
 **导航结构（Wave 1 后）：**
 - `screen-home`：首页（默认），底部 `.home-tabbar`（首页激活）
