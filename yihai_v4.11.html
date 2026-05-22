@@ -694,6 +694,34 @@ body {
 .swipe-action-btn.swipe-share { background: var(--ocean); }
 .swipe-action-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
 
+/* ═══ 制卡表单 ═══ */
+#screen-create-card { justify-content: flex-start; overflow: hidden; align-items: center; }
+.cc-topbar { width: 100%; max-width: 500px; padding: calc(var(--safe-top) + 8px) 12px 6px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.cc-topbar-title { flex: 1; text-align: center; font-size: 17px; font-weight: 700; color: var(--text); }
+.cc-body { flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: 500px; padding: 12px 16px 32px; }
+.cc-form { display: flex; flex-direction: column; gap: 14px; }
+.cc-form-group { display: flex; flex-direction: column; gap: 6px; }
+.cc-form-label { font-size: 13px; font-weight: 700; color: var(--text2); }
+.cc-form-input, .cc-deck-select, .cc-form-textarea {
+  width: 100%; padding: 12px 14px; font-family: inherit; font-size: 16px;
+  border: 1.5px solid var(--bd2); border-radius: var(--rsm); background: var(--surf);
+  color: var(--text); outline: none; box-sizing: border-box;
+  -webkit-appearance: none; appearance: none;
+}
+.cc-form-input:focus, .cc-deck-select:focus, .cc-form-textarea:focus { border-color: var(--ocean); }
+.cc-deck-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+.cc-form-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+.cc-image-upload { position: relative; border: 2px dashed var(--bd2); border-radius: var(--rsm); min-height: 120px; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
+.cc-image-placeholder { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text3); font-size: 13px; padding: 20px; }
+.cc-image-placeholder svg { width: 32px; height: 32px; color: var(--text3); }
+.cc-image-preview { max-width: 100%; max-height: 200px; object-fit: contain; }
+.cc-image-remove { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(0,0,0,.5); color: #fff; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.cc-audio-upload { border: 1.5px solid var(--bd2); border-radius: var(--rsm); padding: 14px; cursor: pointer; text-align: center; font-size: 14px; color: var(--text3); }
+.cc-save-btn { width: 100%; height: 52px; border-radius: var(--rsm); font-family: inherit; font-size: 17px; font-weight: 700; cursor: pointer; border: none; background: var(--ocean); color: #fff; box-shadow: 0 4px 14px rgba(14,165,233,0.3); -webkit-tap-highlight-color: transparent; transition: transform .12s, opacity .15s; margin-top: 4px; }
+.cc-save-btn:active { transform: scale(0.97); }
+.cc-add-another { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text2); cursor: pointer; justify-content: center; padding: 4px 0; }
+.cc-add-another input { width: 16px; height: 16px; cursor: pointer; }
+
 /* ════════════════════════════════
    FINISH SCREEN
    ════════════════════════════════ */
@@ -1583,6 +1611,54 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         共享
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 制卡表单 ══════════════ -->
+<div class="screen" id="screen-create-card">
+  <div class="cc-topbar">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="cc-topbar-title">制卡</span>
+    <div style="width:30px"></div>
+  </div>
+  <div class="cc-body">
+    <div class="cc-form">
+      <div class="cc-form-group">
+        <label class="cc-form-label">所属牌组</label>
+        <select class="cc-deck-select" id="cc-deck"></select>
+      </div>
+      <div class="cc-form-group">
+        <label class="cc-form-label">卡片名称</label>
+        <input class="cc-form-input" id="cc-name" placeholder="输入卡片正面文字" autocomplete="off" />
+      </div>
+      <div class="cc-form-group">
+        <label class="cc-form-label">图片（可选）</label>
+        <div class="cc-image-upload" id="cc-image-area" onclick="document.getElementById('cc-image-input').click()">
+          <input type="file" id="cc-image-input" accept="image/*" hidden onchange="onCardImageChange(event)" />
+          <div class="cc-image-placeholder" id="cc-image-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>点击上传图片</span>
+          </div>
+          <img id="cc-image-preview" class="cc-image-preview" style="display:none" />
+          <button class="cc-image-remove" id="cc-image-remove" style="display:none" onclick="event.stopPropagation();clearCardImage()">✕</button>
+        </div>
+      </div>
+      <div class="cc-form-group">
+        <label class="cc-form-label">详情（可选，每行一条）</label>
+        <textarea class="cc-form-textarea" id="cc-details" rows="4" placeholder="输入卡片反面说明，每行一条"></textarea>
+      </div>
+      <div class="cc-form-group">
+        <label class="cc-form-label">录音（可选）</label>
+        <input type="file" id="cc-audio-input" accept="audio/*" hidden onchange="onCardAudioChange(event)" />
+        <div class="cc-audio-upload" id="cc-audio-area" onclick="document.getElementById('cc-audio-input').click()">
+          <span id="cc-audio-label">点击上传录音文件</span>
+        </div>
+      </div>
+      <button class="cc-save-btn" id="cc-save-btn" onclick="saveCardFromForm()">保存卡片</button>
+      <label class="cc-add-another">
+        <input type="checkbox" id="cc-continue" checked /> 保存后继续添加
+      </label>
     </div>
   </div>
 </div>
@@ -4514,9 +4590,169 @@ function updateHomeTopbar() {
   if (modeSub) modeSub.textContent = _appMode === 'caregiver' ? '已开启' : '已关闭 — 开启后可管理牌组与制卡';
 }
 
-function onCaregiverFabTap() {
-  // 照护者 FAB → 制卡（暂跳转到首页并提示）
-  showConfirmDialog('制卡功能即将上线，敬请期待。');
+function onCaregiverFabTap() { showCreateCard(); }
+
+// ── 制卡表单 ─────────────────────────────────────────
+var _ccImageBlob = null, _ccAudioBlob = null;
+
+function showCreateCard() {
+  _ccImageBlob = null; _ccAudioBlob = null;
+  // 填充牌组下拉
+  const sel = document.getElementById('cc-deck');
+  sel.innerHTML = '';
+  // 当前牌组（含测试牌组）但排除 builtin（测试牌组不可编辑）
+  // 实际上允许所有牌组，但 builtin 只读问题由 save 时处理
+  // 先添加非内置牌组
+  var hasDecks = false;
+  DECKS_META.forEach(function(m) {
+    if (m.builtin) return;
+    hasDecks = true;
+    sel.innerHTML += '<option value="'+escAttr(m.key)+'">'+escAttr(m.name)+'</option>';
+  });
+  // 内置牌组特殊处理 — 作为不可用提示
+  if (DECKS_META.find(function(m) { return m.builtin; })) {
+    sel.innerHTML += '<option value="__builtin__" disabled>── 测试牌组（只读）──</option>';
+  }
+  sel.innerHTML += '<option value="__new__" style="font-weight:700;color:var(--ocean)">＋ 新建牌组…</option>';
+  if (!hasDecks) sel.value = '__new__';
+  // 重置表单
+  document.getElementById('cc-name').value = '';
+  document.getElementById('cc-details').value = '';
+  clearCardImage();
+  document.getElementById('cc-audio-label').textContent = '点击上传录音文件';
+  _ccAudioBlob = null;
+  document.getElementById('cc-continue').checked = true;
+  // 聚焦首页确保选中态消失
+  showScreen('screen-create-card');
+  setTimeout(function() { document.getElementById('cc-name').focus(); }, 400);
+}
+
+function onCardImageChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  _ccImageBlob = file;
+  const url = URL.createObjectURL(file);
+  const preview = document.getElementById('cc-image-preview');
+  preview.src = url;
+  preview.style.display = '';
+  document.getElementById('cc-image-placeholder').style.display = 'none';
+  document.getElementById('cc-image-remove').style.display = '';
+}
+
+function clearCardImage() {
+  _ccImageBlob = null;
+  document.getElementById('cc-image-preview').style.display = 'none';
+  document.getElementById('cc-image-preview').src = '';
+  document.getElementById('cc-image-placeholder').style.display = '';
+  document.getElementById('cc-image-remove').style.display = 'none';
+  document.getElementById('cc-image-input').value = '';
+}
+
+function onCardAudioChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) {
+    document.getElementById('cc-audio-label').textContent = '点击上传录音文件';
+    _ccAudioBlob = null;
+    return;
+  }
+  _ccAudioBlob = file;
+  document.getElementById('cc-audio-label').textContent = '✅ ' + file.name;
+}
+
+function saveCardFromForm() {
+  const name = document.getElementById('cc-name').value.trim();
+  if (!name) { showCloudToast('请输入卡片名称', true); return; }
+
+  const sel = document.getElementById('cc-deck');
+  var deckKey = sel.value;
+  var deckName = '';
+
+  // 处理新建牌组
+  if (deckKey === '__new__') {
+    const newName = prompt('请输入新牌组名称：');
+    if (!newName || !newName.trim()) { showCloudToast('牌组名称不能为空', true); return; }
+    deckName = newName.trim();
+    deckKey = 'deck_' + Date.now();
+    DECKS[deckKey] = [];
+    DECKS_META.push({ key: deckKey, name: deckName, source: 'local' });
+    saveDeckIndex();
+    // 往选择器插入新选项并选中
+    const opt = document.createElement('option');
+    opt.value = deckKey; opt.textContent = deckName;
+    sel.insertBefore(opt, sel.lastElementChild);
+    sel.value = deckKey;
+  }
+
+  // 查找牌组名
+  const meta = DECKS_META.find(function(m) { return m.key === deckKey; });
+  if (!meta) { showCloudToast('请选择牌组', true); return; }
+
+  if (!DECKS[deckKey]) DECKS[deckKey] = [];
+  const deck = DECKS[deckKey];
+
+  // 生成卡片 ID
+  const id = 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+
+  // 语言自动检测
+  const deckLang = 'zh-CN'; // 默认中文
+  const nf = typeof normalizeField === 'function'
+    ? normalizeField(name, deckLang)
+    : { text: name, lang: 'zh-CN' };
+
+  // 详情 — 按行分割
+  const rawDetails = document.getElementById('cc-details').value;
+  const details = rawDetails.split('\n').filter(function(l) { return l.trim(); });
+
+  // 构建卡片
+  const card = { id: id, name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: details };
+
+  // 保存图片
+  var savePromises = [];
+  if (_ccImageBlob) {
+    const mime = _ccImageBlob.type || 'image/jpeg';
+    const blob = _ccImageBlob instanceof Blob ? _ccImageBlob : new Blob([_ccImageBlob], { type: mime });
+    setObjURL(card, 'img', blob);
+    savePromises.push(saveMedia(deckKey + '_' + id + '_img', blob).catch(function(e) { console.warn('saveMedia img', e); }));
+  }
+
+  // 保存录音
+  if (_ccAudioBlob) {
+    const mime = _ccAudioBlob.type || 'audio/mp4';
+    const blob = _ccAudioBlob instanceof Blob ? _ccAudioBlob : new Blob([_ccAudioBlob], { type: mime });
+    setObjURL(card, 'audioUrl', blob);
+    savePromises.push(saveMedia(deckKey + '_' + id + '_aud', blob).catch(function(e) { console.warn('saveMedia aud', e); }));
+  }
+
+  // 加入牌组
+  deck.push(card);
+  DECKS[deckKey] = deck;
+
+  // 持久化
+  saveDeckCards(deckKey, deck);
+  saveDeckIndex();
+
+  // 等待所有媒体保存完成
+  Promise.all(savePromises).then(function() {
+    // 刷新首页牌组列表
+    renderDeckList();
+    updateDeckStats();
+  });
+
+  // 是否继续添加
+  const cont = document.getElementById('cc-continue').checked;
+  if (cont) {
+    // 清空表单，保留牌组选择
+    document.getElementById('cc-name').value = '';
+    document.getElementById('cc-details').value = '';
+    clearCardImage();
+    document.getElementById('cc-audio-label').textContent = '点击上传录音文件';
+    _ccAudioBlob = null;
+    document.getElementById('cc-name').focus();
+    showCloudToast('已保存 ' + name);
+  } else {
+    showCloudToast('已保存 ' + name);
+    goHome();
+  }
 }
 
 function openActionSheet() {
@@ -4528,7 +4764,18 @@ function closeActionSheet(e) {
 }
 
 // Placeholder — will be implemented in subsequent waves
-function createEmptyDeck() { showConfirmDialog('创建空牌组功能即将上线。'); }
+function createEmptyDeck() {
+  const name = prompt('请输入新牌组名称：');
+  if (!name || !name.trim()) return;
+  const key = 'deck_' + Date.now();
+  DECKS[key] = [];
+  DECKS_META.push({ key: key, name: name.trim(), source: 'local' });
+  saveDeckIndex();
+  saveDeckCards(key, []);
+  renderDeckList();
+  updateDeckStats();
+  showCloudToast('已创建牌组：' + name.trim());
+}
 function importFromUrl()   { showConfirmDialog('从链接下载功能即将上线。'); }
 function exportDeck()      { showConfirmDialog('导出功能即将上线。'); }
 function shareDeck()       { showConfirmDialog('共享牌组功能即将上线。'); }
