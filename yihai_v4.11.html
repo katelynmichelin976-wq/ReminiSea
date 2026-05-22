@@ -3998,6 +3998,18 @@ function detectScript(text) {
   if (/[a-zA-Z]/.test(text)) return 'latin';
   return 'other';
 }
+function scriptToLang(script, fallbackLang) {
+  switch (script) {
+    case 'han': return 'zh-CN';
+    case 'kana': return 'ja';
+    case 'hangul': return 'ko';
+    case 'cyrillic': return 'ru';
+    default: return fallbackLang;
+  }
+}
+function resolveFieldLang(text, deckLang) {
+  return scriptToLang(detectScript(text), deckLang || 'zh-CN');
+}
 
 // ── Speech ─────────────────────────────────────────────────────
 let voices = [];

@@ -78,5 +78,28 @@ check('사과→hangul', detectScript('사과'), 'hangul');
 check('空→other', detectScript(''), 'other');
 check('日文汉字混假名→kana', detectScript('林檎です'), 'kana');
 
+function scriptToLang(script, fallbackLang) {
+  switch (script) {
+    case 'han': return 'zh-CN';
+    case 'kana': return 'ja';
+    case 'hangul': return 'ko';
+    case 'cyrillic': return 'ru';
+    case 'latin': return fallbackLang;
+    default: return fallbackLang;
+  }
+}
+
+function resolveFieldLang(text, deckLang) {
+  return scriptToLang(detectScript(text), deckLang || 'zh-CN');
+}
+
+section('SUITE 4 — resolveFieldLang 字段语言推断');
+check('中文名在西班牙语牌组→zh-CN', resolveFieldLang('苹果', 'es'), 'zh-CN');
+check('西语词在西班牙语牌组→es', resolveFieldLang('manzana', 'es'), 'es');
+check('英文词在中文牌组→zh-CN(同脚本回退主语言)', resolveFieldLang('apple', 'zh-CN'), 'zh-CN');
+check('西语词在中文牌组拉丁→回退主语言 zh-CN', resolveFieldLang('hola', 'zh-CN'), 'zh-CN');
+check('俄语词→ru', resolveFieldLang('яблоко', 'es'), 'ru');
+check('空文本→回退主语言', resolveFieldLang('', 'es'), 'es');
+
 console.log(`\n通过 ${passed} / 失败 ${failed}`);
 if (failed > 0) process.exit(1);
