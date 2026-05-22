@@ -3957,6 +3957,21 @@ function detectLocale(navLang, supported, fallback) {
   return fallback;
 }
 
+const I18N = {
+  'en':    { home_start: 'Start', home_browse: 'Browse', nav_home: 'Home', nav_mine: 'Mine' },
+  'zh-CN': { home_start: '開始',   home_browse: '浏览',   nav_home: '首页', nav_mine: '我的' },
+  'es':    { home_start: 'Empezar', home_browse: 'Explorar', nav_home: 'Inicio', nav_mine: 'Perfil' },
+};
+
+function t(key) {
+  const loc = getLocale();
+  const L = I18N[loc] || {};
+  if (key in L) return L[key];
+  const F = I18N[FALLBACK_LOCALE] || {};
+  if (key in F) return F[key];
+  return key;
+}
+
 // ── Speech ─────────────────────────────────────────────────────
 let voices = [];
 let speechReady = false;

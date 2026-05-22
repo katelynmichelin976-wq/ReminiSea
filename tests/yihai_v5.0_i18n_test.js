@@ -39,5 +39,25 @@ check('前缀匹配 en-US→en', detectLocale('en-US', SUPPORTED_LOCALES, FALLBA
 check('不支持的 fr→回退 en', detectLocale('fr-FR', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'en');
 check('空值→回退 en', detectLocale('', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'en');
 
+const I18N = {
+  'en':    { home_start: 'Start', home_browse: 'Browse', nav_home: 'Home', nav_mine: 'Mine' },
+  'zh-CN': { home_start: '开始',   home_browse: '浏览',   nav_home: '首页', nav_mine: '我的' },
+  'es':    { home_start: 'Empezar', home_browse: 'Explorar', nav_home: 'Inicio', nav_mine: 'Perfil' },
+};
+
+function t(key, locale, table, fallback) {
+  const L = table[locale] || {};
+  if (key in L) return L[key];
+  const F = table[fallback] || {};
+  if (key in F) return F[key];
+  return key;
+}
+
+section('SUITE 2 — t() 取词');
+check('zh-CN home_start', t('home_start', 'zh-CN', I18N, FALLBACK_LOCALE), '开始');
+check('es home_browse', t('home_browse', 'es', I18N, FALLBACK_LOCALE), 'Explorar');
+check('缺词回退 en', t('home_start', 'fr', I18N, FALLBACK_LOCALE), 'Start');
+check('完全缺失返回 key 本身', t('not_exist', 'en', I18N, FALLBACK_LOCALE), 'not_exist');
+
 console.log(`\n通过 ${passed} / 失败 ${failed}`);
 if (failed > 0) process.exit(1);
