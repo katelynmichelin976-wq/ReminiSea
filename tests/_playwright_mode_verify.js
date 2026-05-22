@@ -27,8 +27,8 @@ const { chromium } = require('playwright');
   A('FAB 显示"开始练习"', fabText.trim() === '开始练习');
 
   const plusHidden = await page.evaluate(() => {
-    const btn = document.getElementById('home-plus-btn');
-    return !btn || btn.style.display === 'none';
+    const btn = document.querySelector('.btn-new-deck');
+    return !btn || btn.offsetParent === null;
   });
   A('＋ 按钮隐藏', plusHidden);
 
@@ -76,14 +76,14 @@ const { chromium } = require('playwright');
   A('FAB 显示"开始制卡"', fabText2.trim() === '开始制卡');
 
   const plusVisible = await page.evaluate(() => {
-    const btn = document.getElementById('home-plus-btn');
-    return btn && btn.style.display !== 'none';
+    const btn = document.querySelector('.btn-new-deck');
+    return btn && btn.offsetParent !== null;
   });
   A('＋ 按钮可见', plusVisible);
 
   // ── 5. 点 ＋ 按钮 → Action Sheet ─────────────────────
   console.log('\n── Action Sheet ──');
-  await page.locator('#home-plus-btn').click();
+  await page.locator('.btn-new-deck').click();
   await page.waitForTimeout(300);
 
   const sheetOpen = await page.evaluate(() =>
@@ -138,8 +138,8 @@ const { chromium } = require('playwright');
   A('重载后 FAB 显示"开始制卡"', fabAfterReload.trim() === '开始制卡');
 
   const plusAfterReload = await page.evaluate(() => {
-    const btn = document.getElementById('home-plus-btn');
-    return btn && btn.style.display !== 'none';
+    const btn = document.querySelector('.btn-new-deck');
+    return btn && btn.offsetParent !== null;
   });
   A('重载后 ＋ 按钮可见', plusAfterReload);
 

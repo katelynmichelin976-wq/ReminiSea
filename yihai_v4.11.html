@@ -91,7 +91,7 @@ html[data-theme="jade"] {
   --blue:       #1e7a52; --blue-bg: #eaf5f0; --blue-lt: rgba(30,122,82,0.13);
   --green:      #1e7a52;
   --diamond:    #1e7a52; --diamond2: #b8dfc8;
-  --red:        #1e7a52; --red-lt: #eaf5f0; --red-dk: #155e3e;
+  --red:        #d93b3b; --red-lt: #fef0f0; --red-dk: #b32e2e;
   --sh:         0 1px 10px rgba(30,122,82,0.1), 0 3px 20px rgba(30,122,82,0.06);
 }
 html[data-theme="amber"] {
@@ -103,7 +103,7 @@ html[data-theme="amber"] {
   --blue:       #c8600a; --blue-bg: #fff4e8; --blue-lt: rgba(200,96,10,0.13);
   --green:      #1e7a52;
   --diamond:    #c8600a; --diamond2: #f0d4b8;
-  --red:        #c8600a; --red-lt: #fff4e8; --red-dk: #a04808;
+  --red:        #d93838; --red-lt: #fef0f0; --red-dk: #b32a2a;
   --sh:         0 1px 10px rgba(200,96,10,0.1), 0 3px 20px rgba(200,96,10,0.06);
 }
 html[data-theme="dark"] {
@@ -115,7 +115,7 @@ html[data-theme="dark"] {
   --blue:       #e8a030; --blue-bg: #2e2518; --blue-lt: rgba(232,160,48,0.15);
   --green-bg:   #1a2e20; --green-bd: #2a5a40;
   --diamond:    #e8a030; --diamond2: #6e4a18;
-  --red:        #e8a030; --red-lt: #2e2518; --red-dk: #c88020;
+  --red:        #e85a5a; --red-lt: #3d1f1f; --red-dk: #f06060;
   --sh:         0 2px 20px rgba(0,0,0,0.4);
 }
 html[data-theme="cinnabar"] {
@@ -722,7 +722,7 @@ body {
   transition:color .15s, border-color .15s;
   -webkit-tap-highlight-color:transparent;
 }
-.sheet-tab.active { color:var(--ocean); border-bottom-color:var(--ocean); }
+.sheet-tab.active { color:var(--red); border-bottom-color:var(--red); }
 /* Tab panels */
 .sheet-panels { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .sheet-panel { display:none; padding:0 0 24px; }
@@ -804,7 +804,7 @@ body {
 .cc-image-preview { max-width: 100%; max-height: 200px; object-fit: contain; }
 .cc-image-remove { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(0,0,0,.5); color: #fff; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .cc-audio-upload { border: 1.5px solid var(--bd2); border-radius: var(--rsm); padding: 14px; cursor: pointer; text-align: center; font-size: 14px; color: var(--text3); }
-.cc-save-btn { width: 100%; height: 52px; border-radius: var(--rsm); font-family: inherit; font-size: 17px; font-weight: 700; cursor: pointer; border: none; background: var(--ocean); color: #fff; box-shadow: 0 4px 14px rgba(14,165,233,0.3); -webkit-tap-highlight-color: transparent; transition: transform .12s, opacity .15s; margin-top: 4px; }
+.cc-save-btn { width: 100%; height: 52px; border-radius: var(--rsm); font-family: inherit; font-size: 17px; font-weight: 700; cursor: pointer; border: none; background: var(--ocean); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.15); -webkit-tap-highlight-color: transparent; transition: transform .12s, opacity .15s; margin-top: 4px; }
 .cc-save-btn:active { transform: scale(0.97); }
 .cc-add-another { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text2); cursor: pointer; justify-content: center; padding: 4px 0; }
 .cc-add-another input { width: 16px; height: 16px; cursor: pointer; }
@@ -869,7 +869,7 @@ body {
   transition: color .15s, border-color .15s;
   -webkit-tap-highlight-color: transparent;
 }
-.stats-tab.active { color: var(--ocean); border-bottom-color: var(--ocean); }
+.stats-tab.active { color: var(--red); border-bottom-color: var(--red); }
 .stats-body {
   flex: 1; min-height: 0; width: 100%; max-width: 500px;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -1085,7 +1085,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   display: flex; align-items: center; justify-content: center;
   font-size: clamp(80px, 35vw, 160px);
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(14,165,233,0.06);
+  box-shadow: var(--sh);
   flex-shrink: 0;
 }
 .browse-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
@@ -1123,7 +1123,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   font-size: 16px; font-weight: 700; color: #fff; cursor: pointer;
   letter-spacing: 1px; font-family: inherit;
   -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 4px 18px rgba(14,165,233,0.35);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.18);
   transition: background 0.15s, transform 0.12s;
 }
 .browse-btn-next:active { transform: scale(0.97); background: var(--ocean-dk); }
@@ -1243,7 +1243,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   -webkit-tap-highlight-color: transparent;
 }
 .account-btn:active { transform: scale(0.98); }
-.account-btn-primary { background: var(--ocean); color: #fff; box-shadow: 0 4px 14px rgba(14,165,233,0.3); }
+.account-btn-primary { background: var(--ocean); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
 .account-btn-primary:disabled { opacity: 0.5; }
 .account-btn-danger { background: none; border: 1.5px solid var(--bd2); color: var(--text2); }
 .account-msg { font-size: 13px; margin-top: 10px; text-align: center; }
@@ -1352,15 +1352,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 
-/* ═══ 照护者模式—首页 ＋ 按钮 ═══ */
-.home-plus-btn {
-  background: none; border: none; cursor: pointer; padding: 6px;
-  -webkit-tap-highlight-color: transparent;
-  color: var(--ocean); display: flex; align-items: center; flex-shrink: 0;
-  transition: transform 0.12s;
-}
-.home-plus-btn:active { transform: scale(0.9); }
-
 /* ═══ 模式切换开关（我的屏） ═══ */
 .mine-mode-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -1420,10 +1411,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         </svg>
       </button>
     </div>
-    <!-- 照护者模式：＋ 按钮 -->
-    <button class="home-plus-btn" id="home-plus-btn" style="display:none" onclick="openActionSheet()" aria-label="更多操作">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
-    </button>
     <!-- 隐藏文件输入 -->
     <input type="file" id="importFile" accept=".yhspack" style="display:none" onchange="importYhspack(this.files[0]).then(()=>this.value='')" aria-hidden="true">
   </div>
@@ -1466,7 +1453,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <div class="screen" id="screen-browse">
 
   <div class="browse-topbar">
-    <button class="back-btn" onclick="goHome()" aria-label="返回">
+    <button class="back-btn" onclick="showDeckDetail()" aria-label="返回">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="browse-deck-name" id="browse-deck-name"></span>
@@ -1703,7 +1690,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-tabbar">
     <button class="tab-item" onclick="showScreen('screen-home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
-      <span>首页</span>
+      <span>首 页</span>
     </button>
     <button class="tab-item action" onclick="onFabTap()">
       <div class="tab-fab">
@@ -1713,7 +1700,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     </button>
     <button class="tab-item active">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
-      <span>我的</span>
+      <span>我 的</span>
     </button>
   </div>
 </div>
@@ -1768,7 +1755,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="about-title">忆海拾光</div>
     <div class="about-sub" id="about-version">v4.11.18</div>
     <div class="about-desc">
-      <p style="margin-bottom:12px">忆海拾光是一款面向轻度认知障碍（MCI）人群的记忆训练工具，通过看图识物的方式，帮助用户每天进行轻松的认知训练。</p>
+      <p style="margin-bottom:12px">忆海拾光是一款帮助记忆练习的工具，通过看图识物的方式，帮助用户每天进行轻松的记忆训练。</p>
       <p style="margin-bottom:12px">基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让训练更有效。</p>
       <p>数据完全离线可用，登录后可跨设备同步。</p>
     </div>
@@ -4775,8 +4762,6 @@ function updateTabBarMode() {
 }
 
 function updateHomeTopbar() {
-  const plusBtn = document.getElementById('home-plus-btn');
-  if (plusBtn) plusBtn.style.display = _appMode === 'caregiver' ? '' : 'none';
   const modeToggle = document.getElementById('app-mode-toggle');
   if (modeToggle) modeToggle.checked = _appMode === 'caregiver';
   const modeTitle = document.getElementById('mine-mode-title');

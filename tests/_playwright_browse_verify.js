@@ -102,15 +102,15 @@ const { chromium } = require('playwright');
       console.log('  (跳过：只有1张卡片)');
     }
 
-    // ── 7. 返回首页 ──────────────────────────────────────────
-    console.log('\n── 返回首页 ──');
+    // ── 7. 返回详情屏 ──────────────────────────────────────────
+    console.log('\n── 返回详情屏 ──');
     await page.locator('#screen-browse .back-btn').click();
     await page.waitForTimeout(600);
 
-    const homeActive = await page.evaluate(() =>
-      document.getElementById('screen-home')?.classList.contains('active')
+    const detailBack = await page.evaluate(() =>
+      document.getElementById('screen-deck-detail')?.classList.contains('active')
     );
-    A('点返回 → screen-home active', homeActive);
+    A('点返回 → screen-deck-detail active', detailBack);
 
   } else {
     console.log('  (跳过牌组测试：无牌组数据)');
