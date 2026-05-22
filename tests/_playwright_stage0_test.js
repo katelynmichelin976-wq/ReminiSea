@@ -56,6 +56,16 @@ const { chromium } = require('playwright');
     A('找到 .yhspack 导入入口', false);
   }
 
+  // speakDirect 应使用字段语言（zh-CN）而非 UI 语言
+  const fieldLang = await page.evaluate(() => new Promise(res => {
+    const orig = window.SpeechSynthesisUtterance;
+    let cap = null;
+    window.SpeechSynthesisUtterance = function(t){ const u = new orig(t); setTimeout(()=>{ if(cap===null) { cap=u.lang; res(cap);} },0); return u; };
+    try { speakDirect('苹果', null, 'zh-CN'); } catch(e){ res('err'); }
+    setTimeout(()=>res(cap||'none'), 500);
+  }));
+  A('卡片内容 speakDirect 用字段语言 zh-CN', fieldLang === 'zh-CN');
+
   console.log(`\n通过 ${pass} / 失败 ${fail}`);
   await browser.close();
   process.exit(fail > 0 ? 1 : 0);
