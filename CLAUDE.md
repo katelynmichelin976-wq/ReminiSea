@@ -99,6 +99,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_check_session_mode_order.js` | Node.js 查询妈妈账号当日卡片，输出三种模式出牌顺序 |
 | `tests/yihai_v5.0_i18n_test.js` | 阶段 0 i18n 纯函数单测（detectLocale/t/detectScript/scriptToLang/resolveFieldLang/normalizeField） |
 | `tests/_playwright_stage0_test.js` | 阶段 0 浏览器行为（locale 持久化、TTS 语言、.yhspack 导入字段语言） |
+| `tests/_playwright_nav_verify.js` | Wave 1 dev.1 导航骨架验证（17 断言：Tab Bar/我的屏/设置入口） |
+| `tests/_playwright_dev2_verify.js` | Wave 1 dev.2 点牌组进浏览验证（6 断言） |
 | `tests/test_data/` | Test .yhspack files |
 
 ### 文档
@@ -134,7 +136,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v4.11.18**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v4.11.18**（worktree `v5-stage0-i18n` 含阶段 0 + Wave 1，尚未发布）。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**worktree 进度（2026-05-22）：**
+- 阶段 0 i18n 地基：`detectLocale/t/getLocale/setLocale/detectScript/resolveFieldLang/normalizeField`，TTS `lang` 参数，`.yhspack` 字段语言迁移
+- 医疗术语清理：删除 AD 建议值功能，meta 改「记忆练习」
+- Wave 1 dev.1：Tab Bar（首页/FAB/我的）+ `screen-mine`（统计/设置/导入/账号卡）
+- Wave 1 dev.2：点牌组行直接进浏览，`startBrowse` 加 `_launchBusy` 保护
+- Wave 1 dev.3：`_statsOrigin` 记录来源屏，统计返回回原屏
+
+**导航结构（Wave 1 后）：**
+- `screen-home`：首页（默认），底部 `.home-tabbar`（首页激活）
+- `screen-mine`：我的，底部 `.home-tabbar`（我的激活）
+- `screen-quiz`：练习/浏览（进入时无 Tab Bar）
+- `screen-stats`：统计（无 Tab Bar，返回用 `closeStats()` 回 `_statsOrigin`）
+- `screen-finish`：完成（无 Tab Bar）
+- Settings：底部 Sheet overlay（不是独立 screen）
 
 ## Environment
 
@@ -180,7 +197,7 @@ node tests/_playwright_session_mode_queue_test.js  # 队列难度曲线（需先
 - **智能匹配** → 修复涉及哪个模块，优先跑对应模块测试（如 session 改动跑 cloud_test）
 - 确认改动无问题即可，不需要每次都跑全部 8 套 Playwright。
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, Playwright 12/39/21/18/13/14/6（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue/stage0）.
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, Playwright 12/39/21/18/13/14/6/17/6（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue/stage0/nav_verify/dev2_verify）.
 
 ## SRS Architecture
 
