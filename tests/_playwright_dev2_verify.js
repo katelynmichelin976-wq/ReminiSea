@@ -1,4 +1,4 @@
-// Wave 1 dev.2 点牌组直接进浏览验证
+// Wave 1 点牌组进详情屏验证（原 dev.2 更新）
 const { chromium } = require('playwright');
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -11,18 +11,18 @@ const { chromium } = require('playwright');
 
   const URL = 'http://localhost:8080/.claude/worktrees/v5-stage0-i18n/yihai_v4.11.html';
   await page.goto(URL);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(1500);
 
-  // ── 1. 有牌组时：点牌组行进浏览屏 ──────────────────────
-  console.log('\n── 点牌组行进浏览 ──');
+  // ── 1. 有牌组时：点牌组行进详情屏 ──────────────────────
+  console.log('\n── 点牌组行进详情屏 ──');
   const hasDeck = await page.evaluate(() => typeof DECKS_META !== 'undefined' && DECKS_META.length > 0);
   if (hasDeck) {
     await page.locator('.deck-card').first().click();
     await page.waitForTimeout(600);
-    const browseActive = await page.evaluate(() =>
-      document.getElementById('screen-browse')?.classList.contains('active')
+    const detailActive = await page.evaluate(() =>
+      document.getElementById('screen-deck-detail')?.classList.contains('active')
     );
-    A('点牌组行 → screen-browse (浏览屏) active', browseActive);
+    A('点牌组行 → screen-deck-detail active', detailActive);
 
     const homeInactive = await page.evaluate(() =>
       !document.getElementById('screen-home')?.classList.contains('active')
@@ -44,27 +44,35 @@ const { chromium } = require('playwright');
   });
   A('startBrowse 含 _launchBusy 检查', hasBusy);
 
-  // ── 3. 删除按钮含 stopPropagation ─────────────────────
-  console.log('\n── 删除按钮 stopPropagation ──');
+  // ── 3. 滑动按钮含 stopPropagation ─────────────────────
+  console.log('\n── 滑动按钮 stopPropagation ──');
   const delBtnSrc = await page.evaluate(() => {
     const src = renderDeckList.toString();
     return src.includes('stopPropagation');
   });
   A('renderDeckList 模板含 stopPropagation', delBtnSrc);
 
-  // ── 4. selectDeck 调用 startBrowse ────────────────────
+  // ── 4. selectDeck 调用 showDeckDetail ─────────────────
   console.log('\n── selectDeck 行为 ──');
   const selectDeckSrc = await page.evaluate(() => {
     const src = selectDeck.toString();
-    return src.includes('startBrowse');
+    return src.includes('showDeckDetail');
   });
-  A('selectDeck 调用 startBrowse', selectDeckSrc);
+  A('selectDeck 调用 showDeckDetail', selectDeckSrc);
 
   const noWarmup = await page.evaluate(() => {
     const src = selectDeck.toString();
     return !src.includes('warmupSpeech');
   });
-  A('selectDeck 不再直接调 warmupSpeech（已移入 startBrowse）', noWarmup);
+  A('selectDeck 不再直接调 warmupSpeech', noWarmup);
+
+  // ── 5. screen-deck-detail 存在 ────────────────────────
+  console.log('\n── 详情屏 DOM ──');
+  const detailExists = await page.locator('#screen-deck-detail').count();
+  A('screen-deck-detail 存在', detailExists === 1);
+
+  const ddActions = await page.locator('#dd-actions .dd-btn').count();
+  A('dd-actions 含 ≥4 按钮（浏览/练习/导出/共享）', ddActions >= 4);
 
   // ── 汇总 ──────────────────────────────────────────────
   console.log(`\n${'═'.repeat(50)}`);

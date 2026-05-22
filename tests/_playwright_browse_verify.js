@@ -27,17 +27,27 @@ const { chromium } = require('playwright');
   const nextBtn = await page.locator('#browse-btn-next').count();
   A('#browse-btn-next 存在', nextBtn === 1);
 
-  // ── 2. 点牌组进浏览屏 ─────────────────────────────────────────
-  console.log('\n── 点牌组进浏览屏 ──');
+  // ── 2. 点牌组 → 走详情屏 → 浏览屏 ─────────────────────
+  console.log('\n── 点牌组进浏览屏（经详情屏）──');
   const hasDeck = await page.evaluate(() => typeof DECKS_META !== 'undefined' && DECKS_META.length > 0);
   if (hasDeck) {
+    // 先点牌组进详情屏
     await page.locator('.deck-card').first().click();
+    await page.waitForTimeout(600);
+
+    const detailActive = await page.evaluate(() =>
+      document.getElementById('screen-deck-detail')?.classList.contains('active')
+    );
+    A('点牌组 → screen-deck-detail active', detailActive);
+
+    // 在详情屏点「浏览」
+    await page.locator('#dd-actions .dd-btn.primary').first().click();
     await page.waitForTimeout(800);
 
     const browseActive = await page.evaluate(() =>
       document.getElementById('screen-browse')?.classList.contains('active')
     );
-    A('点牌组 → screen-browse active', browseActive);
+    A('点"浏览" → screen-browse active', browseActive);
 
     const homeInactive = await page.evaluate(() =>
       !document.getElementById('screen-home')?.classList.contains('active')
