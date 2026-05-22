@@ -3972,6 +3972,23 @@ function t(key) {
   return key;
 }
 
+const LOCALE_KEY = 'yihai_ui_locale';
+let _uiLocale = null;
+
+function getLocale() {
+  if (_uiLocale) return _uiLocale;
+  const saved = localStorage.getItem(LOCALE_KEY);
+  if (saved && SUPPORTED_LOCALES.includes(saved)) { _uiLocale = saved; return saved; }
+  _uiLocale = detectLocale(navigator.language, SUPPORTED_LOCALES, FALLBACK_LOCALE);
+  return _uiLocale;
+}
+
+function setLocale(loc) {
+  if (!SUPPORTED_LOCALES.includes(loc)) return;
+  _uiLocale = loc;
+  localStorage.setItem(LOCALE_KEY, loc);
+}
+
 // ── Speech ─────────────────────────────────────────────────────
 let voices = [];
 let speechReady = false;
