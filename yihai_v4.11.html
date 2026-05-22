@@ -4029,38 +4029,37 @@ function warmupSpeech() {
   setTimeout(() => { loadVoices(); }, 300);
 }
 
-function pickVoice() {
+function pickVoice(lang) {
   if (!voices.length) loadVoices();
-  // 优先使用用户指定的音色
-  if (TTS_VOICE_NAME) {
+  if (TTS_VOICE_NAME && (!lang || lang === 'zh-CN')) {
     const named = voices.find(v => v.name === TTS_VOICE_NAME);
     if (named) return named;
   }
-  return voices.find(v => v.lang === 'zh-CN')
-      || voices.find(v => v.lang === 'zh-TW')
-      || voices.find(v => v.lang.startsWith('zh'))
+  const want = lang || 'zh-CN';
+  const prefix = want.split('-')[0];
+  return voices.find(v => v.lang === want)
+      || voices.find(v => v.lang && v.lang.split('-')[0] === prefix)
+      || voices.find(v => v.lang === 'zh-CN')
       || (voices.length ? voices[0] : null);
 }
 
-function speak(text, delay = 0, onend = null) {
+function speak(text, delay = 0, onend = null, lang = null) {
   speechSynthesis.cancel();
   const go = () => {
     if (!voices.length) loadVoices();
     const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = 'zh-CN';
+    const useLang = lang || getLocale();
+    utt.lang = useLang;
     utt.rate = TTS_RATE;
     utt.pitch = TTS_PITCH;
     utt.volume = 1;
-    const v = pickVoice();
+    const v = pickVoice(useLang);
     if (v) utt.voice = v;
     if (onend) utt.onend = onend;
     speechSynthesis.speak(utt);
-    setTimeout(() => {
-      if (speechSynthesis.paused) speechSynthesis.resume();
-    }, 250);
+    setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
   };
-  if (delay > 0) setTimeout(go, delay);
-  else go();
+  if (delay > 0) setTimeout(go, delay); else go();
 }
 
 // 播放答案语音：优先录音，无录音降级 TTS
@@ -4077,11 +4076,12 @@ function playAnswer(q, onend) {
 }
 
 // speak 不带 cancel，避免打断刚恢复的引擎
-function speakDirect(text, onend) {
+function speakDirect(text, onend, lang = null) {
   if (!voices.length) loadVoices();
   const utt = new SpeechSynthesisUtterance(text);
-  utt.lang = 'zh-CN'; utt.rate = TTS_RATE; utt.pitch = TTS_PITCH; utt.volume = 1;
-  const v = pickVoice(); if (v) utt.voice = v;
+  const useLang = lang || 'zh-CN';
+  utt.lang = useLang; utt.rate = TTS_RATE; utt.pitch = TTS_PITCH; utt.volume = 1;
+  const v = pickVoice(useLang); if (v) utt.voice = v;
   if (onend) utt.onend = onend;
   speechSynthesis.speak(utt);
   setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
