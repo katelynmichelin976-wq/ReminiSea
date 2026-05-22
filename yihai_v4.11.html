@@ -2770,7 +2770,7 @@ async function doCloudLogin() {
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
     // 登录后全量同步（答题/状态/配置/牌组）
-    runSync({ modal: true, decks: true, events: true, title: '正在同步数据', voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
+    runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
     if (msgEl) { msgEl.style.display = ''; msgEl.textContent = t('account_login_fail', { msg: e.message }); msgEl.style.color = '#9B3A2A'; }
@@ -3128,12 +3128,12 @@ async function cloudPullConfig() {
 
 // 统一同步入口（v4.10）：支持模态进度条 + 语音播报 + 不同同步范围：支持模态进度条 + 语音播报 + 不同同步范围
 async function runSync(opts) {
-  if (!_syncEnabled || !_sb) { if (opts && opts.showToast) showCloudToast('未连接服务器', true); return; }
-  if (_syncInFlight) { if (opts && opts.showToast) showCloudToast('同步中…'); return; }
+  if (!_syncEnabled || !_sb) { if (opts && opts.showToast) showCloudToast(t('sync_offline'), true); return; }
+  if (_syncInFlight) { if (opts && opts.showToast) showCloudToast(t('sync_in_flight')); return; }
   _syncInFlight = true;
   var options = Object.assign({
     modal: false,
-    title: '正在同步',
+    title: t('sync_in_progress'),
     decks: false,
     events: false,
     showToast: false,
@@ -3165,7 +3165,7 @@ async function runSync(opts) {
   var syncStats = { trials: 0, events: 0, states_merged: 0, config: 0, decks: 0 };
   try {
     // 1. 上传 TrialLog（增量）
-    updateProg('正在上传练习记录...', 10);
+    updateProg(t('sync_upload_trials'), 10);
     var db = await openSrsDb();
     var allTrials = await new Promise(function(res, rej) {
       var r = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
@@ -3180,15 +3180,15 @@ async function runSync(opts) {
       }
     }
     // 2. 参数配置同步
-    updateProg('正在同步配置...', 40);
+    updateProg(t('sync_config_prog'), 40);
     var cfgItems = await cloudPullConfig();
     syncStats.config = cfgItems;
     await cloudPushConfig();
     // 3. 下载云端 CardState（增量合并）
-    updateProg('正在同步练习状态...', 60);
+    updateProg(t('sync_states_prog'),60);
     if (options.deckKey) {
       syncStats.states_merged = await syncCardStatesFromCloud(options.deckKey);
-      updateProg('正在同步练习状态...', 75);
+      updateProg(t('sync_states_prog'),75);
     }
     // 3.5 拉取用户牌组练习天数
     try {
@@ -3206,7 +3206,7 @@ async function runSync(opts) {
     // 4. 牌组同步（可选：登录后/手动同步）
     var newDecks = 0, syncedDecks = 0;
     if (options.decks) {
-      updateProg('正在同步牌组...', 80);
+      updateProg(t('sync_decks_prog'), 80);
       var serverDecks, sd, meta;
       var dd = await _sb.from('server_decks').select('id,name');
       if (dd.data) {
@@ -3230,7 +3230,7 @@ async function runSync(opts) {
     }
     // 5. 事件日志（可选）
     if (options.events) {
-      updateProg('正在上传日志...', 90);
+      updateProg(t('sync_logs_prog'), 90);
       syncStats.events = await syncAppEvents();
     }
     syncStats.decks = newDecks + syncedDecks;
@@ -3245,11 +3245,11 @@ async function runSync(opts) {
     }
     if (options.showToast) {
       var parts = [];
-      if (syncStats.trials > 0) parts.push('上传答题 ' + syncStats.trials);
-      if (syncStats.states_merged > 0) parts.push('状态更新 ' + syncStats.states_merged);
-      if (syncStats.config > 0) parts.push('配置 ' + syncStats.config);
-      if (newDecks > 0) parts.push('下载牌组 ' + newDecks);
-      if (syncedDecks > 0) parts.push('同步牌组 ' + syncedDecks);
+      if (syncStats.trials > 0) parts.push(t('sync_toast_trials', { count: syncStats.trials }));
+      if (syncStats.states_merged > 0) parts.push(t('sync_toast_states', { count: syncStats.states_merged }));
+      if (syncStats.config > 0) parts.push(t('sync_toast_config', { count: syncStats.config }));
+      if (newDecks > 0) parts.push(t('sync_toast_new_decks', { count: newDecks }));
+      if (syncedDecks > 0) parts.push(t('sync_toast_synced_decks', { count: syncedDecks }));
       if (parts.length > 0) showCloudToast(t('sync_done') + ' · ' + parts.join(' · '));
       else if (pendingCount === 0 && syncStats.states_merged === 0 && !newDecks && !syncedDecks) showCloudToast(t('sync_up_to_date'));
     }
@@ -4320,13 +4320,13 @@ async function checkMedia() {
     const fmt = bytes => bytes < 1024 ? bytes + ' B' : bytes < 1048576 ? (bytes/1024).toFixed(1) + ' KB' : (bytes/1048576).toFixed(1) + ' MB';
 
     if (orphans.length === 0) {
-      resultEl.innerHTML = '<div style="padding:10px;background:var(--green-bg);border:1px solid var(--green-bd);border-radius:8px;color:var(--green);font-size:13px;">✅ 没有孤立文件，共 ' + allKeys.length + ' 个媒体文件均被引用</div>';
+      resultEl.innerHTML = '<div style="padding:10px;background:var(--green-bg);border:1px solid var(--green-bd);border-radius:8px;color:var(--green);font-size:13px;">✅ ' + t('media_no_orphans', { total: allKeys.length }) + '</div>';
     } else {
       resultEl.innerHTML = '<div style="padding:10px;background:#fff8e1;border:1px solid #ffc107;border-radius:8px;font-size:13px;line-height:1.6">'
-        + '共 <b>' + allKeys.length + '</b> 个媒体文件，其中 <b style="color:var(--red)">' + orphans.length + '</b> 个孤立文件（' + fmt(totalOrphanSize) + '）可安全清理'
+        + esc(t('media_orphans_summary', { total: allKeys.length, count: orphans.length, size: fmt(totalOrphanSize) }))
         + '<div style="margin-top:8px;display:flex;gap:8px;">'
-        + '<button onclick="cleanOrphanMedia()" style="padding:6px 14px;border:none;border-radius:6px;background:var(--red);color:#fff;font-size:13px;cursor:pointer;font-family:inherit">清理 ' + orphans.length + ' 个孤立文件</button>'
-        + '<button onclick="document.getElementById(\'media-check-result\').style.display=\'none\'" style="padding:6px 14px;border:1px solid var(--bd);border-radius:6px;background:var(--surf);color:var(--text);font-size:13px;cursor:pointer;font-family:inherit">关闭</button>'
+        + '<button onclick="cleanOrphanMedia()" style="padding:6px 14px;border:none;border-radius:6px;background:var(--red);color:#fff;font-size:13px;cursor:pointer;font-family:inherit">' + esc(t('media_clean_btn', { count: orphans.length })) + '</button>'
+        + '<button onclick="document.getElementById(\'media-check-result\').style.display=\'none\'" style="padding:6px 14px;border:1px solid var(--bd);border-radius:6px;background:var(--surf);color:var(--text);font-size:13px;cursor:pointer;font-family:inherit">' + esc(t('common_close')) + '</button>'
         + '</div></div>';
     }
   } catch(e) {
@@ -4339,7 +4339,7 @@ async function checkMedia() {
 async function cleanOrphanMedia() {
   const orphans = _lastOrphans;
   if (!orphans || !orphans.length) return;
-  const ok = await showConfirmDialog('确定要删除 ' + orphans.length + ' 个孤立媒体文件吗？此操作不可撤销。');
+  const ok = await showConfirmDialog(t('media_confirm_clean', { count: orphans.length }));
   if (!ok) return;
 
   const resultEl = document.getElementById('media-check-result');
@@ -4352,7 +4352,7 @@ async function cleanOrphanMedia() {
     orphans.forEach(k => st.delete(k));
     await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
     _lastOrphans = [];
-    resultEl.innerHTML = '<div style="padding:10px;background:var(--green-bg);border:1px solid var(--green-bd);border-radius:8px;color:var(--green);font-size:13px;">✅ 已清理 ' + orphans.length + ' 个孤立文件</div>';
+    resultEl.innerHTML = '<div style="padding:10px;background:var(--green-bg);border:1px solid var(--green-bd);border-radius:8px;color:var(--green);font-size:13px;">✅ ' + esc(t('media_clean_done', { count: orphans.length })) + '</div>';
   } catch(e) {
     resultEl.innerHTML = '<span style="color:var(--red)">' + t('storage_clean_fail', { msg: esc(e.message) }) + '</span>';
   }
@@ -4499,14 +4499,14 @@ async function importYhspack(file) {
 }
 
 function showImportToast(name, count) {
-  const t = document.createElement('div');
-  t.textContent = `✓ 已导入「${name}」${count} 张`;
-  t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
+  const el = document.createElement('div');
+  el.textContent = t('toast_import_done', { name, count });
+  el.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
 }
 
 
@@ -4529,11 +4529,11 @@ let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // 答题提示文案（i18n 
 // 选项提示
 let OPT_HINT_ON      = true;    // 选项提示开关
 let OPT_HINT_DELAY   = 5000;    // 选项提示延迟（毫秒）
-let PHRASE_OPT_HINT  = '请在{A}.{B}.{C}中选择一个'; // 选项提示文案，. 为停顿符（一个.=400ms）
+let PHRASE_OPT_HINT  = ''; // populated by initPhrases() after t() is ready
 
 // 答错提示
 let WRONG_HINT_ON    = true;    // 答错提示开关
-let PHRASE_WRONG     = '不要着急，再试一次'; // 答错提示文案
+let PHRASE_WRONG     = ''; // populated by initPhrases() after t() is ready
 
 // 朗读物品提示
 let READ_HINT        = true;    // 朗读物品提示开关（浏览/练习均受控）
@@ -4553,7 +4553,7 @@ let BROWSE_ANSWER_DELAY = 3000; // 毫秒
 // 答对反馈
 let CONFETTI_ON       = true;   // 撒花动画开关
 let CORRECT_HINT_ON   = true;   // 回答正确语音开关
-let PHRASE_CORRECT    = '回答正确'; // 回答正确文案
+let PHRASE_CORRECT    = ''; // populated by initPhrases() after t() is ready
 
 // 进入题目时的语音计时器
 let tQuizPromptTimer = null;
@@ -4622,7 +4622,7 @@ async function renameDeck(key) {
   if (currentDeck === key) {
     document.getElementById('dd-deck-name').textContent = meta.name;
   }
-  showToastMsg('已重命名为「'+esc(meta.name)+'」');
+  showToastMsg(t('toast_rename_done', { name: esc(meta.name) }));
 }
 // ── getDeckStats：同步占位，updateDeckStats 异步覆盖 ─────────
 function getDeckStats(key) {
@@ -4791,9 +4791,9 @@ function showCreateCard(preselectedDeckKey) {
   });
   // 内置牌组特殊处理 — 作为不可用提示
   if (DECKS_META.find(function(m) { return m.builtin; })) {
-    sel.innerHTML += '<option value="__builtin__" disabled>── 测试牌组（只读）──</option>';
+    sel.innerHTML += '<option value="__builtin__" disabled>' + t('deck_builtin_label') + '</option>';
   }
-  sel.innerHTML += '<option value="__new__" style="font-weight:700;color:var(--ocean)">＋ 新建牌组…</option>';
+  sel.innerHTML += '<option value="__new__" style="font-weight:700;color:var(--ocean)">' + t('deck_new_option') + '</option>';
   if (!hasDecks) sel.value = '__new__';
   // 如果有 preselect 参数，选中对应牌组
   if (preselectedDeckKey && DECKS_META.find(function(m) { return m.key === preselectedDeckKey && !m.builtin; })) {
@@ -4853,7 +4853,7 @@ function saveCardFromForm() {
 
   // 处理新建牌组
   if (deckKey === '__new__') {
-    const newName = prompt('请输入新牌组名称：');
+    const newName = prompt(t('home_new_deck_prompt'));
     if (!newName || !newName.trim()) { showCloudToast(t('home_deck_name_empty'), true); return; }
     deckName = newName.trim();
     deckKey = 'deck_' + Date.now();
@@ -4949,7 +4949,7 @@ function closeActionSheet(e) {
 
 // Placeholder — will be implemented in subsequent waves
 function createEmptyDeck() {
-  const name = prompt('请输入新牌组名称：');
+  const name = prompt(t('home_new_deck_prompt'));
   if (!name || !name.trim()) return;
   const key = 'deck_' + Date.now();
   DECKS[key] = [];
@@ -4958,14 +4958,14 @@ function createEmptyDeck() {
   saveDeckCards(key, []);
   renderDeckList();
   updateDeckStats();
-  showCloudToast('已创建牌组：' + name.trim());
+  showCloudToast(t('home_deck_created', { name: name.trim() }));
 }
-function importFromUrl()   { showConfirmDialog('从链接下载功能即将上线。'); }
+function importFromUrl()   { showConfirmDialog(t('import_url_coming')); }
 // ── .yhspack 导出 ────────────────────────────────────────────────
 async function exportDeck() {
-  if (!currentDeck) { showToastMsg('请先选择一个牌组'); return; }
+  if (!currentDeck) { showToastMsg(t('deck_no_selected')); return; }
   const meta = DECKS_META.find(m => m.key === currentDeck);
-  if (!meta) { showToastMsg('牌组不存在'); return; }
+  if (!meta) { showToastMsg(t('deck_not_found')); return; }
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     var zip = new JSZip();
@@ -5021,7 +5021,7 @@ async function exportDeck() {
       document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
     }, 2000);
-    showToastMsg('已导出：' + meta.name);
+    showToastMsg(t('toast_export_done', { name: meta.name }));
   } catch(e) {
     showCloudToast(t('toast_export_fail', { msg: e.message }), true);
     console.error(e);
@@ -5029,9 +5029,9 @@ async function exportDeck() {
 }
 
 async function shareDeck() {
-  if (!currentDeck) { showToastMsg('请先选择一个牌组'); return; }
+  if (!currentDeck) { showToastMsg(t('deck_no_selected')); return; }
   var meta = DECKS_META.find(function(m) { return m.key === currentDeck; });
-  if (!meta) { showToastMsg('牌组不存在'); return; }
+  if (!meta) { showToastMsg(t('deck_not_found')); return; }
   // 生成 .yhspack 并分享
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
@@ -5077,7 +5077,7 @@ async function shareDeck() {
       document.body.appendChild(a);
       a.click();
       setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 2000);
-      showToastMsg('已下载：' + meta.name);
+      showToastMsg(t('toast_download_done', { name: meta.name }));
     }
   } catch(e) {
     if (e.name !== 'AbortError') {
@@ -5224,7 +5224,7 @@ async function doAccountLogin() {
     updateCloudTabUI();
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
-    runSync({ modal: true, decks: true, events: true, title: '正在同步数据', voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
+    runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
     msgEl.style.display = ''; msgEl.textContent = t('account_login_fail', { msg: e.message }); msgEl.style.color = '#9B3A2A';
@@ -5294,7 +5294,7 @@ function renderDeckCards() {
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>'+t('common_edit')+'</span>' +
           '</button>' +
           '<button class="dd-card-act dd-card-act-del" onclick="event.stopPropagation();deleteCardFromDeck(\''+escAttr(c.id)+'\')">' +
-            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg><span>删除</span>' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg><span>'+t('common_delete')+'</span>' +
           '</button>' +
         '</div>' +
         '<div class="dd-card-inner" data-cid="'+escAttr(c.id)+'">' +
@@ -5367,19 +5367,19 @@ async function renameCard(cardId) {
   var cards = DECKS[currentDeck] || [];
   var card = cards.find(function(c) { return c.id === cardId; });
   if (!card) return;
-  var newName = await showPromptDialog('重命名卡片', card.name || '');
+  var newName = await showPromptDialog(t('card_rename_title'), card.name || '');
   if (!newName || newName.trim() === '' || newName.trim() === card.name) return;
   card.name = newName.trim();
   card.nameLang = normalizeField(card.name, DECKS_META.find(function(m) { return m.key === currentDeck; })).lang;
   saveDeckCards(currentDeck);
   renderDeckCards();
   renderDeckList();
-  showToastMsg('已重命名为「'+esc(card.name)+'」');
+  showToastMsg(t('toast_rename_done', { name: esc(card.name) }));
 }
 
 // ── 卡片删除 ─────────────────────────────────────────────────
 async function deleteCardFromDeck(cardId) {
-  var ok = await showConfirmDialog('确定删除这张卡片？');
+  var ok = await showConfirmDialog(t('card_delete_confirm'));
   if (!ok) return;
   var cards = DECKS[currentDeck] || [];
   var card = cards.find(function(c) { return c.id === cardId; });
@@ -5390,7 +5390,7 @@ async function deleteCardFromDeck(cardId) {
   saveDeckCards(currentDeck);
   renderDeckCards();
   renderDeckList();
-  showToastMsg('卡片已删除');
+  showToastMsg(t('cc_card_deleted'));
 }
 
 // ── 自定义输入对话框 ───────────────────────────────────────────
@@ -5405,8 +5405,8 @@ function showPromptDialog(msg, defaultValue) {
           'style="width:100%;padding:8px 12px;border:1.5px solid var(--bd2);border-radius:8px;' +
           'font-size:14px;font-family:inherit;background:var(--surf);color:var(--text);box-sizing:border-box;outline:none">' +
         '<div class="yh-dialog-btns" style="margin-top:12px">' +
-          '<button class="yh-dialog-btn cancel" id="yh-prompt-cancel">取消</button>' +
-          '<button class="yh-dialog-btn confirm" id="yh-prompt-ok">确定</button>' +
+          '<button class="yh-dialog-btn cancel" id="yh-prompt-cancel">'+t('common_cancel')+'</button>' +
+          '<button class="yh-dialog-btn confirm" id="yh-prompt-ok">'+t('common_ok')+'</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(mask);
@@ -5670,6 +5670,78 @@ const I18N = {
     sync_first_done: 'First sync complete: {count} cards',
     sync_up_to_date_detail: 'Already up to date ({skipped} cards unchanged)',
     toast_share_fail: 'Share failed: {msg}',
+    // Sync progress
+    sync_offline: 'Not connected to server',
+    sync_in_flight: 'Syncing...',
+    sync_in_progress: 'Syncing',
+    sync_syncing_data: 'Syncing data...',
+    sync_upload_trials: 'Uploading records...',
+    sync_config_prog: 'Syncing settings...',
+    sync_states_prog: 'Syncing progress...',
+    sync_decks_prog: 'Syncing decks...',
+    sync_logs_prog: 'Uploading logs...',
+    sync_no_local_deck: 'Deck not found locally. Download first.',
+    sync_toast_trials: 'Uploaded {count} records',
+    sync_toast_states: 'Progress {count}',
+    sync_toast_config: 'Settings {count}',
+    sync_toast_new_decks: '{count} decks downloaded',
+    sync_toast_synced_decks: '{count} decks synced',
+    sync_deck_update: '✓ Added {added}, updated {updated}',
+    sync_deck_skip_suffix: ', {skipped} unchanged',
+    // Media
+    media_no_orphans: 'No orphaned files, {total} media files all referenced',
+    media_orphans_summary: '{total} media files, {count} orphaned ({size}) safe to clean',
+    media_clean_btn: 'Clean {count} orphaned files',
+    media_confirm_clean: 'Delete {count} orphaned media files? This cannot be undone.',
+    media_clean_done: 'Cleaned {count} orphaned files',
+    // Deck
+    deck_not_found: 'Deck not found',
+    deck_no_selected: 'Please select a deck first',
+    deck_builtin_label: '── Test Deck (Read-only) ──',
+    deck_new_option: '+ New Deck...',
+    // Toast
+    toast_rename_done: 'Renamed to "{name}"',
+    toast_export_done: 'Exported: {name}',
+    toast_download_done: 'Downloaded: {name}',
+    toast_import_done: '✓ Imported "{name}" {count} cards',
+    toast_srs_reset_done: '✓ Reset to defaults',
+    // Card detail
+    card_params_header: 'Current Parameters',
+    card_lbl_interval: 'Interval',
+    card_lbl_ease: 'Ease Factor',
+    card_lbl_streak: 'Fail Streak',
+    card_lbl_total_lapses: 'Total Lapses',
+    card_predict_header: 'If Answered Today',
+    card_ops_header: 'Card Actions',
+    card_suspend_header: 'Suspend Actions',
+    card_history_header: 'History (Last 7 Days)',
+    card_reset_to_new: 'Reset to New',
+    card_unsuspend_resume: 'Resume',
+    card_reset_confirm: 'Reset "{name}" to new card?\n\nAll SRS progress, intervals, ease, and lapses will be cleared.',
+    card_suspended_label: 'Suspended',
+    card_rename_title: 'Rename Card',
+    card_delete_confirm: 'Delete this card?',
+    card_hist_relearn: 'Back to relearning',
+    card_hist_advance: '→ Advance',
+    card_hist_interval: '→ {interval}d interval',
+    // Stats
+    stats_due_today: 'Due today',
+    stats_pending_steps: 'Pending',
+    stats_mins_later: 'In {mins}m',
+    stats_hours_later: 'In {hours}h',
+    stats_interval_display: '{interval}d interval',
+    stats_lapse_streak: 'Fail×{count}',
+    stats_mins_later_detail: 'In {mins} min',
+    stats_hours_later_detail: 'In {hours}h',
+    // Common
+    common_manual: 'Manual',
+    common_weekdays: 'Sun,Mon,Tue,Wed,Thu,Fri,Sat',
+    // Default phrases
+    default_opt_hint: 'Choose from {A}.{B}.{C}',
+    default_wrong: 'Take it easy, try again',
+    default_correct: 'Correct!',
+    import_url_coming: 'Download from URL coming soon.',
+    card_predict_days: 'In {interval}d ({date})',
   },
   'zh-CN': {
     app_title: '忆海拾光',
@@ -5829,6 +5901,78 @@ const I18N = {
     sync_first_done: '首次同步完成：共 {count} 张',
     sync_up_to_date_detail: '已是最新（{skipped} 张均无变化）',
     toast_share_fail: '分享失败：{msg}',
+    // Sync progress
+    sync_offline: '未连接服务器',
+    sync_in_flight: '同步中…',
+    sync_in_progress: '正在同步',
+    sync_syncing_data: '正在同步数据',
+    sync_upload_trials: '正在上传练习记录...',
+    sync_config_prog: '正在同步配置...',
+    sync_states_prog: '正在同步练习状态...',
+    sync_decks_prog: '正在同步牌组...',
+    sync_logs_prog: '正在上传日志...',
+    sync_no_local_deck: '本地无此牌组，请先下载',
+    sync_toast_trials: '上传答题 {count}',
+    sync_toast_states: '状态更新 {count}',
+    sync_toast_config: '配置 {count}',
+    sync_toast_new_decks: '下载牌组 {count}',
+    sync_toast_synced_decks: '同步牌组 {count}',
+    sync_deck_update: '✓ 新增 {added} 张，更新 {updated} 张',
+    sync_deck_skip_suffix: '，跳过 {skipped} 张未变',
+    // Media
+    media_no_orphans: '没有孤立文件，共 {total} 个媒体文件均被引用',
+    media_orphans_summary: '共 {total} 个媒体文件，其中 {count} 个孤立文件（{size}）可安全清理',
+    media_clean_btn: '清理 {count} 个孤立文件',
+    media_confirm_clean: '确定要删除 {count} 个孤立媒体文件吗？此操作不可撤销。',
+    media_clean_done: '已清理 {count} 个孤立文件',
+    // Deck
+    deck_not_found: '牌组不存在',
+    deck_no_selected: '请先选择一个牌组',
+    deck_builtin_label: '── 测试牌组（只读）──',
+    deck_new_option: '＋ 新建牌组…',
+    // Toast
+    toast_rename_done: '已重命名为「{name}」',
+    toast_export_done: '已导出：{name}',
+    toast_download_done: '已下载：{name}',
+    toast_import_done: '✓ 已导入「{name}」{count} 张',
+    toast_srs_reset_done: '✓ 已恢复默认值',
+    // Card detail
+    card_params_header: '当前参数',
+    card_lbl_interval: '复习间隔',
+    card_lbl_ease: '易度因子',
+    card_lbl_streak: '连续失败',
+    card_lbl_total_lapses: '累计失败',
+    card_predict_header: '如果今天答题',
+    card_ops_header: '卡片操作',
+    card_suspend_header: '挂起操作',
+    card_history_header: '答题历史（近7天）',
+    card_reset_to_new: '初始化为新卡',
+    card_unsuspend_resume: '忽略继续',
+    card_reset_confirm: '将「{name}」初始化为新卡？\n\nSRS 进度、间隔、易度因子、失败次数全部清零。',
+    card_suspended_label: '已挂起',
+    card_rename_title: '重命名卡片',
+    card_delete_confirm: '确定删除这张卡片？',
+    card_hist_relearn: '退回重学',
+    card_hist_advance: '→ 推进',
+    card_hist_interval: '→ 间隔 {interval} 天',
+    // Stats
+    stats_due_today: '今日待练',
+    stats_pending_steps: '待出题',
+    stats_mins_later: '{mins}分后',
+    stats_hours_later: '{hours}时后',
+    stats_interval_display: '间隔{interval}天',
+    stats_lapse_streak: '连失{count}',
+    stats_mins_later_detail: '{mins}分钟后',
+    stats_hours_later_detail: '{hours}小时后',
+    // Common
+    common_manual: '手动',
+    common_weekdays: '日,一,二,三,四,五,六',
+    // Default phrases
+    default_opt_hint: '请在{A}.{B}.{C}中选择一个',
+    default_wrong: '不要着急，再试一次',
+    default_correct: '回答正确',
+    import_url_coming: '从链接下载功能即将上线。',
+    card_predict_days: '{interval}天后（{date}）',
   },
   'es': {
     app_title: 'Memory Glimmers',
@@ -5988,6 +6132,78 @@ const I18N = {
     sync_first_done: 'Primera sincronizacion: {count} tarjetas',
     sync_up_to_date_detail: 'Actualizado ({skipped} tarjetas sin cambios)',
     toast_share_fail: 'Error al compartir: {msg}',
+    // Sync progress
+    sync_offline: 'Sin conexion al servidor',
+    sync_in_flight: 'Sincronizando...',
+    sync_in_progress: 'Sincronizando',
+    sync_syncing_data: 'Sincronizando datos...',
+    sync_upload_trials: 'Subiendo registros...',
+    sync_config_prog: 'Sincronizando ajustes...',
+    sync_states_prog: 'Sincronizando progreso...',
+    sync_decks_prog: 'Sincronizando mazos...',
+    sync_logs_prog: 'Subiendo registros...',
+    sync_no_local_deck: 'Mazo no encontrado localmente. Descargalo primero.',
+    sync_toast_trials: '{count} registros subidos',
+    sync_toast_states: 'Progreso {count}',
+    sync_toast_config: 'Ajustes {count}',
+    sync_toast_new_decks: '{count} mazos descargados',
+    sync_toast_synced_decks: '{count} mazos sincronizados',
+    sync_deck_update: '✓ Agregadas {added}, actualizadas {updated}',
+    sync_deck_skip_suffix: ', {skipped} sin cambios',
+    // Media
+    media_no_orphans: 'Sin archivos huerfanos, {total} archivos referenciados',
+    media_orphans_summary: '{total} archivos, {count} huerfanos ({size}) pueden limpiarse',
+    media_clean_btn: 'Limpiar {count} archivos huerfanos',
+    media_confirm_clean: '¿Eliminar {count} archivos huerfanos? Esto no se puede deshacer.',
+    media_clean_done: 'Limpiados {count} archivos huerfanos',
+    // Deck
+    deck_not_found: 'Mazo no encontrado',
+    deck_no_selected: 'Selecciona un mazo primero',
+    deck_builtin_label: '── Mazo de prueba (solo lectura) ──',
+    deck_new_option: '+ Nuevo mazo...',
+    // Toast
+    toast_rename_done: 'Renombrado a "{name}"',
+    toast_export_done: 'Exportado: {name}',
+    toast_download_done: 'Descargado: {name}',
+    toast_import_done: '✓ Importado "{name}" {count} tarjetas',
+    toast_srs_reset_done: '✓ Restaurado por defecto',
+    // Card detail
+    card_params_header: 'Parametros actuales',
+    card_lbl_interval: 'Intervalo',
+    card_lbl_ease: 'Factor facilidad',
+    card_lbl_streak: 'Racha de fallos',
+    card_lbl_total_lapses: 'Total de fallos',
+    card_predict_header: 'Si se responde hoy',
+    card_ops_header: 'Acciones de tarjeta',
+    card_suspend_header: 'Acciones de suspension',
+    card_history_header: 'Historial (7 dias)',
+    card_reset_to_new: 'Reiniciar como nueva',
+    card_unsuspend_resume: 'Continuar',
+    card_reset_confirm: '¿Reiniciar "{name}" como tarjeta nueva?\n\nSe borraran el progreso SRS, intervalos, facilidad y fallos.',
+    card_suspended_label: 'Suspendido',
+    card_rename_title: 'Renombrar tarjeta',
+    card_delete_confirm: '¿Eliminar esta tarjeta?',
+    card_hist_relearn: 'Volver a reaprender',
+    card_hist_advance: '→ Avanzar',
+    card_hist_interval: '→ intervalo {interval}d',
+    // Stats
+    stats_due_today: 'Pendiente hoy',
+    stats_pending_steps: 'Pendiente',
+    stats_mins_later: 'En {mins}m',
+    stats_hours_later: 'En {hours}h',
+    stats_interval_display: 'intervalo {interval}d',
+    stats_lapse_streak: 'Fallo×{count}',
+    stats_mins_later_detail: 'En {mins} min',
+    stats_hours_later_detail: 'En {hours}h',
+    // Common
+    common_manual: 'Manual',
+    common_weekdays: 'Dom,Lun,Mar,Mie,Jue,Vie,Sab',
+    // Default phrases
+    default_opt_hint: 'Elige entre {A}.{B}.{C}',
+    default_wrong: 'Tranquilo, intentalo de nuevo',
+    default_correct: '¡Correcto!',
+    import_url_coming: 'Descarga por URL disponible pronto.',
+    card_predict_days: 'En {interval}d ({date})',
   },
 };
 
@@ -6996,9 +7212,9 @@ function toggleCorrectHint(cb) {
 function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.');
   if (key === 'select')  { PHRASE_SELECT   = normalize(val) || t('quiz_select_hint');   localStorage.setItem('phraseSelect',  PHRASE_SELECT); }
-  if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || '不要着急，再试一次';       localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
-  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || '请在{A}.{B}.{C}中选择一个'; localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
-  if (key === 'correct') { PHRASE_CORRECT  = val || '回答正确';                           localStorage.setItem('phraseCorrect', PHRASE_CORRECT); }
+  if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || t('default_wrong');    localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
+  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
+  if (key === 'correct') { PHRASE_CORRECT  = val || t('default_correct');              localStorage.setItem('phraseCorrect', PHRASE_CORRECT); }
   debouncePushConfig();
 }
 
@@ -7052,7 +7268,7 @@ function populateVoiceList() {
   if (!voices.length) loadVoices();
   const zhVoices = voices.filter(v => v.lang.startsWith('zh'));
   const otherVoices = voices.filter(v => !v.lang.startsWith('zh'));
-  sel.innerHTML = '<option value="">自动（中文优先）</option>';
+  sel.innerHTML = '<option value="">' + t('settings_tts_voice_auto') + '</option>';
   [...zhVoices, ...otherVoices].forEach(v => {
     const opt = document.createElement('option');
     opt.value = v.name;
@@ -7077,13 +7293,13 @@ function onOptCount(v) {
 }
 function onNdurChange(v) {
   NDUR = parseFloat(v) * 1000;
-  document.getElementById('dbg-ndur-val').textContent = v === '0' ? '手动' : `${v}s`;
+  document.getElementById('dbg-ndur-val').textContent = v === '0' ? t('common_manual') : `${v}s`;
   localStorage.setItem('ndur', v);
   debouncePushConfig();
 }
 function onBdurChange(v) {
   BDUR = parseFloat(v) * 1000;
-  document.getElementById('dbg-bdur-val').textContent = v === '0' ? '手动' : `${v}s`;
+  document.getElementById('dbg-bdur-val').textContent = v === '0' ? t('common_manual') : `${v}s`;
   localStorage.setItem('bdur', v);
   debouncePushConfig();
 }
@@ -7108,12 +7324,14 @@ function loadSettings() {
   if (ohDelay) OPT_HINT_DELAY = parseFloat(ohDelay) * 1000;
   const phraseOptHint = localStorage.getItem('phraseOptHint');
   if (phraseOptHint) PHRASE_OPT_HINT = phraseOptHint;
+  if (!PHRASE_OPT_HINT) PHRASE_OPT_HINT = t('default_opt_hint');
 
   // 答错提示
   const wrongHintOn = localStorage.getItem('wrongHintOn');
   if (wrongHintOn !== null) WRONG_HINT_ON = wrongHintOn === '1';
   const pw = localStorage.getItem('phraseWrong');
   if (pw) PHRASE_WRONG = pw;
+  if (!PHRASE_WRONG) PHRASE_WRONG = t('default_wrong');
 
   // 浏览答案延迟 / 答对反馈
   const browseAnsDelay = localStorage.getItem('browseAnsDelay');
@@ -7124,6 +7342,7 @@ function loadSettings() {
   if (correctHintOn !== null) CORRECT_HINT_ON = correctHintOn === '1';
   const phraseCorrect = localStorage.getItem('phraseCorrect');
   if (phraseCorrect) PHRASE_CORRECT = phraseCorrect;
+  if (!PHRASE_CORRECT) PHRASE_CORRECT = t('default_correct');
 
   // TTS 音色参数
   const ttsRate = localStorage.getItem('ttsRate');
@@ -7216,9 +7435,9 @@ function loadSettings() {
     const bdlEl = document.getElementById('dbg-browse-delay');
     if (bdlEl && browseDelay) { bdlEl.value = browseDelay; document.getElementById('dbg-browse-delay-val').textContent = `${parseFloat(browseDelay).toFixed(1)}s`; }
     const ndurEl = document.getElementById('dbg-ndur');
-    if (ndurEl && ndur) { ndurEl.value = ndur; document.getElementById('dbg-ndur-val').textContent = ndur === '0' ? '手动' : `${ndur}s`; }
+    if (ndurEl && ndur) { ndurEl.value = ndur; document.getElementById('dbg-ndur-val').textContent = ndur === '0' ? t('common_manual') : `${ndur}s`; }
     const bdurEl = document.getElementById('dbg-bdur');
-    if (bdurEl && bdur) { bdurEl.value = bdur; document.getElementById('dbg-bdur-val').textContent = bdur === '0' ? '手动' : `${bdur}s`; }
+    if (bdurEl && bdur) { bdurEl.value = bdur; document.getElementById('dbg-bdur-val').textContent = bdur === '0' ? t('common_manual') : `${bdur}s`; }
 
     // CSS var 滑块同步
     [
@@ -7277,7 +7496,7 @@ async function parallelMapLimit(arr, limit, fn) {
 }
 
 async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
-  if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
+  if (!_syncEnabled || !_sb) { showCloudToast(t('sync_offline'), true); return; }
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('common_downloading'); }
 
   try {
@@ -7353,7 +7572,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 避免此处 IDB 状态未就绪时的竞态覆盖
     if (!noToast) updateDeckStats();
 
-    if (!noToast) showCloudToast('✓ 已导入「' + deckName + '」' + deckCards.length + ' 张');
+    if (!noToast) showCloudToast(t('toast_import_done', { name: deckName, count: deckCards.length }));
   } catch(e) {
     if (!noToast) showCloudToast(t('sync_download_fail', { msg: e.message }), true);
     console.error('[cloud] download error:', e);
@@ -7363,9 +7582,9 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
 }
 
 async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
-  if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
+  if (!_syncEnabled || !_sb) { showCloudToast(t('sync_offline'), true); return; }
   const existing = DECKS_META.find(m => m.name === deckName);
-  if (!existing) { showCloudToast('本地无此牌组，请先下载', true); return; }
+  if (!existing) { showCloudToast(t('sync_no_local_deck'), true); return; }
   const localKey = existing.key;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('sync_syncing'); }
 
@@ -7402,7 +7621,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     const { data: links, error: linkErr } = await _sb.from('server_deck_cards')
       .select('card_id').eq('deck_id', deckId).order('sort_order');
     if (linkErr) throw linkErr;
-    if (!links || !links.length) { showCloudToast('牌组为空', true); return; }
+    if (!links || !links.length) { showCloudToast(t('sync_deck_empty'), true); return; }
     const serverIds = links.map(l => l.card_id);
     const serverIdSet = new Set(serverIds);
 
@@ -7517,7 +7736,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     if (!lastSyncAt) {
       msg = t('sync_first_done', { count: merged.length });
     } else if (added > 0 || updated > 0) {
-      msg = '✓ 新增 ' + added + ' 张，更新 ' + updated + ' 张' + (skipped > 0 ? '，跳过 ' + skipped + ' 张未变' : '');
+      msg = t('sync_deck_update', { added, updated }) + (skipped > 0 ? t('sync_deck_skip_suffix', { skipped }) : '');
     } else {
       msg = t('sync_up_to_date_detail', { skipped: skipped });
     }
@@ -7793,7 +8012,7 @@ async function renderStatsToday() {
   });
   const days   = Object.entries(dayMap);
   const maxCnt = Math.max(...days.map(([,v]) => v.size), 1);
-  const labels = ['日','一','二','三','四','五','六'];
+  const labels = t('common_weekdays').split(',');
   const chartHtml = `<div class="chart-bars">${days.map(([d, v]) => {
     const cnt = v.size;
     const pct = Math.round(cnt / maxCnt * 100);
@@ -7871,7 +8090,7 @@ async function renderStatsDeck() {
   });
   const fcDays   = Object.entries(forecast);
   const fcMax    = Math.max(...fcDays.map(([,v]) => v), 1);
-  const lbls     = ['日','一','二','三','四','五','六'];
+  const lbls     = t('common_weekdays').split(',');
   document.getElementById('st-forecast').innerHTML = `<div class="chart-bars">${
     fcDays.map(([d, v]) => {
       const pct = Math.round(v / fcMax * 100);
@@ -7933,33 +8152,33 @@ async function renderStatsCards(filter) {
     // 状态标签（review 阶段按 interval 区分：< maximum_interval=复习中，>= 已掌握）
     const _thresh = SRS_CONFIG.maximum_interval;
     let badge = '';
-    if (s.suspended)                     badge = '<span class="sbadge sbadge-sus">待确认</span>';
-    else if (s.srs_stage==='new')        badge = '<span class="sbadge sbadge-new">待开始</span>';
-    else if (s.srs_stage==='learning')   badge = '<span class="sbadge sbadge-learn">学习中</span>';
-    else if (s.srs_stage==='relearning') badge = '<span class="sbadge sbadge-relearn">重学中</span>';
+    if (s.suspended)                     badge = '<span class="sbadge sbadge-sus">' + t('stats_filter_sus') + '</span>';
+    else if (s.srs_stage==='new')        badge = '<span class="sbadge sbadge-new">' + t('stage_new') + '</span>';
+    else if (s.srs_stage==='learning')   badge = '<span class="sbadge sbadge-learn">' + t('stage_learning') + '</span>';
+    else if (s.srs_stage==='relearning') badge = '<span class="sbadge sbadge-relearn">' + t('stage_relearning') + '</span>';
     else if (s.srs_stage==='review')     badge = s.interval >= _thresh
-      ? '<span class="sbadge sbadge-review">已掌握</span>'
-      : '<span class="sbadge sbadge-inreview">复习中</span>';
+      ? '<span class="sbadge sbadge-review">' + t('stats_filter_review') + '</span>'
+      : '<span class="sbadge sbadge-inreview">' + t('stats_filter_inreview') + '</span>';
 
     // 下次复习
     let dueStr = '';
     if (s.srs_stage === 'review' && s.due_date) {
-      dueStr = s.due_date <= today ? '今日待练' : s.due_date.slice(5).replace('-','/');
+      dueStr = s.due_date <= today ? t('stats_due_today') : s.due_date.slice(5).replace('-','/');
     } else if ((s.srs_stage==='learning'||s.srs_stage==='relearning') && s.due_ts) {
       const mins = Math.round((s.due_ts - now) / 60000);
-      dueStr = mins <= 0 ? '待出题' : mins < 60 ? `${mins}分后` : `${Math.round(mins/60)}时后`;
+      dueStr = mins <= 0 ? t('stats_pending_steps') : mins < 60 ? t('stats_mins_later', { mins }) : t('stats_hours_later', { hours: Math.round(mins/60) });
     }
 
     // lapses 颜色
     const ls = s.lapses_streak || 0;
     const lsClass = ls >= SRS_CONFIG.daily_remove_lapses ? 'danger' : ls > 0 ? 'warn' : '';
-    const lsHtml  = ls > 0 ? `<div class="scard-lapse ${lsClass}">连失${ls}</div>` : '';
+    const lsHtml  = ls > 0 ? `<div class="scard-lapse ${lsClass}">${t('stats_lapse_streak', { count: ls })}</div>` : '';
 
     return `<div class="scard" onclick="openCardDetail('${escAttr(s.state_key)}')">
       <div class="scard-img">${imgHtml}</div>
       <div class="scard-info">
         <div class="scard-name">${esc(c.name || s.card_id)}</div>
-        <div class="scard-meta">${badge}${s.srs_stage==='review'?` · 间隔${s.interval}天 · ef${s.ease_factor.toFixed(1)}`:''}</div>
+        <div class="scard-meta">${badge}${s.srs_stage==='review'?` · ${t('stats_interval_display', { interval: s.interval })} · ef${s.ease_factor.toFixed(1)}`:''}</div>
       </div>
       <div class="scard-right">
         <div class="scard-due">${dueStr}</div>
@@ -8030,11 +8249,11 @@ async function openCardDetail(stateKey) {
     const s = JSON.parse(JSON.stringify(state));
     const ns = processAnswer(s, rating, today);
     if (ns.srs_stage === 'review') {
-      return `${ns.interval}天后（${addDays(today, ns.interval).slice(5).replace('-','/')}）`;
+      return t('card_predict_days', { interval: ns.interval, date: addDays(today, ns.interval).slice(5).replace('-','/') });
     }
     if (ns.due_ts) {
       const m = Math.round((ns.due_ts - Date.now()) / 60000);
-      return m < 60 ? `${m}分钟后` : `${Math.round(m/60)}小时后`;
+      return m < 60 ? t('stats_mins_later_detail', { mins: m }) : t('stats_hours_later_detail', { hours: Math.round(m/60) });
     }
     return '—';
   }
@@ -8053,52 +8272,52 @@ async function openCardDetail(stateKey) {
         : `<span style="font-size:36px">${card.img||'🃏'}</span>`}
       <div>
         <div style="font-size:20px;font-weight:800;color:var(--text)">${esc(card.name||cardId)}</div>
-        <div style="font-size:13px;color:var(--text2);margin-top:2px">${STAGE_LBL[state.srs_stage]||state.srs_stage}${state.suspended?' · 已挂起':''}</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:2px">${STAGE_LBL[state.srs_stage]||state.srs_stage}${state.suspended?' · '+t('card_suspended_label'):''}</div>
       </div>
     </div>
 
-    <div class="cdh">当前参数</div>
-    <div class="cd-param-row"><span class="cd-param-lbl">复习间隔</span><span class="cd-param-val">${state.srs_stage==='review'?state.interval+t('common_day_unit'):'—'}</span></div>
-    <div class="cd-param-row"><span class="cd-param-lbl">易度因子</span><span class="cd-param-val" style="color:${state.ease_factor<=1.5?'#e07b00':'var(--text)'}">${state.ease_factor.toFixed(2)}</span></div>
-    <div class="cd-param-row"><span class="cd-param-lbl">连续失败</span><span class="cd-param-val" style="color:${state.lapses_streak>=SRS_CONFIG.daily_remove_lapses?'#e53e3e':state.lapses_streak>0?'#e07b00':'var(--text)'}">${state.lapses_streak}</span></div>
-    <div class="cd-param-row"><span class="cd-param-lbl">累计失败</span><span class="cd-param-val">${state.lapses_total}</span></div>
+    <div class="cdh">${t('card_params_header')}</div>
+    <div class="cd-param-row"><span class="cd-param-lbl">${t('card_lbl_interval')}</span><span class="cd-param-val">${state.srs_stage==='review'?state.interval+t('common_day_unit'):'—'}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">${t('card_lbl_ease')}</span><span class="cd-param-val" style="color:${state.ease_factor<=1.5?'#e07b00':'var(--text)'}">${state.ease_factor.toFixed(2)}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">${t('card_lbl_streak')}</span><span class="cd-param-val" style="color:${state.lapses_streak>=SRS_CONFIG.daily_remove_lapses?'#e53e3e':state.lapses_streak>0?'#e07b00':'var(--text)'}">${state.lapses_streak}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">${t('card_lbl_total_lapses')}</span><span class="cd-param-val">${state.lapses_total}</span></div>
 
     ${state.srs_stage==='review'?`
-    <div class="cdh">如果今天答题</div>
-    <div class="cd-param-row"><span class="cd-param-lbl">良好</span><span class="cd-param-val">${predict('good')}</span></div>
-    <div class="cd-param-row"><span class="cd-param-lbl">困难</span><span class="cd-param-val">${predict('hard')}</span></div>
-    <div class="cd-param-row"><span class="cd-param-lbl">重来</span><span class="cd-param-val">${predict('again')}</span></div>
+    <div class="cdh">${t('card_predict_header')}</div>
+    <div class="cd-param-row"><span class="cd-param-lbl">${t('rating_good')}</span><span class="cd-param-val">${predict('good')}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">${t('rating_hard')}</span><span class="cd-param-val">${predict('hard')}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">${t('rating_again')}</span><span class="cd-param-val">${predict('again')}</span></div>
     `:''}
 
     ${state.suspended?`
-    <div class="cdh">挂起操作</div>
+    <div class="cdh">${t('card_suspend_header')}</div>
     <div style="display:flex;gap:8px;padding:8px 0 4px">
-      <button onclick="unsuspendCard('${escAttr(stateKey)}','reset')" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--ocean);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">初始化为新卡</button>
-      <button onclick="unsuspendCard('${escAttr(stateKey)}','resume')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--bd2);background:var(--surf);color:var(--text2);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">忽略继续</button>
+      <button onclick="unsuspendCard('${escAttr(stateKey)}','reset')" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--ocean);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">${t('card_reset_to_new')}</button>
+      <button onclick="unsuspendCard('${escAttr(stateKey)}','resume')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--bd2);background:var(--surf);color:var(--text2);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">${t('card_unsuspend_resume')}</button>
     </div>`:''}
 
-    <div class="cdh">卡片操作</div>
+    <div class="cdh">${t('card_ops_header')}</div>
     <div style="display:flex;gap:8px;padding:8px 0 4px">
-      <button onclick="confirmResetCard('${stateKey}')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #f97316;background:transparent;color:#f97316;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">⟳ 初始化为新卡</button>
+      <button onclick="confirmResetCard('${stateKey}')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #f97316;background:transparent;color:#f97316;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">⟳ ${t('card_reset_to_new')}</button>
     </div>
     ${hist.length?`
-    <div class="cdh">答题历史（近7天）</div>
-    ${hist.reverse().map(t => {
-      const d = new Date(t.timestamp);
+    <div class="cdh">${t('card_history_header')}</div>
+    ${hist.reverse().map(tr => {
+      const d = new Date(tr.timestamp);
       const ts = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-      const stageStr = STAGE_LBL[t.srs_stage_before] || t.srs_stage_before || '';
+      const stageStr = STAGE_LBL[tr.srs_stage_before] || tr.srs_stage_before || '';
       let resultStr = '';
-      if (t.rating === 'again')                           resultStr = '退回重学';
-      else if (t.srs_stage_before === 'review' && t.interval_before)
-                                                          resultStr = `→ 间隔 ${t.interval_before} 天`;
-      else                                                resultStr = '→ 推进';
+      if (tr.rating === 'again')                           resultStr = t('card_hist_relearn');
+      else if (tr.srs_stage_before === 'review' && tr.interval_before)
+                                                          resultStr = t('card_hist_interval', { interval: tr.interval_before });
+      else                                                resultStr = t('card_hist_advance');
       return `<div class="cd-hist-row">
         <span class="cd-hist-time">${ts}</span>
         <span class="cd-hist-stage" style="font-size:11px">${stageStr}</span>
-        <span class="trial-rating ${RCLS[t.rating]||''}" style="width:32px;height:20px;border-radius:5px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${RLBL[t.rating]||t.rating}</span>
+        <span class="trial-rating ${RCLS[tr.rating]||''}" style="width:32px;height:20px;border-radius:5px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${RLBL[tr.rating]||tr.rating}</span>
         <span class="cd-hist-result">${resultStr}</span>
       </div>`;
-    }).join('')}`:''}`;
+    }).join    }).join('')}`:''}`;
 
   overlay.classList.add('open');
 }
@@ -8115,7 +8334,7 @@ async function confirmResetCard(stateKey) {
   const cards = DECKS[parts[0]] || [];
   const card  = cards.find(c => c.id === parts[1]);
   const name  = card ? card.name : parts[1];
-  const ok = await showConfirmDialog(`将「${name}」初始化为新卡？\n\nSRS 进度、间隔、易度因子、失败次数全部清零。`);
+  const ok = await showConfirmDialog(t('card_reset_confirm', { name }));
   if (!ok) return;
   await unsuspendCard(stateKey, 'reset');
 }
@@ -8225,7 +8444,7 @@ function applySrsPreset(name) {
   if (!p) return;
   Object.entries(p).forEach(([k, v]) => saveSrsConfigKey(k, v));
   syncSrsSettingsUI();
-  showToastMsg('✓ 已恢复默认值');
+  showToastMsg(t('toast_srs_reset_done'));
 }
 
 function syncSrsSettingsUI() {
@@ -8345,16 +8564,16 @@ function renderDeckList() {
     const newVal  = stats.new;
     const swipeExport = '<button class="swipe-action-btn swipe-export" onclick="event.stopPropagation();exportDeck(\''+m.key+'\')">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-        '<span>导出</span>' +
+        '<span>'+t('common_export')+'</span>' +
       '</button>';
     const swipeRename = '<button class="swipe-action-btn swipe-rename" onclick="event.stopPropagation();renameDeck(\''+m.key+'\')">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
-        '<span>重命名</span>' +
+        '<span>'+t('common_rename')+'</span>' +
       '</button>';
     const swipeDel = m.builtin ? '' :
       '<button class="swipe-action-btn swipe-del" onclick="event.stopPropagation();deleteDeck(event,\''+m.key+'\')">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
-        '<span>删除</span>' +
+        '<span>'+t('common_delete')+'</span>' +
       '</button>';
     const navChevron = '<button class="album-nav-btn caregiver-only" onclick="event.stopPropagation();showDeckDetailFor(\''+m.key+'\')" '+t('home_deck_manage')+'>' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
