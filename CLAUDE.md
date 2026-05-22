@@ -97,6 +97,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_playwright_session_mode_test.js` | Playwright 游戏模式设置 UI + 持久化测试（13 断言） |
 | `tests/_playwright_session_mode_queue_test.js` | Playwright 队列难度曲线验证（14 断言，ef 首尾>中间） |
 | `tests/_check_session_mode_order.js` | Node.js 查询妈妈账号当日卡片，输出三种模式出牌顺序 |
+| `tests/yihai_v5.0_i18n_test.js` | 阶段 0 i18n 纯函数单测（detectLocale/t/detectScript/scriptToLang/resolveFieldLang/normalizeField） |
+| `tests/_playwright_stage0_test.js` | 阶段 0 浏览器行为（locale 持久化、TTS 语言、.yhspack 导入字段语言） |
 | `tests/test_data/` | Test .yhspack files |
 
 ### 文档
@@ -178,7 +180,7 @@ node tests/_playwright_session_mode_queue_test.js  # 队列难度曲线（需先
 - **智能匹配** → 修复涉及哪个模块，优先跑对应模块测试（如 session 改动跑 cloud_test）
 - 确认改动无问题即可，不需要每次都跑全部 8 套 Playwright。
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, Playwright 12/39/21/18/13/14（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue）.
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, Playwright 12/39/21/18/13/14/6（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue/stage0）.
 
 ## SRS Architecture
 
