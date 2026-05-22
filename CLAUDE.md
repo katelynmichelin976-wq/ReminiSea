@@ -152,6 +152,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Wave 1 dev.5：账户屏 `screen-account`（三态：登录/恢复中/已登录 + 同步按钮 + 实时上传开关）
 - Wave 1 dev.6：设置屏改革——移除文字 Tab（4→3 Tab），通用 Tab 新增每日学习目标滑块
 - Wave 1 dev.7：牌组详情屏 screen-deck-detail（统计三列 + 浏览/练习/导出/共享/删除操作） + 左滑手势（导出/共享/删除）
+- 照护者制卡表单：screen-create-card（牌组选择/卡片名称/图片/详情/录音 + 连续制卡）
+- 我的屏补全：主题选择器（screen-theme，4 套视觉主题）+ 关于页（screen-about）
 
 **导航结构（Wave 1 后）：**
 - `screen-home`：首页（默认），底部 `.home-tabbar`（首页激活）
