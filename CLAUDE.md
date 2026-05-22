@@ -98,6 +98,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_playwright_session_mode_queue_test.js` | Playwright 队列难度曲线验证（14 断言，ef 首尾>中间） |
 | `tests/_check_session_mode_order.js` | Node.js 查询妈妈账号当日卡片，输出三种模式出牌顺序 |
 | `tests/yihai_v5.0_i18n_test.js` | 阶段 0 i18n 纯函数单测（detectLocale/t/detectScript/scriptToLang/resolveFieldLang/normalizeField） |
+| `tests/_playwright_i18n_stage1.js` | 阶段 1 i18n 浏览器验证（locale 切换/插值/非法locale/持久化，13 断言） |
 | `tests/_playwright_stage0_test.js` | 阶段 0 浏览器行为（locale 持久化、TTS 语言、.yhspack 导入字段语言） |
 | `tests/_playwright_nav_verify.js` | Wave 1 dev.1 导航骨架验证（17 断言：Tab Bar/我的屏/设置入口） |
 | `tests/_playwright_dev2_verify.js` | Wave 1 dev.2 点牌组进详情屏验证（8 断言） |
@@ -210,7 +211,7 @@ node tests/_playwright_session_mode_queue_test.js  # 队列难度曲线（需先
 - **智能匹配** → 修复涉及哪个模块，优先跑对应模块测试（如 session 改动跑 cloud_test）
 - 确认改动无问题即可，不需要每次都跑全部 8 套 Playwright。
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, Playwright 12/39/21/18/13/14/6/17/8/17/20/14/14（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue/stage0/nav_verify/dev2_verify/browse_verify/account_verify/settings_verify/deck_detail_verify）.
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, Playwright 12/39/21/18/13/14/6/17/8/17/20/14/14/13（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue/stage0/nav_verify/dev2_verify/browse_verify/account_verify/settings_verify/deck_detail_verify/i18n_stage1）.
 
 ## SRS Architecture
 

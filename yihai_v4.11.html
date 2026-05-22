@@ -1,21 +1,21 @@
 ﻿<!DOCTYPE html>
-<html lang="zh" data-mode="patient">
+<html lang="zh" data-i18n-lang data-mode="patient">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="忆海拾光">
+<meta data-i18n-content="app_short_name" name="apple-mobile-web-app-title" content="忆海拾光">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0ea5e9">
-<meta name="description" content="记忆练习 — 看图识物">
+<meta data-i18n-content="meta_description" name="description" content="记忆练习 — 看图识物">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.11.18</title>
+<title data-i18n="app_title">忆海拾光 v4.11.18</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -1402,9 +1402,9 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <!-- Fixed topbar -->
   <div class="home-topbar">
     <div class="home-title-wrap">
-      <span class="home-title">忆海拾光</span>
+      <span class="home-title" data-i18n="app_title">忆海拾光</span>
       <span class="home-version">v4.11.18</span>
-      <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
+      <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
@@ -1419,8 +1419,8 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
   <div class="home-scroll" id="home-scroll">
     <div class="album-section-lbl">
-      <span id="album-section-lbl">我的相册</span>
-      <button class="btn-new-deck caregiver-only" onclick="openActionSheet()" aria-label="新建牌组">＋ 新建</button>
+      <span id="album-section-lbl" data-i18n="home_album_section">我的相册</span>
+      <button class="btn-new-deck caregiver-only" onclick="openActionSheet()" data-i18n-aria="home_new_deck" aria-label="新建牌组" data-i18n="home_new_deck_btn">＋ 新建</button>
     </div>
     <div class="home-section">
       <div class="deck-grid" id="deck-grid">
@@ -1433,17 +1433,17 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-tabbar">
     <button class="tab-item active" onclick="showScreen('screen-home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
-      <span>首 页</span>
+      <span data-i18n="nav_home">首 页</span>
     </button>
     <button class="tab-item action" onclick="onFabTap()">
       <div class="tab-fab">
         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
       </div>
-      <span>开始练习</span>
+      <span data-i18n="nav_start_practice">开始练习</span>
     </button>
     <button class="tab-item" onclick="showScreen('screen-mine')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
-      <span>我 的</span>
+      <span data-i18n="nav_mine">我 的</span>
     </button>
   </div>
 
@@ -1453,7 +1453,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <div class="screen" id="screen-browse">
 
   <div class="browse-topbar">
-    <button class="back-btn" onclick="showDeckDetail()" aria-label="返回">
+    <button class="back-btn" onclick="showDeckDetail()" aria-label="返回" data-i18n-aria="common_back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="browse-deck-name" id="browse-deck-name"></span>
@@ -1469,7 +1469,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="browse-answer">
       <div class="browse-answer-row">
         <div class="browse-name" id="browse-name"></div>
-        <button class="browse-tts-btn" onclick="browseTTS()" aria-label="朗读">
+        <button class="browse-tts-btn" onclick="browseTTS()" aria-label="朗读" data-i18n-aria="browse_tts">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
@@ -1483,8 +1483,8 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 
   <div class="browse-nav">
-    <button class="browse-btn-prev" id="browse-btn-prev" onclick="browseNav(-1)">上一张</button>
-    <button class="browse-btn-next" id="browse-btn-next" onclick="browseNav(1)">下一张</button>
+    <button class="browse-btn-prev" id="browse-btn-prev" onclick="browseNav(-1)" data-i18n="browse_prev">上一张</button>
+    <button class="browse-btn-next" id="browse-btn-next" onclick="browseNav(1)" data-i18n="browse_next">下一张</button>
   </div>
 
 </div>
@@ -1494,7 +1494,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
   <!-- 1. Top bar: fixed -->
   <div class="bar">
-    <button class="back-btn" onclick="goHome()" aria-label="返回">
+    <button class="back-btn" onclick="goHome()" aria-label="返回" data-i18n-aria="common_back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 18 9 12 15 6"/>
       </svg>
@@ -1535,12 +1535,12 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <!-- 4. Bottom: action buttons, fixed -->
   <div class="btm">
     <button class="subbtn" id="subbtn" ontouchstart="" onclick="onSubmit()">
-      <span id="sublbl">确认答案</span>
-      <div class="ntip" id="ntip">先选一个答案 👆</div>
+      <span id="sublbl" data-i18n="quiz_confirm">确认答案</span>
+      <div class="ntip" id="ntip" data-i18n="quiz_select_hint">先选一个答案 👆</div>
     </button>
     <button class="nxtbtn" id="nxtbtn" ontouchstart="" onclick="onNext()">
       <svg class="nring-svg" id="nrsvg"><rect class="nring-t" id="nrt" rx="20"/><rect class="nring-p" id="nrp" rx="20"/></svg>
-      <span class="nring-lbl" id="nxt-lbl">下一题</span>
+      <span class="nring-lbl" id="nxt-lbl" data-i18n="quiz_next">下一题</span>
       <span class="nring-sec" id="nrsec"></span>
     </button>
   </div>
@@ -1550,28 +1550,28 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <div class="screen" id="screen-finish">
   <div class="finish-wrap">
     <div class="finish-icon">🎉</div>
-    <div class="finish-title">今天练习完成！</div>
+    <div class="finish-title" data-i18n="finish_title">今天练习完成！</div>
     <div class="finish-stats" id="finish-stats"></div>
-    <button class="finish-btn" onclick="goHome()">返回首页</button>
+    <button class="finish-btn" onclick="goHome()" data-i18n="finish_back_home">返回首页</button>
   </div>
 </div>
 
 <!-- ══════════════ STATS SCREEN ══════════════ -->
 <div class="screen" id="screen-stats">
   <div class="stats-topbar">
-    <button class="back-btn" onclick="closeStats()" aria-label="返回">
+    <button class="back-btn" onclick="closeStats()" aria-label="返回" data-i18n-aria="common_back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <span class="stats-title">统计</span>
+    <span class="stats-title" data-i18n="stats_title">统计</span>
     <div style="width:30px"></div>
   </div>
 
   <!-- Sub-tabs -->
   <div class="stats-tabs">
-    <div class="stats-tab active" onclick="switchStatsTab(0)">今日</div>
-    <div class="stats-tab" onclick="switchStatsTab(1)">牌组</div>
-    <div class="stats-tab" onclick="switchStatsTab(2)">卡片</div>
-    <div class="stats-tab" onclick="switchStatsTab(3)">记录</div>
+    <div class="stats-tab active" onclick="switchStatsTab(0)" data-i18n="stats_tab_today">今日</div>
+    <div class="stats-tab" onclick="switchStatsTab(1)" data-i18n="stats_tab_decks">牌组</div>
+    <div class="stats-tab" onclick="switchStatsTab(2)" data-i18n="stats_tab_cards">卡片</div>
+    <div class="stats-tab" onclick="switchStatsTab(3)" data-i18n="stats_tab_log">记录</div>
   </div>
 
   <div class="stats-body">
@@ -1583,7 +1583,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="stats-kpi-row" id="st-kpi2" style="margin-top:8px"></div>
       </div>
       <div class="stats-section">
-        <div class="stats-section-lbl">近 7 天</div>
+        <div class="stats-section-lbl" data-i18n="stats_last_7_days">近 7 天</div>
         <div class="stats-chart-wrap" id="st-chart"></div>
       </div>
     </div>
@@ -1592,7 +1592,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="stats-panel" id="sp-1">
       <div class="stats-section" id="st-deck-overview"></div>
       <div class="stats-section">
-        <div class="stats-section-lbl">未来 7 天到期预测</div>
+        <div class="stats-section-lbl" data-i18n="stats_next_7_days">未来 7 天到期预测</div>
         <div class="stats-chart-wrap" id="st-forecast"></div>
       </div>
     </div>
@@ -1600,12 +1600,12 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <!-- Tab 2：卡片状态 -->
     <div class="stats-panel" id="sp-2">
       <div class="stats-filter-bar" id="st-card-filter">
-        <button class="stats-filter-btn active" data-f="all"      onclick="filterCards(this,'all')">全部</button>
-        <button class="stats-filter-btn"        data-f="sus"      onclick="filterCards(this,'sus')">待确认</button>
-        <button class="stats-filter-btn"        data-f="learn"    onclick="filterCards(this,'learn')">学习中</button>
-        <button class="stats-filter-btn"        data-f="inreview" onclick="filterCards(this,'inreview')">复习中</button>
-        <button class="stats-filter-btn"        data-f="review"   onclick="filterCards(this,'review')">已掌握</button>
-        <button class="stats-filter-btn"        data-f="new"      onclick="filterCards(this,'new')">待开始</button>
+        <button class="stats-filter-btn active" data-f="all"      onclick="filterCards(this,'all')" data-i18n="stats_filter_all">全部</button>
+        <button class="stats-filter-btn"        data-f="sus"      onclick="filterCards(this,'sus')" data-i18n="stats_filter_sus">待确认</button>
+        <button class="stats-filter-btn"        data-f="learn"    onclick="filterCards(this,'learn')" data-i18n="stats_filter_learn">学习中</button>
+        <button class="stats-filter-btn"        data-f="inreview" onclick="filterCards(this,'inreview')" data-i18n="stats_filter_inreview">复习中</button>
+        <button class="stats-filter-btn"        data-f="review"   onclick="filterCards(this,'review')" data-i18n="stats_filter_review">已掌握</button>
+        <button class="stats-filter-btn"        data-f="new"      onclick="filterCards(this,'new')" data-i18n="stats_filter_new">待开始</button>
       </div>
       <div class="stats-card-list" id="st-card-list"></div>
     </div>
@@ -1613,7 +1613,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <!-- Tab 3：练习记录 -->
     <div class="stats-panel" id="sp-3">
       <div class="stats-section">
-        <div class="stats-section-lbl">最近 100 条（7天内，不含步长内重现）</div>
+        <div class="stats-section-lbl" data-i18n="stats_recent_100">最近 100 条（7天内，不含步长内重现）</div>
         <div class="stats-rows" id="st-trial-list"></div>
       </div>
     </div>
@@ -1637,8 +1637,8 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <button class="mine-profile" id="mine-profile-card" onclick="showAccount()">
       <div class="mine-profile-avatar" id="mine-avatar">?</div>
       <div class="mine-profile-info">
-        <div class="mine-profile-name" id="mine-profile-name">点击登录</div>
-        <div class="mine-profile-sub" id="mine-profile-sub">登录后可同步牌组与记录</div>
+        <div class="mine-profile-name" id="mine-profile-name" data-i18n="mine_login_prompt">点击登录</div>
+        <div class="mine-profile-sub" id="mine-profile-sub" data-i18n="mine_login_sub">登录后可同步牌组与记录</div>
       </div>
       <svg class="mine-profile-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
@@ -1646,7 +1646,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="mine-group">
       <button class="mine-menu-item" onclick="openStats()">
         <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
-        <span>统计</span>
+        <span data-i18n="mine_menu_stats">统计</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
@@ -1654,30 +1654,30 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="mine-group">
       <button class="mine-menu-item" onclick="openSettingsWithSrs()">
         <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
-        <span>设置</span>
+        <span data-i18n="mine_menu_settings">设置</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
       <button class="mine-menu-item" onclick="showTheme()">
         <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 1.657-1.343 3-3 3h-1.5a2 2 0 0 0-2 2 2 2 0 0 1-2 2z"/><circle cx="8.5" cy="10.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="11.5" cy="7" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg></div>
-        <span>主题</span>
+        <span data-i18n="mine_menu_theme">主题</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
       <button class="mine-menu-item" onclick="showAbout()">
         <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01" stroke-width="2.5"/></svg></div>
-        <span>关于</span>
+        <span data-i18n="mine_menu_about">关于</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
       <button class="mine-menu-item" onclick="document.getElementById('importFile').click()">
         <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-        <span>导入文件</span>
+        <span data-i18n="mine_menu_import">导入文件</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
     <!-- 模式切换 -->
     <div class="mine-mode-row">
       <div class="mine-mode-lbl">
-        <div class="mine-mode-title" id="mine-mode-title">照护者模式</div>
-        <div class="mine-mode-sub" id="mine-mode-sub">开启后可管理牌组与制卡</div>
+        <div class="mine-mode-title" id="mine-mode-title" data-i18n="mine_mode_title">照护者模式</div>
+        <div class="mine-mode-sub" id="mine-mode-sub" data-i18n="mine_mode_sub">开启后可管理牌组与制卡</div>
       </div>
       <label class="stoggle">
         <input type="checkbox" id="app-mode-toggle" onchange="onAppModeToggle(this)">
@@ -1690,17 +1690,17 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-tabbar">
     <button class="tab-item" onclick="showScreen('screen-home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
-      <span>首 页</span>
+      <span data-i18n="nav_home">首 页</span>
     </button>
     <button class="tab-item action" onclick="onFabTap()">
       <div class="tab-fab">
         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
       </div>
-      <span>开始练习</span>
+      <span data-i18n="nav_start_practice">开始练习</span>
     </button>
     <button class="tab-item active">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
-      <span>我 的</span>
+      <span data-i18n="nav_mine">我 的</span>
     </button>
   </div>
 </div>
@@ -1708,35 +1708,35 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <!-- ══════════════ 主题选择器 ══════════════ -->
 <div class="screen screen-theme" id="screen-theme">
   <div class="theme-topbar">
-    <button class="back-btn" onclick="goHome()" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <span class="theme-topbar-title">主题</span>
+    <button class="back-btn" onclick="goHome()" aria-label="返回" data-i18n-aria="common_back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="theme-topbar-title" data-i18n="theme_title">主题</span>
     <div style="width:30px"></div>
   </div>
   <div class="theme-scroll">
     <div class="theme-grid">
       <button class="theme-card active" data-theme="default" onclick="setTheme(this)">
         <div class="theme-prev tp-default"><div class="theme-prev-btn"></div></div>
-        <div class="theme-name">天空·蔚蓝</div>
+        <div class="theme-name" data-i18n="theme_default">天空·蔚蓝</div>
         <div class="theme-check">✓</div>
       </button>
       <button class="theme-card" data-theme="jade" onclick="setTheme(this)">
         <div class="theme-prev tp-jade"><div class="theme-prev-btn"></div></div>
-        <div class="theme-name">翡翠·清雅</div>
+        <div class="theme-name" data-i18n="theme_jade">翡翠·清雅</div>
         <div class="theme-check">✓</div>
       </button>
       <button class="theme-card" data-theme="amber" onclick="setTheme(this)">
         <div class="theme-prev tp-amber"><div class="theme-prev-btn"></div></div>
-        <div class="theme-name">夕阳·暖橙</div>
+        <div class="theme-name" data-i18n="theme_amber">夕阳·暖橙</div>
         <div class="theme-check">✓</div>
       </button>
       <button class="theme-card" data-theme="dark" onclick="setTheme(this)">
         <div class="theme-prev tp-dark"><div class="theme-prev-btn"></div></div>
-        <div class="theme-name">深夜·护眼</div>
+        <div class="theme-name" data-i18n="theme_dark">深夜·护眼</div>
         <div class="theme-check">✓</div>
       </button>
       <button class="theme-card" data-theme="cinnabar" onclick="setTheme(this)">
         <div class="theme-prev tp-cinnabar"><div class="theme-prev-btn"></div></div>
-        <div class="theme-name">朱砂·红韵</div>
+        <div class="theme-name" data-i18n="theme_cinnabar">朱砂·红韵</div>
         <div class="theme-check">✓</div>
       </button>
     </div>
@@ -1746,18 +1746,18 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <!-- ══════════════ 关于 ══════════════ -->
 <div class="screen screen-about" id="screen-about">
   <div class="theme-topbar">
-    <button class="back-btn" onclick="goHome()" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <span class="theme-topbar-title">关于</span>
+    <button class="back-btn" onclick="goHome()" aria-label="返回" data-i18n-aria="common_back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="theme-topbar-title" data-i18n="about_title">关于</span>
     <div style="width:30px"></div>
   </div>
   <div class="about-scroll">
     <div class="about-icon">🧠</div>
-    <div class="about-title">忆海拾光</div>
+    <div class="about-title" data-i18n="about_app_name">忆海拾光</div>
     <div class="about-sub" id="about-version">v4.11.18</div>
     <div class="about-desc">
-      <p style="margin-bottom:12px">忆海拾光是一款帮助记忆练习的工具，通过看图识物的方式，帮助用户每天进行轻松的记忆训练。</p>
-      <p style="margin-bottom:12px">基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让训练更有效。</p>
-      <p>数据完全离线可用，登录后可跨设备同步。</p>
+      <p style="margin-bottom:12px" data-i18n="about_desc1">忆海拾光是一款帮助记忆练习的工具，通过看图识物的方式，帮助用户每天进行轻松的记忆训练。</p>
+      <p style="margin-bottom:12px" data-i18n="about_desc2">基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让训练更有效。</p>
+      <p data-i18n="about_desc3">数据完全离线可用，登录后可跨设备同步。</p>
     </div>
   </div>
 </div>
@@ -1765,11 +1765,11 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <!-- ══════════════ DECK DETAIL SCREEN ══════════════ -->
 <div class="screen" id="screen-deck-detail">
   <div class="dd-topbar">
-    <button class="back-btn" onclick="goHome()" aria-label="返回">
+    <button class="back-btn" onclick="goHome()" aria-label="返回" data-i18n-aria="common_back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="dd-topbar-title" id="dd-deck-name"></span>
-    <button class="dd-topbar-add" onclick="showCreateCard(currentDeck)" aria-label="添加卡片">
+    <button class="dd-topbar-add" onclick="showCreateCard(currentDeck)" aria-label="添加卡片" data-i18n-aria="dd_add_card">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
   </div>
@@ -1784,45 +1784,45 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <div class="screen" id="screen-create-card">
   <div class="cc-topbar">
     <button class="back-btn" onclick="goHome()">←</button>
-    <span class="cc-topbar-title">制卡</span>
+    <span class="cc-topbar-title" data-i18n="cc_title">制卡</span>
     <div style="width:30px"></div>
   </div>
   <div class="cc-body">
     <div class="cc-form">
       <div class="cc-form-group">
-        <label class="cc-form-label">所属牌组</label>
+        <label class="cc-form-label" data-i18n="cc_deck_label">所属牌组</label>
         <select class="cc-deck-select" id="cc-deck"></select>
       </div>
       <div class="cc-form-group">
-        <label class="cc-form-label">卡片名称</label>
-        <input class="cc-form-input" id="cc-name" placeholder="输入卡片正面文字" autocomplete="off" />
+        <label class="cc-form-label" data-i18n="cc_name_label">卡片名称</label>
+        <input class="cc-form-input" id="cc-name" placeholder="输入卡片正面文字" data-i18n-placeholder="cc_name_ph" autocomplete="off" />
       </div>
       <div class="cc-form-group">
-        <label class="cc-form-label">图片（可选）</label>
+        <label class="cc-form-label" data-i18n="cc_image_label">图片（可选）</label>
         <div class="cc-image-upload" id="cc-image-area" onclick="document.getElementById('cc-image-input').click()">
           <input type="file" id="cc-image-input" accept="image/*" hidden onchange="onCardImageChange(event)" />
           <div class="cc-image-placeholder" id="cc-image-placeholder">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <span>点击上传图片</span>
+            <span data-i18n="cc_image_upload">点击上传图片</span>
           </div>
           <img id="cc-image-preview" class="cc-image-preview" style="display:none" />
           <button class="cc-image-remove" id="cc-image-remove" style="display:none" onclick="event.stopPropagation();clearCardImage()">✕</button>
         </div>
       </div>
       <div class="cc-form-group">
-        <label class="cc-form-label">详情（可选，每行一条）</label>
-        <textarea class="cc-form-textarea" id="cc-details" rows="4" placeholder="输入卡片反面说明，每行一条"></textarea>
+        <label class="cc-form-label" data-i18n="cc_details_label">详情（可选，每行一条）</label>
+        <textarea class="cc-form-textarea" id="cc-details" rows="4" placeholder="输入卡片反面说明，每行一条" data-i18n-placeholder="cc_details_ph"></textarea>
       </div>
       <div class="cc-form-group">
-        <label class="cc-form-label">录音（可选）</label>
+        <label class="cc-form-label" data-i18n="cc_audio_label">录音（可选）</label>
         <input type="file" id="cc-audio-input" accept="audio/*" hidden onchange="onCardAudioChange(event)" />
         <div class="cc-audio-upload" id="cc-audio-area" onclick="document.getElementById('cc-audio-input').click()">
           <span id="cc-audio-label">点击上传录音文件</span>
         </div>
       </div>
-      <button class="cc-save-btn" id="cc-save-btn" onclick="saveCardFromForm()">保存卡片</button>
+      <button class="cc-save-btn" id="cc-save-btn" onclick="saveCardFromForm()" data-i18n="cc_save">保存卡片</button>
       <label class="cc-add-another">
-        <input type="checkbox" id="cc-continue" checked /> 保存后继续添加
+        <input type="checkbox" id="cc-continue" checked / data-i18n="cc_continue"> 保存后继续添加
       </label>
     </div>
   </div>
@@ -1834,28 +1834,28 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="action-sheet-group">
       <button class="action-sheet-btn" onclick="closeActionSheet();createEmptyDeck()">
         <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        <span>创建空牌组</span>
+        <span data-i18n="action_create_deck">创建空牌组</span>
       </button>
       <button class="action-sheet-btn" onclick="closeActionSheet();document.getElementById('importFile').click()">
         <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span>导入文件</span>
+        <span data-i18n="action_import_file">导入文件</span>
       </button>
       <button class="action-sheet-btn" onclick="closeActionSheet();importFromUrl()">
         <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        <span>从链接下载</span>
+        <span data-i18n="action_import_url">从链接下载</span>
       </button>
     </div>
     <div class="action-sheet-group">
       <button class="action-sheet-btn" onclick="closeActionSheet();exportDeck()">
         <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span>导出当前牌组</span>
+        <span data-i18n="action_export_deck">导出当前牌组</span>
       </button>
       <button class="action-sheet-btn" onclick="closeActionSheet();shareDeck()">
         <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        <span>共享牌组</span>
+        <span data-i18n="action_share_deck">共享牌组</span>
       </button>
     </div>
-    <button class="action-sheet-cancel" onclick="closeActionSheet()">取消</button>
+    <button class="action-sheet-cancel" onclick="closeActionSheet()" data-i18n="common_cancel">取消</button>
   </div>
 </div>
 
@@ -1863,10 +1863,10 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <div class="screen" id="screen-account">
 
   <div class="account-topbar">
-    <button class="back-btn" onclick="goHome()" aria-label="返回">
+    <button class="back-btn" onclick="goHome()" data-i18n-aria="common_back" aria-label="返回">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <span class="account-topbar-title">账户</span>
+    <span class="account-topbar-title" data-i18n="account_title">账户</span>
     <div style="width:30px"></div>
   </div>
 
@@ -1875,10 +1875,10 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <!-- State A: not logged in (rendered when _cloudUserEmail is empty and not restoring) -->
     <div id="account-state-logged-out" style="display:none">
       <div class="account-section">
-        <div class="account-desc">登录后可同步服务器牌组，训练记录自动上传。未登录仅支持手工导入，数据完全离线。</div>
-        <input class="account-field" type="email" id="account-email" placeholder="邮箱" autocomplete="email" inputmode="email">
-        <input class="account-field" type="password" id="account-password" placeholder="密码" autocomplete="current-password">
-        <button class="account-btn account-btn-primary" id="account-login-btn" onclick="doAccountLogin()">登 录</button>
+        <div class="account-desc" data-i18n="account_desc">登录后可同步服务器牌组，训练记录自动上传。未登录仅支持手工导入，数据完全离线。</div>
+        <input class="account-field" type="email" id="account-email" data-i18n-placeholder="account_email_ph" placeholder="邮箱" autocomplete="email" inputmode="email">
+        <input class="account-field" type="password" id="account-password" data-i18n-placeholder="account_pwd_ph" placeholder="密码" autocomplete="current-password">
+        <button class="account-btn account-btn-primary" id="account-login-btn" onclick="doAccountLogin()" data-i18n="account_login_btn">登 录</button>
         <div class="account-msg" id="account-msg" style="display:none"></div>
       </div>
     </div>
@@ -1887,7 +1887,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div id="account-state-restoring" style="display:none">
       <div class="account-restoring">
         <div class="account-spinner"></div>
-        <div class="account-restoring-txt">正在恢复登录…</div>
+        <div class="account-restoring-txt" data-i18n="account_restoring">正在恢复登录…</div>
       </div>
     </div>
 
@@ -1897,14 +1897,14 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="account-hero-avatar" id="account-avatar">?</div>
         <div class="account-hero-info">
           <div class="account-hero-name" id="account-hero-name"></div>
-          <div class="account-hero-sub">已登录，数据自动同步</div>
+          <div class="account-hero-sub" data-i18n="account_logged_in_sub">已登录，数据自动同步</div>
         </div>
       </div>
 
       <div class="account-section">
         <div class="account-row">
-          <span class="account-row-lbl">云端同步</span>
-          <button class="account-sync-btn" id="account-sync-btn" onclick="doAccountSync()">同 步</button>
+          <span class="account-row-lbl" data-i18n="account_cloud_sync">云端同步</span>
+          <button class="account-sync-btn" id="account-sync-btn" onclick="doAccountSync()" data-i18n="account_sync_btn">同 步</button>
         </div>
       </div>
 
@@ -1912,8 +1912,8 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="account-row">
           <div class="account-toggle-row">
             <span class="account-row-lbl">
-              学习实时上传
-              <span class="acc-sub">关闭后仅在练习完成或打开 App 时同步</span>
+              <span data-i18n="account_realtime_upload">学习实时上传</span>
+              <span class="acc-sub" data-i18n="account_realtime_sub">关闭后仅在练习完成或打开 App 时同步</span>
             </span>
             <label class="stoggle">
               <input type="checkbox" id="account-realtime-toggle" onchange="onAccountRealtimeToggle(this)">
@@ -1925,7 +1925,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       </div>
 
       <div class="account-section">
-        <button class="account-btn account-btn-danger" onclick="doAccountLogout()">退出登录</button>
+        <button class="account-btn account-btn-danger" onclick="doAccountLogout()" data-i18n="account_logout_btn">退出登录</button>
       </div>
     </div>
 
@@ -1939,10 +1939,10 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
     <!-- Tab bar -->
     <div class="sheet-tabs">
-      <div class="sheet-tab active" onclick="switchTab(0)">通用</div>
-      <div class="sheet-tab" onclick="switchTab(1)">语音</div>
+      <div class="sheet-tab active" onclick="switchTab(0)" data-i18n="settings_tab_general">通用</div>
+      <div class="sheet-tab" onclick="switchTab(1)" data-i18n="settings_tab_voice">语音</div>
       <div class="sheet-tab" onclick="switchTab(2)">SRS</div>
-      <div class="sheet-tab" onclick="switchTab(3)">云端</div>
+      <div class="sheet-tab" onclick="switchTab(3)" data-i18n="settings_tab_cloud">云端</div>
     </div>
 
     <div class="sheet-panels">
@@ -1950,17 +1950,17 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <!-- Tab 0: 通用 -->
       <div class="sheet-panel active" id="tab-0">
         <div class="sheet-section">
-          <div class="sheet-section-lbl">目标</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_goal">目标</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">每日学习目标</span>
+            <span class="sheet-row-lbl" data-i18n="settings_daily_goal">每日学习目标</span>
             <input type="range" min="5" max="100" value="50" step="5" id="general-daily-goal" oninput="onDailyGoalChange(this.value)">
             <span class="sheet-row-val" id="general-daily-goal-val">50张</span>
           </div>
         </div>
         <div class="sheet-section">
-          <div class="sheet-section-lbl">显示</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_display">显示</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">深色模式</span>
+            <span class="sheet-row-lbl" data-i18n="settings_dark_mode">深色模式</span>
             <label class="stoggle">
               <input type="checkbox" id="dark-toggle" onchange="toggleTheme(this)">
               <div class="stoggle-track"></div>
@@ -1969,40 +1969,40 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           </div>
         </div>
         <div class="sheet-section">
-          <div class="sheet-section-lbl">选项</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_options">选项</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">选项数量</span>
+            <span class="sheet-row-lbl" data-i18n="settings_opt_count">选项数量</span>
             <input type="range" min="2" max="4" value="3" step="1" id="opt-count" oninput="onOptCount(this.value)">
             <span class="sheet-row-val" id="opt-count-val">3个</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">防误触延迟</span>
+            <span class="sheet-row-lbl" data-i18n="settings_touch_delay">防误触延迟</span>
             <input type="range" min="0" max="400" value="120" step="20" id="opt-touch-delay" oninput="onOptTouchDelayChange(this.value)">
             <span class="sheet-row-val" id="opt-touch-delay-val">120ms</span>
           </div>
         </div>
         <div class="sheet-section">
-          <div class="sheet-section-lbl">节奏</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_rhythm">节奏</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">练习倒计时</span>
+            <span class="sheet-row-lbl" data-i18n="settings_quiz_countdown">练习倒计时</span>
             <input type="range" min="0" max="15" value="6" step="1" id="dbg-ndur" oninput="onNdurChange(this.value)">
             <span class="sheet-row-val" id="dbg-ndur-val">6s</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">浏览倒计时</span>
+            <span class="sheet-row-lbl" data-i18n="settings_browse_countdown">浏览倒计时</span>
             <input type="range" min="0" max="15" value="4" step="1" id="dbg-bdur" oninput="onBdurChange(this.value)">
             <span class="sheet-row-val" id="dbg-bdur-val">4s</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">浏览答案显示延迟</span>
+            <span class="sheet-row-lbl" data-i18n="settings_browse_ans_delay">浏览答案显示延迟</span>
             <input type="range" min="0" max="10" value="3" step="0.5" id="dbg-browse-ans-delay" oninput="onBrowseAnsDelayChange(this.value)">
             <span class="sheet-row-val" id="dbg-browse-ans-delay-val">3s</span>
           </div>
         </div>
         <div class="sheet-section">
-          <div class="sheet-section-lbl">答对反馈</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_feedback">答对反馈</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">撒花动画</span>
+            <span class="sheet-row-lbl" data-i18n="settings_confetti">撒花动画</span>
             <label class="stoggle">
               <input type="checkbox" id="confetti-toggle" checked onchange="toggleConfetti(this)">
               <div class="stoggle-track"></div>
@@ -2010,7 +2010,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             </label>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">回答正确提示</span>
+            <span class="sheet-row-lbl" data-i18n="settings_correct_hint">回答正确提示</span>
             <label class="stoggle">
               <input type="checkbox" id="correct-hint-toggle" checked onchange="toggleCorrectHint(this)">
               <div class="stoggle-track"></div>
@@ -2018,31 +2018,31 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             </label>
           </div>
           <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
-            <span class="sheet-row-lbl">回答正确文案</span>
+            <span class="sheet-row-lbl" data-i18n="settings_correct_phrase">回答正确文案</span>
             <input type="text" id="phrase-correct" class="phrase-input" value="回答正确" oninput="onPhraseChange('correct',this.value)">
           </div>
         </div>
         <div class="sheet-section">
-          <div class="sheet-section-lbl">练习模式</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_mode">练习模式</div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('normal')">
-            <span class="sheet-row-lbl">普通<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px">固定20张，越做越顺</span></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_normal">普通</span><span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px" data-i18n="settings_mode_normal_desc">固定20张，越做越顺</span></span>
             <span id="mode-check-normal" style="color:var(--blue);font-size:18px;font-weight:700"></span>
           </div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('hard')">
-            <span class="sheet-row-lbl">困难<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px">SRS节律，最多30张</span></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_hard">困难</span><span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px" data-i18n="settings_mode_hard_desc">SRS节律，最多30张</span></span>
             <span id="mode-check-hard" style="color:var(--blue);font-size:18px;font-weight:700"></span>
           </div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('survival')">
-            <span class="sheet-row-lbl">生存<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px">清空所有积压</span></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_survival">生存</span><span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px" data-i18n="settings_mode_survival_desc">清空所有积压</span></span>
             <span id="mode-check-survival" style="color:var(--blue);font-size:18px;font-weight:700"></span>
           </div>
         </div>
         <div class="sheet-section">
-          <div class="sheet-section-lbl">存储维护</div>
-          <div style="font-size:12px;color:var(--text3);margin-bottom:8px;line-height:1.5">检查并清理未被任何卡片引用的孤立媒体文件，释放存储空间。</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_storage">存储维护</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px;line-height:1.5" data-i18n="settings_storage_desc">检查并清理未被任何卡片引用的孤立媒体文件，释放存储空间。</div>
           <button id="check-media-btn"
             style="padding:8px 16px;border:1px solid var(--bd);border-radius:8px;background:var(--surf);color:var(--text);font-size:13px;cursor:pointer;font-family:inherit"
-            onclick="checkMedia()">🧹 检查媒体文件</button>
+            onclick="checkMedia()" data-i18n="settings_check_media">🧹 检查媒体文件</button>
           <div id="media-check-result" style="display:none;margin-top:10px;"></div>
         </div>
       </div>
@@ -2051,9 +2051,9 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <div class="sheet-panel" id="tab-1">
 
         <div class="sheet-section">
-          <div class="sheet-section-lbl">答题提示</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_quiz_prompt">答题提示</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">答题提示</span>
+            <span class="sheet-row-lbl" data-i18n="settings_quiz_prompt">答题提示</span>
             <label class="stoggle">
               <input type="checkbox" id="quiz-prompt-toggle" checked onchange="toggleQuizPrompt(this)">
               <div class="stoggle-track"></div>
@@ -2061,20 +2061,20 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             </label>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">答题提示延迟</span>
+            <span class="sheet-row-lbl" data-i18n="settings_quiz_prompt_delay">答题提示延迟</span>
             <input type="range" min="0.5" max="10" value="2" step="0.5" id="dbg-qpdelay" oninput="onQpDelayChange(this.value)">
             <span class="sheet-row-val" id="dbg-qpdelay-val">2s</span>
           </div>
           <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
-            <span class="sheet-row-lbl">答题提示文案</span>
+            <span class="sheet-row-lbl" data-i18n="settings_quiz_prompt_phrase">答题提示文案</span>
             <input type="text" id="phrase-select" class="phrase-input" value="请选择答案" oninput="onPhraseChange('select',this.value)">
           </div>
         </div>
 
         <div class="sheet-section">
-          <div class="sheet-section-lbl">选项提示</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_opt_hint">选项提示</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">选项提示</span>
+            <span class="sheet-row-lbl" data-i18n="settings_opt_hint">选项提示</span>
             <label class="stoggle">
               <input type="checkbox" id="opt-hint-toggle" checked onchange="toggleOptHint(this)">
               <div class="stoggle-track"></div>
@@ -2082,20 +2082,20 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             </label>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">选项提示延迟</span>
+            <span class="sheet-row-lbl" data-i18n="settings_opt_hint_delay">选项提示延迟</span>
             <input type="range" min="0.5" max="10" value="5" step="0.5" id="dbg-ohdelay" oninput="onOhDelayChange(this.value)">
             <span class="sheet-row-val" id="dbg-ohdelay-val">5s</span>
           </div>
           <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
-            <span class="sheet-row-lbl">选项提示文案（{A}{B}{C}替换为选项，. 为停顿100ms）</span>
+            <span class="sheet-row-lbl" data-i18n="settings_opt_hint_phrase_label">选项提示文案（{A}{B}{C}替换为选项，. 为停顿100ms）</span>
             <input type="text" id="phrase-opt-hint" class="phrase-input" value="请在{A}.{B}.{C}中选择一个" oninput="onPhraseChange('optHint',this.value)">
           </div>
         </div>
 
         <div class="sheet-section">
-          <div class="sheet-section-lbl">答错提示</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_wrong_hint">答错提示</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">答错提示</span>
+            <span class="sheet-row-lbl" data-i18n="settings_wrong_hint">答错提示</span>
             <label class="stoggle">
               <input type="checkbox" id="wrong-hint-toggle" checked onchange="toggleWrongHint(this)">
               <div class="stoggle-track"></div>
@@ -2103,15 +2103,15 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             </label>
           </div>
           <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
-            <span class="sheet-row-lbl">答错提示文案</span>
+            <span class="sheet-row-lbl" data-i18n="settings_wrong_phrase">答错提示文案</span>
             <input type="text" id="phrase-wrong" class="phrase-input" value="不要着急，再试一次" oninput="onPhraseChange('wrong',this.value)">
           </div>
         </div>
 
         <div class="sheet-section">
-          <div class="sheet-section-lbl">答案播报</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_answer">答案播报</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">朗读物品提示</span>
+            <span class="sheet-row-lbl" data-i18n="settings_read_hint">朗读物品提示</span>
             <label class="stoggle">
               <input type="checkbox" id="hint-toggle" checked onchange="toggleReadHint(this)">
               <div class="stoggle-track"></div>
@@ -2119,32 +2119,32 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             </label>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">练习播报延迟</span>
+            <span class="sheet-row-lbl" data-i18n="settings_answer_delay">练习播报延迟</span>
             <input type="range" min="0.5" max="3" value="1.2" step="0.1" id="dbg-delay" oninput="onDelayChange(this.value)">
             <span class="sheet-row-val" id="dbg-delay-val">1.2s</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">浏览播报延迟</span>
+            <span class="sheet-row-lbl" data-i18n="settings_browse_answer_delay">浏览播报延迟</span>
             <input type="range" min="0.5" max="3" value="1.2" step="0.1" id="dbg-browse-delay" oninput="onBrowseDelayChange(this.value)">
             <span class="sheet-row-val" id="dbg-browse-delay-val">1.2s</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">语速</span>
+            <span class="sheet-row-lbl" data-i18n="settings_tts_rate">语速</span>
             <input type="range" min="0.5" max="2" value="0.85" step="0.05" id="tts-rate" oninput="onTtsRateChange(this.value)">
             <span class="sheet-row-val" id="tts-rate-val">0.85</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">音调</span>
+            <span class="sheet-row-lbl" data-i18n="settings_tts_pitch">音调</span>
             <input type="range" min="0.5" max="2" value="1" step="0.1" id="tts-pitch" oninput="onTtsPitchChange(this.value)">
             <span class="sheet-row-val" id="tts-pitch-val">1.0</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">音色</span>
+            <span class="sheet-row-lbl" data-i18n="settings_tts_voice">音色</span>
             <select id="tts-voice" onchange="onTtsVoiceChange(this.value)"
               style="flex:1;padding:6px 10px;border:1.5px solid var(--bd2);border-radius:10px;
                      background:var(--surf2);color:var(--text);font-family:inherit;font-size:14px;
                      outline:none;max-width:200px;">
-              <option value="">自动（中文优先）</option>
+              <option value="" data-i18n="settings_tts_voice_auto">自动（中文优先）</option>
             </select>
           </div>
         </div>
@@ -2154,16 +2154,16 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <div class="sheet-panel" id="tab-2">      <!-- SRS -->
 
         <div class="sheet-section">
-          <div class="sheet-section-lbl">预设</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_preset">预设</div>
           <div class="sheet-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:12px 0;">
-            <button class="srs-preset-btn srs-preset-btn--sec" onclick="applySrsPreset('default')">恢复 Anki 默认值</button>
+            <button class="srs-preset-btn srs-preset-btn--sec" onclick="applySrsPreset('default')" data-i18n="settings_srs_reset_default">恢复 Anki 默认值</button>
           </div>
         </div>
 
         <div class="sheet-section">
-          <div class="sheet-section-lbl">新卡学习</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_new_cards">新卡学习</div>
           <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;">
-            <span class="sheet-row-lbl" style="font-size:13px">学习步长（分钟，逗号分隔）</span>
+            <span class="sheet-row-lbl" style="font-size:13px" data-i18n="settings_learning_steps">学习步长（分钟，逗号分隔）</span>
             <div style="display:flex;gap:8px;width:100%;align-items:center">
               <input type="text" id="srs-learning-steps" class="phrase-input" style="flex:1"
                 placeholder="例：1, 10"
@@ -2172,21 +2172,21 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             </div>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">毕业间隔（天）</span>
-            <input type="range" min="1" max="4" value="1" step="1" id="srs-graduating-interval" oninput="onSrsSlider('graduating_interval',this.value,this,'天')">
+            <span class="sheet-row-lbl" data-i18n="settings_graduating_interval">毕业间隔（天）</span>
+            <input type="range" min="1" max="4" value="1" step="1" id="srs-graduating-interval" oninput="onSrsSlider('graduating_interval',this.value,this,t('common_day_unit'))">
             <span class="sheet-row-val" id="srs-graduating-interval-val">1天</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">简单间隔（天）</span>
-            <input type="range" min="1" max="7" value="2" step="1" id="srs-easy-interval" oninput="onSrsSlider('easy_interval',this.value,this,'天')">
+            <span class="sheet-row-lbl" data-i18n="settings_easy_interval">简单间隔（天）</span>
+            <input type="range" min="1" max="7" value="2" step="1" id="srs-easy-interval" oninput="onSrsSlider('easy_interval',this.value,this,t('common_day_unit'))">
             <span class="sheet-row-val" id="srs-easy-interval-val">2天</span>
           </div>
         </div>
 
         <div class="sheet-section">
-          <div class="sheet-section-lbl">遗忘重学</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_relearn">遗忘重学</div>
           <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;">
-            <span class="sheet-row-lbl" style="font-size:13px">重学步长（分钟，逗号分隔）</span>
+            <span class="sheet-row-lbl" style="font-size:13px" data-i18n="settings_relearning_steps">重学步长（分钟，逗号分隔）</span>
             <div style="display:flex;gap:8px;width:100%;align-items:center">
               <input type="text" id="srs-relearning-steps" class="phrase-input" style="flex:1"
                 placeholder="例：10"
@@ -2197,54 +2197,54 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         </div>
 
         <div class="sheet-section">
-          <div class="sheet-section-lbl">每日上限</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_daily_limit">每日上限</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">每日新卡</span>
-            <input type="range" min="1" max="20" value="5" step="1" id="srs-new-per-day" oninput="onSrsSlider('new_cards_per_day',this.value,this,'张')">
+            <span class="sheet-row-lbl" data-i18n="settings_new_per_day">每日新卡</span>
+            <input type="range" min="1" max="20" value="5" step="1" id="srs-new-per-day" oninput="onSrsSlider('new_cards_per_day',this.value,this,t('common_card_unit'))">
             <span class="sheet-row-val" id="srs-new-per-day-val">5张</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">每日复习上限</span>
-            <input type="range" min="10" max="200" value="50" step="10" id="srs-max-reviews" oninput="onSrsSlider('maximum_reviews_per_day',this.value,this,'张')">
+            <span class="sheet-row-lbl" data-i18n="settings_max_reviews">每日复习上限</span>
+            <input type="range" min="10" max="200" value="50" step="10" id="srs-max-reviews" oninput="onSrsSlider('maximum_reviews_per_day',this.value,this,t('common_card_unit'))">
             <span class="sheet-row-val" id="srs-max-reviews-val">50张</span>
           </div>
         </div>
 
         <div class="sheet-section">
-          <div class="sheet-section-lbl">间隔控制</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_interval">间隔控制</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">最大间隔（天）</span>
-            <input type="range" min="1" max="30" value="7" step="1" id="srs-max-interval" oninput="onSrsSlider('maximum_interval',this.value,this,'天')">
+            <span class="sheet-row-lbl" data-i18n="settings_max_interval">最大间隔（天）</span>
+            <input type="range" min="1" max="30" value="7" step="1" id="srs-max-interval" oninput="onSrsSlider('maximum_interval',this.value,this,t('common_day_unit'))">
             <span class="sheet-row-val" id="srs-max-interval-val">7天</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">初始易度</span>
+            <span class="sheet-row-lbl" data-i18n="settings_starting_ease">初始易度</span>
             <input type="range" min="1.3" max="3.0" value="1.3" step="0.1" id="srs-starting-ease" oninput="onSrsSlider('starting_ease',this.value,this,'',1)">
             <span class="sheet-row-val" id="srs-starting-ease-val">1.3</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">全局间隔乘数</span>
+            <span class="sheet-row-lbl" data-i18n="settings_interval_modifier">全局间隔乘数</span>
             <input type="range" min="0.5" max="1.5" value="0.8" step="0.05" id="srs-interval-modifier" oninput="onSrsSlider('interval_modifier',this.value,this,'',2)">
             <span class="sheet-row-val" id="srs-interval-modifier-val">0.80</span>
           </div>
         </div>
 
         <div class="sheet-section">
-          <div class="sheet-section-lbl">失败保护</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_failure">失败保护</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">当日移出（连失次）</span>
-            <input type="range" min="2" max="8" value="3" step="1" id="srs-daily-remove" oninput="onSrsSlider('daily_remove_lapses',this.value,this,'次')">
+            <span class="sheet-row-lbl" data-i18n="settings_daily_remove">当日移出（连失次）</span>
+            <input type="range" min="2" max="8" value="3" step="1" id="srs-daily-remove" oninput="onSrsSlider('daily_remove_lapses',this.value,this,t('common_lapse_unit'))">
             <span class="sheet-row-val" id="srs-daily-remove-val">3次</span>
           </div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">自动挂起（累计失败）</span>
-            <input type="range" min="3" max="20" value="8" step="1" id="srs-auto-suspend" oninput="onSrsSlider('auto_suspend_lapses',this.value,this,'次')">
+            <span class="sheet-row-lbl" data-i18n="settings_auto_suspend">自动挂起（累计失败）</span>
+            <input type="range" min="3" max="20" value="8" step="1" id="srs-auto-suspend" oninput="onSrsSlider('auto_suspend_lapses',this.value,this,t('common_lapse_unit'))">
             <span class="sheet-row-val" id="srs-auto-suspend-val">8次</span>
           </div>
           <div class="sheet-row" style="justify-content:space-between">
             <div>
-              <span class="sheet-row-lbl">学习阶段 Hard 计入连失</span>
-              <div style="font-size:11px;color:var(--text3);margin-top:2px">建议开启，防止反复答 Hard 绕过失败计数</div>
+              <span class="sheet-row-lbl" data-i18n="settings_learning_hard_lapse">学习阶段 Hard 计入连失</span>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px" data-i18n="settings_learning_hard_desc">建议开启，防止反复答 Hard 绕过失败计数</div>
             </div>
             <label class="stoggle">
               <input type="checkbox" id="srs-learning-hard-lapse" onchange="saveSrsConfigKey('learning_hard_counts_lapse',this.checked)">
@@ -2255,25 +2255,25 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         </div>
 
         <div class="sheet-section" style="padding-bottom:16px">
-          <div class="sheet-section-lbl">时长保护（练习模式）</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_duration">时长保护（练习模式）</div>
           <div class="sheet-row">
-            <span class="sheet-row-lbl">提醒时长（分钟）</span>
-            <input type="range" min="5" max="60" value="20" step="5" id="srs-warn-duration" oninput="onSrsSlider('warn_duration_sec',this.value*60,this,'分',0,v=>v/60)">
+            <span class="sheet-row-lbl" data-i18n="settings_warn_duration">提醒时长（分钟）</span>
+            <input type="range" min="5" max="60" value="20" step="5" id="srs-warn-duration" oninput="onSrsSlider('warn_duration_sec',this.value*60,this,t('common_minute_unit'),0,v=>v/60)">
             <span class="sheet-row-val" id="srs-warn-duration-val">20分</span>
           </div>
         </div>
 
         <div class="sheet-section" style="padding-bottom:16px">
-          <div class="sheet-section-lbl">提前出题窗口</div>
+          <div class="sheet-section-lbl" data-i18n="settings_section_learn_ahead">提前出题窗口</div>
           <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;">
-            <span class="sheet-row-lbl" style="font-size:13px">Learn Ahead Limit（m / h）</span>
+            <span class="sheet-row-lbl" style="font-size:13px" data-i18n="settings_learn_ahead">Learn Ahead Limit（m / h）</span>
             <div style="display:flex;gap:8px;width:100%;align-items:center">
               <input type="text" id="srs-learn-ahead" class="phrase-input" style="flex:1"
                 placeholder="例：20m 或 1h"
                 oninput="onSrsLearnAheadInput(this.value)">
               <span style="font-size:11px;color:var(--text3);flex-shrink:0" id="srs-learn-ahead-hint"></span>
             </div>
-            <span style="font-size:11px;color:var(--text3);line-height:1.5">主队列做完后，due_ts 在此窗口内的学习卡才追加出题。超过窗口（如 1d 步骤）session 直接结束。Anki 默认 20m。</span>
+            <span style="font-size:11px;color:var(--text3);line-height:1.5" data-i18n="settings_learn_ahead_desc">主队列做完后，due_ts 在此窗口内的学习卡才追加出题。超过窗口（如 1d 步骤）session 直接结束。Anki 默认 20m。</span>
           </div>
         </div>
 
@@ -2283,18 +2283,18 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <!-- 未登录 -->
         <div id="cloud-login-section">
           <div class="sheet-section">
-            <div class="sheet-section-lbl">同步账户</div>
-            <div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5">
+            <div class="sheet-section-lbl" data-i18n="settings_sync_account">同步账户</div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5" data-i18n="settings_cloud_desc">
               登录后可同步服务器牌组，训练记录自动上传。未登录时仅支持手工导入，数据完全离线。
             </div>
             <div style="display:flex;flex-direction:column;gap:8px">
-              <input type="email" id="cloud-email" placeholder="邮箱"
+              <input type="email" id="cloud-email" placeholder="邮箱" data-i18n-placeholder="settings_cloud_email_ph"
                 style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--surf);color:var(--text);font-family:inherit">
-              <input type="password" id="cloud-password" placeholder="密码"
+              <input type="password" id="cloud-password" placeholder="密码" data-i18n-placeholder="settings_cloud_pwd_ph"
                 style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--surf);color:var(--text);font-family:inherit">
               <button id="cloud-login-btn"
                 style="padding:10px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit"
-                onclick="doCloudLogin()">登录</button>
+                onclick="doCloudLogin()" data-i18n="settings_cloud_login">登录</button>
               <div id="cloud-login-msg" style="font-size:11px;color:var(--text3);text-align:center;display:none"></div>
             </div>
           </div>
@@ -2303,22 +2303,22 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <!-- 正在恢复会话 -->
         <div id="cloud-restoring-section" style="display:none">
           <div class="sheet-section">
-            <div class="sheet-section-lbl">同步账户</div>
-            <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">正在恢复登录…</div>
+            <div class="sheet-section-lbl" data-i18n="settings_sync_account">同步账户</div>
+            <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px" data-i18n="settings_cloud_restoring">正在恢复登录…</div>
           </div>
         </div>
 
         <!-- 已登录 -->
         <div id="cloud-connected-section" style="display:none">
           <div class="sheet-section">
-            <div class="sheet-section-lbl">同步账户</div>
+            <div class="sheet-section-lbl" data-i18n="settings_sync_account">同步账户</div>
             <div class="sheet-row">
               <span class="sheet-row-lbl" id="cloud-user-email"></span>
               <div style="display:flex;gap:6px">
                 <button style="padding:4px 10px;border:1px solid var(--blue);border-radius:6px;background:var(--blue-lt);color:var(--blue);font-size:11px;cursor:pointer;font-family:inherit"
-                  onclick="runSync({modal:true,decks:true,events:true,showToast:true,voice:true,deckKey:currentDeck}).catch(function(e){console.warn(e)})">🔄 同步</button>
+                  onclick="runSync({modal:true,decks:true,events:true,showToast:true,voice:true,deckKey:currentDeck}).catch(function(e){console.warn(e)})" data-i18n="settings_cloud_sync_btn">🔄 同步</button>
                 <button style="padding:4px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--surf);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit"
-                  onclick="doCloudLogout()">退出</button>
+                  onclick="doCloudLogout()" data-i18n="settings_cloud_logout">退出</button>
               </div>
             </div>
             <div class="sheet-row" style="margin-top:6px">
@@ -2326,7 +2326,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
                 <input type="checkbox" id="realtime-upload-toggle"
                   onchange="_realtimeUpload=this.checked;localStorage.setItem('yihai_realtime_upload',_realtimeUpload)"
                   style="accent-color:var(--blue)">
-                学习中实时上传（关闭后仅打开/前台/练习完成时同步，更省电）
+                <span data-i18n="settings_realtime_desc">学习中实时上传（关闭后仅打开/前台/练习完成时同步，更省电）</span>
               </label>
             </div>
           </div>
@@ -2717,7 +2717,7 @@ function updateCloudTabUI() {
     if (loginSec)     loginSec.style.display     = 'none';
     if (connSec)      connSec.style.display      = '';
     if (restoringSec) restoringSec.style.display = 'none';
-    if (userEl) userEl.textContent = '📵 ' + _cloudUserEmail + '（网络不稳定）';
+    if (userEl) userEl.textContent = '📵 ' + _cloudUserEmail + t('account_offline_suffix');
   } else {
     if (loginSec)     loginSec.style.display     = '';
     if (connSec)      connSec.style.display      = 'none';
@@ -2742,10 +2742,10 @@ async function doCloudLogin() {
   const email = (emailEl && emailEl.value) ? emailEl.value.trim() : '';
   const pwd   = (pwdEl && pwdEl.value) ? pwdEl.value : '';
   if (!email || !pwd) {
-    if (msgEl) { msgEl.style.display = ''; msgEl.textContent = '请输入邮箱和密码'; msgEl.style.color = 'var(--text3)'; }
+    if (msgEl) { msgEl.style.display = ''; msgEl.textContent = t('account_login_validate'); msgEl.style.color = 'var(--text3)'; }
     return;
   }
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '登录中...'; }
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('account_logging_in'); }
   if (msgEl) { msgEl.style.display = 'none'; }
   try {
     _sb = _createSupabaseClient();
@@ -2773,10 +2773,10 @@ async function doCloudLogin() {
     runSync({ modal: true, decks: true, events: true, title: '正在同步数据', voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
-    if (msgEl) { msgEl.style.display = ''; msgEl.textContent = '登录失败：' + e.message; msgEl.style.color = '#9B3A2A'; }
+    if (msgEl) { msgEl.style.display = ''; msgEl.textContent = t('account_login_fail', { msg: e.message }); msgEl.style.color = '#9B3A2A'; }
     console.warn('[sync] login failed:', e.message);
   } finally {
-    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '登录'; }
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = t('account_login_btn'); }
   }
 }
 
@@ -3156,7 +3156,7 @@ async function runSync(opts) {
   if (options.modal && modalEl) {
     modalEl.style.display = 'flex';
     if (titleEl) titleEl.textContent = options.title;
-    if (textEl) textEl.textContent = '正在连接...';
+    if (textEl) textEl.textContent = t('sync_connecting');
     if (barEl) barEl.style.width = '0%';
     if (pctEl) pctEl.textContent = '0%';
     if (options.voice) { try { speechSynthesis.cancel(); speak(options.title); } catch(e) {} }
@@ -3239,7 +3239,7 @@ async function runSync(opts) {
     localStorage.setItem('yihai_global_sync_ts', String(Date.now()));
     logAppEvent('sync_done', { deck_key: options.deckKey, stats: syncStats }, options.deckKey);
     // 结束
-    updateProg('同步完成', 100);
+    updateProg(t('sync_done'), 100);
     if (options.modal && modalEl) {
       setTimeout(function() { modalEl.style.display = 'none'; }, 800);
     }
@@ -3250,13 +3250,13 @@ async function runSync(opts) {
       if (syncStats.config > 0) parts.push('配置 ' + syncStats.config);
       if (newDecks > 0) parts.push('下载牌组 ' + newDecks);
       if (syncedDecks > 0) parts.push('同步牌组 ' + syncedDecks);
-      if (parts.length > 0) showCloudToast('同步完成 · ' + parts.join(' · '));
-      else if (pendingCount === 0 && syncStats.states_merged === 0 && !newDecks && !syncedDecks) showCloudToast('已是最新');
+      if (parts.length > 0) showCloudToast(t('sync_done') + ' · ' + parts.join(' · '));
+      else if (pendingCount === 0 && syncStats.states_merged === 0 && !newDecks && !syncedDecks) showCloudToast(t('sync_up_to_date'));
     }
   } catch(e) {
     if (options.modal && modalEl) modalEl.style.display = 'none';
     console.warn('[sync] runSync error:', e.message);
-    if (options.showToast) showCloudToast('同步失败', true);
+    if (options.showToast) showCloudToast(t('sync_failed'), true);
   } finally {
     _syncInFlight = false;
   }
@@ -4283,7 +4283,7 @@ async function checkMedia() {
   const resultEl = document.getElementById('media-check-result');
   const btnEl = document.getElementById('check-media-btn');
   resultEl.style.display = 'block';
-  resultEl.innerHTML = '<span style="color:var(--text3)">⏳ 正在扫描媒体文件...</span>';
+  resultEl.innerHTML = '<span style="color:var(--text3)">⏳ ' + t('storage_scanning') + '</span>';
   if (btnEl) btnEl.disabled = true;
 
   try {
@@ -4330,7 +4330,7 @@ async function checkMedia() {
         + '</div></div>';
     }
   } catch(e) {
-    resultEl.innerHTML = '<span style="color:var(--red)">扫描失败：' + esc(e.message) + '</span>';
+    resultEl.innerHTML = '<span style="color:var(--red)">' + t('storage_scan_fail', { msg: esc(e.message) }) + '</span>';
   } finally {
     if (btnEl) btnEl.disabled = false;
   }
@@ -4343,7 +4343,7 @@ async function cleanOrphanMedia() {
   if (!ok) return;
 
   const resultEl = document.getElementById('media-check-result');
-  resultEl.innerHTML = '<span style="color:var(--text3)">⏳ 正在清理...</span>';
+  resultEl.innerHTML = '<span style="color:var(--text3)">⏳ ' + t('storage_cleaning') + '</span>';
 
   try {
     const db = await openDB();
@@ -4354,7 +4354,7 @@ async function cleanOrphanMedia() {
     _lastOrphans = [];
     resultEl.innerHTML = '<div style="padding:10px;background:var(--green-bg);border:1px solid var(--green-bd);border-radius:8px;color:var(--green);font-size:13px;">✅ 已清理 ' + orphans.length + ' 个孤立文件</div>';
   } catch(e) {
-    resultEl.innerHTML = '<span style="color:var(--red)">清理失败：' + esc(e.message) + '</span>';
+    resultEl.innerHTML = '<span style="color:var(--red)">' + t('storage_clean_fail', { msg: esc(e.message) }) + '</span>';
   }
 }
 
@@ -4425,10 +4425,10 @@ async function importYhspack(file) {
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
 
     const jsonFile = zip.file('deck.json');
-    if (!jsonFile) { showCloudToast('格式错误：未找到 deck.json', true); return; }
+    if (!jsonFile) { showCloudToast(t('import_bad_format_json'), true); return; }
     const deckData = JSON.parse(await jsonFile.async('string'));
     const deck = deckData.deck;
-    if (!deck || !deck.cards) { showCloudToast('格式错误：deck.cards 不存在', true); return; }
+    if (!deck || !deck.cards) { showCloudToast(t('import_bad_format_cards'), true); return; }
 
     const key = deck.id || ('deck_' + Date.now());
     const name = deck.name || file.name.replace('.yhspack','');
@@ -4472,7 +4472,7 @@ async function importYhspack(file) {
       cards.push(card);
     }
 
-    if (!cards.length) { showCloudToast('未找到有效卡片', true); return; }
+    if (!cards.length) { showCloudToast(t('import_no_valid_cards'), true); return; }
 
     // 写入内存
     DECKS[key] = cards;
@@ -4493,7 +4493,7 @@ async function importYhspack(file) {
 
     showImportToast(name, cards.length);
   } catch(e) {
-    showCloudToast('导入失败：' + e.message, true);
+    showCloudToast(t('import_failed', { msg: e.message }), true);
     console.error(e);
   }
 }
@@ -4524,7 +4524,7 @@ let BROWSE_SPEAK_DELAY = 1200; // 浏览答案播报延迟（毫秒）
 // 答题提示
 let QUIZ_PROMPT_ON   = true;    // 答题提示开关
 let QUIZ_PROMPT_DELAY = 2000;   // 答题提示延迟（毫秒）
-let PHRASE_SELECT    = '请选择答案'; // 答题提示文案
+let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // 答题提示文案（i18n 默认英文，loadPhrases 后覆盖）
 
 // 选项提示
 let OPT_HINT_ON      = true;    // 选项提示开关
@@ -4613,7 +4613,7 @@ async function deleteDeck(e, key) {
 async function renameDeck(key) {
   const meta = DECKS_META.find(m => m.key === key);
   if (!meta || meta.builtin) return;
-  const newName = await showPromptDialog('重命名牌组', meta.name || '');
+  const newName = await showPromptDialog(t('common_rename'), meta.name || '');
   if (!newName || newName.trim() === '' || newName.trim() === meta.name) return;
   meta.name = newName.trim();
   saveDeckIndex();
@@ -4679,7 +4679,7 @@ function _renderBrowseCard() {
   descEl.style.display = desc ? '' : 'none';
 
   document.getElementById('browse-btn-prev').disabled = _browseIdx === 0;
-  document.getElementById('browse-btn-next').textContent = _browseIdx === total - 1 ? '完 成' : '下一张';
+  document.getElementById('browse-btn-next').textContent = _browseIdx === total - 1 ? t('browse_done') : t('browse_next');
 
   const sid = sessionId;
   setTimeout(() => { if (sid === sessionId) playAnswer(q, () => {}); }, 500);
@@ -4749,12 +4749,12 @@ function updateTabBarMode() {
     const span = fab.querySelector('span');
     if (isPatient) {
       fab.onclick = onFabTap;
-      if (span) span.textContent = '开始练习';
+      if (span) span.textContent = t('nav_start_practice');
       const svg = fab.querySelector('svg');
       if (svg) svg.innerHTML = '<polygon points="6 3 20 12 6 21 6 3"/>';
     } else {
       fab.onclick = onCaregiverFabTap;
-      if (span) span.textContent = '开始制卡';
+      if (span) span.textContent = t('nav_start_create');
       const svg = fab.querySelector('svg');
       if (svg) svg.innerHTML = '<line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/>';
     }
@@ -4766,8 +4766,8 @@ function updateHomeTopbar() {
   if (modeToggle) modeToggle.checked = _appMode === 'caregiver';
   const modeTitle = document.getElementById('mine-mode-title');
   const modeSub = document.getElementById('mine-mode-sub');
-  if (modeTitle) modeTitle.textContent = '照护者模式';
-  if (modeSub) modeSub.textContent = _appMode === 'caregiver' ? '已开启' : '已关闭 — 开启后可管理牌组与制卡';
+  if (modeTitle) modeTitle.textContent = t('mine_mode_title');
+  if (modeSub) modeSub.textContent = _appMode === 'caregiver' ? t('mine_mode_on') : t('mine_mode_off');
 }
 
 function onCaregiverFabTap() { showCreateCard(); }
@@ -4803,7 +4803,7 @@ function showCreateCard(preselectedDeckKey) {
   document.getElementById('cc-name').value = '';
   document.getElementById('cc-details').value = '';
   clearCardImage();
-  document.getElementById('cc-audio-label').textContent = '点击上传录音文件';
+  document.getElementById('cc-audio-label').textContent = t('cc_audio_upload');
   _ccAudioBlob = null;
   document.getElementById('cc-continue').checked = true;
   // 聚焦首页确保选中态消失
@@ -4835,7 +4835,7 @@ function clearCardImage() {
 function onCardAudioChange(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) {
-    document.getElementById('cc-audio-label').textContent = '点击上传录音文件';
+    document.getElementById('cc-audio-label').textContent = t('cc_audio_upload');
     _ccAudioBlob = null;
     return;
   }
@@ -4845,7 +4845,7 @@ function onCardAudioChange(e) {
 
 function saveCardFromForm() {
   const name = document.getElementById('cc-name').value.trim();
-  if (!name) { showCloudToast('请输入卡片名称', true); return; }
+  if (!name) { showCloudToast(t('cc_name_required'), true); return; }
 
   const sel = document.getElementById('cc-deck');
   var deckKey = sel.value;
@@ -4854,7 +4854,7 @@ function saveCardFromForm() {
   // 处理新建牌组
   if (deckKey === '__new__') {
     const newName = prompt('请输入新牌组名称：');
-    if (!newName || !newName.trim()) { showCloudToast('牌组名称不能为空', true); return; }
+    if (!newName || !newName.trim()) { showCloudToast(t('home_deck_name_empty'), true); return; }
     deckName = newName.trim();
     deckKey = 'deck_' + Date.now();
     DECKS[deckKey] = [];
@@ -4869,7 +4869,7 @@ function saveCardFromForm() {
 
   // 查找牌组名
   const meta = DECKS_META.find(function(m) { return m.key === deckKey; });
-  if (!meta) { showCloudToast('请选择牌组', true); return; }
+  if (!meta) { showCloudToast(t('cc_deck_required'), true); return; }
 
   if (!DECKS[deckKey]) DECKS[deckKey] = [];
   const deck = DECKS[deckKey];
@@ -4929,12 +4929,12 @@ function saveCardFromForm() {
     document.getElementById('cc-name').value = '';
     document.getElementById('cc-details').value = '';
     clearCardImage();
-    document.getElementById('cc-audio-label').textContent = '点击上传录音文件';
+    document.getElementById('cc-audio-label').textContent = t('cc_audio_upload');
     _ccAudioBlob = null;
     document.getElementById('cc-name').focus();
-    showCloudToast('已保存 ' + name);
+    showCloudToast(t('cc_saved', { name: name }));
   } else {
-    showCloudToast('已保存 ' + name);
+    showCloudToast(t('cc_saved', { name: name }));
     goHome();
   }
 }
@@ -5023,7 +5023,7 @@ async function exportDeck() {
     }, 2000);
     showToastMsg('已导出：' + meta.name);
   } catch(e) {
-    showCloudToast('导出失败：' + e.message, true);
+    showCloudToast(t('toast_export_fail', { msg: e.message }), true);
     console.error(e);
   }
 }
@@ -5081,7 +5081,7 @@ async function shareDeck() {
     }
   } catch(e) {
     if (e.name !== 'AbortError') {
-      showCloudToast('分享失败：' + e.message, true);
+      showCloudToast(t('toast_share_fail', { msg: e.message }), true);
       console.error(e);
     }
   }
@@ -5091,7 +5091,7 @@ function _launch(mode) {
   sessionId++;
   currentMode = mode;
   qIdx = 0;
-  document.getElementById('nxt-lbl').textContent = mode === 'browse' ? '下一张' : '下一题';
+  document.getElementById('nxt-lbl').textContent = mode === 'browse' ? t('browse_next') : t('quiz_next');
 
   if (mode === 'browse') {
     _enterBrowse();
@@ -5140,11 +5140,11 @@ function updateMineProfile() {
   if (!nameEl) return;
   if (_cloudUserEmail) {
     nameEl.textContent = _cloudUserEmail;
-    subEl.textContent  = '已登录，数据自动同步';
+    subEl.textContent  = t('mine_logged_in_sub');
     avEl.textContent   = _cloudUserEmail[0].toUpperCase();
   } else {
-    nameEl.textContent = '点击登录';
-    subEl.textContent  = '登录后可同步牌组与记录';
+    nameEl.textContent = t('mine_login_prompt');
+    subEl.textContent  = t('mine_login_sub');
     avEl.textContent   = '?';
   }
 }
@@ -5183,7 +5183,7 @@ function renderAccount() {
   document.getElementById('account-password').value = '';
   document.getElementById('account-msg').style.display = 'none';
   document.getElementById('account-login-btn').disabled = false;
-  document.getElementById('account-login-btn').textContent = '登 录';
+  document.getElementById('account-login-btn').textContent = t('account_login_btn');
 }
 
 async function doAccountLogin() {
@@ -5194,10 +5194,10 @@ async function doAccountLogin() {
   const email   = emailEl.value.trim();
   const pwd     = pwdEl.value;
   if (!email || !pwd) {
-    msgEl.style.display = ''; msgEl.textContent = '请输入邮箱和密码'; msgEl.style.color = 'var(--text3)';
+    msgEl.style.display = ''; msgEl.textContent = t('account_login_validate'); msgEl.style.color = 'var(--text3)';
     return;
   }
-  btnEl.disabled = true; btnEl.textContent = '登录中...';
+  btnEl.disabled = true; btnEl.textContent = t('account_logging_in');
   msgEl.style.display = 'none';
   try {
     // Copy to cloud tab fields so shared state stays consistent
@@ -5227,10 +5227,10 @@ async function doAccountLogin() {
     runSync({ modal: true, decks: true, events: true, title: '正在同步数据', voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
-    msgEl.style.display = ''; msgEl.textContent = '登录失败：' + e.message; msgEl.style.color = '#9B3A2A';
+    msgEl.style.display = ''; msgEl.textContent = t('account_login_fail', { msg: e.message }); msgEl.style.color = '#9B3A2A';
     console.warn('[sync] login failed:', e.message);
   } finally {
-    btnEl.disabled = false; btnEl.textContent = '登 录';
+    btnEl.disabled = false; btnEl.textContent = t('account_login_btn');
   }
 }
 
@@ -5277,7 +5277,7 @@ function renderDeckCards() {
   var cards = DECKS[currentDeck] || [];
   var el = document.getElementById('dd-card-items');
   if (!cards.length) {
-    el.innerHTML = '<div class="dd-card-empty">暂无卡片</div>';
+    el.innerHTML = '<div class="dd-card-empty">' + t('empty_no_cards') + '</div>';
     return;
   }
   el.innerHTML = cards.map(function(c) {
@@ -5285,13 +5285,13 @@ function renderDeckCards() {
         ? '<img src="'+escAttr(c.img)+'" alt="">'
         : '<span>🃏</span>';
       var mediaInfo = [];
-      if (c.img && c.img.length > 4) mediaInfo.push('有图');
-      if (c.audioUrl && c.audioUrl.length > 4) mediaInfo.push('有录音');
+      if (c.img && c.img.length > 4) mediaInfo.push(t('card_has_image'));
+      if (c.audioUrl && c.audioUrl.length > 4) mediaInfo.push(t('card_has_audio'));
       else if (c.name && c.name.length > 0) mediaInfo.push('TTS');
       return '<div class="dd-card-row" data-cid="'+escAttr(c.id)+'">' +
         '<div class="dd-card-actions">' +
           '<button class="dd-card-act dd-card-act-edit" onclick="event.stopPropagation();renameCard(\''+escAttr(c.id)+'\')">' +
-            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>编辑</span>' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>'+t('common_edit')+'</span>' +
           '</button>' +
           '<button class="dd-card-act dd-card-act-del" onclick="event.stopPropagation();deleteCardFromDeck(\''+escAttr(c.id)+'\')">' +
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg><span>删除</span>' +
@@ -5509,18 +5509,496 @@ function detectLocale(navLang, supported, fallback) {
 }
 
 const I18N = {
-  'en':    { home_start: 'Start', home_browse: 'Browse', nav_home: 'Home', nav_mine: 'Mine' },
-  'zh-CN': { home_start: '开始',   home_browse: '浏览',   nav_home: '首页', nav_mine: '我的' },
-  'es':    { home_start: 'Empezar', home_browse: 'Explorar', nav_home: 'Inicio', nav_mine: 'Perfil' },
+  'en': {
+    // App meta
+    app_title: 'Memory Glimmers',
+    app_short_name: 'Glimmers',
+    meta_description: 'Memory practice — picture recognition',
+    // Common
+    common_back: 'Back',
+    common_cancel: 'Cancel',
+    common_confirm: 'Confirm',
+    common_ok: 'OK',
+    common_save: 'Save',
+    common_delete: 'Delete',
+    common_rename: 'Rename',
+    common_export: 'Export',
+    common_share: 'Share',
+    common_close: 'Close',
+    common_import: 'Import',
+    common_download: 'Download',
+    common_loading: 'Loading...',
+    common_error: 'Error',
+    // Nav / Tab bar
+    nav_home: 'Home',
+    nav_mine: 'Mine',
+    nav_start_practice: 'Start',
+    nav_start_create: 'Create',
+    home_force_refresh: 'Force Refresh',
+    home_album_section: 'My Albums',
+    home_new_deck: 'New Deck',
+    home_new_deck_btn: '+ New',
+    mine_login_prompt: 'Tap to Login',
+    mine_login_sub: 'Login to sync decks and records',
+    mine_logged_in_sub: 'Logged in, auto-syncing',
+    mine_menu_stats: 'Statistics',
+    mine_menu_settings: 'Settings',
+    mine_menu_theme: 'Theme',
+    mine_menu_about: 'About',
+    mine_menu_import: 'Import File',
+    mine_mode_title: 'Caregiver Mode',
+    mine_mode_sub: 'Enable to manage decks and create cards',
+    mine_mode_on: 'Enabled',
+    mine_mode_off: 'Disabled — enable to manage decks and create cards',
+    account_title: 'Account',
+    account_desc: 'Login to sync server decks. Training records auto-upload.',
+    account_email_ph: 'Email',
+    account_pwd_ph: 'Password',
+    account_login_btn: 'Login',
+    account_restoring: 'Restoring session...',
+    account_logged_in_sub: 'Logged in, auto-syncing',
+    account_cloud_sync: 'Cloud Sync',
+    account_sync_btn: 'Sync',
+    account_realtime_upload: 'Real-time Upload',
+    account_realtime_sub: 'When off, syncs only on practice completion or app open',
+    account_logout_btn: 'Logout',
+    account_login_fail: 'Login failed: {msg}',
+    account_login_validate: 'Please enter email and password',
+    account_logging_in: 'Logging in...',
+    account_offline_suffix: ' (offline)',
+    browse_prev: 'Previous', browse_next: 'Next', browse_done: 'Done', browse_tts: 'Speak',
+    quiz_confirm: 'Confirm', quiz_select_hint: 'Pick an answer \u{1F446}', quiz_next: 'Next',
+    finish_title: 'Practice complete!', finish_back_home: 'Back to Home',
+    finish_this_session: 'This Session', finish_good: 'Good', finish_hard: 'Hard',
+    finish_again: 'Again', finish_today_total: 'Today Total', common_card_unit: 'cards',
+    common_day_unit: 'd', common_lapse_unit: '×', common_minute_unit: 'min',
+    stats_title: 'Statistics', stats_tab_today: 'Today', stats_tab_decks: 'Decks', stats_tab_cards: 'Cards', stats_tab_log: 'Log',
+    stats_last_7_days: 'Last 7 Days', stats_next_7_days: 'Next 7 Days Due',
+    stats_filter_all: 'All', stats_filter_sus: 'Suspended', stats_filter_learn: 'Learning', stats_filter_inreview: 'In Review', stats_filter_review: 'Mastered', stats_filter_new: 'New',
+    stats_recent_100: 'Recent 100 (7 days, excl. in-step repeats)',
+    settings_tab_general: 'General', settings_tab_voice: 'Voice', settings_tab_cloud: 'Cloud',
+    settings_section_goal: 'Goal', settings_daily_goal: 'Daily Goal',
+    settings_section_display: 'Display', settings_dark_mode: 'Dark Mode',
+    settings_section_options: 'Options', settings_opt_count: 'Answer Options', settings_touch_delay: 'Touch Delay',
+    settings_section_rhythm: 'Rhythm', settings_quiz_countdown: 'Quiz Countdown', settings_browse_countdown: 'Browse Countdown', settings_browse_ans_delay: 'Browse Answer Delay',
+    settings_section_feedback: 'Feedback', settings_confetti: 'Confetti', settings_correct_hint: 'Correct Answer Hint', settings_correct_phrase: 'Correct Phrase',
+    settings_section_mode: 'Practice Mode', settings_mode_normal: 'Normal', settings_mode_normal_desc: 'Fixed 20 cards, gets easier', settings_mode_hard: 'Hard', settings_mode_hard_desc: 'SRS rhythm, up to 30 cards', settings_mode_survival: 'Survival', settings_mode_survival_desc: 'Clear all backlog',
+    settings_section_storage: 'Storage', settings_storage_desc: 'Scan and remove orphaned media files not referenced by any card.', settings_check_media: '\u{1F9F9} Check Media',
+    settings_section_quiz_prompt: 'Quiz Prompt', settings_quiz_prompt: 'Quiz Prompt', settings_quiz_prompt_delay: 'Prompt Delay', settings_quiz_prompt_phrase: 'Prompt Phrase',
+    settings_section_opt_hint: 'Option Hint', settings_opt_hint: 'Option Hint', settings_opt_hint_delay: 'Hint Delay', settings_opt_hint_phrase_label: 'Hint Phrase ({A}{B}{C} for options, . for 100ms pause)',
+    settings_section_wrong_hint: 'Wrong Answer Hint', settings_wrong_hint: 'Wrong Answer Hint', settings_wrong_phrase: 'Wrong Answer Phrase',
+    settings_section_answer: 'Answer Announcement', settings_read_hint: 'Read Item Name', settings_answer_delay: 'Quiz Speak Delay', settings_browse_answer_delay: 'Browse Speak Delay',
+    settings_tts_rate: 'Speech Rate', settings_tts_pitch: 'Pitch', settings_tts_voice: 'Voice', settings_tts_voice_auto: 'Auto (Chinese preferred)',
+    settings_section_preset: 'Preset', settings_srs_reset_default: 'Reset to Anki Defaults',
+    settings_section_new_cards: 'New Cards', settings_learning_steps: 'Learning Steps (min, comma separated)', settings_graduating_interval: 'Graduating Interval (days)', settings_easy_interval: 'Easy Interval (days)',
+    settings_section_relearn: 'Relearning', settings_relearning_steps: 'Relearning Steps (min, comma separated)',
+    settings_section_daily_limit: 'Daily Limits', settings_new_per_day: 'New Cards/Day', settings_max_reviews: 'Max Reviews/Day',
+    settings_section_interval: 'Interval Control', settings_max_interval: 'Max Interval (days)', settings_starting_ease: 'Starting Ease', settings_interval_modifier: 'Interval Modifier',
+    settings_section_failure: 'Failure Protection', settings_daily_remove: 'Daily Remove (consecutive lapses)', settings_auto_suspend: 'Auto Suspend (total lapses)', settings_learning_hard_lapse: 'Count Learning Hard as Lapse', settings_learning_hard_desc: 'Recommended: prevents bypassing failure count via repeated Hard',
+    settings_section_duration: 'Duration Guard', settings_warn_duration: 'Reminder (minutes)',
+    settings_section_learn_ahead: 'Learn Ahead Window', settings_learn_ahead: 'Learn Ahead Limit (min / hr)', settings_learn_ahead_desc: 'After main queue exhausted, only learning cards with due_ts within this window are appended. Cards beyond (e.g. 1d steps) end the session. Anki default 20m.',
+    settings_sync_account: 'Sync Account', settings_cloud_desc: 'Login to sync server decks. Training records auto-upload. Offline mode supports manual import only.',
+    settings_cloud_email_ph: 'Email', settings_cloud_pwd_ph: 'Password', settings_cloud_login: 'Login', settings_cloud_restoring: 'Restoring session…',
+    settings_cloud_sync_btn: '\u{1F504} Sync', settings_cloud_logout: 'Logout',
+    settings_realtime_desc: 'Real-time upload during practice (when off, syncs only on open/foreground/completion, saves power)',
+    rating_again: 'Again', rating_hard: 'Hard', rating_good: 'Good', rating_easy: 'Easy',
+    stage_new: 'New', stage_learning: 'Learning', stage_review: 'Review', stage_relearning: 'Relearning',
+    theme_title: 'Theme',
+    theme_default: 'Sky · Azure',
+    theme_jade: 'Jade · Fresh',
+    theme_amber: 'Sunset · Warm',
+    theme_dark: 'Night · Dark',
+    theme_cinnabar: 'Cinnabar · Red',
+    about_title: 'About',
+    about_app_name: 'Memory Glimmers',
+    about_desc1: 'Memory Glimmers is a memory practice tool. Through picture recognition, it helps users do relaxed daily memory exercises.',
+    about_desc2: 'Based on the SM-2 spaced repetition algorithm, it intelligently schedules review rhythms. Supports multilingual cards, speech, and cloud sync for more effective practice.',
+    about_desc3: 'Data is fully available offline. Login to sync across devices.',
+    dd_add_card: 'Add Card',
+    cc_title: 'Create Card',
+    cc_deck_label: 'Deck',
+    cc_name_label: 'Card Name',
+    cc_name_ph: 'Enter card front text',
+    cc_image_label: 'Image (optional)',
+    cc_image_upload: 'Tap to upload image',
+    cc_details_label: 'Details (optional, one per line)',
+    cc_details_ph: 'Enter card back details, one per line',
+    cc_audio_label: 'Recording (optional)',
+    cc_audio_upload: 'Record',
+    cc_save: 'Save Card',
+    cc_continue: 'Continue adding after save',
+    action_create_deck: 'Create Empty Deck',
+    action_import_file: 'Import File',
+    action_import_url: 'Download from URL',
+    action_export_deck: 'Export Deck',
+    action_share_deck: 'Share Deck',
+    card_has_image: 'Has image',
+    card_has_audio: 'Has audio',
+    empty_no_cards: 'No cards',
+    empty_no_records: 'No records',
+    storage_scanning: 'Scanning media files...',
+    storage_scan_fail: 'Scan failed: {msg}',
+    storage_cleaning: 'Cleaning orphaned files...',
+    storage_clean_fail: 'Clean failed: {msg}',
+    sync_connecting: 'Connecting...',
+    sync_syncing: 'Syncing...',
+    toast_export_fail: 'Export failed: {msg}',
+    common_downloading: 'Downloading...',
+    common_edit: 'Edit',
+    home_due_label: 'Due',
+    home_new_label: 'New',
+    home_deck_manage: 'Deck Management',
+    home_new_deck_prompt: 'Enter new deck name:',
+    home_deck_name_empty: 'Deck name cannot be empty',
+    home_deck_created: 'Deck created: {name}',
+    cc_name_required: 'Please enter a card name',
+    cc_deck_required: 'Please select a deck',
+    cc_saved: 'Saved: {name}',
+    cc_card_deleted: 'Card deleted',
+    import_bad_format_json: 'Bad format: deck.json not found',
+    import_bad_format_cards: 'Bad format: deck.cards missing',
+    import_no_valid_cards: 'No valid cards found',
+    import_failed: 'Import failed: {msg}',
+    sync_done: 'Sync complete',
+    sync_up_to_date: 'Already up to date',
+    sync_failed: 'Sync failed',
+    sync_deck_empty: 'Deck is empty',
+    sync_no_card_data: 'No card data found',
+    sync_no_valid_cards: 'No valid cards',
+    sync_download_fail: 'Download failed: {msg}',
+    sync_failed_msg: 'Sync failed: {msg}',
+    sync_first_done: 'First sync complete: {count} cards',
+    sync_up_to_date_detail: 'Already up to date ({skipped} cards unchanged)',
+    toast_share_fail: 'Share failed: {msg}',
+  },
+  'zh-CN': {
+    app_title: '忆海拾光',
+    app_short_name: '忆海拾光',
+    meta_description: '记忆练习 — 看图识物',
+    common_back: '返回',
+    common_cancel: '取消',
+    common_confirm: '确认',
+    common_ok: '确定',
+    common_save: '保存',
+    common_delete: '删除',
+    common_rename: '重命名',
+    common_export: '导出',
+    common_share: '共享',
+    common_close: '关闭',
+    common_import: '导入',
+    common_download: '下载',
+    common_loading: '加载中...',
+    common_error: '错误',
+    nav_home: '首 页',
+    nav_mine: '我 的',
+    nav_start_practice: '开始练习',
+    nav_start_create: '开始制卡',
+    home_force_refresh: '强制刷新',
+    home_album_section: '我的相册',
+    home_new_deck: '新建牌组',
+    home_new_deck_btn: '＋ 新建',
+    mine_login_prompt: '点击登录',
+    mine_login_sub: '登录后可同步牌组与记录',
+    mine_logged_in_sub: '已登录，数据自动同步',
+    mine_menu_stats: '统计',
+    mine_menu_settings: '设置',
+    mine_menu_theme: '主题',
+    mine_menu_about: '关于',
+    mine_menu_import: '导入文件',
+    mine_mode_title: '照护者模式',
+    mine_mode_sub: '开启后可管理牌组与制卡',
+    mine_mode_on: '已开启',
+    mine_mode_off: '已关闭 — 开启后可管理牌组与制卡',
+    account_title: '账户',
+    account_desc: '登录后可同步服务器牌组，训练记录自动上传。未登录仅支持手工导入，数据完全离线。',
+    account_email_ph: '邮箱',
+    account_pwd_ph: '密码',
+    account_login_btn: '登 录',
+    account_restoring: '正在恢复登录…',
+    account_logged_in_sub: '已登录，数据自动同步',
+    account_cloud_sync: '云端同步',
+    account_sync_btn: '同 步',
+    account_realtime_upload: '学习实时上传',
+    account_realtime_sub: '关闭后仅在练习完成或打开 App 时同步',
+    account_logout_btn: '退出登录',
+    account_login_fail: '登录失败：{msg}',
+    account_login_validate: '请输入邮箱和密码',
+    account_logging_in: '登录中…',
+    account_offline_suffix: '（网络不稳定）',
+    browse_prev: '上一张', browse_next: '下一张', browse_done: '完 成', browse_tts: '朗读',
+    quiz_confirm: '确认答案', quiz_select_hint: '先选一个答案 👆', quiz_next: '下一题',
+    finish_title: '今天练习完成！', finish_back_home: '返回首页',
+    finish_this_session: '本次练习', finish_good: '良好', finish_hard: '困难',
+    finish_again: '重来', finish_today_total: '今日累计', common_card_unit: '张',
+    common_day_unit: '天', common_lapse_unit: '次', common_minute_unit: '分',
+    stats_title: '统计', stats_tab_today: '今日', stats_tab_decks: '牌组', stats_tab_cards: '卡片', stats_tab_log: '记录',
+    stats_last_7_days: '近 7 天', stats_next_7_days: '未来 7 天到期预测',
+    stats_filter_all: '全部', stats_filter_sus: '待确认', stats_filter_learn: '学习中', stats_filter_inreview: '复习中', stats_filter_review: '已掌握', stats_filter_new: '待开始',
+    stats_recent_100: '最近 100 条（7天内，不含步长内重现）',
+    settings_tab_general: '通用', settings_tab_voice: '语音', settings_tab_cloud: '云端',
+    settings_section_goal: '目标', settings_daily_goal: '每日学习目标',
+    settings_section_display: '显示', settings_dark_mode: '深色模式',
+    settings_section_options: '选项', settings_opt_count: '选项数量', settings_touch_delay: '防误触延迟',
+    settings_section_rhythm: '节奏', settings_quiz_countdown: '练习倒计时', settings_browse_countdown: '浏览倒计时', settings_browse_ans_delay: '浏览答案显示延迟',
+    settings_section_feedback: '答对反馈', settings_confetti: '撒花动画', settings_correct_hint: '回答正确提示', settings_correct_phrase: '回答正确文案',
+    settings_section_mode: '练习模式', settings_mode_normal: '普通', settings_mode_normal_desc: '固定20张，越做越顺', settings_mode_hard: '困难', settings_mode_hard_desc: 'SRS节律，最多30张', settings_mode_survival: '生存', settings_mode_survival_desc: '清空所有积压',
+    settings_section_storage: '存储维护', settings_storage_desc: '检查并清理未被任何卡片引用的孤立媒体文件，释放存储空间。', settings_check_media: '🧹 检查媒体文件',
+    settings_section_quiz_prompt: '答题提示', settings_quiz_prompt: '答题提示', settings_quiz_prompt_delay: '答题提示延迟', settings_quiz_prompt_phrase: '答题提示文案',
+    settings_section_opt_hint: '选项提示', settings_opt_hint: '选项提示', settings_opt_hint_delay: '选项提示延迟', settings_opt_hint_phrase_label: '选项提示文案（{A}{B}{C}替换为选项，. 为停顿100ms）',
+    settings_section_wrong_hint: '答错提示', settings_wrong_hint: '答错提示', settings_wrong_phrase: '答错提示文案',
+    settings_section_answer: '答案播报', settings_read_hint: '朗读物品提示', settings_answer_delay: '练习播报延迟', settings_browse_answer_delay: '浏览播报延迟',
+    settings_tts_rate: '语速', settings_tts_pitch: '音调', settings_tts_voice: '音色', settings_tts_voice_auto: '自动（中文优先）',
+    settings_section_preset: '预设', settings_srs_reset_default: '恢复 Anki 默认值',
+    settings_section_new_cards: '新卡学习', settings_learning_steps: '学习步长（分钟，逗号分隔）', settings_graduating_interval: '毕业间隔（天）', settings_easy_interval: '简单间隔（天）',
+    settings_section_relearn: '遗忘重学', settings_relearning_steps: '重学步长（分钟，逗号分隔）',
+    settings_section_daily_limit: '每日上限', settings_new_per_day: '每日新卡', settings_max_reviews: '每日复习上限',
+    settings_section_interval: '间隔控制', settings_max_interval: '最大间隔（天）', settings_starting_ease: '初始易度', settings_interval_modifier: '全局间隔乘数',
+    settings_section_failure: '失败保护', settings_daily_remove: '当日移出（连失次）', settings_auto_suspend: '自动挂起（累计失败）', settings_learning_hard_lapse: '学习阶段 Hard 计入连失', settings_learning_hard_desc: '建议开启，防止反复答 Hard 绕过失败计数',
+    settings_section_duration: '时长保护（练习模式）', settings_warn_duration: '提醒时长（分钟）',
+    settings_section_learn_ahead: '提前出题窗口', settings_learn_ahead: 'Learn Ahead Limit（m / h）', settings_learn_ahead_desc: '主队列做完后，due_ts 在此窗口内的学习卡才追加出题。超过窗口（如 1d 步骤）session 直接结束。Anki 默认 20m。',
+    settings_sync_account: '同步账户', settings_cloud_desc: '登录后可同步服务器牌组，训练记录自动上传。未登录时仅支持手工导入，数据完全离线。',
+    settings_cloud_email_ph: '邮箱', settings_cloud_pwd_ph: '密码', settings_cloud_login: '登录', settings_cloud_restoring: '正在恢复登录…',
+    settings_cloud_sync_btn: '🔄 同步', settings_cloud_logout: '退出',
+    settings_realtime_desc: '学习中实时上传（关闭后仅打开/前台/练习完成时同步，更省电）',
+    rating_again: '重来', rating_hard: '困难', rating_good: '良好', rating_easy: '容易',
+    stage_new: '待开始', stage_learning: '学习中', stage_review: '复习', stage_relearning: '重学中',
+    theme_title: '主题',
+    theme_default: '天空·蔚蓝',
+    theme_jade: '翡翠·清雅',
+    theme_amber: '夕阳·暖橙',
+    theme_dark: '深夜·护眼',
+    theme_cinnabar: '朱砂·红韵',
+    about_title: '关于',
+    about_app_name: '忆海拾光',
+    about_desc1: '忆海拾光是一款帮助记忆练习的工具，通过看图识物的方式，帮助用户每天进行轻松的记忆训练。',
+    about_desc2: '基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让训练更有效。',
+    about_desc3: '数据完全离线可用，登录后可跨设备同步。',
+    dd_add_card: '添加卡片',
+    cc_title: '制卡',
+    cc_deck_label: '所属牌组',
+    cc_name_label: '卡片名称',
+    cc_name_ph: '输入卡片正面文字',
+    cc_image_label: '图片（可选）',
+    cc_image_upload: '点击上传图片',
+    cc_details_label: '详情（可选，每行一条）',
+    cc_details_ph: '输入卡片反面说明，每行一条',
+    cc_audio_label: '录音（可选）',
+    cc_audio_upload: '录制',
+    cc_save: '保存卡片',
+    cc_continue: '保存后继续添加',
+    action_create_deck: '创建空牌组',
+    action_import_file: '导入文件',
+    action_import_url: '从链接下载',
+    action_export_deck: '导出当前牌组',
+    action_share_deck: '共享牌组',
+    card_has_image: '有图片',
+    card_has_audio: '有录音',
+    empty_no_cards: '暂无卡片',
+    empty_no_records: '暂无记录',
+    storage_scanning: '正在扫描媒体文件...',
+    storage_scan_fail: '扫描失败：{msg}',
+    storage_cleaning: '正在清理孤立文件...',
+    storage_clean_fail: '清理失败：{msg}',
+    sync_connecting: '正在连接...',
+    sync_syncing: '正在同步...',
+    toast_export_fail: '导出失败：{msg}',
+    common_downloading: '下载中...',
+    common_edit: '编辑',
+    home_due_label: '到期',
+    home_new_label: '新卡',
+    home_deck_manage: '牌组管理',
+    home_new_deck_prompt: '请输入新牌组名称：',
+    home_deck_name_empty: '牌组名称不能为空',
+    home_deck_created: '已创建牌组：{name}',
+    cc_name_required: '请输入卡片名称',
+    cc_deck_required: '请选择牌组',
+    cc_saved: '已保存：{name}',
+    cc_card_deleted: '卡片已删除',
+    import_bad_format_json: '格式错误：未找到 deck.json',
+    import_bad_format_cards: '格式错误：deck.cards 不存在',
+    import_no_valid_cards: '未找到有效卡片',
+    import_failed: '导入失败：{msg}',
+    sync_done: '同步完成',
+    sync_up_to_date: '已是最新',
+    sync_failed: '同步失败',
+    sync_deck_empty: '牌组为空',
+    sync_no_card_data: '未找到卡片数据',
+    sync_no_valid_cards: '无有效卡片',
+    sync_download_fail: '下载失败：{msg}',
+    sync_failed_msg: '同步失败：{msg}',
+    sync_first_done: '首次同步完成：共 {count} 张',
+    sync_up_to_date_detail: '已是最新（{skipped} 张均无变化）',
+    toast_share_fail: '分享失败：{msg}',
+  },
+  'es': {
+    app_title: 'Memory Glimmers',
+    app_short_name: 'Glimmers',
+    meta_description: 'Práctica de memoria — reconocimiento visual',
+    common_back: 'Volver',
+    common_cancel: 'Cancelar',
+    common_confirm: 'Confirmar',
+    common_ok: 'Aceptar',
+    common_save: 'Guardar',
+    common_delete: 'Eliminar',
+    common_rename: 'Renombrar',
+    common_export: 'Exportar',
+    common_share: 'Compartir',
+    common_close: 'Cerrar',
+    common_import: 'Importar',
+    common_download: 'Descargar',
+    common_loading: 'Cargando...',
+    common_error: 'Error',
+    nav_home: 'Inicio',
+    nav_mine: 'Perfil',
+    nav_start_practice: 'Empezar',
+    nav_start_create: 'Crear',
+    home_force_refresh: 'Forzar actualizacion',
+    home_album_section: 'Mis Albumes',
+    home_new_deck: 'Nuevo Mazo',
+    home_new_deck_btn: '+ Nuevo',
+    mine_login_prompt: 'Toca para iniciar sesion',
+    mine_login_sub: 'Inicia sesion para sincronizar mazos',
+    mine_logged_in_sub: 'Sesion iniciada, sincronizando',
+    mine_menu_stats: 'Estadisticas',
+    mine_menu_settings: 'Ajustes',
+    mine_menu_theme: 'Tema',
+    mine_menu_about: 'Acerca de',
+    mine_menu_import: 'Importar archivo',
+    mine_mode_title: 'Modo Cuidador',
+    mine_mode_sub: 'Activar para gestionar mazos y crear tarjetas',
+    mine_mode_on: 'Activado',
+    mine_mode_off: 'Desactivado — activar para gestionar mazos',
+    account_title: 'Cuenta',
+    account_desc: 'Inicia sesion para sincronizar mazos del servidor. Las practicas se suben automaticamente.',
+    account_email_ph: 'Correo',
+    account_pwd_ph: 'Contrasena',
+    account_login_btn: 'Iniciar sesion',
+    account_restoring: 'Restaurando sesion...',
+    account_logged_in_sub: 'Sesion iniciada, sincronizando',
+    account_cloud_sync: 'Sincronizacion',
+    account_sync_btn: 'Sincronizar',
+    account_realtime_upload: 'Subida en tiempo real',
+    account_realtime_sub: 'Si se desactiva, sincroniza solo al terminar practica o abrir la app',
+    account_logout_btn: 'Cerrar sesion',
+    account_login_fail: 'Error de inicio: {msg}',
+    account_login_validate: 'Ingresa correo y contrasena',
+    account_logging_in: 'Iniciando sesion...',
+    account_offline_suffix: ' (sin conexion)',
+    browse_prev: 'Anterior', browse_next: 'Siguiente', browse_done: 'Hecho', browse_tts: 'Hablar',
+    quiz_confirm: 'Confirmar', quiz_select_hint: 'Elige una respuesta \u{1F446}', quiz_next: 'Siguiente',
+    finish_title: '!Practica completa!', finish_back_home: 'Volver al inicio',
+    finish_this_session: 'Esta sesion', finish_good: 'Bien', finish_hard: 'Dificil',
+    finish_again: 'Otra vez', finish_today_total: 'Total de hoy', common_card_unit: 'tarjetas',
+    common_day_unit: 'd', common_lapse_unit: '×', common_minute_unit: 'min',
+    stats_title: 'Estadisticas', stats_tab_today: 'Hoy', stats_tab_decks: 'Mazos', stats_tab_cards: 'Tarjetas', stats_tab_log: 'Registro',
+    stats_last_7_days: 'Ultimos 7 dias', stats_next_7_days: 'Proximos 7 dias',
+    stats_filter_all: 'Todos', stats_filter_sus: 'Suspendido', stats_filter_learn: 'Aprendiendo', stats_filter_inreview: 'En repaso', stats_filter_review: 'Dominado', stats_filter_new: 'Nuevo',
+    stats_recent_100: '100 recientes (7 dias, excl. repeticiones en paso)',
+    settings_tab_general: 'General', settings_tab_voice: 'Voz', settings_tab_cloud: 'Nube',
+    settings_section_goal: 'Meta', settings_daily_goal: 'Meta diaria',
+    settings_section_display: 'Pantalla', settings_dark_mode: 'Modo oscuro',
+    settings_section_options: 'Opciones', settings_opt_count: 'Numero de opciones', settings_touch_delay: 'Retardo tactil',
+    settings_section_rhythm: 'Ritmo', settings_quiz_countdown: 'Cuenta regresiva', settings_browse_countdown: 'Cuenta de exploracion', settings_browse_ans_delay: 'Retardo de respuesta',
+    settings_section_feedback: 'Feedback', settings_confetti: 'Confeti', settings_correct_hint: 'Aviso de acierto', settings_correct_phrase: 'Frase de acierto',
+    settings_section_mode: 'Modo de practica', settings_mode_normal: 'Normal', settings_mode_normal_desc: '20 tarjetas fijas, se vuelve mas facil', settings_mode_hard: 'Dificil', settings_mode_hard_desc: 'Ritmo SRS, hasta 30 tarjetas', settings_mode_survival: 'Supervivencia', settings_mode_survival_desc: 'Limpiar todo el backlog',
+    settings_section_storage: 'Almacenamiento', settings_storage_desc: 'Escanear y eliminar archivos huerfanos no referenciados.', settings_check_media: '\u{1F9F9} Verificar medios',
+    settings_section_quiz_prompt: 'Aviso de pregunta', settings_quiz_prompt: 'Aviso de pregunta', settings_quiz_prompt_delay: 'Retardo de aviso', settings_quiz_prompt_phrase: 'Frase de aviso',
+    settings_section_opt_hint: 'Pista de opciones', settings_opt_hint: 'Pista de opciones', settings_opt_hint_delay: 'Retardo de pista', settings_opt_hint_phrase_label: 'Frase de pista ({A}{B}{C} para opciones, . pausa 100ms)',
+    settings_section_wrong_hint: 'Aviso de error', settings_wrong_hint: 'Aviso de error', settings_wrong_phrase: 'Frase de error',
+    settings_section_answer: 'Anuncio de respuesta', settings_read_hint: 'Leer nombre', settings_answer_delay: 'Retardo de locucion', settings_browse_answer_delay: 'Retardo de exploracion',
+    settings_tts_rate: 'Velocidad', settings_tts_pitch: 'Tono', settings_tts_voice: 'Voz', settings_tts_voice_auto: 'Auto (chino preferido)',
+    settings_section_preset: 'Preajuste', settings_srs_reset_default: 'Restaurar valores Anki',
+    settings_section_new_cards: 'Nuevas tarjetas', settings_learning_steps: 'Pasos de aprendizaje (min, coma)', settings_graduating_interval: 'Intervalo de graduacion (dias)', settings_easy_interval: 'Intervalo facil (dias)',
+    settings_section_relearn: 'Reaprendizaje', settings_relearning_steps: 'Pasos de reaprendizaje (min, coma)',
+    settings_section_daily_limit: 'Limites diarios', settings_new_per_day: 'Nuevas/dia', settings_max_reviews: 'Max repasos/dia',
+    settings_section_interval: 'Control de intervalo', settings_max_interval: 'Intervalo maximo (dias)', settings_starting_ease: 'Facilidad inicial', settings_interval_modifier: 'Modificador global',
+    settings_section_failure: 'Proteccion de fallos', settings_daily_remove: 'Eliminar diario (fallos consec.)', settings_auto_suspend: 'Suspension automatica (total fallos)', settings_learning_hard_lapse: 'Contar Hard como fallo', settings_learning_hard_desc: 'Recomendado: evita eludir el conteo de fallos con Hard repetido',
+    settings_section_duration: 'Limite de duracion', settings_warn_duration: 'Recordatorio (minutos)',
+    settings_section_learn_ahead: 'Ventana anticipada', settings_learn_ahead: 'Limite Learn Ahead (min / h)', settings_learn_ahead_desc: 'Agotada la cola principal, solo se agregan tarjetas con due_ts dentro de esta ventana. Las que exceden (ej. pasos de 1d) terminan la sesion. Anki por defecto 20m.',
+    settings_sync_account: 'Cuenta de sincronizacion', settings_cloud_desc: 'Inicia sesion para sincronizar mazos. Registros se suben automaticamente.',
+    settings_cloud_email_ph: 'Correo', settings_cloud_pwd_ph: 'Contrasena', settings_cloud_login: 'Iniciar sesion', settings_cloud_restoring: 'Restaurando sesion…',
+    settings_cloud_sync_btn: '\u{1F504} Sincronizar', settings_cloud_logout: 'Salir',
+    settings_realtime_desc: 'Subida en tiempo real durante la practica',
+    rating_again: 'Otra vez', rating_hard: 'Dificil', rating_good: 'Bien', rating_easy: 'Facil',
+    stage_new: 'Nuevo', stage_learning: 'Aprendiendo', stage_review: 'Repaso', stage_relearning: 'Reaprendiendo',
+    theme_title: 'Tema',
+    theme_default: 'Cielo · Azul',
+    theme_jade: 'Jade · Fresco',
+    theme_amber: 'Atardecer · Calido',
+    theme_dark: 'Noche · Oscuro',
+    theme_cinnabar: 'Cinabrio · Rojo',
+    about_title: 'Acerca de',
+    about_app_name: 'Memory Glimmers',
+    about_desc1: 'Memory Glimmers es una herramienta de practica de memoria. Mediante reconocimiento visual, ayuda a realizar ejercicios diarios relajados.',
+    about_desc2: 'Basado en el algoritmo de repeticion espaciada SM-2, programa ritmos de repaso inteligentemente. Soporta tarjetas multilingues, voz y sincronizacion en la nube.',
+    about_desc3: 'Datos disponibles sin conexion. Inicia sesion para sincronizar entre dispositivos.',
+    dd_add_card: 'Agregar tarjeta',
+    cc_title: 'Crear tarjeta',
+    cc_deck_label: 'Mazo',
+    cc_name_label: 'Nombre',
+    cc_name_ph: 'Texto frontal de la tarjeta',
+    cc_image_label: 'Imagen (opcional)',
+    cc_image_upload: 'Toca para subir imagen',
+    cc_details_label: 'Detalles (opcional, uno por linea)',
+    cc_details_ph: 'Detalles del reverso, uno por linea',
+    cc_audio_label: 'Grabacion (opcional)',
+    cc_audio_upload: 'Grabar',
+    cc_save: 'Guardar tarjeta',
+    cc_continue: 'Seguir agregando',
+    action_create_deck: 'Crear mazo vacio',
+    action_import_file: 'Importar archivo',
+    action_import_url: 'Descargar de URL',
+    action_export_deck: 'Exportar mazo',
+    action_share_deck: 'Compartir mazo',
+    card_has_image: 'Tiene imagen',
+    card_has_audio: 'Tiene audio',
+    empty_no_cards: 'Sin tarjetas',
+    empty_no_records: 'Sin registros',
+    storage_scanning: 'Escaneando archivos...',
+    storage_scan_fail: 'Error de escaneo: {msg}',
+    storage_cleaning: 'Limpiando archivos huerfanos...',
+    storage_clean_fail: 'Error de limpieza: {msg}',
+    sync_connecting: 'Conectando...',
+    sync_syncing: 'Sincronizando...',
+    toast_export_fail: 'Error de exportacion: {msg}',
+    common_downloading: 'Descargando...',
+    common_edit: 'Editar',
+    home_due_label: 'Pendiente',
+    home_new_label: 'Nuevo',
+    home_deck_manage: 'Gestionar mazo',
+    home_new_deck_prompt: 'Nombre del nuevo mazo:',
+    home_deck_name_empty: 'El nombre no puede estar vacio',
+    home_deck_created: 'Mazo creado: {name}',
+    cc_name_required: 'Ingresa un nombre',
+    cc_deck_required: 'Selecciona un mazo',
+    cc_saved: 'Guardado: {name}',
+    cc_card_deleted: 'Tarjeta eliminada',
+    import_bad_format_json: 'Formato incorrecto: deck.json no encontrado',
+    import_bad_format_cards: 'Formato incorrecto: deck.cards faltante',
+    import_no_valid_cards: 'No se encontraron tarjetas validas',
+    import_failed: 'Error de importacion: {msg}',
+    sync_done: 'Sincronizacion completa',
+    sync_up_to_date: 'Ya esta actualizado',
+    sync_failed: 'Error de sincronizacion',
+    sync_deck_empty: 'Mazo vacio',
+    sync_no_card_data: 'Sin datos de tarjetas',
+    sync_no_valid_cards: 'Sin tarjetas validas',
+    sync_download_fail: 'Error de descarga: {msg}',
+    sync_failed_msg: 'Error de sincronizacion: {msg}',
+    sync_first_done: 'Primera sincronizacion: {count} tarjetas',
+    sync_up_to_date_detail: 'Actualizado ({skipped} tarjetas sin cambios)',
+    toast_share_fail: 'Error al compartir: {msg}',
+  },
 };
 
-function t(key) {
-  const loc = getLocale(); // defined below (Task 3 / getLocale)
+function t(key, params) {
+  const loc = getLocale();
   const L = I18N[loc] || {};
-  if (key in L) return L[key];
-  const F = I18N[FALLBACK_LOCALE] || {};
-  if (key in F) return F[key];
-  return key;
+  let val;
+  if (key in L) val = L[key];
+  else { const F = I18N[FALLBACK_LOCALE] || {}; val = (key in F) ? F[key] : key; }
+  if (params) { for (const [k, v] of Object.entries(params)) { val = val.replace(new RegExp('\\{' + k + '\\}', 'g'), String(v)); } }
+  return val;
 }
 
 const LOCALE_KEY = 'yihai_ui_locale';
@@ -5538,6 +6016,37 @@ function setLocale(loc) {
   if (!SUPPORTED_LOCALES.includes(loc)) return;
   _uiLocale = loc;
   localStorage.setItem(LOCALE_KEY, loc);
+  applyI18n();
+  document.documentElement.lang = loc;
+  document.documentElement.setAttribute('lang', loc);
+  if (typeof renderDeckList === 'function') renderDeckList();
+  if (typeof updateDeckStats === 'function') updateDeckStats();
+  if (typeof updateHomeTopbar === 'function') updateHomeTopbar();
+  if (typeof updateTabBarMode === 'function') updateTabBarMode();
+  if (typeof updateMineProfile === 'function') updateMineProfile();
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (key) el.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (key) el.setAttribute('placeholder', t(key));
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+    const key = el.getAttribute('data-i18n-aria');
+    if (key) el.setAttribute('aria-label', t(key));
+  });
+  document.querySelectorAll('[data-i18n-content]').forEach(el => {
+    const key = el.getAttribute('data-i18n-content');
+    if (key) el.setAttribute('content', t(key));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    if (key) el.setAttribute('title', t(key));
+  });
 }
 
 function detectScript(text) {
@@ -6247,24 +6756,24 @@ async function showFinish() {
   const el = document.getElementById('finish-stats');
   el.innerHTML = `
     <div class="finish-stat-row">
-      <span class="finish-stat-lbl">本次练习</span>
-      <span class="finish-stat-val">${sTotal} 张</span>
+      <span class="finish-stat-lbl">${t('finish_this_session')}</span>
+      <span class="finish-stat-val">${sTotal} ${t('common_card_unit')}</span>
     </div>
     <div class="finish-stat-row">
-      <span class="finish-stat-lbl">良好</span>
+      <span class="finish-stat-lbl">${t('finish_good')}</span>
       <span class="finish-stat-val correct">${sPass}</span>
     </div>
     <div class="finish-stat-row">
-      <span class="finish-stat-lbl">困难</span>
+      <span class="finish-stat-lbl">${t('finish_hard')}</span>
       <span class="finish-stat-val">${sHard}</span>
     </div>
     <div class="finish-stat-row">
-      <span class="finish-stat-lbl">重来</span>
+      <span class="finish-stat-lbl">${t('finish_again')}</span>
       <span class="finish-stat-val wrong">${sFail}</span>
     </div>
     <div class="finish-stat-row">
-      <span class="finish-stat-lbl">今日累计</span>
-      <span class="finish-stat-val">${dp.reviewed_today} 张</span>
+      <span class="finish-stat-lbl">${t('finish_today_total')}</span>
+      <span class="finish-stat-val">${dp.reviewed_today} ${t('common_card_unit')}</span>
     </div>`;
 
   showScreen('screen-finish');
@@ -6486,7 +6995,7 @@ function toggleCorrectHint(cb) {
 
 function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.');
-  if (key === 'select')  { PHRASE_SELECT   = normalize(val) || '请选择答案';              localStorage.setItem('phraseSelect',  PHRASE_SELECT); }
+  if (key === 'select')  { PHRASE_SELECT   = normalize(val) || t('quiz_select_hint');   localStorage.setItem('phraseSelect',  PHRASE_SELECT); }
   if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || '不要着急，再试一次';       localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
   if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || '请在{A}.{B}.{C}中选择一个'; localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
   if (key === 'correct') { PHRASE_CORRECT  = val || '回答正确';                           localStorage.setItem('phraseCorrect', PHRASE_CORRECT); }
@@ -6769,14 +7278,14 @@ async function parallelMapLimit(arr, limit, fn) {
 
 async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
   if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '下载中...'; }
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('common_downloading'); }
 
   try {
     // 1. 通过 server_deck_cards 获取该牌组的 card_id 列表（按排序）
     const { data: links, error: linkErr } = await _sb.from('server_deck_cards')
       .select('card_id').eq('deck_id', deckId).order('sort_order');
     if (linkErr) throw linkErr;
-    if (!links || !links.length) { showCloudToast('牌组为空', true); return; }
+    if (!links || !links.length) { showCloudToast(t('sync_deck_empty'), true); return; }
 
     const cardIds = links.map(l => l.card_id);
 
@@ -6785,7 +7294,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
       .select('card_id,card_name,image_url,audio_url')
       .in('card_id', cardIds);
     if (cardErr) throw cardErr;
-    if (!cards || !cards.length) { showCloudToast('未找到卡片数据', true); return; }
+    if (!cards || !cards.length) { showCloudToast(t('sync_no_card_data'), true); return; }
 
     // 按 sort_order 排列
     const cardMap = {};
@@ -6824,7 +7333,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
       deckCards[i] = card;
     });
 
-    if (!deckCards.length) { showCloudToast('无有效卡片', true); return; }
+    if (!deckCards.length) { showCloudToast(t('sync_no_valid_cards'), true); return; }
 
     // 记录同步时间戳
     localStorage.setItem('yihai_sync_at_' + key, new Date().toISOString());
@@ -6846,10 +7355,10 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
 
     if (!noToast) showCloudToast('✓ 已导入「' + deckName + '」' + deckCards.length + ' 张');
   } catch(e) {
-    if (!noToast) showCloudToast('下载失败：' + e.message, true);
+    if (!noToast) showCloudToast(t('sync_download_fail', { msg: e.message }), true);
     console.error('[cloud] download error:', e);
   } finally {
-    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '下载'; }
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = t('common_download'); }
   }
 }
 
@@ -6858,7 +7367,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
   const existing = DECKS_META.find(m => m.name === deckName);
   if (!existing) { showCloudToast('本地无此牌组，请先下载', true); return; }
   const localKey = existing.key;
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '同步中...'; }
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('sync_syncing'); }
 
   // 媒体下载
   async function downloadMedia(cardId, imageUrl, audioUrl) {
@@ -7006,18 +7515,18 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
 
     let msg;
     if (!lastSyncAt) {
-      msg = '✓ 首次同步完成：共 ' + merged.length + ' 张';
+      msg = t('sync_first_done', { count: merged.length });
     } else if (added > 0 || updated > 0) {
       msg = '✓ 新增 ' + added + ' 张，更新 ' + updated + ' 张' + (skipped > 0 ? '，跳过 ' + skipped + ' 张未变' : '');
     } else {
-      msg = '✓ 已是最新（' + skipped + ' 张均无变化）';
+      msg = t('sync_up_to_date_detail', { skipped: skipped });
     }
     if (!noToast) showCloudToast(msg);
   } catch(e) {
-    if (!noToast) showCloudToast('同步失败：' + e.message, true);
+    if (!noToast) showCloudToast(t('sync_failed_msg', { msg: e.message }), true);
     console.error('[sync] error:', e);
   } finally {
-    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '🔄 同步'; }
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = t('settings_cloud_sync_btn'); }
   }
 }
 
@@ -7110,6 +7619,9 @@ function showAbout() {
       }
       renderDeckList();
       document.documentElement.setAttribute('data-mode', _appMode);
+      document.documentElement.lang = getLocale();
+      document.documentElement.setAttribute('lang', getLocale());
+      applyI18n();
       updateTabBarMode();
       updateHomeTopbar();
       await updateDeckStats();
@@ -7410,7 +7922,7 @@ async function renderStatsCards(filter) {
   if (_statsCurrentFilter === 'new')      filtered = filtered.filter(s => s.srs_stage === 'new' && !s.suspended);
 
   const listEl = document.getElementById('st-card-list');
-  if (!filtered.length) { listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:14px">暂无卡片</div>'; return; }
+  if (!filtered.length) { listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:14px">' + t('empty_no_cards') + '</div>'; return; }
 
   listEl.innerHTML = filtered.map(s => {
     const c = cardMap[s.card_id] || {};
@@ -7472,12 +7984,12 @@ async function renderStatsTrials() {
   const cardMap = {};
   cards.forEach(c => { cardMap[c.id] = c; });
 
-  const RLBL = { again:'重来', hard:'困难', good:'良好', easy:'容易' };
+  const RLBL = { again:t('rating_again'), hard:t('rating_hard'), good:t('rating_good'), easy:t('rating_easy') };
   const RCLS = { again:'tr-again', hard:'tr-hard', good:'tr-good', easy:'tr-easy' };
 
   const listEl = document.getElementById('st-trial-list');
   if (!recent.length) {
-    listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:14px">暂无记录</div>';
+    listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:14px">' + t('empty_no_records') + '</div>';
     return;
   }
   listEl.innerHTML = `<div class="stats-rows">${recent.map(t => {
@@ -7512,7 +8024,7 @@ async function openCardDetail(stateKey) {
   const now     = Date.now();
 
   // 阶段显示
-  const STAGE_LBL = { new:'待开始', learning:'学习中', review:'复习', relearning:'重学中' };
+  const STAGE_LBL = { new:t('stage_new'), learning:t('stage_learning'), review:t('stage_review'), relearning:t('stage_relearning') };
   // 下次预测（显示计算过程方便调试）
   function predict(rating) {
     const s = JSON.parse(JSON.stringify(state));
@@ -7531,7 +8043,7 @@ async function openCardDetail(stateKey) {
   // 答题历史
   const trials = await getTrialLogs(null, 7);
   const hist   = trials.filter(t => t.card_id === cardId).slice(-8);
-  const RLBL   = { again:'重来', hard:'困难', good:'良好', easy:'容易' };
+  const RLBL   = { again:t('rating_again'), hard:t('rating_hard'), good:t('rating_good'), easy:t('rating_easy') };
   const RCLS   = { again:'tr-again', hard:'tr-hard', good:'tr-good', easy:'tr-easy' };
 
   body.innerHTML = `
@@ -7546,7 +8058,7 @@ async function openCardDetail(stateKey) {
     </div>
 
     <div class="cdh">当前参数</div>
-    <div class="cd-param-row"><span class="cd-param-lbl">复习间隔</span><span class="cd-param-val">${state.srs_stage==='review'?state.interval+'天':'—'}</span></div>
+    <div class="cd-param-row"><span class="cd-param-lbl">复习间隔</span><span class="cd-param-val">${state.srs_stage==='review'?state.interval+t('common_day_unit'):'—'}</span></div>
     <div class="cd-param-row"><span class="cd-param-lbl">易度因子</span><span class="cd-param-val" style="color:${state.ease_factor<=1.5?'#e07b00':'var(--text)'}">${state.ease_factor.toFixed(2)}</span></div>
     <div class="cd-param-row"><span class="cd-param-lbl">连续失败</span><span class="cd-param-val" style="color:${state.lapses_streak>=SRS_CONFIG.daily_remove_lapses?'#e53e3e':state.lapses_streak>0?'#e07b00':'var(--text)'}">${state.lapses_streak}</span></div>
     <div class="cd-param-row"><span class="cd-param-lbl">累计失败</span><span class="cd-param-val">${state.lapses_total}</span></div>
@@ -7747,16 +8259,16 @@ function syncSrsSettingsUI() {
     const fmt = dec !== undefined ? Number(dv).toFixed(dec) : Math.round(dv);
     vel.textContent = fmt + (suf || '');
   };
-  set('srs-graduating-interval',   cfg.graduating_interval,        '天');
-  set('srs-easy-interval',         cfg.easy_interval,              '天');
-  set('srs-new-per-day',           cfg.new_cards_per_day,          '张');
-  set('srs-max-reviews',           cfg.maximum_reviews_per_day,    '张');
-  set('srs-max-interval',          Math.min(cfg.maximum_interval, 30), '天');
+  set('srs-graduating-interval',   cfg.graduating_interval,        t('common_day_unit'));
+  set('srs-easy-interval',         cfg.easy_interval,              t('common_day_unit'));
+  set('srs-new-per-day',           cfg.new_cards_per_day,          t('common_card_unit'));
+  set('srs-max-reviews',           cfg.maximum_reviews_per_day,    t('common_card_unit'));
+  set('srs-max-interval',          Math.min(cfg.maximum_interval, 30), t('common_day_unit'));
   set('srs-starting-ease',         cfg.starting_ease,              '',  1);
   set('srs-interval-modifier',     cfg.interval_modifier,          '',  2);
-  set('srs-daily-remove',          cfg.daily_remove_lapses,        '次');
-  set('srs-auto-suspend',          cfg.auto_suspend_lapses,        '次');
-  set('srs-warn-duration',         cfg.warn_duration_sec,          '分', 0, v => v / 60);
+  set('srs-daily-remove',          cfg.daily_remove_lapses,        t('common_lapse_unit'));
+  set('srs-auto-suspend',          cfg.auto_suspend_lapses,        t('common_lapse_unit'));
+  set('srs-warn-duration',         cfg.warn_duration_sec,          t('common_minute_unit'), 0, v => v / 60);
 
   const lhlEl = document.getElementById('srs-learning-hard-lapse');
   if (lhlEl) lhlEl.checked = !!cfg.learning_hard_counts_lapse;
@@ -7788,12 +8300,12 @@ function setSrsMode(mode) {
 function onDailyGoalChange(val) {
   const num = parseInt(val) || 50;
   saveSrsConfigKey('maximum_reviews_per_day', num);
-  document.getElementById('general-daily-goal-val').textContent = num + '张';
+  document.getElementById('general-daily-goal-val').textContent = num + t('common_card_unit');
   // sync SRS tab slider
   const srsSlider = document.getElementById('srs-max-reviews');
   if (srsSlider) { srsSlider.value = num;
     const sv = document.getElementById('srs-max-reviews-val');
-    if (sv) sv.textContent = num + '张';
+    if (sv) sv.textContent = num + t('common_card_unit');
   }
 }
 
@@ -7801,7 +8313,7 @@ function loadDailyGoalUI() {
   const goal = SRS_CONFIG.maximum_reviews_per_day || 50;
   const el = document.getElementById('general-daily-goal');
   if (el) { el.value = goal;
-    document.getElementById('general-daily-goal-val').textContent = goal + '张'; }
+    document.getElementById('general-daily-goal-val').textContent = goal + t('common_card_unit'); }
 }
 
 // SRS Tab 打开时同步一次（通过修改 openSettings 调用链实现）
@@ -7844,7 +8356,7 @@ function renderDeckList() {
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
         '<span>删除</span>' +
       '</button>';
-    const navChevron = '<button class="album-nav-btn caregiver-only" onclick="event.stopPropagation();showDeckDetailFor(\''+m.key+'\')" aria-label="牌组管理">' +
+    const navChevron = '<button class="album-nav-btn caregiver-only" onclick="event.stopPropagation();showDeckDetailFor(\''+m.key+'\')" '+t('home_deck_manage')+'>' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
       '</button>';
     return '<div class="deck-card" data-deck="'+m.key+'" data-swipeable>' +
@@ -7852,8 +8364,8 @@ function renderDeckList() {
       '<div class="deck-card-inner'+(m.key === currentDeck ? ' selected' : '')+'" data-deck="'+m.key+'">' +
         '<div class="deck-info"><div class="deck-name">'+esc(m.name)+'</div></div>' +
         '<div class="deck-stats">' +
-          '<div class="deck-stat"><span class="deck-stat-num due'+(dueVal===0?' zero':'')+'" data-deck="'+m.key+'">'+dueVal+'</span><span class="deck-stat-lbl">到期</span></div>' +
-          '<div class="deck-stat"><span class="deck-stat-num new-c'+(newVal===0?' zero':'')+'" data-deck="'+m.key+'">'+newVal+'</span><span class="deck-stat-lbl">新卡</span></div>' +
+          '<div class="deck-stat"><span class="deck-stat-num due'+(dueVal===0?' zero':'')+'" data-deck="'+m.key+'">'+dueVal+'</span><span class="deck-stat-lbl">'+t('home_due_label')+'</span></div>' +
+          '<div class="deck-stat"><span class="deck-stat-num new-c'+(newVal===0?' zero':'')+'" data-deck="'+m.key+'">'+newVal+'</span><span class="deck-stat-lbl">'+t('home_new_label')+'</span></div>' +
         '</div>' +
         navChevron +
       '</div>' +
@@ -7999,8 +8511,8 @@ function showConfirmDialog(msg) {
       <div class="yh-dialog">
         <div class="yh-dialog-msg">${esc(msg)}</div>
         <div class="yh-dialog-btns">
-          <button class="yh-dialog-btn cancel" id="yh-dlg-no">取消</button>
-          <button class="yh-dialog-btn confirm" id="yh-dlg-yes">确认</button>
+          <button class="yh-dialog-btn cancel" id="yh-dlg-no">${t('common_cancel')}</button>
+          <button class="yh-dialog-btn confirm" id="yh-dlg-yes">${t('common_confirm')}</button>
         </div>
       </div>`;
     document.body.appendChild(mask);

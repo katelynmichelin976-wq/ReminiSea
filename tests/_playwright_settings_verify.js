@@ -12,6 +12,10 @@ const { chromium } = require('playwright');
   const URL = 'http://localhost:8080/.claude/worktrees/v5-stage0-i18n/yihai_v4.11.html';
   await page.goto(URL);
   await page.waitForTimeout(1000);
+  // Force zh-CN locale for consistent i18n testing
+  await page.evaluate(() => setLocale('zh-CN'));
+  await page.waitForTimeout(500);
+
 
   // ── 1. 打开设置 ────────────────────────────────────────────
   console.log('\n── 设置打开 ──');
