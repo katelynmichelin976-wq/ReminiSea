@@ -59,5 +59,24 @@ check('es home_browse', t('home_browse', 'es', I18N, FALLBACK_LOCALE), 'Explorar
 check('缺词回退 en', t('home_start', 'fr', I18N, FALLBACK_LOCALE), 'Start');
 check('完全缺失返回 key 本身', t('not_exist', 'en', I18N, FALLBACK_LOCALE), 'not_exist');
 
+function detectScript(text) {
+  if (!text) return 'other';
+  if (/[぀-ヿ]/.test(text)) return 'kana';      // 平/片假名（先于汉字）
+  if (/[가-힯]/.test(text)) return 'hangul';
+  if (/[Ѐ-ӿ]/.test(text)) return 'cyrillic';
+  if (/[一-鿿㐀-䶿]/.test(text)) return 'han';
+  if (/[a-zA-Z]/.test(text)) return 'latin';
+  return 'other';
+}
+
+section('SUITE 3 — detectScript 书写系统识别');
+check('苹果→han', detectScript('苹果'), 'han');
+check('manzana→latin', detectScript('manzana'), 'latin');
+check('яблоко→cyrillic', detectScript('яблоко'), 'cyrillic');
+check('りんご→kana', detectScript('りんご'), 'kana');
+check('사과→hangul', detectScript('사과'), 'hangul');
+check('空→other', detectScript(''), 'other');
+check('日文汉字混假名→kana', detectScript('林檎です'), 'kana');
+
 console.log(`\n通过 ${passed} / 失败 ${failed}`);
 if (failed > 0) process.exit(1);

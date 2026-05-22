@@ -3989,6 +3989,16 @@ function setLocale(loc) {
   localStorage.setItem(LOCALE_KEY, loc);
 }
 
+function detectScript(text) {
+  if (!text) return 'other';
+  if (/[぀-ヿ]/.test(text)) return 'kana';      // 平/片假名（先于汉字）
+  if (/[가-힯]/.test(text)) return 'hangul';
+  if (/[Ѐ-ӿ]/.test(text)) return 'cyrillic';
+  if (/[一-鿿㐀-䶿]/.test(text)) return 'han';
+  if (/[a-zA-Z]/.test(text)) return 'latin';
+  return 'other';
+}
+
 // ── Speech ─────────────────────────────────────────────────────
 let voices = [];
 let speechReady = false;
