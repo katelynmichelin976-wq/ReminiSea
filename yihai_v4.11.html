@@ -1049,7 +1049,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <!-- ══════════════ STATS SCREEN ══════════════ -->
 <div class="screen" id="screen-stats">
   <div class="stats-topbar">
-    <button class="back-btn" onclick="goHome()" aria-label="返回">
+    <button class="back-btn" onclick="closeStats()" aria-label="返回">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="stats-title">统计</span>
@@ -5723,13 +5723,18 @@ function toggleTheme(checkbox){
 // ════════════════════════════════════════════════════════════════
 
 // ── 统计屏导航 ────────────────────────────────────────────────
+let _statsOrigin = 'screen-home';
 function openStats() {
+  _statsOrigin = document.querySelector('.screen.active')?.id || 'screen-home';
   _statsAllStates = [];   // 清空缓存，强制从 IndexedDB 重新读取
   // 等待最后一次 SRS 写入完成，确保读到最新状态
   _lastSrsWrite.finally(() => {
     switchStatsTab(0);
     showScreen('screen-stats');
   });
+}
+function closeStats() {
+  showScreen(_statsOrigin);
 }
 
 let _statsCurrentFilter = 'all';
