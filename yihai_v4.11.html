@@ -1123,6 +1123,57 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 #sync-modal-track { flex:1; height:6px; border-radius:3px; background:var(--bd2); overflow:hidden; }
 #sync-modal-bar { height:100%; width:0%; background:var(--ocean); border-radius:3px; transition:width .3s ease; }
 #sync-modal-pct { font-size:12px; font-weight:600; color:var(--ocean); min-width:36px; text-align:right; }
+
+/* ═══ Action Sheet (照护者 ＋ 按钮) ═══ */
+.action-sheet-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.38); z-index: 998;
+  display: none; align-items: flex-end; justify-content: center;
+  pointer-events: none;
+}
+.action-sheet-overlay.open { display: flex; pointer-events: auto; }
+.action-sheet {
+  background: var(--surf); border-radius: var(--r) var(--r) 0 0;
+  width: 100%; max-width: 500px; padding: 8px 0 calc(8px + var(--safe-bottom));
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+}
+.action-sheet-group { padding: 4px 0; }
+.action-sheet-group + .action-sheet-group { border-top: 1px solid var(--bd); }
+.action-sheet-btn {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 14px 20px; background: none; border: none;
+  font-size: 16px; font-family: inherit; color: var(--text);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+.action-sheet-btn:active { background: var(--surf2); }
+.action-sheet-btn-icon { width: 22px; height: 22px; flex-shrink: 0; color: var(--text2); }
+.action-sheet-cancel {
+  display: block; width: calc(100% - 32px); margin: 8px 16px 0; padding: 14px;
+  background: var(--surf2); border: none; border-radius: var(--rsm);
+  font-size: 16px; font-weight: 600; font-family: inherit; color: var(--text2);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+
+/* ═══ 照护者模式—首页 ＋ 按钮 ═══ */
+.home-plus-btn {
+  background: none; border: none; cursor: pointer; padding: 6px;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--ocean); display: flex; align-items: center; flex-shrink: 0;
+  transition: transform 0.12s;
+}
+.home-plus-btn:active { transform: scale(0.9); }
+
+/* ═══ 模式切换开关（我的屏） ═══ */
+.mine-mode-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; margin: 4px 16px 10px;
+  background: var(--surf); border-radius: var(--rsm);
+  border: 1px solid var(--bd);
+}
+.mine-mode-lbl { display: flex; flex-direction: column; gap: 2px; }
+.mine-mode-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.mine-mode-sub { font-size: 12px; color: var(--text3); }
 </style>
 </head>
 <body>
@@ -1144,7 +1195,11 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           </svg>
         </button>
       </div>
-      <!-- 隐藏文件输入（我的屏"导入文件"按钮触发） -->
+      <!-- 照护者模式：＋ 按钮 -->
+      <button class="home-plus-btn" id="home-plus-btn" style="display:none" onclick="openActionSheet()" aria-label="更多操作">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+      </button>
+      <!-- 隐藏文件输入 -->
       <input type="file" id="importFile" accept=".yhspack" style="display:none" onchange="importYhspack(this.files[0]).then(()=>this.value='')" aria-hidden="true">
     </div>
 
@@ -1389,6 +1444,18 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
+    <!-- 模式切换 -->
+    <div class="mine-mode-row">
+      <div class="mine-mode-lbl">
+        <div class="mine-mode-title" id="mine-mode-title">照护者模式</div>
+        <div class="mine-mode-sub" id="mine-mode-sub">开启后可管理牌组与制卡</div>
+      </div>
+      <label class="stoggle">
+        <input type="checkbox" id="app-mode-toggle" onchange="onAppModeToggle(this)">
+        <div class="stoggle-track"></div>
+        <div class="stoggle-thumb"></div>
+      </label>
+    </div>
   </div>
   <!-- Tab Bar（我的激活） -->
   <div class="home-tabbar">
@@ -1406,6 +1473,37 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
       <span>我的</span>
     </button>
+  </div>
+</div>
+
+<!-- ══════════════ ACTION SHEET（照护者＋按钮） ══════════════ -->
+<div class="action-sheet-overlay" id="action-sheet" onclick="closeActionSheet(event)">
+  <div class="action-sheet">
+    <div class="action-sheet-group">
+      <button class="action-sheet-btn" onclick="closeActionSheet();createEmptyDeck()">
+        <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <span>创建空牌组</span>
+      </button>
+      <button class="action-sheet-btn" onclick="closeActionSheet();document.getElementById('importFile').click()">
+        <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span>导入文件</span>
+      </button>
+      <button class="action-sheet-btn" onclick="closeActionSheet();importFromUrl()">
+        <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span>从链接下载</span>
+      </button>
+    </div>
+    <div class="action-sheet-group">
+      <button class="action-sheet-btn" onclick="closeActionSheet();exportDeck()">
+        <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>导出当前牌组</span>
+      </button>
+      <button class="action-sheet-btn" onclick="closeActionSheet();shareDeck()">
+        <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        <span>共享牌组</span>
+      </button>
+    </div>
+    <button class="action-sheet-cancel" onclick="closeActionSheet()">取消</button>
   </div>
 </div>
 
@@ -4113,6 +4211,7 @@ let _lastSrsWrite    = Promise.resolve(); // 最近一次 _writeSrs 的 Promise�
 let _launchBusy  = false; // 防止重复点击开始练习
 let _browseCards = [];
 let _browseIdx   = 0;
+let _appMode     = localStorage.getItem('yihai_app_mode') || 'patient'; // 'patient' | 'caregiver'
 
 // ── 练习模式 SRS 状态 ──────────────────────────────────────────
 let _cardStartTs     = 0;     // 当前卡片显示时间戳（response_time 计算用）
@@ -4263,6 +4362,65 @@ document.addEventListener('visibilitychange', () => {
     releaseWakeLock();
   }
 });
+
+// ── 照护者模式 ─────────────────────────────────────────────────
+function onAppModeToggle(el) {
+  _appMode = el.checked ? 'caregiver' : 'patient';
+  localStorage.setItem('yihai_app_mode', _appMode);
+  updateTabBarMode();
+  updateHomeTopbar();
+  renderDeckList();
+}
+
+function updateTabBarMode() {
+  const isPatient = _appMode === 'patient';
+  document.querySelectorAll('.home-tabbar').forEach(tb => {
+    const fab = tb.querySelector('.tab-item.action');
+    if (!fab) return;
+    const span = fab.querySelector('span');
+    if (isPatient) {
+      fab.onclick = onFabTap;
+      if (span) span.textContent = '开始练习';
+      const svg = fab.querySelector('svg');
+      if (svg) svg.innerHTML = '<polygon points="6 3 20 12 6 21 6 3"/>';
+    } else {
+      fab.onclick = onCaregiverFabTap;
+      if (span) span.textContent = '开始制卡';
+      const svg = fab.querySelector('svg');
+      if (svg) svg.innerHTML = '<line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/>';
+    }
+  });
+}
+
+function updateHomeTopbar() {
+  const plusBtn = document.getElementById('home-plus-btn');
+  if (plusBtn) plusBtn.style.display = _appMode === 'caregiver' ? '' : 'none';
+  const modeToggle = document.getElementById('app-mode-toggle');
+  if (modeToggle) modeToggle.checked = _appMode === 'caregiver';
+  const modeTitle = document.getElementById('mine-mode-title');
+  const modeSub = document.getElementById('mine-mode-sub');
+  if (modeTitle) modeTitle.textContent = '照护者模式';
+  if (modeSub) modeSub.textContent = _appMode === 'caregiver' ? '已开启' : '已关闭 — 开启后可管理牌组与制卡';
+}
+
+function onCaregiverFabTap() {
+  // 照护者 FAB → 制卡（暂跳转到首页并提示）
+  showConfirmDialog('制卡功能即将上线，敬请期待。');
+}
+
+function openActionSheet() {
+  document.getElementById('action-sheet').classList.add('open');
+}
+function closeActionSheet(e) {
+  if (e && e.target !== document.getElementById('action-sheet')) return;
+  document.getElementById('action-sheet').classList.remove('open');
+}
+
+// Placeholder — will be implemented in subsequent waves
+function createEmptyDeck() { showConfirmDialog('创建空牌组功能即将上线。'); }
+function importFromUrl()   { showConfirmDialog('从链接下载功能即将上线。'); }
+function exportDeck()      { showConfirmDialog('导出功能即将上线。'); }
+function shareDeck()       { showConfirmDialog('共享牌组功能即将上线。'); }
 
 function _launch(mode) {
   sessionId++;
@@ -6079,6 +6237,8 @@ function toggleTheme(checkbox){
         currentDeck = DECKS_META[0].key;
       }
       renderDeckList();
+      updateTabBarMode();
+      updateHomeTopbar();
       await updateDeckStats();
     } catch(e) { console.error('initUI error:', e); }
   })();
