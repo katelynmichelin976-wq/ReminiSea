@@ -1491,15 +1491,22 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="sheet-tabs">
       <div class="sheet-tab active" onclick="switchTab(0)">通用</div>
       <div class="sheet-tab" onclick="switchTab(1)">语音</div>
-      <div class="sheet-tab" onclick="switchTab(2)">文字</div>
-      <div class="sheet-tab" onclick="switchTab(3)">SRS</div>
-      <div class="sheet-tab" onclick="switchTab(4)">云端</div>
+      <div class="sheet-tab" onclick="switchTab(2)">SRS</div>
+      <div class="sheet-tab" onclick="switchTab(3)">云端</div>
     </div>
 
     <div class="sheet-panels">
 
       <!-- Tab 0: 通用 -->
       <div class="sheet-panel active" id="tab-0">
+        <div class="sheet-section">
+          <div class="sheet-section-lbl">目标</div>
+          <div class="sheet-row">
+            <span class="sheet-row-lbl">每日学习目标</span>
+            <input type="range" min="5" max="100" value="50" step="5" id="general-daily-goal" oninput="onDailyGoalChange(this.value)">
+            <span class="sheet-row-val" id="general-daily-goal-val">50张</span>
+          </div>
+        </div>
         <div class="sheet-section">
           <div class="sheet-section-lbl">显示</div>
           <div class="sheet-row">
@@ -1694,58 +1701,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
       </div>
 
-      <!-- Tab 2: 文字 -->
-      <div class="sheet-panel" id="tab-2">
-        <div class="sheet-section">
-          <div class="sheet-section-lbl">字号</div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl">选项</span>
-            <input type="range" min="18" max="36" value="26" step="1" id="fs-opt" oninput="onFsChange('opt',this.value)">
-            <span class="sheet-row-val" id="fs-opt-val">26</span>
-          </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl">答案</span>
-            <input type="range" min="28" max="64" value="48" step="2" id="fs-ans" oninput="onFsChange('ans',this.value)">
-            <span class="sheet-row-val" id="fs-ans-val">48</span>
-          </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl">提示</span>
-            <input type="range" min="12" max="24" value="15" step="1" id="fs-hint" oninput="onFsChange('hint',this.value)">
-            <span class="sheet-row-val" id="fs-hint-val">15</span>
-          </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl">按钮</span>
-            <input type="range" min="14" max="28" value="20" step="1" id="fs-btn" oninput="onFsChange('btn',this.value)">
-            <span class="sheet-row-val" id="fs-btn-val">20</span>
-          </div>
-        </div>
-        <div class="sheet-section">
-          <div class="sheet-section-lbl">字间距</div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl">选项</span>
-            <input type="range" min="0" max="12" value="2" step="1" id="ls-opt" oninput="onLsChange('opt',this.value)">
-            <span class="sheet-row-val" id="ls-opt-val">2px</span>
-          </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl">答案</span>
-            <input type="range" min="-4" max="8" value="-1" step="1" id="ls-ans" oninput="onLsChange('ans',this.value)">
-            <span class="sheet-row-val" id="ls-ans-val">-1px</span>
-          </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl">提示</span>
-            <input type="range" min="0" max="8" value="0" step="1" id="ls-hint" oninput="onLsChange('hint',this.value)">
-            <span class="sheet-row-val" id="ls-hint-val">0px</span>
-          </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl">按钮</span>
-            <input type="range" min="0" max="8" value="0" step="1" id="ls-btn" oninput="onLsChange('btn',this.value)">
-            <span class="sheet-row-val" id="ls-btn-val">0px</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 3: SRS -->
-      <div class="sheet-panel" id="tab-3">
+      <div class="sheet-panel" id="tab-2">      <!-- SRS -->
 
         <div class="sheet-section">
           <div class="sheet-section-lbl">预设</div>
@@ -1873,8 +1829,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
       </div>
 
-      <!-- Tab 4: 云端 -->
-      <div class="sheet-panel" id="tab-4">
+      <div class="sheet-panel" id="tab-3">      <!-- 云端 -->
         <!-- 未登录 -->
         <div id="cloud-login-section">
           <div class="sheet-section">
@@ -5787,7 +5742,7 @@ loadSettings();
 function switchTab(n) {
   document.querySelectorAll('.sheet-tab').forEach((t,i)=>t.classList.toggle('active',i===n));
   document.querySelectorAll('.sheet-panel').forEach((p,i)=>p.classList.toggle('active',i===n));
-  if (n === 4) updateCloudTabUI();
+  if (n === 3) updateCloudTabUI();
 }
 
 function esc(s) {
@@ -6091,6 +6046,7 @@ function openSettings(){
   document.getElementById('settings-overlay').classList.add('open');
   // 每次打开时刷新音色列表，确保 iOS 语音包加载后能显示
   populateVoiceList();
+  loadDailyGoalUI();
 }
 function closeSettings(){
   document.getElementById('settings-overlay').classList.remove('open');
@@ -6796,11 +6752,31 @@ function setSrsMode(mode) {
   });
 }
 
+function onDailyGoalChange(val) {
+  const num = parseInt(val) || 50;
+  saveSrsConfigKey('maximum_reviews_per_day', num);
+  document.getElementById('general-daily-goal-val').textContent = num + '张';
+  // sync SRS tab slider
+  const srsSlider = document.getElementById('srs-max-reviews');
+  if (srsSlider) { srsSlider.value = num;
+    const sv = document.getElementById('srs-max-reviews-val');
+    if (sv) sv.textContent = num + '张';
+  }
+}
+
+function loadDailyGoalUI() {
+  const goal = SRS_CONFIG.maximum_reviews_per_day || 50;
+  const el = document.getElementById('general-daily-goal');
+  if (el) { el.value = goal;
+    document.getElementById('general-daily-goal-val').textContent = goal + '张'; }
+}
+
 // SRS Tab 打开时同步一次（通过修改 openSettings 调用链实现）
 function openSettingsWithSrs() {
   document.getElementById('settings-overlay').classList.add('open');
   populateVoiceList();
   syncSrsSettingsUI();
+  loadDailyGoalUI();
 }
 
 // ── 首页第三列（今日完成）─────────────────────────────────────

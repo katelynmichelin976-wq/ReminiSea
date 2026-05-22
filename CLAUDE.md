@@ -103,6 +103,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_playwright_dev2_verify.js` | Wave 1 dev.2 点牌组进浏览验证（6 断言） |
 | `tests/_playwright_browse_verify.js` | Wave 1 dev.4 浏览屏新设计验证（16 断言：DOM/进入/内容/翻页/返回） |
 | `tests/_playwright_account_verify.js` | Wave 1 dev.5 账户屏验证（20 断言：入口/三态/导航/同步） |
+| `tests/_playwright_settings_verify.js` | Wave 1 dev.6 设置屏验证（14 断言：Tab 结构/每日目标/代码） |
 | `tests/test_data/` | Test .yhspack files |
 
 ### 文档
@@ -148,6 +149,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Wave 1 dev.3：`_statsOrigin` 记录来源屏，统计返回回原屏
 - Wave 1 dev.4：新浏览屏 `screen-browse`（大图+名称+TTS+描述+翻页），脱离 screen-quiz
 - Wave 1 dev.5：账户屏 `screen-account`（三态：登录/恢复中/已登录 + 同步按钮 + 实时上传开关）
+- Wave 1 dev.6：设置屏改革——移除文字 Tab（4→3 Tab），通用 Tab 新增每日学习目标滑块
 
 **导航结构（Wave 1 后）：**
 - `screen-home`：首页（默认），底部 `.home-tabbar`（首页激活）
@@ -201,7 +203,7 @@ node tests/_playwright_session_mode_queue_test.js  # 队列难度曲线（需先
 - **智能匹配** → 修复涉及哪个模块，优先跑对应模块测试（如 session 改动跑 cloud_test）
 - 确认改动无问题即可，不需要每次都跑全部 8 套 Playwright。
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, Playwright 12/39/21/18/13/14/6/17/6/16/20（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue/stage0/nav_verify/dev2_verify/browse_verify/account_verify）.
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, Playwright 12/39/21/18/13/14/6/17/6/16/20/14（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue/stage0/nav_verify/dev2_verify/browse_verify/account_verify/settings_verify）.
 
 ## SRS Architecture
 
