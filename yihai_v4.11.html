@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="忆海拾光">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0ea5e9">
-<meta name="description" content="老年认知训练 — 看图识物">
+<meta name="description" content="记忆练习 — 看图识物">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
@@ -1338,7 +1338,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="sheet-section">
           <div class="sheet-section-lbl">预设</div>
           <div class="sheet-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:12px 0;">
-            <button class="srs-preset-btn" onclick="applySrsPreset('ad')">一键应用 AD 建议值</button>
             <button class="srs-preset-btn srs-preset-btn--sec" onclick="applySrsPreset('default')">恢复 Anki 默认值</button>
           </div>
         </div>
@@ -1427,7 +1426,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-row" style="justify-content:space-between">
             <div>
               <span class="sheet-row-lbl">学习阶段 Hard 计入连失</span>
-              <div style="font-size:11px;color:var(--text3);margin-top:2px">AD 建议开启，防止反复答 Hard 绕过失败计数</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">建议开启，防止反复答 Hard 绕过失败计数</div>
             </div>
             <label class="stoggle">
               <input type="checkbox" id="srs-learning-hard-lapse" onchange="saveSrsConfigKey('learning_hard_counts_lapse',this.checked)">
@@ -1552,12 +1551,12 @@ function simpleHash(s) {
 // ── SRS 全局配置（Anki 命名对齐）────────────────────────────────
 const SRS_CONFIG = {
   // 新卡学习
-  learning_steps          : [1, 10],      // 分钟；AD建议 [1,5,10,30]
+  learning_steps          : [1, 10],      // 分钟
   graduating_interval     : 1,            // 天
   easy_interval           : 2,            // 天
 
   // 遗忘重学
-  relearning_steps        : [10],         // 分钟；AD建议 [10,60,180]
+  relearning_steps        : [10],         // 分钟
   minimum_interval        : 1,            // 天
 
   // lapse 后 review 间隔乘数（0.0 = 重置为 minimum_interval）
@@ -1569,16 +1568,16 @@ const SRS_CONFIG = {
   new_cards_ignore_review_limit   : false,
 
   // 高级间隔控制
-  maximum_interval        : 36500,        // 天；AD建议 7
-  starting_ease           : 2.50,         // AD建议 1.30
+  maximum_interval        : 36500,        // 天
+  starting_ease           : 2.50,
   easy_bonus              : 1.30,
-  interval_modifier       : 1.00,         // AD建议 0.80
+  interval_modifier       : 1.00,
   hard_interval           : 1.20,
 
   // 我们特有参数
   ease_min                : 1.30,
   hard_step_multiplier    : 1.0,          // 不再使用（已改用 Anki 平均规则）
-  learning_hard_counts_lapse: false,      // AD建议 true：learning 阶段 hard 计入连失
+  learning_hard_counts_lapse: false,      // learning 阶段 hard 计入连失
 
   // T1→T7 过渡（Phase 2 启用）
   t1_review_before_mix    : 2,
@@ -2180,7 +2179,7 @@ async function syncPendingData(deckKey) {
 
 // ── 参数配置云端同步（v4.8）──────────────────────────────────
 // 收集所有 SRS + UI 参数为 JSON，upsert 到云端
-// 先拉云端现有配置再合并本地改动（避免不同设备/浏览器间的 AD 预设被冲掉）
+// 先拉云端现有配置再合并本地改动（避免不同设备/浏览器间的配置被冲掉）
 async function cloudPushConfig() {
   if (!_syncEnabled || !_sb) return;
   try {
@@ -6092,23 +6091,8 @@ function secsToLabel(secs) {
   return Math.round(secs / 60) + 'm';
 }
 
-// AD 建议值 / Anki 默认值
+// Anki 默认值预设
 const SRS_PRESETS = {
-  ad: {
-    learning_steps       : [1, 5, 10, 30],
-    relearning_steps     : [10, 60, 180],
-    maximum_interval     : 7,
-    starting_ease        : 1.30,
-    interval_modifier    : 0.80,
-    hard_step_multiplier : 1.5,
-    new_cards_per_day    : 5,
-    maximum_reviews_per_day: 20,
-    daily_remove_lapses  : 3,
-    auto_suspend_lapses  : 8,
-    learning_hard_counts_lapse: true,
-    warn_duration_sec    : 1200,
-    learn_ahead_limit     : 1200,
-  },
   default: {
     learning_steps       : [1, 10],
     relearning_steps     : [10],
@@ -6130,8 +6114,7 @@ function applySrsPreset(name) {
   if (!p) return;
   Object.entries(p).forEach(([k, v]) => saveSrsConfigKey(k, v));
   syncSrsSettingsUI();
-  const label = name === 'ad' ? 'AD建议值' : 'Anki默认值';
-  showToastMsg(`✓ 已应用${label}`);
+  showToastMsg('✓ 已恢复默认值');
 }
 
 function syncSrsSettingsUI() {
