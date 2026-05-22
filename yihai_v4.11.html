@@ -3964,7 +3964,7 @@ const I18N = {
 };
 
 function t(key) {
-  const loc = getLocale();
+  const loc = getLocale(); // defined below (Task 3 / getLocale)
   const L = I18N[loc] || {};
   if (key in L) return L[key];
   const F = I18N[FALLBACK_LOCALE] || {};
