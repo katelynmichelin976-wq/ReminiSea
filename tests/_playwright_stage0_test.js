@@ -33,6 +33,29 @@ const { chromium } = require('playwright');
   }));
   A('speak() 使用 UI locale es', speakLang === 'es');
 
+  // 导入一个中文 .yhspack 后，卡片应带 nameLang=zh-CN
+  const fileInput = await page.$('input[type="file"][accept=".yhspack"]');
+  if (fileInput) {
+    await fileInput.setInputFiles('tests/test_data/蔬菜水果本地版.yhspack');
+    await page.waitForTimeout(2000);
+    const langOk = await page.evaluate(() => {
+      try {
+        // 查找所有 yihai_deck_ 前缀的键
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('yihai_deck_')) {
+            const cards = JSON.parse(localStorage.getItem(k) || '[]');
+            if (Array.isArray(cards) && cards.length && cards[0].nameLang) return cards[0].nameLang;
+          }
+        }
+        return null;
+      } catch(e) { return 'error:' + e.message; }
+    });
+    A('导入中文牌组卡片 nameLang=zh-CN', langOk === 'zh-CN');
+  } else {
+    A('找到 .yhspack 导入入口', false);
+  }
+
   console.log(`\n通过 ${pass} / 失败 ${fail}`);
   await browser.close();
   process.exit(fail > 0 ? 1 : 0);

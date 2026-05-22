@@ -3418,7 +3418,7 @@ function saveDeckIndex() {
   ));
 }
 function saveDeckCards(key, cards) {
-  const slim = cards.map(c => ({ id: c.id, name: c.name, imgUrl: c._imgUrl || '', audUrl: c._audUrl || '' }));
+  const slim = cards.map(c => ({ id: c.id, name: c.name, nameLang: c.nameLang || '', imgUrl: c._imgUrl || '', audUrl: c._audUrl || '' }));
   localStorage.setItem(LS_DECK_PREFIX + key, JSON.stringify(slim));
 }
 
@@ -3615,12 +3615,14 @@ async function importYhspack(file) {
 
     const key = deck.id || ('deck_' + Date.now());
     const name = deck.name || file.name.replace('.yhspack','');
+    const deckLang = deck.language || 'zh-CN';
     const cards = [];
 
     for (let i = 0; i < deck.cards.length; i++) {
       const c = deck.cards[i];
       if (!c.name) continue;
-      const card = { id: c.id || String(i), name: c.name, img: '', audioUrl: '', details: [] };
+      const nf = normalizeField(c.name, deckLang);
+      const card = { id: c.id || String(i), name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: [] };
 
       // 图片（按扩展名推导 MIME，支持 PNG/WebP/GIF）
       if (c.image) {
@@ -4009,6 +4011,13 @@ function scriptToLang(script, fallbackLang) {
 }
 function resolveFieldLang(text, deckLang) {
   return scriptToLang(detectScript(text), deckLang || 'zh-CN');
+}
+function normalizeField(raw, deckLang) {
+  if (raw && typeof raw === 'object' && 'text' in raw) {
+    return { text: raw.text, lang: raw.lang || resolveFieldLang(raw.text, deckLang) };
+  }
+  const text = (raw == null) ? '' : String(raw);
+  return { text, lang: resolveFieldLang(text, deckLang) };
 }
 
 // ── Speech ─────────────────────────────────────────────────────

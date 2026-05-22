@@ -101,5 +101,20 @@ check('西语词在中文牌组拉丁→回退主语言 zh-CN', resolveFieldLang
 check('俄语词→ru', resolveFieldLang('яблоко', 'es'), 'ru');
 check('空文本→回退主语言', resolveFieldLang('', 'es'), 'es');
 
+// 把 .yhspack 字段（旧字符串 或 新 {text,lang}）规整为 {text, lang}
+function normalizeField(raw, deckLang) {
+  if (raw && typeof raw === 'object' && 'text' in raw) {
+    return { text: raw.text, lang: raw.lang || resolveFieldLang(raw.text, deckLang) };
+  }
+  const text = (raw == null) ? '' : String(raw);
+  return { text, lang: resolveFieldLang(text, deckLang) };
+}
+
+section('SUITE 5 — normalizeField .yhspack 字段规整');
+check('旧字符串中文，牌组zh→{苹果,zh-CN}', normalizeField('苹果', 'zh-CN'), { text: '苹果', lang: 'zh-CN' });
+check('旧字符串中文名在es牌组→lang自动zh-CN', normalizeField('苹果', 'es'), { text: '苹果', lang: 'zh-CN' });
+check('新格式带lang原样保留', normalizeField({ text: 'manzana', lang: 'es' }, 'zh-CN'), { text: 'manzana', lang: 'es' });
+check('新格式缺lang→自动推断', normalizeField({ text: 'apple' }, 'es'), { text: 'apple', lang: 'es' });
+
 console.log(`\n通过 ${passed} / 失败 ${failed}`);
 if (failed > 0) process.exit(1);
