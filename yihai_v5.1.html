@@ -6482,7 +6482,7 @@ function speakOptHint(opts, optLang) {
 
   // parse template into segments: text (UI lang) / {var} (card lang) / pause
   const parts = [];
-  const re = /\{[A-D]\}|\.+/g;
+  const re = /[\{｛][A-D][\}｝]|[\.。]+/g;
   const tmpl = PHRASE_OPT_HINT;
   let lastIdx = 0;
   let m;
@@ -6492,7 +6492,7 @@ function speakOptHint(opts, optLang) {
       if (txt) parts.push({ type: 'text', val: txt, lang: uiLang });
     }
     const raw = m[0];
-    if (raw === '.' || /^\.+$/.test(raw)) {
+    if (raw === '.' || raw === '。' || /^[\.。]+$/.test(raw)) {
       parts.push({ type: 'pause', ms: raw.length * PAUSE_MS });
     } else {
       const label = raw[1];
@@ -7114,14 +7114,14 @@ function _checkDurationWarning() {
 
 function showRestToast() {
   const mins = Math.round(SRS_CONFIG.warn_duration_sec / 60);
-  const t = document.createElement('div');
-  t.textContent = t('rest_toast', { n: mins });
-  t.style.cssText = `position:fixed;bottom:calc(120px + var(--safe-bottom));left:50%;
+  const el = document.createElement('div');
+  el.textContent = t('rest_toast', { n: mins });
+  el.style.cssText = `position:fixed;bottom:calc(120px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
 }
 
 // ── visibilitychange: reset idle timer on background switch, avoid false active time ──
@@ -7287,7 +7287,7 @@ function toggleCorrectHint(cb) {
 }
 
 function onPhraseChange(key, val) {
-  const normalize = s => s.replace(/。/g, '.');
+  const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
   if (key === 'select')  { PHRASE_SELECT   = normalize(val) || t('quiz_select_hint');   localStorage.setItem('phraseSelect',  PHRASE_SELECT); }
   if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || t('default_wrong');    localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
   if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
