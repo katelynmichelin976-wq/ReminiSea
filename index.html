@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="zh" data-mode="patient">
+<html lang="zh" data-mode="standard">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -8,7 +8,7 @@
 <meta data-i18n-content="app_short_name" name="apple-mobile-web-app-title" content="忆海拾光">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0ea5e9">
-<meta data-i18n-content="meta_description" name="description" content="记忆练习 — 看图识物">
+<meta data-i18n-content="meta_description" name="description" content="看图识物 — 快乐学习">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,13 +19,13 @@
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
-  -webkit-touch-callout: none;   /* iOS 长按菜单 */
-  -webkit-user-select: none;     /* 文字选中 */
+  -webkit-touch-callout: none;   /* iOS long-press menu */
+  -webkit-user-select: none;     /* text selection */
   user-select: none;
 }
-/* 设置页输入框恢复文字选中和输入 */
+/* restore text selection in settings inputs */
 input[type=text], textarea { -webkit-user-select: text; user-select: text; }
-/* 图片禁止拖拽和长按保存 */
+/* prevent image drag and long-press save */
 img { -webkit-user-drag: none; pointer-events: none; }
 
 :root {
@@ -56,7 +56,7 @@ img { -webkit-user-drag: none; pointer-events: none; }
   --r:          22px;
   --rsm:        16px;
   --sh:         0 1px 10px rgba(14,165,233,0.1), 0 3px 20px rgba(14,165,233,0.06);
-  /* Safe area — 集中定义，统一引用 */
+  /* Safe area — centralized, single reference */
   --safe-top:    env(safe-area-inset-top, 44px);
   --safe-bottom: env(safe-area-inset-bottom, 34px);
 }
@@ -81,7 +81,7 @@ html.dark {
   --diamond2:   #0c4a6e;
   --sh:         0 2px 20px rgba(0,0,0,0.5);
 }
-/* ── 多主题支持 ── */
+/* ── multi-theme support ── */
 html[data-theme="jade"] {
   --ocean:      #1e7a52; --ocean-dk: #155e3e;
   --ocean-bg:   #eaf5f0; --ocean-lt: rgba(30,122,82,0.12);
@@ -277,7 +277,7 @@ body {
 }
 .deck-card:last-child .deck-card-inner { border-bottom: none; }
 .deck-card-inner:active { background: var(--surf2); }
-[data-mode="patient"] .caregiver-only { display: none !important; }
+[data-mode="standard"] .advanced-only { display: none !important; }
 .deck-card-inner.selected { background: var(--red-lt); }
 .deck-card-inner.selected .deck-name { color: var(--red-dk); }
 .deck-card-inner::before {
@@ -346,7 +346,7 @@ body {
 .tab-fab svg { width: 22px; height: 22px; }
 .tab-item.action:active .tab-fab { transform: scale(.93); box-shadow: none; }
 
-/* ═══ 我的屏 ═══ */
+/* ═══ mine screen ═══ */
 .mine-topbar {
   padding: calc(var(--safe-top) + 4px) 16px 6px;
   width: 100%; max-width: 500px; margin: 0 auto; flex-shrink: 0;
@@ -399,7 +399,7 @@ body {
 }
 .mine-menu-chevron { margin-left: auto; color: var(--text3); flex-shrink: 0; }
 
-/* 自制确认弹窗（替代 iOS PWA 下被屏蔽的 confirm()）*/
+/* custom confirm dialog (replaces iOS PWA blocked confirm()) */
 .yh-dialog-mask {
   position: fixed; inset: 0; z-index: 1000;
   background: rgba(0,0,0,0.45);
@@ -752,7 +752,7 @@ body {
 
 @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 
-/* 空状态 */
+/* empty state */
 .empty-state {
   flex: 1;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -781,7 +781,7 @@ body {
 .swipe-action-btn.swipe-rename { background: var(--ocean); }
 .swipe-action-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
 
-/* ═══ 制卡表单 ═══ */
+/* ═══ card creator form ═══ */
 #screen-create-card { justify-content: flex-start; overflow: hidden; align-items: center; }
 .cc-topbar { width: 100%; max-width: 500px; padding: calc(var(--safe-top) + 8px) 12px 6px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .cc-topbar-title { flex: 1; text-align: center; font-size: 17px; font-weight: 700; color: var(--text); }
@@ -1321,7 +1321,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 #sync-modal-bar { height:100%; width:0%; background:var(--ocean); border-radius:3px; transition:width .3s ease; }
 #sync-modal-pct { font-size:12px; font-weight:600; color:var(--ocean); min-width:36px; text-align:right; }
 
-/* ═══ Action Sheet (照护者 ＋ 按钮) ═══ */
+/* ═══ Action Sheet (caregiver + button) ═══ */
 .action-sheet-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.38); z-index: 998;
@@ -1352,7 +1352,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 
-/* ═══ 模式切换开关（我的屏） ═══ */
+/* ═══ mode toggle switch (mine screen) ═══ */
 .mine-mode-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 20px; margin: 4px 16px 10px;
@@ -1363,7 +1363,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 .mine-mode-title { font-size: 15px; font-weight: 600; color: var(--text); }
 .mine-mode-sub { font-size: 12px; color: var(--text3); }
 
-/* ═══ 主题选择器 ═══ */
+/* ═══ theme picker ═══ */
 .screen-theme { justify-content: flex-start; overflow: hidden; align-items: center; }
 .theme-topbar { width: 100%; max-width: 500px; padding: calc(var(--safe-top) + 8px) 12px 6px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .theme-topbar-title { flex: 1; text-align: center; font-size: 17px; font-weight: 700; color: var(--text); }
@@ -1377,14 +1377,14 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 .theme-name { padding: 10px 8px; font-size: 13px; font-weight: 700; color: var(--text); text-align: center; letter-spacing: 1px; border-top: 1px solid var(--bd); }
 .theme-check { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--ocean); color: #fff; font-size: 12px; font-weight: 700; display: none; align-items: center; justify-content: center; }
 .theme-card.active .theme-check { display: flex; }
-/* 各主题预览色 */
+/* theme preview colors */
 .tp-default { background: #f0f9ff; } .tp-default .theme-prev-btn { background: #0ea5e9; }
 .tp-jade    { background: #f0f7f3; } .tp-jade    .theme-prev-btn { background: #1e7a52; }
 .tp-amber   { background: #fdf5ec; } .tp-amber   .theme-prev-btn { background: #c8600a; }
 .tp-dark    { background: #1c1c28; } .tp-dark    .theme-prev-btn { background: #e8a030; }
 .tp-cinnabar { background: #fdf3f2; } .tp-cinnabar .theme-prev-btn { background: #c43a31; }
 
-/* ═══ 关于页 ═══ */
+/* ═══ about page ═══ */
 .screen-about { justify-content: flex-start; overflow: hidden; align-items: center; }
 .about-scroll { flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: 500px; padding: 32px 20px; text-align: center; }
 .about-icon { font-size: 48px; margin-bottom: 12px; }
@@ -1411,7 +1411,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         </svg>
       </button>
     </div>
-    <!-- 隐藏文件输入 -->
+    <!-- hidden file input -->
     <input type="file" id="importFile" accept=".yhspack" style="display:none" onchange="importYhspack(this.files[0]).then(()=>this.value='')" aria-hidden="true">
   </div>
 
@@ -1420,7 +1420,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-scroll" id="home-scroll">
     <div class="album-section-lbl">
       <span id="album-section-lbl" data-i18n="home_album_section">我的相册</span>
-      <button class="btn-new-deck caregiver-only" onclick="openActionSheet()" data-i18n-aria="home_new_deck" aria-label="新建牌组" data-i18n="home_new_deck_btn">＋ 新建</button>
+      <button class="btn-new-deck advanced-only" onclick="openActionSheet()" data-i18n-aria="home_new_deck" aria-label="新建牌组" data-i18n="home_new_deck_btn">＋ 新建</button>
     </div>
     <div class="home-section">
       <div class="deck-grid" id="deck-grid">
@@ -1429,7 +1429,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     </div>
   </div>
 
-  <!-- Tab Bar（首页激活） -->
+  <!-- Tab Bar (home active) -->
   <div class="home-tabbar">
     <button class="tab-item active" onclick="showScreen('screen-home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
@@ -1576,7 +1576,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
   <div class="stats-body">
 
-    <!-- Tab 0：今日概况 -->
+    <!-- Tab 0: today overview -->
     <div class="stats-panel active" id="sp-0">
       <div class="stats-section">
         <div class="stats-kpi-row" id="st-kpi"></div>
@@ -1588,7 +1588,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       </div>
     </div>
 
-    <!-- Tab 1：牌组概况 -->
+    <!-- Tab 1: deck overview -->
     <div class="stats-panel" id="sp-1">
       <div class="stats-section" id="st-deck-overview"></div>
       <div class="stats-section">
@@ -1597,7 +1597,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       </div>
     </div>
 
-    <!-- Tab 2：卡片状态 -->
+    <!-- Tab 2: card state -->
     <div class="stats-panel" id="sp-2">
       <div class="stats-filter-bar" id="st-card-filter">
         <button class="stats-filter-btn active" data-f="all"      onclick="filterCards(this,'all')" data-i18n="stats_filter_all">全部</button>
@@ -1610,7 +1610,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <div class="stats-card-list" id="st-card-list"></div>
     </div>
 
-    <!-- Tab 3：练习记录 -->
+    <!-- Tab 3: practice log -->
     <div class="stats-panel" id="sp-3">
       <div class="stats-section">
         <div class="stats-section-lbl" data-i18n="stats_recent_100">最近 100 条（7天内，不含步长内重现）</div>
@@ -1620,7 +1620,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
   </div>
 
-  <!-- 卡片详情面板（叠加在统计屏上） -->
+  <!-- card detail panel (overlaid on stats screen) -->
   <div class="card-detail-overlay" id="card-detail-overlay" onclick="closeCardDetail(event)">
     <div class="card-detail-sheet" id="card-detail-sheet">
       <div class="card-detail-handle"></div>
@@ -1633,7 +1633,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 <div class="screen" id="screen-mine">
   <div class="mine-topbar"></div>
   <div class="mine-scroll">
-    <!-- 账号卡（登录状态由 updateMineProfile 动态更新） -->
+    <!-- account card (login state updated by updateMineProfile) -->
     <button class="mine-profile" id="mine-profile-card" onclick="showAccount()">
       <div class="mine-profile-avatar" id="mine-avatar">?</div>
       <div class="mine-profile-info">
@@ -1642,7 +1642,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       </div>
       <svg class="mine-profile-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
-    <!-- 统计 -->
+    <!-- stats -->
     <div class="mine-group">
       <button class="mine-menu-item" onclick="openStats()">
         <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></div>
@@ -1650,7 +1650,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
-    <!-- 设置 + 导入 -->
+    <!-- settings + import -->
     <div class="mine-group">
       <button class="mine-menu-item" onclick="openSettingsWithSrs()">
         <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
@@ -1673,10 +1673,10 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
-    <!-- 模式切换 -->
+    <!-- mode switch -->
     <div class="mine-mode-row">
       <div class="mine-mode-lbl">
-        <div class="mine-mode-title" id="mine-mode-title" data-i18n="mine_mode_title">照护者模式</div>
+        <div class="mine-mode-title" id="mine-mode-title" data-i18n="mine_mode_title">高级模式</div>
         <div class="mine-mode-sub" id="mine-mode-sub" data-i18n="mine_mode_sub">开启后可管理牌组与制卡</div>
       </div>
       <label class="stoggle">
@@ -1686,7 +1686,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       </label>
     </div>
   </div>
-  <!-- Tab Bar（我的激活） -->
+  <!-- Tab Bar (mine active) -->
   <div class="home-tabbar">
     <button class="tab-item" onclick="showScreen('screen-home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
@@ -1705,7 +1705,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
-<!-- ══════════════ 主题选择器 ══════════════ -->
+<!-- ══════════════ theme picker ══════════════ -->
 <div class="screen screen-theme" id="screen-theme">
   <div class="theme-topbar">
     <button class="back-btn" onclick="goHome()" aria-label="返回" data-i18n-aria="common_back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -1743,7 +1743,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
-<!-- ══════════════ 关于 ══════════════ -->
+<!-- ══════════════ about ══════════════ -->
 <div class="screen screen-about" id="screen-about">
   <div class="theme-topbar">
     <button class="back-btn" onclick="goHome()" aria-label="返回" data-i18n-aria="common_back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -1755,8 +1755,8 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="about-title" data-i18n="about_app_name">忆海拾光</div>
     <div class="about-sub" id="about-version">v5.1.0</div>
     <div class="about-desc">
-      <p style="margin-bottom:12px" data-i18n="about_desc1">忆海拾光是一款帮助记忆练习的工具，通过看图识物的方式，帮助用户每天进行轻松的记忆训练。</p>
-      <p style="margin-bottom:12px" data-i18n="about_desc2">基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让训练更有效。</p>
+      <p style="margin-bottom:12px" data-i18n="about_desc1">忆海拾光是一款轻松有趣的学习工具，通过看图识物的方式，让用户每天愉快地复习。</p>
+      <p style="margin-bottom:12px" data-i18n="about_desc2">基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让学习更高效。</p>
       <p data-i18n="about_desc3">数据完全离线可用，登录后可跨设备同步。</p>
     </div>
   </div>
@@ -1780,7 +1780,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
-<!-- ══════════════ 制卡表单 ══════════════ -->
+<!-- ══════════════ card creator form ══════════════ -->
 <div class="screen" id="screen-create-card">
   <div class="cc-topbar">
     <button class="back-btn" onclick="goHome()">←</button>
@@ -1828,7 +1828,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
-<!-- ══════════════ ACTION SHEET（照护者＋按钮） ══════════════ -->
+<!-- ══════════════ ACTION SHEET (advanced + button) ══════════════ -->
 <div class="action-sheet-overlay" id="action-sheet" onclick="closeActionSheet(event)">
   <div class="action-sheet">
     <div class="action-sheet-group">
@@ -1875,7 +1875,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <!-- State A: not logged in (rendered when _cloudUserEmail is empty and not restoring) -->
     <div id="account-state-logged-out" style="display:none">
       <div class="account-section">
-        <div class="account-desc" data-i18n="account_desc">登录后可同步服务器牌组，训练记录自动上传。未登录仅支持手工导入，数据完全离线。</div>
+        <div class="account-desc" data-i18n="account_desc">登录后可同步服务器牌组，学习记录自动上传。未登录仅支持手工导入，数据完全离线。</div>
         <input class="account-field" type="email" id="account-email" data-i18n-placeholder="account_email_ph" placeholder="邮箱" autocomplete="email" inputmode="email">
         <input class="account-field" type="password" id="account-password" data-i18n-placeholder="account_pwd_ph" placeholder="密码" autocomplete="current-password">
         <button class="account-btn account-btn-primary" id="account-login-btn" onclick="doAccountLogin()" data-i18n="account_login_btn">登 录</button>
@@ -1947,7 +1947,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
     <div class="sheet-panels">
 
-      <!-- Tab 0: 通用 -->
+      <!-- Tab 0: general -->
       <div class="sheet-panel active" id="tab-0">
         <div class="sheet-section">
           <div class="sheet-section-lbl" data-i18n="settings_section_goal">目标</div>
@@ -2047,7 +2047,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         </div>
       </div>
 
-      <!-- Tab 1: 语音 -->
+      <!-- Tab 1: speech -->
       <div class="sheet-panel" id="tab-1">
 
         <div class="sheet-section">
@@ -2279,13 +2279,13 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
       </div>
 
-      <div class="sheet-panel" id="tab-3">      <!-- 云端 -->
-        <!-- 未登录 -->
+      <div class="sheet-panel" id="tab-3">      <!-- cloud -->
+        <!-- not logged in -->
         <div id="cloud-login-section">
           <div class="sheet-section">
             <div class="sheet-section-lbl" data-i18n="settings_sync_account">同步账户</div>
             <div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5" data-i18n="settings_cloud_desc">
-              登录后可同步服务器牌组，训练记录自动上传。未登录时仅支持手工导入，数据完全离线。
+              登录后可同步服务器牌组，学习记录自动上传。未登录时仅支持手工导入，数据完全离线。
             </div>
             <div style="display:flex;flex-direction:column;gap:8px">
               <input type="email" id="cloud-email" placeholder="邮箱" data-i18n-placeholder="settings_cloud_email_ph"
@@ -2300,7 +2300,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           </div>
         </div>
 
-        <!-- 正在恢复会话 -->
+        <!-- session restoring -->
         <div id="cloud-restoring-section" style="display:none">
           <div class="sheet-section">
             <div class="sheet-section-lbl" data-i18n="settings_sync_account">同步账户</div>
@@ -2308,7 +2308,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           </div>
         </div>
 
-        <!-- 已登录 -->
+        <!-- logged in -->
         <div id="cloud-connected-section" style="display:none">
           <div class="sheet-section">
             <div class="sheet-section-lbl" data-i18n="settings_sync_account">同步账户</div>
@@ -2337,7 +2337,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
-<!-- 同步进度 Modal -->
+<!-- sync progress modal -->
 <div id="sync-modal">
   <div id="sync-modal-box">
     <div id="sync-modal-title">正在同步</div>
@@ -2351,77 +2351,77 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
 <script>
 // ════════════════════════════════════════════════════════════════
-// v4.0  SRS 数据层
+// v4.0  SRS data layer
 // ════════════════════════════════════════════════════════════════
 
-// ── 工具函数 ────────────────────────────────────────────────────
+// ── utility functions ────────────────────────────────────────────
 function simpleHash(s) {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = Math.imul(31, h) + s.charCodeAt(i) | 0; }
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
-// ── SRS 全局配置（Anki 命名对齐）────────────────────────────────
+// ── SRS global config (Anki naming convention) ────────────────────
 const SRS_CONFIG = {
-  // 新卡学习
-  learning_steps          : [1, 10],      // 分钟
-  graduating_interval     : 1,            // 天
-  easy_interval           : 2,            // 天
+  // new card learning
+  learning_steps          : [1, 10], // min
+  graduating_interval     : 1,            // day
+  easy_interval           : 2,            // day
 
-  // 遗忘重学
-  relearning_steps        : [10],         // 分钟
-  minimum_interval        : 1,            // 天
+  // relearning
+  relearning_steps        : [10],         // min
+  minimum_interval        : 1,            // day
 
-  // lapse 后 review 间隔乘数（0.0 = 重置为 minimum_interval）
+  // review interval multiplier after lapse (0.0 = reset to minimum_interval)
   new_interval            : 0.0,
 
-  // 每日上限
+  // daily limits
   new_cards_per_day               : 5,
   maximum_reviews_per_day         : 50,
   new_cards_ignore_review_limit   : false,
 
-  // 高级间隔控制
-  maximum_interval        : 36500,        // 天
+  // advanced interval control
+  maximum_interval        : 36500, // day
   starting_ease           : 2.50,
   easy_bonus              : 1.30,
   interval_modifier       : 1.00,
   hard_interval           : 1.20,
 
-  // 我们特有参数
+  // our custom parameters
   ease_min                : 1.30,
-  hard_step_multiplier    : 1.0,          // 不再使用（已改用 Anki 平均规则）
-  learning_hard_counts_lapse: false,      // learning 阶段 hard 计入连失
+  hard_step_multiplier    : 1.0,          // deprecated (Anki average rule used instead)
+  learning_hard_counts_lapse: false,      // learning-stage hard counts as lapse
 
-  // T1→T7 过渡（Phase 2 启用）
+  // T1→T7 transition (Phase 2)
   t1_review_before_mix    : 2,
   t1_mix_before_t7        : 2,
 
-  // 连续失败保护
-  daily_remove_lapses     : 3,            // 当日移出阈值
-  auto_suspend_lapses     : 8,            // 累计挂起阈值（使用 lapses_total）
+  // consecutive failure protection
+  daily_remove_lapses     : 3,            // daily removal threshold
+  auto_suspend_lapses     : 8,            // cumulative suspend threshold (uses lapses_total)
 
-  // 自动前进（练习模式，对应现有 NDUR）
-  practice_advance_sec    : 6,            // 0 = 手动
+  // auto-advance (practice mode, corresponds to NDUR)
+  practice_advance_sec    : 6, // 0 = manual
 
-  // 统计记录
+  // stats tracking
   maximum_answer_seconds  : 60,
 
-  // 时长保护（仅练习模式）
+  // duration guard (practice mode only)
   idle_threshold_sec      : 120,
-  warn_duration_sec       : 1200,         // 20 分钟
+  warn_duration_sec       : 1200, // 20 min
   warn_repeat_sec         : 600,
   warn_mode               : 'warn',       // 'warn' | 'limit'
 
-  // 提前出题窗口（对应 Anki "Learn Ahead Limit"，秒）
-  // 主队列耗尽后，due_ts 在此窗口内的 learning 卡才追加出题
-  // 默认 1200s = 20 分钟，与 Anki 默认一致
+  // learn-ahead window (Anki "Learn Ahead Limit", seconds)
+  // after main queue is exhausted, only learning cards with due_ts within this window are added
+  // default 1200s = 20 min, matches Anki default
   learn_ahead_limit        : 1200,
 
-  // 练习模式：'normal'=普通（体验弧，20张）| 'hard'=困难（SRS节律，30张上限）| 'survival'=生存（清空积压）
+  // practice modes: 'normal'=standard (arc, 20 cards) | 'hard'=challenging (SRS rhythm, 30 cap) | 'survival'=survival (clear backlog)
   session_mode             : 'normal',
 };
 
-// ── SRS_CONFIG 持久化覆盖（从 localStorage 恢复用户修改）─────────
+// ── SRS_CONFIG persistent overrides (restore user edits from localStorage) ─
 (function _loadSrsConfig() {
   Object.keys(SRS_CONFIG).forEach(k => {
     const v = localStorage.getItem('srs_' + k);
@@ -2452,14 +2452,14 @@ function saveSrsConfigKey(key, value) {
   debouncePushConfig();
 }
 
-// 参数配置云端同步：防抖推送（500ms 内多次修改只推送一次）
+// cloud config sync: debounced push (multiple changes within 500ms push once)
 let _pushConfigTimer = null;
 function debouncePushConfig() {
   if (_pushConfigTimer) clearTimeout(_pushConfigTimer);
   _pushConfigTimer = setTimeout(() => { cloudPushConfig(); _pushConfigTimer = null; }, 500);
 }
 
-// ── 日期 / 时间工具函数（所有 SRS 日期操作必须经过这里）──────────
+// ── date / time utilities (all SRS date ops must go through here) ──
 function todayStr() {
   const d = new Date();
   const y = d.getFullYear();
@@ -2467,7 +2467,7 @@ function todayStr() {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
-// UTC 日期（与 Supabase trial_date 生成列一致，该列用 to_timestamp()::date = UTC）
+// UTC date (matches Supabase trial_date generated column: to_timestamp()::date = UTC)
 
 function addDays(dateStr, n) {
   const d = new Date(dateStr + 'T00:00:00');
@@ -2490,7 +2490,7 @@ function minsToTs(mins) {
   return Math.round(mins * 60 * 1000);
 }
 
-// ── IndexedDB：yihai_srs（v5: user_id 多用户隔离）────────────────
+// ── IndexedDB: yihai_srs (v5: user_id multi-user isolation) ──────
 const SRS_DB_NAME    = 'yihai_srs';
 const SRS_DB_VER     = 6;
 const CS_STORE       = 'card_states';
@@ -2503,19 +2503,19 @@ let _srsDbPromise = null;
 let _v5MigrationDone = false;
 
 function getCurrentUserId() {
-  // 已登录 → cloud user UUID；登出 → 最近一次登录的用户（持久化在 localStorage）；
-  // 从未登录 → deviceId 兜底。用户切换时新登录自动覆盖。
+  // logged in → cloud user UUID; logged out → last logged in user (persisted in localStorage);
+  // never logged in → deviceId fallback. new login on user switch auto-overrides.
   return _cloudUserId
     || localStorage.getItem('yihai_last_cloud_user_id')
     || getOrCreateDeviceId();
 }
 
-// ── Supabase 云同步 ────────────────────────────────────────────────
+// ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
 const APP_VERSION = '5.1.0';
 
-// ── PWA 诊断面板入口（tap version 5× 加载）───────────────────
+// ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
 function openDiagPanel(e) {
   _diagTapCount++;
@@ -2529,44 +2529,44 @@ function openDiagPanel(e) {
   document.head.appendChild(s);
 }
 
-// CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
-// v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
+// CDN-accelerated media download (v4.8): empty = fallback to Supabase Storage
+// v4.9: Tencent Cloud COS origin-pull disabled to avoid download costs
 const MEDIA_CDN_BASE = '';
 
 let _sb = null;
 let _syncEnabled = false;
 let _deviceId = null;
-let _lastOrphans = [];    // 媒体清理：暂存最近一次扫描的孤立 key
+let _lastOrphans = [];    // media cleanup: cache last orphan scan keys
 let _cloudUserEmail = '';
 let _cloudUserId = '';
-var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // 学习中实时上传开关
-let _sessionRestoring = false; // SDK 加载中或 session 恢复中，避免闪"未登录"
-var _onlineListenerActive = false; // 防止重复注册 online 监听
-var _syncInFlight = false;         // runSync 并发锁
-let _sessionOffline   = false; // 有凭证但网络失败，保留登录外观等待重连
+var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // realtime upload toggle during learning
+let _sessionRestoring = false; // SDK loading or session restoring, avoid flashing "not logged in"
+var _onlineListenerActive = false; // prevent duplicate online listener registration
+var _syncInFlight = false;         // runSync concurrency lock
+let _sessionOffline   = false; // has credentials but network failed, keep login appearance, wait for reconnect
 
-// CDN 媒体下载辅助：尝试 CDN 加速，失败则回退到 Supabase Storage
+// CDN media download helper: try CDN first, fallback to Supabase Storage
 function cdnMediaUrl(path) {
   if (!path) return '';
   return MEDIA_CDN_BASE ? MEDIA_CDN_BASE + '/' + path : '';
 }
 async function downloadMediaFromCDNorSupabase(path, mimeType) {
   if (!path) throw new Error('empty path');
-  // 优先走 CDN
+  // prefer CDN first
   const cdnUrl = cdnMediaUrl(path);
   if (cdnUrl) {
     try {
       const resp = await fetch(cdnUrl);
       if (resp.ok) return await resp.blob();
-    } catch(e) { /* CDN 不通则回退到 Supabase */ }
+    } catch(e) { /* CDN unreachable, fallback to Supabase */ }
   }
-  // 回退到 Supabase Storage
+  // fallback to Supabase Storage
   const { data, error } = await _sb.storage.from('ReminiSea').download(path);
   if (error) throw error;
   return new Blob([data], { type: mimeType || 'image/jpeg' });
 }
 
-// 网络失败时注册 online 事件，恢复后自动重试 session
+// register online event on network failure, auto-retry session when restored
 function _scheduleSessionRetry() {
   if (_onlineListenerActive) return;
   _onlineListenerActive = true;
@@ -2596,22 +2596,22 @@ function _createSupabaseClient() {
   });
 }
 
-// 启动时尝试恢复已有会话
+// attempt to restore existing session on startup
 async function restoreCloudSession() {
   try {
     _sb = _createSupabaseClient();
 
-    // 预读 localStorage token — 无需网络，可立即获得用户身份
-    // 注意：Supabase SDK 用 projectRef（不含域名）作 key，需与 SDK 保持一致
+    // pre-read localStorage token — no network needed, immediate user identity
+    // note: Supabase SDK uses projectRef (no domain) as key, must match SDK
     var sbKey = 'sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token';
     var parsed = null;
     try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
-    // 如果 SDK key 已被清除（SDK 内部检测到过期后会清理），尝试自有备份
+    // if SDK key cleared (SDK cleans on expiry detection), try own backup
     if (!parsed) {
       try { parsed = JSON.parse(localStorage.getItem('yihai_session_backup') || 'null'); } catch(e) {}
     }
 
-    // 第1级：getSession()（SDK 自动用 refresh_token 续签）
+    // Level 1: getSession() (SDK auto-refreshes with refresh_token)
     var { data, error } = await _sb.auth.getSession();
     if (!error && data.session) {
       _syncEnabled      = true;
@@ -2630,7 +2630,7 @@ async function restoreCloudSession() {
       hasToken: !!parsed, hasTokenEmail: !!(parsed && parsed.user && parsed.user.email)
     });
 
-    // 第2级：手动 setSession（处理 SDK 读 localStorage 的竞态）
+    // Level 2: manual setSession (handle SDK localStorage race)
     if (parsed && parsed.access_token && parsed.refresh_token) {
       var r = await _sb.auth.setSession({ access_token: parsed.access_token, refresh_token: parsed.refresh_token });
       if (!r.error && r.data.session) {
@@ -2644,16 +2644,16 @@ async function restoreCloudSession() {
         logAppEvent('session_restore_l2_ok', { uid: _cloudUserId });
         return;
       }
-      // 区分：Supabase 明确拒绝（400 + 凭证无效错误码）才视为真实登出；
-      // 其余失败（网络、超时、message 为 undefined 等）一律走 offline 保留登录态。
-      // iOS PWA reload 后网络栈短暂不稳，refresh 请求容易失败但不代表账号失效。
+      // distinguish: Supabase explicit rejection (400 + invalid credential code) = real logout;
+      // other failures (network, timeout, undefined message) → offline, keep login state.
+      // iOS PWA reload has brief network instability, refresh may fail but account is valid.
       var errMsg    = (r.error && r.error.message) || '';
       var errStatus = r.error && r.error.status;
-      // Supabase 错误 message 可能是下划线（refresh_token_not_found）或空格（Refresh Token Not Found）
+      // Supabase error message may be underscore (refresh_token_not_found) or spaced (Refresh Token Not Found)
       var isRealLogout = errStatus === 400 &&
         /invalid.grant|refresh.token.not.found|user.not.found/i.test(errMsg);
       if (!isRealLogout && parsed.user && parsed.user.email) {
-        // 不确定失败 → offline 模式，等 online 事件自动重试
+        // indeterminate failure → offline mode, wait for online event auto-retry
         logAppEvent('session_restore_l2_offline', {
           errStatus: errStatus, errMsg: errMsg, hasEmail: true
         });
@@ -2664,7 +2664,7 @@ async function restoreCloudSession() {
         _scheduleSessionRetry();
         return;
       }
-      // 真实登出（token 服务端已失效）：清除备份，直接返回，显示登录界面
+      // real logout (token server-side invalid): clear backup, return, show login UI
       localStorage.removeItem('yihai_session_backup');
       logAppEvent('session_restore_l2_real_logout', {
         errStatus: errStatus, errMsg: errMsg, isRealLogout: isRealLogout
@@ -2672,7 +2672,7 @@ async function restoreCloudSession() {
       return;
     }
 
-    // 第3级：300ms 重试（CDN 竞态兜底）
+    // Level 3: 300ms retry (CDN race fallback)
     await new Promise(function(r){setTimeout(r,300)});
     var retry = await _sb.auth.getSession();
     if (retry.data && retry.data.session) {
@@ -2692,7 +2692,7 @@ async function restoreCloudSession() {
       });
     }
 
-    // 全级失败兜底：有 localStorage token 但网络不可达 → offline 模式
+    // all levels failed: has localStorage token but network unreachable → offline mode
     if (!_syncEnabled && parsed && parsed.user && parsed.user.email) {
       logAppEvent('session_restore_offline_fallback', {
         hasToken: true, hasEmail: true
@@ -2727,7 +2727,7 @@ function updateCloudTabUI() {
     if (restoringSec) restoringSec.style.display = 'none';
     if (userEl) userEl.textContent = '✅ ' + _cloudUserEmail;
   } else if (_sessionOffline && _cloudUserEmail) {
-    // 有凭证但网络失败：保留登录外观，等待重连
+    // has credentials but network failed: keep login appearance, wait for reconnect
     if (loginSec)     loginSec.style.display     = 'none';
     if (connSec)      connSec.style.display      = '';
     if (restoringSec) restoringSec.style.display = 'none';
@@ -2736,7 +2736,7 @@ function updateCloudTabUI() {
     if (loginSec)     loginSec.style.display     = '';
     if (connSec)      connSec.style.display      = 'none';
     if (restoringSec) restoringSec.style.display = 'none';
-    // 预填上次登录邮箱，方便用户重新登录
+    // prefill last login email for convenience
     const emailEl = document.getElementById('cloud-email');
     if (emailEl && !emailEl.value) {
       emailEl.value = localStorage.getItem('yihai_last_cloud_email') || '';
@@ -2774,16 +2774,16 @@ async function doCloudLogin() {
     localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     localStorage.setItem('yihai_has_ever_logged_in', '1');
-    // 备份 session 至自有 key，防 SDK 因 refresh 失败自行清除后无法恢复
+    // backup session to own key, prevent SDK cleanup on refresh failure from losing login
     if (data.session) {
       localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
     }
-    // 先迁移离线记录再同步，避免 getAllCardStates 按 cloudUserId 过滤时漏掉 deviceId 记录
+    // migrate offline records before sync, avoid getAllCardStates filtering by cloudUserId missing deviceId records
     await migrateDeviceRecordsToUser(_cloudUserId);
     updateCloudTabUI();
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
-    // 登录后全量同步（答题/状态/配置/牌组）
+    // full sync after login (answers/state/config/decks)
     runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
@@ -2803,11 +2803,11 @@ async function doCloudLogout() {
   _sessionOffline   = false;
   _sessionRestoring = false;
   _cloudUserEmail = '';
-  // v5: 不清 _cloudUserId — getCurrentUserId() 继续返回最近登录用户，
-  // 离线练习的数据归属正确。除非显式切换账号，新登录会覆盖。
+  // v5: don't clear _cloudUserId — getCurrentUserId() still returns last login,
+  // offline practice data belongs correctly. new login overwrites unless explicit account switch.
   _sb = null;
 
-  // 登出后等同于离线模式，云牌组保留可用。
+  // logout = offline mode, cloud decks remain usable.
   localStorage.removeItem('yihai_global_sync_ts');
   localStorage.removeItem('yihai_session_backup');
   renderDeckList();
@@ -2816,7 +2816,7 @@ async function doCloudLogout() {
   updateCloudTabUI();
 }
 
-// 采集设备信息用于问题定位
+// collect device info for troubleshooting
 function getDeviceInfo() {
   try {
     return {
@@ -2864,7 +2864,7 @@ async function syncTrialLog(entry) {
       timestamp: entry.timestamp
     });
     if (error) {
-      // 唯一键冲突（23505）说明记录已在服务端存在，视为上传成功
+      // unique key conflict (23505) = record already exists on server, treat as success
       if (error.code === '23505') {
         entry.synced_at = Date.now();
         const db = await openSrsDb();
@@ -2875,7 +2875,7 @@ async function syncTrialLog(entry) {
       }
       return;
     }
-    // 标记已同步（写回 IndexedDB，供断线补传判断）
+    // mark as synced (write back to IndexedDB for offline retry detection)
     entry.synced_at = Date.now();
     const db = await openSrsDb();
     const tx = db.transaction(TRIAL_STORE, 'readwrite');
@@ -2907,7 +2907,7 @@ async function syncCardState(state) {
       updated_at: state.updated_at
     }, { onConflict: 'user_id, state_key' });
     if (error) throw error;
-    // 上传成功 → 标记已同步
+    // upload success → mark synced
     state.synced_at = Date.now();
     const db = await openSrsDb();
     const tx = db.transaction(CS_STORE, 'readwrite');
@@ -2915,8 +2915,8 @@ async function syncCardState(state) {
   } catch(e) { console.warn('[sync] card state upload error:', e.message); }
 }
 
-// 从云端下载其他设备的 CardState，合并到本地（跨设备进度同步）
-// 策略：按 state_key 分组，取最新 updated_at，若比本地新则覆盖
+// download other devices CardState from cloud, merge locally (cross-device sync)
+// strategy: group by state_key, pick latest updated_at, overwrite if newer than local
 async function syncCardStatesFromCloud(deckKey) {
   if (!_syncEnabled || !_sb) return 0;
   try {
@@ -2928,7 +2928,7 @@ async function syncCardStatesFromCloud(deckKey) {
     if (error) throw error;
     if (!data || !data.length) return 0;
 
-    // 按 state_key 分组去重，取每条最新记录
+    // group by state_key, deduplicate, take latest per key
     const cloudMap = {};
     for (const row of data) {
       const prev = cloudMap[row.state_key];
@@ -2939,7 +2939,7 @@ async function syncCardStatesFromCloud(deckKey) {
     const cloudKeys = Object.keys(cloudMap);
     if (!cloudKeys.length) return 0;
 
-    // 读本地所有 CardState
+    // read all local CardState
     const localStates = await getAllCardStates(deckKey);
     const localMap = {};
     localStates.forEach(s => { localMap[s.state_key] = s; });
@@ -2980,13 +2980,13 @@ async function syncCardStatesFromCloud(deckKey) {
   }
 }
 
-// 断线补传：将未同步的 TrialLog + 最新 CardState 推送至云端
+// offline retry: push unsynced TrialLog + latest CardState to cloud
 async function syncPendingData(deckKey) {
   if (!_syncEnabled || !_sb) return;
   try {
     const db = await openSrsDb();
 
-    // 1. 补传未同步的 TrialLog（仅当前用户）
+    // 1. retry unsynced TrialLog (current user only)
     const allTrials = await new Promise((res, rej) => {
       const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
       req.onsuccess = e => res(e.target.result || []);
@@ -2998,23 +2998,23 @@ async function syncPendingData(deckKey) {
       try { await syncTrialLog(t); } catch(e) { console.warn('[sync] backfill trial skip:', t.trial_id); }
     });
 
-    // 2. 补传当前牌组所有 CardState（upsert，安全重传）
+    // 2. retry all CardState for current deck (upsert, safe retry)
     if (deckKey) {
       const states = await getAllCardStates(deckKey);
       await parallelMapLimit(states, 10, async s => {
-        try { await syncCardState(s); } catch(e) { /* 单个失败不影响其他 */ }
+        try { await syncCardState(s); } catch(e) { /* single failure does not affect others */ }
       });
     }
   } catch(e) { console.warn('[sync] backfill error:', e.message); }
 }
 
-// ── 参数配置云端同步（v4.8）──────────────────────────────────
-// 收集所有 SRS + UI 参数为 JSON，upsert 到云端
-// 先拉云端现有配置再合并本地改动（避免不同设备/浏览器间的配置被冲掉）
+// ── config cloud sync (v4.8) ────────────────────────────────────
+// collect all SRS + UI params as JSON, upsert to cloud
+// pull cloud config first, then merge local changes (avoid overwriting cross-device config)
 async function cloudPushConfig() {
   if (!_syncEnabled || !_sb) return;
   try {
-    // 收集本地 SRS 参数
+    // collect local SRS params
     const localSrs = {};
     Object.keys(SRS_CONFIG).forEach(k => {
       const v = localStorage.getItem('srs_' + k);
@@ -3031,7 +3031,7 @@ async function cloudPushConfig() {
       }
     });
 
-    // 收集本地 UI 参数
+    // collect local UI params
     const localUi = {
       readHint:       localStorage.getItem('readHint'),
       quizPromptOn:   localStorage.getItem('quizPromptOn'),
@@ -3063,7 +3063,7 @@ async function cloudPushConfig() {
     });
     Object.keys(localUi).forEach(k => { if (localUi[k] === null) delete localUi[k]; });
 
-    // 先拉云端现有配置，合并后再推送（避免冲掉其他设备设置的参数）
+    // pull cloud config first, merge then push (avoid overwriting other devices)
     const cloud = await _sb.from('sync_config').select('config_json').maybeSingle();
     const cloudCfg = cloud.data?.config_json;
     const mergedSrs = { ...(cloudCfg?.srs || {}), ...localSrs };
@@ -3078,7 +3078,7 @@ async function cloudPushConfig() {
   } catch(e) { console.warn('[sync] config push error:', e.message); }
 }
 
-// 从云端拉取参数配置并应用到本地
+// pull config from cloud and apply locally
 async function cloudPullConfig() {
   if (!_syncEnabled || !_sb) return 0;
   try {
@@ -3091,7 +3091,7 @@ async function cloudPullConfig() {
     const cfg = data.config_json;
     let applied = 0;
 
-    // 应用 SRS 参数
+    // apply SRS params
     if (cfg.srs) {
       Object.entries(cfg.srs).forEach(([k, v]) => {
         if (Array.isArray(v)) {
@@ -3111,7 +3111,7 @@ async function cloudPullConfig() {
       });
     }
 
-    // 应用 UI 参数
+    // apply UI params
     if (cfg.ui) {
       Object.entries(cfg.ui).forEach(([k, v]) => {
         localStorage.setItem(k, String(v));
@@ -3119,11 +3119,11 @@ async function cloudPullConfig() {
       });
     }
 
-    // 触发 UI 刷新
+    // trigger UI refresh
     syncSrsSettingsUI();
     loadSettings();
 
-    // 应用主题（兼容旧版 light/dark 和新版 default/jade/amber/dark）
+    // apply theme (compat with old light/dark and new default/jade/amber/dark)
     var th = localStorage.getItem('theme');
     if (th) {
       if (th === 'dark') { document.documentElement.classList.add('dark'); document.documentElement.setAttribute('data-theme','dark'); }
@@ -3140,7 +3140,7 @@ async function cloudPullConfig() {
 
 
 
-// 统一同步入口（v4.10）：支持模态进度条 + 语音播报 + 不同同步范围：支持模态进度条 + 语音播报 + 不同同步范围
+// unified sync entry (v4.10): modal progress + voice + scoped sync
 async function runSync(opts) {
   if (!_syncEnabled || !_sb) { if (opts && opts.showToast) showCloudToast(t('sync_offline'), true); return; }
   if (_syncInFlight) { if (opts && opts.showToast) showCloudToast(t('sync_in_flight')); return; }
@@ -3154,7 +3154,7 @@ async function runSync(opts) {
     voice: false,
     deckKey: currentDeck,
   }, opts || {});
-  // 等待上次 SRS 写入完成
+  // wait for last SRS write to complete
   if (_lastSrsWrite) await _lastSrsWrite;
   var modalEl = document.getElementById('sync-modal');
   var titleEl = document.getElementById('sync-modal-title');
@@ -3178,7 +3178,7 @@ async function runSync(opts) {
   logAppEvent('sync_started', { deck_key: options.deckKey, mode: options.modal ? 'modal' : 'bg', decks: !!options.decks, events: !!options.events }, options.deckKey);
   var syncStats = { trials: 0, events: 0, states_merged: 0, config: 0, decks: 0 };
   try {
-    // 1. 上传 TrialLog（增量）
+    // 1. upload TrialLog (incremental)
     updateProg(t('sync_upload_trials'), 10);
     var db = await openSrsDb();
     var allTrials = await new Promise(function(res, rej) {
@@ -3193,18 +3193,18 @@ async function runSync(opts) {
         try { await syncTrialLog(t); syncStats.trials++; } catch(e) { /* skip */ }
       }
     }
-    // 2. 参数配置同步
+    // 2. config sync
     updateProg(t('sync_config_prog'), 40);
     var cfgItems = await cloudPullConfig();
     syncStats.config = cfgItems;
     await cloudPushConfig();
-    // 3. 下载云端 CardState（增量合并）
+    // 3. download cloud CardState (incremental merge)
     updateProg(t('sync_states_prog'),60);
     if (options.deckKey) {
       syncStats.states_merged = await syncCardStatesFromCloud(options.deckKey);
       updateProg(t('sync_states_prog'),75);
     }
-    // 3.5 拉取用户牌组练习天数
+    // 3.5 pull user's deck practice days
     try {
       var _dsResp = await _sb.from('user_deck_stats')
         .select('deck_key, practice_days, last_practice_date')
@@ -3217,7 +3217,7 @@ async function runSync(opts) {
         }
       }
     } catch(e) { console.warn('[sync] practice days fetch error:', e.message); }
-    // 4. 牌组同步（可选：登录后/手动同步）
+    // 4. deck sync (optional: after login / manual sync)
     var newDecks = 0, syncedDecks = 0;
     if (options.decks) {
       updateProg(t('sync_decks_prog'), 80);
@@ -3242,17 +3242,17 @@ async function runSync(opts) {
         updateDeckStats();
       }
     }
-    // 5. 事件日志（可选）
+    // 5. event logs (optional)
     if (options.events) {
       updateProg(t('sync_logs_prog'), 90);
       syncStats.events = await syncAppEvents();
     }
     syncStats.decks = newDecks + syncedDecks;
-    // 清理 & 标记
+    // cleanup & mark
     purgeOldLogs();
     localStorage.setItem('yihai_global_sync_ts', String(Date.now()));
     logAppEvent('sync_done', { deck_key: options.deckKey, stats: syncStats }, options.deckKey);
-    // 结束
+    // done
     updateProg(t('sync_done'), 100);
     if (options.modal && modalEl) {
       setTimeout(function() { modalEl.style.display = 'none'; }, 800);
@@ -3277,7 +3277,7 @@ async function runSync(opts) {
   if (options.deckKey) updateDeckStats();
 }
 
-// 练习完成后集中补传（仅上传未同步 TrialLog + 最新 CardState，不下拉）
+// post-practice batch upload (unsynced TrialLog + latest CardState only, no download)
 function backfillAfterPractice(deckKey) {
   if (!_syncEnabled || !_sb || !deckKey) return Promise.resolve();
   return syncPendingData(deckKey)
@@ -3350,7 +3350,7 @@ async function migrateV5IfNeeded() {
   _v5MigrationDone = true;
 }
 
-// 登录时将本设备离线记录迁移到当前用户（仅限 deviceId 匹配的）
+// migrate local offline records to current user on login (deviceId match only)
 async function migrateDeviceRecordsToUser(cloudUserId) {
   var did = localStorage.getItem('yihai_device_id');
   if (!did || !cloudUserId || did === cloudUserId) return;
@@ -3373,10 +3373,10 @@ async function migrateDeviceRecordsToUser(cloudUserId) {
   } catch(e) { log.error('idb', 'migrateDeviceId failed', e.message); }
 }
 
-// ── 诊断日志系统 ────────────────────────────────────────────────────
-// 等级优先级：URL ?log=debug > localStorage yihai_log_level > 默认 warn
-// IDB 写入：info 及以上；console 彩色输出：全等级可见（取决于当前等级）
-// DevTools 工具：window.yhLog.setLevel / show / showErrors / clear / export
+// ── diagnostic log system ──────────────────────────────────────────
+// priority: URL ?log=debug > localStorage yihai_log_level > default warn
+// IDB write: info+; console color output: all levels visible (depends on current level)
+// DevTools: window.yhLog.setLevel / show / showErrors / clear / export
 const _LOG_LEVELS  = { debug: 0, info: 1, warn: 2, error: 3 };
 const _LOG_COLORS  = { debug: 'color:#888', info: 'color:#0ea5e9', warn: 'color:#f59e0b', error: 'color:#ef4444' };
 const _urlLogParam = new URLSearchParams(location.search).get('log');
@@ -3451,7 +3451,7 @@ window.yhLog = {
   }
 };
 
-// ── 数据埋点：应用事件日志 ──────────────────────────────────────────
+// ── telemetry: app event logs ──────────────────────────────────────
 function isMember() {
   return localStorage.getItem('yihai_has_ever_logged_in') === '1';
 }
@@ -3467,7 +3467,7 @@ function logAppEvent(type, payload, deckKey) {
     timestamp: Date.now(),
     synced_at: null
   };
-  // 仅写入 IndexedDB，不立即上传（避免与 syncAppEvents 竞态产生 409）
+  // write to IndexedDB only, don’t upload immediately (avoid 409 race with syncAppEvents)
   if (!isMember()) {
     openSrsDb().then(function(db) {
       var tx = db.transaction(EVT_STORE, 'readwrite');
@@ -3482,7 +3482,7 @@ function logAppEvent(type, payload, deckKey) {
 }
 
 
-// 设备注册（非阻塞）
+// device registration (non-blocking)
 async function upsertDeviceRegistry() {
   if (!_syncEnabled || !_sb || !_cloudUserId || !_deviceId) return;
   try {
@@ -3498,7 +3498,7 @@ async function uploadAppEvent(event) {
   try {
     var payload = { event_id: event.event_id, user_id: _cloudUserId, event_type: event.event_type, deck_key: event.deck_key, payload: event.payload, device_id: event.device_id, timestamp: event.timestamp };
     var _a = await _sb.from('app_events').insert(payload);
-    // 23505 = 记录已存在（重复上传，视为成功）
+    // 23505 = record exists (duplicate upload, treat as success)
     if (!_a.error || _a.error.code === '23505') { event.synced_at = Date.now(); return true; }
     log.warn('sync', 'uploadAppEvent error', _a.error);
     return false;
@@ -3506,12 +3506,12 @@ async function uploadAppEvent(event) {
 }
 
 
-// 批量补传 AppEvents（含 warn/error 诊断日志）
+// batch retry AppEvents (including warn/error diagnostic logs)
 async function syncAppEvents() {
   if (!_syncEnabled || !_sb) return 0;
   var db = await openSrsDb();
 
-  // 读取未同步业务事件
+  // read unsynced business events
   var evtAll = await new Promise(function(res, rej) {
     var r = db.transaction(EVT_STORE, 'readonly').objectStore(EVT_STORE).getAll();
     r.onsuccess = function(e) { res(e.target.result || []); };
@@ -3519,14 +3519,14 @@ async function syncAppEvents() {
   });
   var pending = evtAll.filter(function(e) { return !e.synced_at; });
 
-  // 上传业务事件，收集成功 ID
+  // upload business events, collect success IDs
   var syncedIds = [];
   for (var i = 0; i < pending.length; i++) {
     var ok = await uploadAppEvent(pending[i]);
     if (ok) syncedIds.push(pending[i].event_id);
   }
 
-  // 单事务批量写回 synced_at（修复 markEventSynced 遗漏）
+  // batch write synced_at in single transaction (fix markEventSynced omission)
   if (syncedIds.length > 0) {
     var now = Date.now();
     await new Promise(function(res, rej) {
@@ -3541,7 +3541,7 @@ async function syncAppEvents() {
     });
   }
 
-  // 上传 warn/error 诊断日志（封装为 app_events 格式）
+  // upload warn/error diagnostic logs (wrapped as app_events format)
   if (db.objectStoreNames.contains(LOG_STORE)) {
     var logAll = await new Promise(function(res, rej) {
       var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
@@ -3582,7 +3582,7 @@ async function syncAppEvents() {
 }
 
 
-// 裁剪 store 到指定条数（保留最新）
+// trim store to specified count (keep latest)
 function trimStore(db, storeName, maxCount) {
   var tx = db.transaction(storeName, 'readwrite');
   var store = tx.objectStore(storeName);
@@ -3590,7 +3590,7 @@ function trimStore(db, storeName, maxCount) {
   countReq.onsuccess = function() {
     var excess = countReq.result - maxCount;
     if (excess <= 0) return;
-    // 按 timestamp 升序（最旧在前），删 excess 条
+    // sort by timestamp ascending (oldest first), delete excess
     var cursorReq = store.openCursor();
     var deleted = 0;
     cursorReq.onsuccess = function(e) {
@@ -3600,7 +3600,7 @@ function trimStore(db, storeName, maxCount) {
   };
 }
 
-// 清理过期日志（app_events 30 天）
+// clean expired logs (app_events 30 days)
 async function purgeOldLogs() {
   try {
     var db = await openSrsDb();
@@ -3668,7 +3668,7 @@ async function saveCardState(state) {
   });
 }
 
-// 仅写本地，不覆写 updated_at，不上传云端（用于云端进度回传的合并写入）
+// local write only, don't overwrite updated_at, don't upload (merge write for cloud progress backfill)
 async function saveCardStateLocal(state) {
   state.user_id = state.user_id || getCurrentUserId();
   const db = await openSrsDb();
@@ -3699,7 +3699,7 @@ async function getAllCardStates(deckKey) {
   });
 }
 
-// Playwright test seam（_playwright_multi_user_sync_test.js 通过 page.evaluate 调用）
+// Playwright test seam (_playwright_multi_user_sync_test.js called via page.evaluate)
 async function getOrCreateCardState(deckKey, cardId) {
   let state = await getCardState(deckKey, cardId);
   if (!state) {
@@ -3709,7 +3709,7 @@ async function getOrCreateCardState(deckKey, cardId) {
   return state;
 }
 
-// ── TrialLog 写入 ────────────────────────────────────────────────
+// ── TrialLog write ──────────────────────────────────────────────
 async function writeTrialLog(entry) {
   entry.user_id = entry.user_id || getCurrentUserId();
   const db = await openSrsDb();
@@ -3721,7 +3721,7 @@ async function writeTrialLog(entry) {
   });
 }
 
-// 读取指定天数内的 TrialLog（按 timestamp 升序）
+// read TrialLog within specified days (ascending by timestamp)
 async function getTrialLogs(deckKey, days) {
   const db    = await openSrsDb();
   const cutTs = days ? Date.now() - days * 86400 * 1000 : 0;
@@ -3740,9 +3740,9 @@ async function getTrialLogs(deckKey, days) {
   });
 }
 
-// ── SM-2 processAnswer 状态机 ────────────────────────────────────
+// ── SM-2 processAnswer state machine ────────────────────────────
 // rating: 'again' | 'hard' | 'good' | 'easy'
-// 返回更新后的 state（不自动保存，调用方负责 saveCardState）
+// returns updated state (caller responsible for saveCardState)
 function processAnswer(state, rating, todayDateStr) {
   const now    = Date.now();
   const cfg    = SRS_CONFIG;
@@ -3756,12 +3756,12 @@ function processAnswer(state, rating, todayDateStr) {
     state.step_index        = 0;
     state.review_mode       = 'T1';
     state.review_mode_count = 0;
-    // ease_factor 保持 starting_ease，learning 阶段挣扎不影响毕业值
+    // ease_factor stays at starting_ease, learning-stage struggle doesn't affect graduation value
   }
 
   function _advanceReviewMode() {
-    // Phase 2 启用；Phase 1 review_mode 始终维持 'T1'
-    // 此处仅递增计数，切换逻辑 Phase 2 接入
+    // Phase 2 enabled; Phase 1 review_mode always stays 'T1'
+    // only increments count here, switch logic in Phase 2
     state.review_mode_count = (state.review_mode_count || 0) + 1;
   }
 
@@ -3775,7 +3775,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.lapses_total++;
     } else if (rating === 'hard') {
       state.srs_stage = 'learning';
-      // step_index 不变。延迟 = Anki 规则：第一步取(当前+下一步)/2，后续不变
+      // step_index unchanged. delay = Anki rule: first step = (current+next)/2, subsequent unchanged
       state.due_ts = now + minsToTs(
         state.step_index === 0
           ? (steps.length > 1 ? (steps[0] + steps[1]) / 2 : steps[0] * 1.5)
@@ -3811,7 +3811,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.step_index = 0;
       state.due_ts    = now + minsToTs(cfg.relearning_steps[0]);
       state.due_date  = '';
-      // review_mode / review_mode_count 保留（重学完成后恢复）
+      // review_mode / review_mode_count preserved (restored after relearning)
     } else if (rating === 'hard') {
       state.ease_factor = Math.max(cfg.ease_min, state.ease_factor - 0.15);
       state.interval = Math.max(
@@ -3864,14 +3864,14 @@ function processAnswer(state, rating, todayDateStr) {
       state.lapses_streak = 0;
       state.step_index++;
       if (state.step_index >= steps.length) {
-        // 重新毕业：保持 lapse 后缩减的 interval 值
+        // re-graduate: keep interval reduced after lapse
         state.srs_stage  = 'review';
         state.interval   = Math.max(cfg.minimum_interval, state.interval);
         state.interval   = Math.min(state.interval, cfg.maximum_interval);
         state.due_date   = addDays(today, state.interval);
         state.due_ts     = 0;
         state.step_index = 0;
-        // review_mode / review_mode_count 已保留，直接恢复
+        // review_mode / review_mode_count preserved, restore directly
       } else {
         state.due_ts = now + minsToTs(steps[state.step_index]);
       }
@@ -3903,7 +3903,7 @@ function getDailyProgress() {
     const raw = localStorage.getItem(LS_DAILY);
     if (!raw) return newDailyProgress();
     const dp = JSON.parse(raw);
-    if (dp.date !== todayStr()) return newDailyProgress();  // 新的一天，重置
+    if (dp.date !== todayStr()) return newDailyProgress();  // new day, reset
     return dp;
   } catch(e) { log.warn('idb', 'getDailyProgress parse error', e.message); return newDailyProgress(); }
 }
@@ -3912,18 +3912,18 @@ function saveDailyProgress(dp) {
   localStorage.setItem(LS_DAILY, JSON.stringify(dp));
 }
 
-// ── 练习模式：难度曲线工具函数 ──────────────────────────────────────
+// ── practice mode: difficulty curve utilities ────────────────────────
 
 function difficultyScore(s) {
   if (!s) return 0;
   const efScore    = Math.max(0, 2.5 - (s.ease_factor || 2.5));   // 0~1.2
   const lapseScore = Math.min(s.lapses_total || 0, 20) / 20;        // 0~1
-  // learning/relearning 阶段难度未知或正在重学，归入中间段
+  // learning/relearning: unknown difficulty or in-relearning, place in middle
   const stagBonus  = (s.srs_stage === 'relearning' || s.srs_stage === 'learning') ? 0.5 : 0;
   return efScore + lapseScore + stagBonus;
 }
 
-// 将队列重排为"前易→中难→后易"穹顶曲线
+// reorder queue as "easy→hard→easy" dome curve
 function applyCurve(queue) {
   if (queue.length < 4) return queue;
   const sorted = [...queue].sort((a, b) =>
@@ -3938,7 +3938,7 @@ function applyCurve(queue) {
   return result;
 }
 
-// 普通模式：固定20张上限，hard卡不超过25%，结果过曲线
+// normal mode: fixed 20 card cap, hard cards ≤25%, then apply curve
 function applyNormalMode(cards, stateMap, newSlots) {
   const SESSION_SIZE = 20;
   const HARD_RATIO   = 0.25;
@@ -3978,17 +3978,17 @@ function applyNormalMode(cards, stateMap, newSlots) {
 }
 
 // ── buildSessionQueue ────────────────────────────────────────────
-// 返回当日练习队列（card 对象列表，含 _srsState 字段）
+// returns today practice queue (card objects with _srsState field)
 async function buildSessionQueue(deckKey) {
-  // 练习启动完全不碰网络，用本地数据直接构建队列
+  // practice start: no network access, build queue from local data directly
   const cards  = DECKS[deckKey] || [];
   const states = await getAllCardStates(deckKey);
   const stateMap = {};
   states.forEach(s => { stateMap[s.card_id] = s; });
 
-  // 确保每张卡都有 CardState（仅写本地，不上传云端——
-  // 此处的 new 状态只是队列构建所需的临时初始值，
-  // 真实状态由用户答题后的 _writeSrs → processAnswer 产生并同步）
+  // ensure each card has CardState (local write only, no cloud upload —
+  // 'new' state here is just a temp initial value for queue building,
+  // real state is produced & synced by _writeSrs → processAnswer after user answers
   var newCardsCreated = 0;
   for (const card of cards) {
     if (!stateMap[card.id]) {
@@ -3999,8 +3999,8 @@ async function buildSessionQueue(deckKey) {
     }
   }
 
-  // 修复 learning/relearning 卡 due_ts=0 的异常数据
-  // （根因待查。兜底：设 due_ts=1 使其立即到期，而非永久跳过）
+  // fix learning/relearning cards with due_ts=0 (edge case)
+  // (root cause unknown. fallback: set due_ts=1 to make it due immediately)
   for (const card of cards) {
     const s = stateMap[card.id];
     if (s && (s.srs_stage === 'learning' || s.srs_stage === 'relearning') && !s.due_ts) {
@@ -4013,7 +4013,7 @@ async function buildSessionQueue(deckKey) {
   const now = Date.now();
   const today = todayStr();
 
-  // 1. 到期 review 卡（due_date <= today），oldest first
+  // 1. due review cards (due_date <= today), oldest first
   const reviewDue = cards
     .filter(c => {
       const s = stateMap[c.id];
@@ -4024,7 +4024,7 @@ async function buildSessionQueue(deckKey) {
     })
     .sort((a, b) => stateMap[a.id].due_date.localeCompare(stateMap[b.id].due_date));
 
-  // 2. 到期 relearning 卡（due_ts <= now）
+  // 2. due relearning cards (due_ts <= now)
   const relearningDue = cards
     .filter(c => {
       const s = stateMap[c.id];
@@ -4035,7 +4035,7 @@ async function buildSessionQueue(deckKey) {
     })
     .sort((a, b) => stateMap[a.id].due_ts - stateMap[b.id].due_ts);
 
-  // 3. 到期 learning 卡（due_ts <= now，包括 new 状态已经发过的）
+  // 3. due learning cards (due_ts <= now, including new state cards already shown)
   const learningDue = cards
     .filter(c => {
       const s = stateMap[c.id];
@@ -4046,15 +4046,15 @@ async function buildSessionQueue(deckKey) {
     })
     .sort((a, b) => stateMap[a.id].due_ts - stateMap[b.id].due_ts);
 
-  // 已用 review 槽位（含当日已练的 learning/relearning/review）
+  // used review slots (includes today learning/relearning/review)
   const usedReview = dp.reviewed_today;
   const reviewSlots = SRS_CONFIG.maximum_reviews_per_day - usedReview;
 
-  // 合并主队列（review + relearning + learning），按槽位上限截取
+  // merge master queue (review + relearning + learning), cap by slot limit
   const mainQueue = [...reviewDue, ...relearningDue, ...learningDue]
     .slice(0, Math.max(0, reviewSlots));
 
-  // 4. 新卡：受两个上限约束
+  // 4. new cards: bounded by two limits
   let newSlots;
   if (SRS_CONFIG.new_cards_ignore_review_limit) {
     newSlots = SRS_CONFIG.new_cards_per_day - dp.daily_new_today;
@@ -4073,13 +4073,13 @@ async function buildSessionQueue(deckKey) {
     })
     .slice(0, Math.max(0, newSlots));
 
-  // 组装完整队列（生存/困难模式基础队列），附上 _srsState
+  // assemble full queue (survival/hard base queue), attach _srsState
   const queue = [...mainQueue, ...newCards].map(card => {
     const { options, correct } = buildOptions(card, cards);
     return { ...card, options, correct, _srsState: stateMap[card.id] };
   });
 
-  // 按练习模式决定最终队列
+  // final queue determined by practice mode
   const mode = SRS_CONFIG.session_mode || 'normal';
   let finalQueue;
   if (mode === 'normal') {
@@ -4087,7 +4087,7 @@ async function buildSessionQueue(deckKey) {
   } else if (mode === 'hard') {
     finalQueue = applyCurve(queue.slice(0, 30));
   } else {
-    // survival：现有队列全量 + 曲线排列
+    // survival: full existing queue + curve arrangement
     finalQueue = applyCurve(queue);
   }
 
@@ -4095,9 +4095,9 @@ async function buildSessionQueue(deckKey) {
   return finalQueue;
 }
 
-// ── 获取 learning/relearning 到期/即将到期卡（主队列耗尽后追加）────
-// 注意：learning/relearning 卡答完后新 due_ts 可能落在本 session 内
-// （hard 不改步长、again 重置到第一步），此时 due_ts ≤ now 仍需出题
+// ── get due/almost-due learning/relearning cards (added after main queue exhausted) ──
+// note: learning/relearning cards may get new due_ts within this session after answering
+// (hard doesn't change step, again resets to step 1), due_ts ≤ now still needs to be shown
 async function getPendingLearningCards(deckKey) {
   const cards  = DECKS[deckKey] || [];
   const states = await getAllCardStates(deckKey);
@@ -4122,7 +4122,7 @@ async function getPendingLearningCards(deckKey) {
     });
 }
 
-// ── 首页 deck stats（读真实 CardState）───────────────────────────
+// ── home deck stats (read real CardState) ──────────────────────────
 async function getDeckStatsSrs(deckKey) {
   const states = await getAllCardStates(deckKey);
   const today  = todayStr();
@@ -4138,7 +4138,7 @@ async function getDeckStatsSrs(deckKey) {
     if (s.srs_stage === 'review' && (!s.due_date || s.due_date <= today)) { due++; return; }
     if ((s.srs_stage === 'learning' || s.srs_stage === 'relearning') && (!s.due_ts || s.due_ts <= now)) { due++; return; }
   });
-  // 无 CardState 的卡片视为新卡（刚下载/导入后未练习）
+  // cards without CardState are considered new (just downloaded/imported, unpracticed)
   const deck = DECKS[deckKey];
   if (deck) {
     const unseenCount = deck.filter(c => !seenCards.has(c.id)).length;
@@ -4146,16 +4146,16 @@ async function getDeckStatsSrs(deckKey) {
   }
   const dp = getDailyProgress();
   done = dp.reviewed_today;
-  // 新卡数上限 = 不超过每日剩余可用新卡槽位
+  // new card cap = remaining daily new card slots
   const remainingNew = Math.max(0, SRS_CONFIG.new_cards_per_day - (dp.daily_new_today || 0));
   newC = Math.min(newC, remainingNew);
-  // 到期数上限 = 不超过每日剩余可用复习槽位（避免主页虚高）
+  // due card cap = remaining daily review slots (avoid inflated home page count)
   const dueCap = Math.max(0, SRS_CONFIG.maximum_reviews_per_day - (dp.reviewed_today || 0));
   due = Math.min(due, dueCap);
   return { due, new: newC, done };
 }
 
-// ── 云端同步预埋：device_id ──────────────────────────────────────
+// ── cloud sync prep: device_id ──────────────────────────────────
 function getOrCreateDeviceId() {
   let id = localStorage.getItem('yihai_device_id');
   if (!id) {
@@ -4164,24 +4164,24 @@ function getOrCreateDeviceId() {
   }
   return id;
 }
-getOrCreateDeviceId();  // App 启动时立即生成
+getOrCreateDeviceId();  // generated immediately on app start
 
 // ════════════════════════════════════════════════════════════════
-// 以下为原有代码（未修改）
+// original code below (unchanged)
 // ════════════════════════════════════════════════════════════════
 
-// ── 导入牌组存储（localStorage + 内存）─────────────────────────
-// 内部卡片格式：{ id, img, name, options:[4项], correct:0-3, details:[] }
-// options 和 correct 在 getDeck() 时动态生成，img 为 blob URL
+// ── imported deck storage (localStorage + memory) ─────────────────
+// internal card format: { id, img, name, options:[4], correct:0-3, details:[] }
+// options and correct generated dynamically by getDeck(), img = blob URL
 
-const DECKS = {};        // key → cards[]，运行时填充
-let DECKS_META = [];     // [{ key, name }]，运行时从 localStorage 恢复
+const DECKS = {};        // key → cards[], populated at runtime
+let DECKS_META = [];     // [{ key, name }], restored from localStorage at runtime
 
-// 备用词库：牌组卡片不足4张时补充干扰项
+// fallback pool: supplement distractors when deck has <4 cards
 const FALLBACK_WORDS = ['苹果','香蕉','椅子','水壶','钥匙','手机','眼镜','雨伞','毛巾','牙刷',
   '西瓜','胡萝卜','土豆','玉米','火车','汽车','飞机','冰箱','电视','桌子'];
 
-// 内置测试牌组（Emoji 图片，无需导入，始终存在）
+// built-in test deck (Emoji images, no import needed, always present)
 const BUILTIN_KEY = '__builtin_test__';
 const BUILTIN_DECK = [
   { id:'b01', name:'苹果',   img:'🍎', audioUrl:'', details:['红红的，圆圆的，很甜', '水果，可以直接吃'] },
@@ -4206,10 +4206,10 @@ const BUILTIN_DECK = [
   { id:'b20', name:'桌子',   img:'🍽️', audioUrl:'', details:['吃饭放东西用的', '有四条腿，饭菜放桌上'] },
 ];
 
-// 运行时生成 options + correct（始终生成4个选项供 OPT_COUNT 取用）
-// 返回 { options:[{name,cardId}], correct:0 }
+// runtime generates options + correct (always 4 options for OPT_COUNT selection)
+// returns { options:[{name,cardId}], correct:0 }
 function buildOptions(card, allCards) {
-  // 从同牌组构建带 id 的候选池
+  // build candidate pool with IDs from same deck
   const pool = allCards
     .filter(c => c.id !== card.id)
     .map(c => ({ name: c.name, nameLang: c.nameLang, cardId: c.id }));
@@ -4218,7 +4218,7 @@ function buildOptions(card, allCards) {
     const r = Math.floor(Math.random() * (k + 1));
     [pool[k], pool[r]] = [pool[r], pool[k]];
   }
-  // 同牌组不足3个时从备用词库补充（无 id，用 null）
+  // when same deck has <3 cards, supplement from fallback pool (no id, use null)
   if (pool.length < 3) {
     FALLBACK_WORDS.forEach(w => {
       if (pool.length >= 3) return;
@@ -4239,13 +4239,13 @@ function getDeck(key) {
   });
 }
 
-// ── localStorage 持久化 ──────────────────────────────────────────
+// ── localStorage persistence ──────────────────────────────────────
 const LS_INDEX = 'yihai_decks_index';
 const LS_DECK_PREFIX = 'yihai_deck_';
 
 function saveDeckIndex() {
   localStorage.setItem(LS_INDEX, JSON.stringify(
-    DECKS_META.filter(m => !m.builtin)  // 内置牌组不存
+    DECKS_META.filter(m => !m.builtin)  // built-in decks not persisted
   ));
 }
 function saveDeckCards(key, cards) {
@@ -4253,7 +4253,7 @@ function saveDeckCards(key, cards) {
   localStorage.setItem(LS_DECK_PREFIX + key, JSON.stringify(slim));
 }
 
-// ── IndexedDB 媒体缓存 ───────────────────────────────────────────
+// ── IndexedDB media cache ─────────────────────────────────────────
 const IDB_NAME = 'yihai_media', IDB_VER = 1, IDB_STORE = 'blobs';
 
 function openDB() {
@@ -4292,7 +4292,7 @@ async function deleteMediaForDeck(deckKey) {
   return new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = e => rej(e.target.error); });
 }
 
-// ── 媒体文件检查与清理 ──────────────────────────────────────────────
+// ── media file check & cleanup ────────────────────────────────────
 async function checkMedia() {
   const resultEl = document.getElementById('media-check-result');
   const btnEl = document.getElementById('check-media-btn');
@@ -4301,7 +4301,7 @@ async function checkMedia() {
   if (btnEl) btnEl.disabled = true;
 
   try {
-    // 1. 获取 IndexedDB 中所有 blob key
+    // 1. get all blob keys from IndexedDB
     const db = await openDB();
     const allKeys = await new Promise((res, rej) => {
       const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).getAllKeys();
@@ -4309,7 +4309,7 @@ async function checkMedia() {
       req.onerror = () => rej(req.error);
     });
 
-    // 2. 构建预期 key 集合（所有牌组 × 所有卡片）
+    // 2. build expected key set (all decks × all cards)
     const expected = new Set();
     for (const meta of DECKS_META) {
       try {
@@ -4318,14 +4318,14 @@ async function checkMedia() {
           expected.add(meta.key + '_' + card.id + '_img');
           expected.add(meta.key + '_' + card.id + '_aud');
         }
-      } catch(e) { /* 跳过损坏的牌组 */ }
+      } catch(e) { /* skip corrupted deck */ }
     }
 
-    // 3. 找出孤立 key
+    // 3. find orphaned keys
     const orphans = allKeys.filter(k => !expected.has(k));
     _lastOrphans = orphans;
 
-    // 4. 计算大小（只加载孤立文件）
+    // 4. calculate size (only load orphan files)
     let totalOrphanSize = 0;
     for (const key of orphans) {
       const blob = await loadMedia(key);
@@ -4374,7 +4374,7 @@ async function cleanOrphanMedia() {
 
 async function restoreDecks() {
   const idx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
-  // 兼容旧数据：未标记 source 的按云端同步戳推断
+  // compat: infer source from cloud sync timestamp for unmarked data
   DECKS_META = idx.map(m => {
     if (m.source) return m;
     return { ...m, source: localStorage.getItem('yihai_sync_at_' + m.key) ? 'cloud' : 'local' };
@@ -4386,13 +4386,13 @@ async function restoreDecks() {
       for (const c of raw) {
         try {
           const card = { ...c, img: '', audioUrl: '', details: [] };
-          // 迁移：旧格式的 imgUrl/audUrl 映射到 _imgUrl/_audUrl
+          // migrate: old format imgUrl/audUrl → _imgUrl/_audUrl
           if (!card._imgUrl && c.imgUrl) card._imgUrl = c.imgUrl;
           if (!card._audUrl && c.audUrl) card._audUrl = c.audUrl;
-          // 从 IndexedDB 恢复图片
+          // restore images from IndexedDB
           const imgBlob = await loadMedia(`${key}_${c.id}_img`).catch(() => null);
           if (imgBlob) try { setObjURL(card, 'img', imgBlob); } catch(e) {}
-          // 从 IndexedDB 恢复录音
+          // restore audio from IndexedDB
           const audBlob = await loadMedia(`${key}_${c.id}_aud`).catch(() => null);
           if (audBlob) try { setObjURL(card, 'audioUrl', audBlob); } catch(e) {}
           cards.push(card);
@@ -4401,12 +4401,12 @@ async function restoreDecks() {
       DECKS[key] = cards;
     } catch(e) { console.warn('restoreDecks: skipping deck', key, e.message); }
   }
-  // 始终注入内置测试牌组
+  // always inject built-in test deck
   DECKS[BUILTIN_KEY] = BUILTIN_DECK;
   if (!DECKS_META.find(m => m.key === BUILTIN_KEY)) {
     DECKS_META.push({ key: BUILTIN_KEY, name: '测试牌组', builtin: true, source: 'builtin' });
   }
-  // 恢复云端练习天数缓存
+  // restore cloud practice days cache
   try {
     var raw = localStorage.getItem('yihai_practice_days');
     if (raw) {
@@ -4419,7 +4419,7 @@ async function restoreDecks() {
   } catch(e) {}
 }
 
-// ── .yhspack 导入 ────────────────────────────────────────────────
+// ── .yhspack import ──────────────────────────────────────────────
 function ldScript(src) {
   return new Promise((res, rej) => {
     if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
@@ -4455,7 +4455,7 @@ async function importYhspack(file) {
       const nf = normalizeField(c.name, deckLang);
       const card = { id: c.id || String(i), name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: [] };
 
-      // 图片（按扩展名推导 MIME，支持 PNG/WebP/GIF）
+      // image (derive MIME from extension, supports PNG/WebP/GIF)
       if (c.image) {
         const imgFile = zip.file(c.image);
         if (imgFile) {
@@ -4469,7 +4469,7 @@ async function importYhspack(file) {
         }
       }
 
-      // 录音
+      // audio
       if (c.audio) {
         const audFile = zip.file(c.audio);
         if (audFile) {
@@ -4488,18 +4488,18 @@ async function importYhspack(file) {
 
     if (!cards.length) { showCloudToast(t('import_no_valid_cards'), true); return; }
 
-    // 写入内存
+    // write to memory
     DECKS[key] = cards;
-    // 更新或追加 meta
+    // update or append meta
     const existing = DECKS_META.findIndex(m => m.key === key);
     if (existing >= 0) DECKS_META[existing] = { key, name, source: 'local' };
     else DECKS_META.push({ key, name, source: 'local' });
 
-    // 持久化（只存 id+name，blob URL 不存）
+    // persist (id+name only, blob URL not stored)
     saveDeckIndex();
     saveDeckCards(key, cards);
 
-    // 刷新首页列表，选中刚导入的牌组
+    // refresh home list, select the just-imported deck
     renderDeckList();
     updateDeckStats();
     const el = document.querySelector(`.deck-card[data-deck="${key}"]`);
@@ -4530,69 +4530,73 @@ let currentMode = 'quiz';
 let Qs = [];
 let qIdx = 0, sel = null, revealed = false, wrongCount = 0;
 let nRaf = null, nStart = null;
-let NDUR = 6000;       // 练习模式倒计时（毫秒），0=手动
-let BDUR = 4000;       // 浏览模式倒计时（毫秒），0=手动
-let SPEAK_DELAY        = 1200; // 练习答案播报延迟（毫秒）
-let BROWSE_SPEAK_DELAY = 1200; // 浏览答案播报延迟（毫秒）
+let NDUR = 6000;       // practice mode countdown (ms), 0=manual
+let BDUR = 4000;       // browse mode countdown (ms), 0=manual
+let SPEAK_DELAY        = 1200; // practice answer speech delay (ms)
+let BROWSE_SPEAK_DELAY = 1200; // browse answer speech delay (ms)
 
-// 答题提示
-let QUIZ_PROMPT_ON   = true;    // 答题提示开关
-let QUIZ_PROMPT_DELAY = 2000;   // 答题提示延迟（毫秒）
-let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // 答题提示文案（i18n 默认英文，loadPhrases 后覆盖）
+// quiz prompt
+let QUIZ_PROMPT_ON   = true;    // quiz prompt toggle
+let QUIZ_PROMPT_DELAY = 2000;   // quiz prompt delay (ms)
+let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // quiz prompt text (i18n default English, overridden by loadPhrases)
 
-// 选项提示
-let OPT_HINT_ON      = true;    // 选项提示开关
-let OPT_HINT_DELAY   = 5000;    // 选项提示延迟（毫秒）
+// option hint
+let OPT_HINT_ON      = true;    // option hint toggle
+let OPT_HINT_DELAY   = 5000;    // option hint delay (ms)
 let PHRASE_OPT_HINT  = ''; // populated by initPhrases() after t() is ready
 
-// 答错提示
-let WRONG_HINT_ON    = true;    // 答错提示开关
+// wrong hint
+let WRONG_HINT_ON    = true;    // wrong hint toggle
 let PHRASE_WRONG     = ''; // populated by initPhrases() after t() is ready
 
-// 朗读物品提示
-let READ_HINT        = true;    // 朗读物品提示开关（浏览/练习均受控）
+// read item name hint
+let READ_HINT        = true;    // read item name toggle (browse + practice)
 
-// TTS 音色参数
-let TTS_RATE         = 0.85;    // 语速
-let TTS_PITCH        = 1.0;     // 音调
-let TTS_VOICE_NAME   = '';      // 音色名称，空=自动选中文音色
+// TTS voice params
+let TTS_RATE         = 0.85;    // rate
+let TTS_PITCH        = 1.0;     // pitch
+let TTS_VOICE_NAME   = '';      // voice name, empty=auto-select Chinese voice
 
 let OPT_COUNT = 3;
-let OPT_TOUCH_DELAY = 120; // 防误触：手指按住至少多少ms才算有效点击（毫秒）
+let OPT_TOUCH_DELAY = 120; // touch guard: minimum press duration for valid tap (ms)
 let currentAudio = null;
 
-// 浏览模式答案显示延迟
-let BROWSE_ANSWER_DELAY = 3000; // 毫秒
+// browse mode answer display delay
+let BROWSE_ANSWER_DELAY = 3000;  // ms
 
-// 答对反馈
-let CONFETTI_ON       = true;   // 撒花动画开关
-let CORRECT_HINT_ON   = true;   // 回答正确语音开关
+// correct answer feedback
+let CONFETTI_ON       = true;   // confetti animation toggle
+let CORRECT_HINT_ON   = true;   // correct answer speech toggle
 let PHRASE_CORRECT    = ''; // populated by initPhrases() after t() is ready
 
-// 进入题目时的语音计时器
+// speech timers for card prompts
 let tQuizPromptTimer = null;
 let tOptHintTimer    = null;
-let tAnswerTimer     = null;  // 答案播报延迟 timer
-let sessionId        = 0;     // 每次进入练习页自增，语音链检查id终止跨页面播报
-let _lastSrsWrite    = Promise.resolve(); // 最近一次 _writeSrs 的 Promise，用于等待写完
-let _launchBusy  = false; // 防止重复点击开始练习
+let tAnswerTimer     = null;  // answer speech delay timer
+let sessionId        = 0;     // increments per quiz entry, speech chain checks id to stop cross-page speech
+let _lastSrsWrite    = Promise.resolve(); // most recent _writeSrs Promise, for awaiting completion
+let _launchBusy  = false; // prevent duplicate start-practice clicks
 let _browseCards = [];
 let _browseIdx   = 0;
-let _appMode     = localStorage.getItem('yihai_app_mode') || 'patient'; // 'patient' | 'caregiver'
+// Migrate old mode names
+  let _stored = localStorage.getItem('yihai_app_mode');
+  if (_stored === 'patient') _stored = 'standard';
+  else if (_stored === 'caregiver') _stored = 'advanced';
+  let _appMode = _stored || 'standard';; // 'standard' | 'advanced'
 
-// ── 练习模式 SRS 状态 ──────────────────────────────────────────
-let _cardStartTs     = 0;     // 当前卡片显示时间戳（response_time 计算用）
-let _cardAnswerRating = null; // 本题最终评分（'again'|'hard'|'good'|'easy'）
-let _sessionId       = '';    // 本次 session 唯一 ID（TrialLog 用）
-// 按卡·首次评级统计（用于完成页展示）
-let _sessionFirstRatings = {}; // state_key → 首次 rating
-let _dailyRemovedToday = {};  // { deckKey::cardId: true } 当日保护移出的卡
-// 活跃时长计算
+// ── practice mode SRS state ────────────────────────────────────
+let _cardStartTs     = 0;     // current card display timestamp (for response_time calc)
+let _cardAnswerRating = null; // final rating for this card ('again'|'hard'|'good'|'easy')
+let _sessionId       = '';    // unique session ID (TrialLog use)
+// per-card first rating stats (for finish screen)
+let _sessionFirstRatings = {}; // state_key → first rating
+let _dailyRemovedToday = {};  // { deckKey::cardId: true } cards removed today by daily_remove_lapses
+// active duration calculation
 let _sessionActiveSec = 0;
 let _lastCardTs       = null;
 let _warnedThisSession = false;
 let _pendingStop      = false;
-// 待写入 SRS 的 attempt 信息（onSel 记录，revealAnswer 写入）
+// pending SRS attempt info (recorded by onSel, written by revealAnswer)
 let _pendingAttempt   = null; // { attemptNumber, isCorrect, distractorId }
 
 // ── Home nav ───────────────────────────────────────────────────
@@ -4609,7 +4613,7 @@ async function deleteDeck(e, key) {
   if (!meta || meta.builtin) return;
   const ok = await showConfirmDialog(`删除牌组「${esc(meta.name)}」？`);
   if (!ok) return;
-  // 释放 ObjectURL 防止内存泄漏
+  // revoke ObjectURL to prevent memory leak
   (DECKS[key] || []).forEach(c => {
     if (c.img && c.img.startsWith('blob:')) URL.revokeObjectURL(c.img);
     if (c.audioUrl && c.audioUrl.startsWith('blob:')) URL.revokeObjectURL(c.audioUrl);
@@ -4632,13 +4636,13 @@ async function renameDeck(key) {
   meta.name = newName.trim();
   saveDeckIndex();
   renderDeckList();
-  // 如果详情屏正在显示此牌组，同步更新名称
+  // if deck detail screen is showing this deck, sync name update
   if (currentDeck === key) {
     document.getElementById('dd-deck-name').textContent = meta.name;
   }
   showToastMsg(t('toast_rename_done', { name: esc(meta.name) }));
 }
-// ── getDeckStats：同步占位，updateDeckStats 异步覆盖 ─────────
+// ── getDeckStats: sync placeholder, updateDeckStats async overwrite ──
 function getDeckStats(key) {
   if (key === 'random') return { due: null, new: null };
   return { due: '…', new: '…', done: '…' };
@@ -4723,18 +4727,18 @@ function startQuiz() {
   warmupSpeech();
   _launch('quiz');
 }
-// ── WakeLock 防锁屏 ────────────────────────────────────────────
+// ── WakeLock (prevent screen lock) ──────────────────────────────
 let wakeLock = null;
 async function requestWakeLock() {
   if (!('wakeLock' in navigator)) return;
   try {
     wakeLock = await navigator.wakeLock.request('screen');
-  } catch(e) { /* 不支持或被拒绝，静默处理 */ }
+  } catch(e) { /* unsupported or rejected, silently handled */ }
 }
 function releaseWakeLock() {
   if (wakeLock) { wakeLock.release().catch(()=>{}); wakeLock = null; }
 }
-// 页面重新可见时（从后台切回）重新申请
+// re-acquire when page becomes visible again (switched from background)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     const quizActive   = document.getElementById('screen-quiz')?.classList.contains('active');
@@ -4745,9 +4749,9 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// ── 照护者模式 ─────────────────────────────────────────────────
+// ── caregiver mode ───────────────────────────────────────────────
 function onAppModeToggle(el) {
-  _appMode = el.checked ? 'caregiver' : 'patient';
+  _appMode = el.checked ? 'advanced' : 'standard';
   localStorage.setItem('yihai_app_mode', _appMode);
   document.documentElement.setAttribute('data-mode', _appMode);
   updateTabBarMode();
@@ -4756,18 +4760,18 @@ function onAppModeToggle(el) {
 }
 
 function updateTabBarMode() {
-  const isPatient = _appMode === 'patient';
+  const isStandard = _appMode === 'standard';
   document.querySelectorAll('.home-tabbar').forEach(tb => {
     const fab = tb.querySelector('.tab-item.action');
     if (!fab) return;
     const span = fab.querySelector('span');
-    if (isPatient) {
+    if (isStandard) {
       fab.onclick = onFabTap;
       if (span) span.textContent = t('nav_start_practice');
       const svg = fab.querySelector('svg');
       if (svg) svg.innerHTML = '<polygon points="6 3 20 12 6 21 6 3"/>';
     } else {
-      fab.onclick = onCaregiverFabTap;
+      fab.onclick = onAdvancedFabTap;
       if (span) span.textContent = t('nav_start_create');
       const svg = fab.querySelector('svg');
       if (svg) svg.innerHTML = '<line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/>';
@@ -4777,50 +4781,50 @@ function updateTabBarMode() {
 
 function updateHomeTopbar() {
   const modeToggle = document.getElementById('app-mode-toggle');
-  if (modeToggle) modeToggle.checked = _appMode === 'caregiver';
+  if (modeToggle) modeToggle.checked = _appMode === 'advanced';
   const modeTitle = document.getElementById('mine-mode-title');
   const modeSub = document.getElementById('mine-mode-sub');
   if (modeTitle) modeTitle.textContent = t('mine_mode_title');
-  if (modeSub) modeSub.textContent = _appMode === 'caregiver' ? t('mine_mode_on') : t('mine_mode_off');
+  if (modeSub) modeSub.textContent = _appMode === 'advanced' ? t('mine_mode_on') : t('mine_mode_off');
 }
 
-function onCaregiverFabTap() { showCreateCard(); }
+function onAdvancedFabTap() { showCreateCard(); }
 
-// ── 制卡表单 ─────────────────────────────────────────
+// ── card creator form ────────────────────────────────────
 var _ccImageBlob = null, _ccAudioBlob = null;
 
 function showCreateCard(preselectedDeckKey) {
   _ccImageBlob = null; _ccAudioBlob = null;
-  // 填充牌组下拉
+  // populate deck dropdown
   const sel = document.getElementById('cc-deck');
   sel.innerHTML = '';
-  // 当前牌组（含测试牌组）但排除 builtin（测试牌组不可编辑）
-  // 实际上允许所有牌组，但 builtin 只读问题由 save 时处理
-  // 先添加非内置牌组
+  // current decks (including test deck) but exclude builtin (test deck not editable)
+  // actually allow all decks, builtin read-only handled at save time
+  // add non-built-in decks first
   var hasDecks = false;
   DECKS_META.forEach(function(m) {
     if (m.builtin) return;
     hasDecks = true;
     sel.innerHTML += '<option value="'+escAttr(m.key)+'">'+escAttr(m.name)+'</option>';
   });
-  // 内置牌组特殊处理 — 作为不可用提示
+  // built-in deck special handling — show as unavailable
   if (DECKS_META.find(function(m) { return m.builtin; })) {
     sel.innerHTML += '<option value="__builtin__" disabled>' + t('deck_builtin_label') + '</option>';
   }
   sel.innerHTML += '<option value="__new__" style="font-weight:700;color:var(--ocean)">' + t('deck_new_option') + '</option>';
   if (!hasDecks) sel.value = '__new__';
-  // 如果有 preselect 参数，选中对应牌组
+  // if preselect parameter given, select that deck
   if (preselectedDeckKey && DECKS_META.find(function(m) { return m.key === preselectedDeckKey && !m.builtin; })) {
     sel.value = preselectedDeckKey;
   }
-  // 重置表单
+  // reset form
   document.getElementById('cc-name').value = '';
   document.getElementById('cc-details').value = '';
   clearCardImage();
   document.getElementById('cc-audio-label').textContent = t('cc_audio_upload');
   _ccAudioBlob = null;
   document.getElementById('cc-continue').checked = true;
-  // 聚焦首页确保选中态消失
+  // focus home to ensure selection state clears
   showScreen('screen-create-card');
   setTimeout(function() { document.getElementById('cc-name').focus(); }, 400);
 }
@@ -4865,7 +4869,7 @@ async function saveCardFromForm() {
   var deckKey = sel.value;
   var deckName = '';
 
-  // 处理新建牌组
+  // handle new deck creation
   if (deckKey === '__new__') {
     const newName = await showPromptDialog(t('home_new_deck_prompt'), '');
     if (!newName || !newName.trim()) { showCloudToast(t('home_deck_name_empty'), true); return; }
@@ -4874,37 +4878,37 @@ async function saveCardFromForm() {
     DECKS[deckKey] = [];
     DECKS_META.push({ key: deckKey, name: deckName, source: 'local' });
     saveDeckIndex();
-    // 往选择器插入新选项并选中
+    // insert new option into selector and select it
     const opt = document.createElement('option');
     opt.value = deckKey; opt.textContent = deckName;
     sel.insertBefore(opt, sel.lastElementChild);
     sel.value = deckKey;
   }
 
-  // 查找牌组名
+  // lookup deck name
   const meta = DECKS_META.find(function(m) { return m.key === deckKey; });
   if (!meta) { showCloudToast(t('cc_deck_required'), true); return; }
 
   if (!DECKS[deckKey]) DECKS[deckKey] = [];
   const deck = DECKS[deckKey];
 
-  // 生成卡片 ID
+  // generate card ID
   const id = 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
 
-  // 语言自动检测
-  const deckLang = 'zh-CN'; // 默认中文
+  // auto-detect language
+  const deckLang = 'zh-CN'; // default Chinese
   const nf = typeof normalizeField === 'function'
     ? normalizeField(name, deckLang)
     : { text: name, lang: 'zh-CN' };
 
-  // 详情 — 按行分割
+  // details — split by line
   const rawDetails = document.getElementById('cc-details').value;
   const details = rawDetails.split('\n').filter(function(l) { return l.trim(); });
 
-  // 构建卡片
+  // build card
   const card = { id: id, name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: details };
 
-  // 保存图片
+  // save image
   var savePromises = [];
   if (_ccImageBlob) {
     const mime = _ccImageBlob.type || 'image/jpeg';
@@ -4913,7 +4917,7 @@ async function saveCardFromForm() {
     savePromises.push(saveMedia(deckKey + '_' + id + '_img', blob).catch(function(e) { console.warn('saveMedia img', e); }));
   }
 
-  // 保存录音
+  // save audio
   if (_ccAudioBlob) {
     const mime = _ccAudioBlob.type || 'audio/mp4';
     const blob = _ccAudioBlob instanceof Blob ? _ccAudioBlob : new Blob([_ccAudioBlob], { type: mime });
@@ -4921,25 +4925,25 @@ async function saveCardFromForm() {
     savePromises.push(saveMedia(deckKey + '_' + id + '_aud', blob).catch(function(e) { console.warn('saveMedia aud', e); }));
   }
 
-  // 加入牌组
+  // add to deck
   deck.push(card);
   DECKS[deckKey] = deck;
 
-  // 持久化
+  // persist
   saveDeckCards(deckKey, deck);
   saveDeckIndex();
 
-  // 等待所有媒体保存完成
+  // wait for all media saves to complete
   Promise.all(savePromises).then(function() {
-    // 刷新首页牌组列表
+    // refresh home deck list
     renderDeckList();
     updateDeckStats();
   });
 
-  // 是否继续添加
+  // continue adding?
   const cont = document.getElementById('cc-continue').checked;
   if (cont) {
-    // 清空表单，保留牌组选择
+    // clear form, keep deck selection
     document.getElementById('cc-name').value = '';
     document.getElementById('cc-details').value = '';
     clearCardImage();
@@ -4975,7 +4979,7 @@ async function createEmptyDeck() {
   showCloudToast(t('home_deck_created', { name: name.trim() }));
 }
 function importFromUrl()   { showConfirmDialog(t('import_url_coming')); }
-// ── .yhspack 导出 ────────────────────────────────────────────────
+// ── .yhspack export ──────────────────────────────────────────────
 async function exportDeck() {
   if (!currentDeck) { showToastMsg(t('deck_no_selected')); return; }
   const meta = DECKS_META.find(m => m.key === currentDeck);
@@ -4990,14 +4994,14 @@ async function exportDeck() {
       var c = cards[i];
       var entry = { id: c.id, name: c.name, details: c.details || [] };
       var imgBlob = null, audBlob = null;
-      // 优先从 IndexedDB 取媒体（用户创建/导入的卡片）
+      // prefer media from IndexedDB (user-created/imported cards)
       if (c._imgUrl) {
         var imgKey = currentDeck + '_' + c.id + '_img';
         imgBlob = await loadMedia(imgKey).catch(function() { return null; });
       } else if (c.img && c.img.startsWith('blob:')) {
         imgBlob = await fetch(c.img).then(function(r) { return r.blob(); }).catch(function() { return null; });
       } else if (c.img && c.img.length > 4) {
-        // 内联或网络图片：用 URL 引用
+        // inline or network images: reference by URL
         entry.image_url = c.img;
       }
       if (imgBlob) {
@@ -5046,7 +5050,7 @@ async function shareDeck() {
   if (!currentDeck) { showToastMsg(t('deck_no_selected')); return; }
   var meta = DECKS_META.find(function(m) { return m.key === currentDeck; });
   if (!meta) { showToastMsg(t('deck_not_found')); return; }
-  // 生成 .yhspack 并分享
+  // generate .yhspack and share
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     var zip = new JSZip();
@@ -5084,7 +5088,7 @@ async function shareDeck() {
         files: [new File([blob], meta.name + '.yhspack', { type: 'application/zip' })]
       });
     } else {
-      // 降级为下载
+      // fallback to download
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = meta.name + '.yhspack';
@@ -5110,7 +5114,7 @@ function _launch(mode) {
   if (mode === 'browse') {
     _enterBrowse();
   } else {
-    // 练习模式：使用 SRS 队列
+    // practice mode: use SRS queue
     _sessionId       = 'sess_' + Date.now();
     _sessionActiveSec = 0;
     _lastCardTs       = null;
@@ -5267,7 +5271,7 @@ function onAccountRealtimeToggle(el) {
   localStorage.setItem('yihai_realtime_upload', el.checked ? 'true' : 'false');
 }
 
-// ── 牌组详情屏 ─────────────────────────────────────────────────
+// ── deck detail screen ───────────────────────────────────────────
 function showDeckDetailFor(key) {
   currentDeck = key;
   showDeckDetail();
@@ -5282,7 +5286,7 @@ function showDeckDetail() {
   renderDeckCards();
 }
 
-// ── 卡片列表 ───────────────────────────────────────────────────
+// ── card list ────────────────────────────────────────────────────
 var DDCARD_SWIPE_W = 128; // 2 buttons × 64px
 var DDCARD_SWIPE_THRESH = 40;
 var _ddSwipe = null;
@@ -5376,7 +5380,7 @@ function closeOtherDdCardSwipe(row) {
   });
 }
 
-// ── 卡片重命名 ─────────────────────────────────────────────────
+// ── card rename ──────────────────────────────────────────────────
 async function renameCard(cardId) {
   var cards = DECKS[currentDeck] || [];
   var card = cards.find(function(c) { return c.id === cardId; });
@@ -5391,7 +5395,7 @@ async function renameCard(cardId) {
   showToastMsg(t('toast_rename_done', { name: esc(card.name) }));
 }
 
-// ── 卡片删除 ─────────────────────────────────────────────────
+// ── card delete ──────────────────────────────────────────────────
 async function deleteCardFromDeck(cardId) {
   var ok = await showConfirmDialog(t('card_delete_confirm'));
   if (!ok) return;
@@ -5407,7 +5411,7 @@ async function deleteCardFromDeck(cardId) {
   showToastMsg(t('cc_card_deleted'));
 }
 
-// ── 自定义输入对话框 ───────────────────────────────────────────
+// ── custom input dialog ──────────────────────────────────────────
 function showPromptDialog(msg, defaultValue) {
   return new Promise(function(resolve) {
     var mask = document.createElement('div');
@@ -5440,7 +5444,7 @@ function goHome() {
   stopNRing(); stopAllPromptTimers();
   speechSynthesis.cancel();
   releaseWakeLock();
-  // 等待最后一次 SRS 写入完成，再渲染首页（避免显示写入前的旧数据）
+  // wait for last SRS write, then render home (avoid stale data)
   _lastSrsWrite.finally(() => {
     renderDeckList();
     updateDeckStats();
@@ -5470,14 +5474,14 @@ function stopAllPromptTimers() {
   speechSynthesis.cancel();
 }
 
-// 进入题目后启动语音提示序列
+// start speech prompt sequence after entering a card
 function startCardPrompts(pickedOpts) {
   clearPromptTimers();
-  // 第一阶段：答题提示
+  // Phase 1: quiz prompt
   tQuizPromptTimer = setTimeout(() => {
     tQuizPromptTimer = null;
     if (QUIZ_PROMPT_ON) speak(PHRASE_SELECT);
-    // 第二阶段：选项提示（在答题提示延迟基础上再等OPT_HINT_DELAY）
+    // Phase 2: option hint (waits additional OPT_HINT_DELAY after quiz prompt)
     tOptHintTimer = setTimeout(() => {
       tOptHintTimer = null;
       if (OPT_HINT_ON && pickedOpts && pickedOpts.length) {
@@ -5509,7 +5513,7 @@ function tone(t) {
   if (t==='next') { n(880,now,.05,.15);n(1100,now+.06,.08,.11); }
 }
 
-// ── i18n 地基（阶段 0）──────────────────────────────────────────
+// ── i18n foundation (phase 0) ────────────────────────────────────
 const SUPPORTED_LOCALES = ['en', 'zh-CN', 'es'];
 const FALLBACK_LOCALE = 'en';
 
@@ -5527,7 +5531,7 @@ const I18N = {
     // App meta
     app_title: 'Memory Glimmers',
     app_short_name: 'Glimmers',
-    meta_description: 'Memory practice — picture recognition',
+    meta_description: 'Picture-word matching — learn with fun',
     // Common
     common_back: 'Back',
     common_cancel: 'Cancel',
@@ -5560,12 +5564,12 @@ const I18N = {
     mine_menu_theme: 'Theme',
     mine_menu_about: 'About',
     mine_menu_import: 'Import File',
-    mine_mode_title: 'Caregiver Mode',
+    mine_mode_title: 'Advanced Mode',
     mine_mode_sub: 'Enable to manage decks and create cards',
     mine_mode_on: 'Enabled',
     mine_mode_off: 'Disabled — enable to manage decks and create cards',
     account_title: 'Account',
-    account_desc: 'Login to sync server decks. Training records auto-upload.',
+    account_desc: 'Login to sync server decks. Progress syncs automatically.',
     account_email_ph: 'Email',
     account_pwd_ph: 'Password',
     account_login_btn: 'Login',
@@ -5611,7 +5615,7 @@ const I18N = {
     settings_section_failure: 'Failure Protection', settings_daily_remove: 'Daily Remove (consecutive lapses)', settings_auto_suspend: 'Auto Suspend (total lapses)', settings_learning_hard_lapse: 'Count Learning Hard as Lapse', settings_learning_hard_desc: 'Recommended: prevents bypassing failure count via repeated Hard',
     settings_section_duration: 'Duration Guard', settings_warn_duration: 'Reminder (minutes)',
     settings_section_learn_ahead: 'Learn Ahead Window', settings_learn_ahead: 'Learn Ahead Limit (min / hr)', settings_learn_ahead_desc: 'After main queue exhausted, only learning cards with due_ts within this window are appended. Cards beyond (e.g. 1d steps) end the session. Anki default 20m.',
-    settings_sync_account: 'Sync Account', settings_cloud_desc: 'Login to sync server decks. Training records auto-upload. Offline mode supports manual import only.',
+    settings_sync_account: 'Sync Account', settings_cloud_desc: 'Login to sync server decks. Progress syncs automatically. Offline mode supports manual import only.',
     settings_cloud_email_ph: 'Email', settings_cloud_pwd_ph: 'Password', settings_cloud_login: 'Login', settings_cloud_restoring: 'Restoring session…',
     settings_cloud_sync_btn: '\u{1F504} Sync', settings_cloud_logout: 'Logout',
     settings_realtime_desc: 'Real-time upload during practice (when off, syncs only on open/foreground/completion, saves power)',
@@ -5625,8 +5629,8 @@ const I18N = {
     theme_cinnabar: 'Cinnabar · Red',
     about_title: 'About',
     about_app_name: 'Memory Glimmers',
-    about_desc1: 'Memory Glimmers is a memory practice tool. Through picture recognition, it helps users do relaxed daily memory exercises.',
-    about_desc2: 'Based on the SM-2 spaced repetition algorithm, it intelligently schedules review rhythms. Supports multilingual cards, speech, and cloud sync for more effective practice.',
+    about_desc1: 'Memory Glimmers is a fun and easy learning tool. Through picture-word matching, users can review daily with ease.',
+    about_desc2: 'Based on the SM-2 spaced repetition algorithm, it intelligently schedules review rhythms. Supports multilingual cards, speech, and cloud sync for effective learning.',
     about_desc3: 'Data is fully available offline. Login to sync across devices.',
     dd_add_card: 'Add Card',
     cc_title: 'Create Card',
@@ -5760,7 +5764,7 @@ const I18N = {
   'zh-CN': {
     app_title: '忆海拾光',
     app_short_name: '忆海拾光',
-    meta_description: '记忆练习 — 看图识物',
+    meta_description: '看图识物 — 快乐学习',
     common_back: '返回',
     common_cancel: '取消',
     common_confirm: '确认',
@@ -5791,12 +5795,12 @@ const I18N = {
     mine_menu_theme: '主题',
     mine_menu_about: '关于',
     mine_menu_import: '导入文件',
-    mine_mode_title: '照护者模式',
+    mine_mode_title: '高级模式',
     mine_mode_sub: '开启后可管理牌组与制卡',
     mine_mode_on: '已开启',
     mine_mode_off: '已关闭 — 开启后可管理牌组与制卡',
     account_title: '账户',
-    account_desc: '登录后可同步服务器牌组，训练记录自动上传。未登录仅支持手工导入，数据完全离线。',
+    account_desc: '登录后可同步服务器牌组，学习记录自动上传。未登录仅支持手工导入，数据完全离线。',
     account_email_ph: '邮箱',
     account_pwd_ph: '密码',
     account_login_btn: '登 录',
@@ -5842,7 +5846,7 @@ const I18N = {
     settings_section_failure: '失败保护', settings_daily_remove: '当日移出（连失次）', settings_auto_suspend: '自动挂起（累计失败）', settings_learning_hard_lapse: '学习阶段 Hard 计入连失', settings_learning_hard_desc: '建议开启，防止反复答 Hard 绕过失败计数',
     settings_section_duration: '时长保护（练习模式）', settings_warn_duration: '提醒时长（分钟）',
     settings_section_learn_ahead: '提前出题窗口', settings_learn_ahead: 'Learn Ahead Limit（m / h）', settings_learn_ahead_desc: '主队列做完后，due_ts 在此窗口内的学习卡才追加出题。超过窗口（如 1d 步骤）session 直接结束。Anki 默认 20m。',
-    settings_sync_account: '同步账户', settings_cloud_desc: '登录后可同步服务器牌组，训练记录自动上传。未登录时仅支持手工导入，数据完全离线。',
+    settings_sync_account: '同步账户', settings_cloud_desc: '登录后可同步服务器牌组，学习记录自动上传。未登录时仅支持手工导入，数据完全离线。',
     settings_cloud_email_ph: '邮箱', settings_cloud_pwd_ph: '密码', settings_cloud_login: '登录', settings_cloud_restoring: '正在恢复登录…',
     settings_cloud_sync_btn: '🔄 同步', settings_cloud_logout: '退出',
     settings_realtime_desc: '学习中实时上传（关闭后仅打开/前台/练习完成时同步，更省电）',
@@ -5856,8 +5860,8 @@ const I18N = {
     theme_cinnabar: '朱砂·红韵',
     about_title: '关于',
     about_app_name: '忆海拾光',
-    about_desc1: '忆海拾光是一款帮助记忆练习的工具，通过看图识物的方式，帮助用户每天进行轻松的记忆训练。',
-    about_desc2: '基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让训练更有效。',
+    about_desc1: '忆海拾光是一款轻松有趣的学习工具，通过看图识物的方式，让用户每天愉快地复习。',
+    about_desc2: '基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让学习更高效。',
     about_desc3: '数据完全离线可用，登录后可跨设备同步。',
     dd_add_card: '添加卡片',
     cc_title: '制卡',
@@ -5991,7 +5995,7 @@ const I18N = {
   'es': {
     app_title: 'Memory Glimmers',
     app_short_name: 'Glimmers',
-    meta_description: 'Práctica de memoria — reconocimiento visual',
+    meta_description: 'Reconocimiento visual — aprende con diversion',
     common_back: 'Volver',
     common_cancel: 'Cancelar',
     common_confirm: 'Confirmar',
@@ -6027,7 +6031,7 @@ const I18N = {
     mine_mode_on: 'Activado',
     mine_mode_off: 'Desactivado — activar para gestionar mazos',
     account_title: 'Cuenta',
-    account_desc: 'Inicia sesion para sincronizar mazos del servidor. Las practicas se suben automaticamente.',
+    account_desc: 'Inicia sesion para sincronizar mazos del servidor. El progreso se sincroniza automaticamente.',
     account_email_ph: 'Correo',
     account_pwd_ph: 'Contrasena',
     account_login_btn: 'Iniciar sesion',
@@ -6087,8 +6091,8 @@ const I18N = {
     theme_cinnabar: 'Cinabrio · Rojo',
     about_title: 'Acerca de',
     about_app_name: 'Memory Glimmers',
-    about_desc1: 'Memory Glimmers es una herramienta de practica de memoria. Mediante reconocimiento visual, ayuda a realizar ejercicios diarios relajados.',
-    about_desc2: 'Basado en el algoritmo de repeticion espaciada SM-2, programa ritmos de repaso inteligentemente. Soporta tarjetas multilingues, voz y sincronizacion en la nube.',
+    about_desc1: 'Memory Glimmers es una herramienta de aprendizaje divertida y sencilla. Mediante reconocimiento visual, los usuarios pueden repasar diariamente con facilidad.',
+    about_desc2: 'Basado en el algoritmo de repeticion espaciada SM-2, programa ritmos de repaso inteligentes. Soporta tarjetas multilingues, voz y sincronizacion en la nube para un aprendizaje efectivo.',
     about_desc3: 'Datos disponibles sin conexion. Inicia sesion para sincronizar entre dispositivos.',
     dd_add_card: 'Agregar tarjeta',
     cc_title: 'Crear tarjeta',
@@ -6281,7 +6285,7 @@ function applyI18n() {
 
 function detectScript(text) {
   if (!text) return 'other';
-  if (/[぀-ヿ]/.test(text)) return 'kana';      // 平/片假名（先于汉字）
+  if (/[぀-ヿ]/.test(text)) return 'kana';      // hiragana/katakana (before CJK)
   if (/[가-힯]/.test(text)) return 'hangul';
   if (/[Ѐ-ӿ]/.test(text)) return 'cyrillic';
   if (/[一-鿿㐀-䶿]/.test(text)) return 'han';
@@ -6326,11 +6330,11 @@ if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
 function warmupSpeech() {
   if (speechReady) return;
   speechReady = true;
-  // 解锁 TTS 引擎
+  // unlock TTS engine
   const utt = new SpeechSynthesisUtterance('');
   utt.volume = 0;
   speechSynthesis.speak(utt);
-  // 解锁 Audio 播放权限（iOS 需要 gesture 内产生一次真实音频上下文）
+  // unlock Audio playback (iOS requires a real audio context within gesture)
   try {
     var actx = new (window.AudioContext || window.webkitAudioContext)();
     var osc = actx.createOscillator();
@@ -6340,7 +6344,7 @@ function warmupSpeech() {
     gain.connect(actx.destination);
     osc.start(0);
     osc.stop(0.001);
-    // 部分 iOS 版本还需要 HTMLAudioElement play 一次
+    // some iOS versions also need HTMLAudioElement play once
     var a = new Audio();
     a.volume = 0;
     a.play().catch(function(){});
@@ -6381,7 +6385,7 @@ function speak(text, delay = 0, onend = null, lang = null) {
   if (delay > 0) setTimeout(go, delay); else go();
 }
 
-// 播放答案语音：优先录音，无录音降级 TTS
+// play answer speech: prefer recording, fallback TTS
 function playAnswer(q, onend) {
   const lang = q.nameLang || 'zh-CN';
   if (q.audioUrl) {
@@ -6395,7 +6399,7 @@ function playAnswer(q, onend) {
   }
 }
 
-// speak 不带 cancel，避免打断刚恢复的引擎
+// speak without cancel, avoid interrupting just-restored engine
 function speakDirect(text, onend, lang = null) {
   if (!voices.length) loadVoices();
   const utt = new SpeechSynthesisUtterance(text);
@@ -6407,7 +6411,7 @@ function speakDirect(text, onend, lang = null) {
   setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
 }
 function speakSequence(items, onDone, pause = 350, sid = sessionId) {
-  if (sid !== sessionId) return;  // session已切换，终止
+  if (sid !== sessionId) return;  // session switched, abort
   if (!items || items.length === 0) { if (onDone) onDone(); return; }
   const [first, ...rest] = items;
   speak(first, 0, () => {
@@ -6416,23 +6420,23 @@ function speakSequence(items, onDone, pause = 350, sid = sessionId) {
   });
 }
 
-// 选项提示：把文案中的{A}{B}{C}{D}替换为实际选项后依次播报
-// 选项提示：解析文案中的 {A}{B}{C} 和停顿符 .（一个.=400ms）
-// 示例文案：请在{A}.{B}.{C}中选择一个
+// option hint: replace {A}{B}{C}{D} with actual options and speak sequentially
+// option hint: parse {A}{B}{C} and pause char . (one .=100ms)
+// example: "Choose from {A}.{B}.{C}"
 function speakOptHint(opts) {
   if (!opts || !opts.length) return;
   const labels = ['A','B','C','D'];
-  const PAUSE_MS = 100; // 每个 . 的停顿时长
+  const PAUSE_MS = 100; // pause duration per .
 
-  // 第一步：把通配符替换为实际选项文字
+  // step 1: replace wildcards with actual option text
   let text = PHRASE_OPT_HINT;
   opts.forEach((opt, i) => {
     if (i < labels.length) text = text.replace(`{${labels[i]}}`, opt);
   });
-  // 移除未被替换的多余通配符
+  // remove unreplaced wildcards
   text = text.replace(/\{[A-D]\}/g, '');
 
-  // 第二步：按停顿符 . 拆分成片段
+  // step 2: split into segments by pause char .
   const parts = [];
   const re = /([^.]+)|(\.+)/g;
   let m;
@@ -6445,10 +6449,10 @@ function speakOptHint(opts) {
     }
   }
 
-  // 第三步：顺序播报，pause 片段用 setTimeout 插入停顿
+  // step 3: sequential playback, pause segments use setTimeout
   const sid = sessionId;
   function playParts(arr) {
-    if (sid !== sessionId) return;  // session已切换，终止
+    if (sid !== sessionId) return;  // session switched, abort
     if (!arr.length) return;
     const [head, ...tail] = arr;
     if (head.type === 'pause') {
@@ -6460,14 +6464,14 @@ function speakOptHint(opts) {
   playParts(parts);
 }
 
-// ── Anki 三色计数器（新卡蓝 + 学习中橙 + 复习绿）────────────────
+// ── Anki three-color counter (new=blue + learning=orange + review=green) ─
 function updateSrsCounter() {
   if (currentMode === 'browse') return;
   const now = Date.now();
   const today = todayStr();
   let newC = 0, lrnC = 0, revC = 0;
 
-  // 从剩余队列统计（qIdx 之后的卡，含当前卡）
+  // stat from remaining queue (cards after qIdx, incl current)
   for (let i = qIdx; i < Qs.length; i++) {
     const s = Qs[i]._srsState;
     if (!s) continue;
@@ -6487,11 +6491,11 @@ function render() {
   const q = Qs[qIdx];
   sel = null; revealed = false; wrongCount = 0;
   _cardAnswerRating = null; _pendingAttempt = null;
-  _cardStartTs = Date.now();   // 记录卡片显示时间，用于 response_time_ms
+  _cardStartTs = Date.now();   // record card display time for response_time_ms
   if (!_lastCardTs) _lastCardTs = _cardStartTs;
   updateSrsCounter();
 
-  // 立即清除上一张的答案状态，防止浏览模式翻页闪现
+  // immediately clear previous answer state, prevent flash on browse nav
   document.getElementById('answer-panel').className = 'answer-panel';
   document.getElementById('content').classList.remove('revealed');
   document.querySelectorAll('.detail-item').forEach(el => el.classList.remove('show'));
@@ -6500,7 +6504,7 @@ function render() {
 
   const timg = document.getElementById('timg');
   timg.style.animation='none'; void timg.offsetWidth; timg.style.animation='';
-  // img 字段：URL（blob/http/data）用 <img>，Emoji 或空值用 textContent
+  // img field: URL (blob/http/data) → <img>, Emoji or empty → textContent
   const imgSrc = q.img || '';
   const _card = timg.closest('.target-card');
   _card.style.aspectRatio = '1/1';  // reset each question
@@ -6509,7 +6513,7 @@ function render() {
     _img.alt = q.name;
     _img.onerror = () => { timg.textContent = '🖼️'; };
     _img.onload = () => {
-      // 平板上横版图片（如16:9家庭照）使用原始比例，最大化图片区
+      // landscape images on tablet (e.g. 16:9 family photos) use original ratio, max image area
       if (window.innerWidth >= 600 && _img.naturalWidth > _img.naturalHeight * 1.15) {
         _card.style.aspectRatio = `${_img.naturalWidth}/${_img.naturalHeight}`;
       }
@@ -6535,7 +6539,7 @@ function render() {
   opts.innerHTML = '';
 
   // Pick OPT_COUNT options, always including the correct one
-  // options 格式：[{name, cardId}]
+  // options format: [{name, cardId}]
   const allOpts = q.options.map((o, i) => ({ name: o.name, cardId: o.cardId, i }));
   const correct = allOpts[q.correct];
   const distractors = allOpts.filter(o => o.i !== q.correct);
@@ -6547,16 +6551,16 @@ function render() {
     const btn = document.createElement('button');
     btn.className = 'opt';
     btn.dataset.idx    = i;
-    btn.dataset.cardId = cardId || '';   // TrialLog distractor_chosen 用
+    btn.dataset.cardId = cardId || '';   // for TrialLog distractor_chosen field
     btn.innerHTML = `<div class="otxt">${name}</div>`;
 
-    // 防误触：touchstart 记录按下时间，touchend 判断是否达到阈值
+    // touch guard: touchstart records press time, touchend checks threshold
     let touchStart = 0;
     btn.addEventListener('touchstart', () => { touchStart = Date.now(); }, { passive: true });
     btn.addEventListener('touchend', e => {
       if (Date.now() - touchStart >= OPT_TOUCH_DELAY) onSel(e, i, btn);
     });
-    // PC 鼠标点击正常触发（无防误触需求）
+    // PC mouse click triggers normally (no touch guard needed)
     btn.addEventListener('mouseup', e => { if (!('ontouchstart' in window)) onSel(e, i, btn); });
 
     opts.appendChild(btn);
@@ -6567,7 +6571,7 @@ function render() {
   document.getElementById('answer-panel').className = 'answer-panel';
   const _nb=document.getElementById('nxtbtn'); _nb.className='nxtbtn'; document.querySelector('.btm').classList.remove('active'); stopNRing();
 
-  // 选项区高度随 viewport 高度等比缩放
+  // option area height scales proportionally with viewport
   requestAnimationFrame(() => {
     const n = OPT_COUNT, vh = window.innerHeight;
     const btnH = Math.round(Math.min(84, Math.max(52, vh * 0.09)));
@@ -6587,7 +6591,7 @@ function render() {
   });
 
   stopAllPromptTimers();
-  // 传入实际显示的选项文字，供选项提示使用
+  // pass actual option text for option hint speech
   const pickedTexts = picked.map(({ name }) => name);
   startCardPrompts(pickedTexts);
 }
@@ -6597,12 +6601,12 @@ function revealBrowse(q) {
   const hints = READ_HINT && q.details && q.details.length ? q.details : [];
   const sid = sessionId;
 
-  // 下一张按钮立即显示
+  // show next button immediately
   const nb0 = document.getElementById('nxtbtn');
   nb0.classList.add('show');
   document.querySelector('.btm').classList.add('active');
 
-  // 答案面板预填充但不显示
+  // prefill answer panel but keep hidden
   document.getElementById('answer-panel').className = 'answer-panel';
   document.getElementById('ans-word').textContent = answerName;
   document.getElementById('ans-word').className = 'answer-word';
@@ -6619,11 +6623,11 @@ function revealBrowse(q) {
     tAnswerTimer = null;
     if (sid !== sessionId) return;
 
-    // 语音开始播放的同时，启动文字显示计时
+    // start text display timer alongside speech playback
     setTimeout(() => {
       if (sid !== sessionId) return;
       const ap = document.getElementById('answer-panel');
-      ap.style.transition = '';  // 恢复transition，让show动画正常播放
+      ap.style.transition = '';  // restore transition for show animation
       document.getElementById('content').classList.add('revealed');
       ap.classList.add('show');
       document.querySelectorAll('.detail-item').forEach((item, i) => {
@@ -6631,7 +6635,7 @@ function revealBrowse(q) {
       });
     }, BROWSE_ANSWER_DELAY);
 
-    // 语音播完后启动倒计时
+    // start countdown after speech ends
     const startCountdown = () => { if (sid === sessionId) startNRing(); };
     if (hints.length) {
       playAnswer(q, () => {
@@ -6662,12 +6666,12 @@ function onSel(e, idx, btn) {
 
   const q = Qs[qIdx];
   if (idx === q.correct) {
-    // ── 答对 ──────────────────────────────────────────────────
+    // ── correct ──────────────────────────────────────────────
     tone('ok');
     if (CONFETTI_ON) setTimeout(spawnConfetti, 100);
     if (CORRECT_HINT_ON) setTimeout(() => speakDirect(PHRASE_CORRECT, null), 300);
 
-    // T1 评分映射：第1次正确→Good，第2次正确（第1次答错过）→Hard
+    // T1 rating mapping: 1st correct→Good, 2nd correct (after 1st wrong)→Hard
     if (currentMode !== 'browse' && q._srsState) {
       const rating = wrongCount === 0 ? 'good' : 'hard';
       _cardAnswerRating = rating;
@@ -6679,10 +6683,10 @@ function onSel(e, idx, btn) {
     }
     revealAnswer();
   } else {
-    // ── 答错 ──────────────────────────────────────────────────
+    // ── wrong ────────────────────────────────────────────────
     wrongCount++;
     if (wrongCount === 1) {
-      // 记录本次误选的 card id（供 TrialLog distractor_chosen 字段）
+      // record the wrongly selected card id (for TrialLog distractor_chosen)
       if (currentMode !== 'browse' && q._srsState) {
         _pendingAttempt = {
           attemptNumber : 1,
@@ -6700,7 +6704,7 @@ function onSel(e, idx, btn) {
       });
       if (WRONG_HINT_ON) speak(PHRASE_WRONG);
     } else {
-      // 第二次答错 → Again
+      // 2nd wrong → Again
       if (currentMode !== 'browse' && q._srsState) {
         _cardAnswerRating = 'again';
         _pendingAttempt = {
@@ -6749,7 +6753,7 @@ function revealAnswer() {
     setTimeout(()=>item.classList.add('show'), 350+i*120);
   });
   setTimeout(()=>{
-    panel.style.transition = '';  // 恢复transition
+    panel.style.transition = '';  // restore transition
     panel.classList.add('show');
   },30);
 
@@ -6764,13 +6768,13 @@ function revealAnswer() {
   nb2.classList.add('show');
   document.querySelector('.btm').classList.add('active');
 
-  // 答案播报延迟后播放，优先录音，无录音用 TTS
+  // play after answer speech delay, prefer recording, fallback TTS
   tAnswerTimer = setTimeout(() => {
     tAnswerTimer = null;
     const sid = sessionId;
     const startCountdown = () => { if (sid === sessionId) startNRing(); };
 
-    // 答案名称播完后：播 details → 倒计时
+    // after answer name: speak details → countdown
     const afterAnswer = () => {
       if (sid !== sessionId) return;
       if (hints.length) {
@@ -6783,7 +6787,7 @@ function revealAnswer() {
     playAnswer(q, afterAnswer);
   }, SPEAK_DELAY);
 
-  // ── SRS 写入（练习模式）──────────────────────────────────────
+  // ── SRS write (practice mode) ────────────────────────────
   if (currentMode !== 'browse' && q._srsState) {
     const rating = _cardAnswerRating || 'good';
     _lastSrsWrite = _writeSrs(q, rating, _pendingAttempt).catch(e => console.warn('_writeSrs error', e));
@@ -6798,27 +6802,27 @@ async function onNext() {
   speechSynthesis.cancel();
   if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
   tone('next');
-  // 立即清除答案面板，禁止transition防止淡出期间闪现新内容
+  // immediately clear answer panel, disable transition to prevent flash
   const _ap = document.getElementById('answer-panel');
   _ap.style.transition = 'none';
   _ap.className = 'answer-panel';
   document.getElementById('content').classList.remove('revealed');
 
-  // ── 练习模式：检查 _pendingStop，以及是否还有下一题 ──────────
+  // ── practice mode: check _pendingStop and next card ────
   if (currentMode !== 'browse') {
-    // 时长保护：limit 模式下当前卡答完后强制停止
+    // duration guard: force stop after current card in limit mode
     if (_pendingStop) { showFinish(); return; }
 
     const nextIdx = qIdx + 1;
     if (nextIdx >= Qs.length) {
-      // 主队列耗尽 → 检查是否有未到期 learning 卡可追加
+      // main queue exhausted → check for not-yet-due learning cards to add
       try {
         const pending = await getPendingLearningCards(currentDeck);
         if (pending.length > 0) {
-          // 追加到队列末尾，继续出题（步长时间压缩，可接受近似）
+          // append to queue end, continue (step time compressed, acceptable approximation)
           Qs = Qs.concat(pending);
         } else {
-          // 无任何卡片 → session 结束
+          // no cards → session ends
           await _lastSrsWrite;
           showFinish();
           return;
@@ -6843,7 +6847,7 @@ async function onNext() {
   }, 200);
 }
 
-// ── SRS 写入（练习模式专用）───────────────────────────────────
+// ── SRS write (practice mode specific) ────────────────────────────
 async function _writeSrs(q, rating, attempt) {
   // Use the deck key from the card's SRS state (set at queue build time) to avoid
   // a race where background sync's renderDeckList() resets currentDeck mid-session.
@@ -6851,40 +6855,40 @@ async function _writeSrs(q, rating, attempt) {
   const deckKey = (state && state.deck_key) || currentDeck;
   if (!state || !deckKey) return;
 
-  // 活跃时长记录（在 SRS 更新之前）
+  // record active duration (before SRS update)
   const activeGapMs = recordCardTime();
 
-  // 当日移出保护：lapses_streak 已达阈值，今天跳过此卡（任何评分）
+  // daily removal guard: lapses_streak threshold reached, skip this card today (any rating)
   const stateKey = state.state_key;
   if (_dailyRemovedToday[stateKey]) return;
 
-  // SM-2 状态快照（写入 TrialLog 用）
+  // SM-2 state snapshot (for TrialLog write)
   const stageBefore     = state.srs_stage;
   const intervalBefore  = state.interval;
   const easeBefore      = state.ease_factor;
   const lapsesStreakBefore = state.lapses_streak;
   const lapsesBefore    = state.lapses_total;
 
-  // 更新 CardState
+  // update CardState
   const newState = processAnswer(state, rating, todayStr());
   await saveCardState(newState);
 
-  // 更新内存中的 _srsState（供后续答题参考）
+  // update in-memory _srsState (for subsequent card answers)
   q._srsState = newState;
 
-  // 当日移出保护：连续失败达到 daily_remove_lapses
+  // daily removal guard: consecutive failures hit daily_remove_lapses
   if (newState.lapses_streak >= SRS_CONFIG.daily_remove_lapses) {
     _dailyRemovedToday[stateKey] = true;
   }
 
-  // 自动挂起：lapses_total 达到 auto_suspend_lapses
+  // auto-suspend: lapses_total hits auto_suspend_lapses
   if (!newState.suspended && newState.lapses_total >= SRS_CONFIG.auto_suspend_lapses) {
     newState.suspended        = true;
     newState.suspended_reason = 'auto';
     await saveCardState(newState);
   }
 
-  // DailyProgress 更新（每卡每日只计首次，learning 步骤重出不重复计数）
+  // DailyProgress update (count once per card per day, learning step repeats excluded)
   const dp2 = getDailyProgress();
   if (stageBefore === 'new') dp2.daily_new_today++;
   const firstRatingKey = 'yh_fr_' + todayStr() + '_' + state.card_id;
@@ -6897,19 +6901,19 @@ async function _writeSrs(q, rating, attempt) {
   }
   saveDailyProgress(dp2);
 
-  // 按卡·首次评级统计（本次 session）
+  // per-card first rating (current session)
   if (!_sessionFirstRatings[state.state_key]) {
     _sessionFirstRatings[state.state_key] = rating;
   }
 
-  // TrialLog 写入
+  // TrialLog write
   const now = Date.now();
   const responseMs = Math.min(
     now - _cardStartTs,
     SRS_CONFIG.maximum_answer_seconds * 1000
   );
 
-  // options_shown：当前题目展示的所有选项 cardId
+  // options_shown: all option cardIds shown for this question
   const optEls = document.querySelectorAll('.opt[data-card-id]');
   const optionsShown = Array.from(optEls).map(el => el.dataset.cardId);
 
@@ -6932,7 +6936,7 @@ async function _writeSrs(q, rating, attempt) {
     options_shown        : optionsShown,
     correct_option       : q.id,
     distractor_chosen    : attempt ? attempt.distractorId : null,
-    distractor_same_cat  : null,   // Phase 2：需要卡片 category 字段
+    distractor_same_cat  : null,   // Phase 2: needs card category field
 
     srs_stage_before     : stageBefore,
     interval_before      : intervalBefore,
@@ -6952,7 +6956,7 @@ async function _writeSrs(q, rating, attempt) {
     time_of_day          : timeOfDay,
     timestamp            : now,
 
-    synced_at            : null,   // 上云上传时填写
+    synced_at            : null,   // filled on cloud upload
     due_ts              : newState.due_ts,
     due_date            : newState.due_date || '',
     suspended           : newState.suspended,
@@ -6963,10 +6967,10 @@ async function _writeSrs(q, rating, attempt) {
   };
 
   await writeTrialLog(entry);
-  // 云端同步在 writeTrialLog / saveCardState 中静默触发
+  // cloud sync triggered silently in writeTrialLog / saveCardState
 }
 
-// ── 完成界面 ──────────────────────────────────────────────────
+// ── finish screen ────────────────────────────────────────────────
 async function showFinish() {
   sessionId++;
   stopNRing(); stopAllPromptTimers(); stopCelebration();
@@ -6974,7 +6978,7 @@ async function showFinish() {
   releaseWakeLock();
 
   const dp = getDailyProgress();
-  // 按卡·首次评级统计
+  // per-card first rating stats
   const sRatings = Object.values(_sessionFirstRatings);
   const sTotal = sRatings.length;
   const sPass = sRatings.filter(function(r) { return r !== 'again' && r !== 'hard'; }).length;
@@ -7008,7 +7012,7 @@ async function showFinish() {
 
   showScreen('screen-finish');
 
-  // 练习完成后集中补传
+  // batch upload after practice completes
   if (_syncEnabled && currentDeck) {
     try {
       await backfillAfterPractice(currentDeck);
@@ -7016,7 +7020,7 @@ async function showFinish() {
   }
 }
 
-// ── 活跃时长记录（练习模式）──────────────────────────────────
+// ── active duration tracking (practice mode) ────────────────────
 function recordCardTime() {
   if (currentMode === 'browse') return null;
   const now = Date.now();
@@ -7061,7 +7065,7 @@ function showRestToast() {
   setTimeout(() => t.remove(), 3500);
 }
 
-// ── visibilitychange：切后台时重置 idle 计时，避免虚报活跃时长 ──
+// ── visibilitychange: reset idle timer on background switch, avoid false active time ──
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     _lastCardTs = null;
@@ -7071,7 +7075,7 @@ document.addEventListener('visibilitychange', () => {
 // ── Next ring ──────────────────────────────────────────────────
 function startNRing() {
   const dur = currentMode === 'browse' ? BDUR : NDUR;
-  if (dur === 0) return;  // 0 = 手动模式，不启动倒计时
+  if (dur === 0) return; // 0 = manual mode, no countdown
   requestAnimationFrame(() => {
     const btn=document.getElementById('nxtbtn'),svg=document.getElementById('nrsvg');
     const nrt=document.getElementById('nrt'),nrp=document.getElementById('nrp'),sec=document.getElementById('nrsec');
@@ -7275,7 +7279,7 @@ function onTtsVoiceChange(name) {
   debouncePushConfig();
 }
 
-// 填充音色下拉列表（中文优先，其余附后）
+// populate voice dropdown (Chinese first, others appended)
 function populateVoiceList() {
   const sel = document.getElementById('tts-voice');
   if (!sel) return;
@@ -7319,11 +7323,11 @@ function onBdurChange(v) {
 }
 
 function loadSettings() {
-  // 朗读物品提示
+  // read item name hint
   const rh = localStorage.getItem('readHint');
   if (rh !== null) READ_HINT = rh === '1';
 
-  // 答题提示
+  // quiz prompt
   const quizPromptOn = localStorage.getItem('quizPromptOn');
   if (quizPromptOn !== null) QUIZ_PROMPT_ON = quizPromptOn === '1';
   const qpDelay = localStorage.getItem('quizPromptDelay');
@@ -7331,7 +7335,7 @@ function loadSettings() {
   const ps = localStorage.getItem('phraseSelect');
   if (ps) PHRASE_SELECT = ps;
 
-  // 选项提示
+  // option hint
   const optHintOn = localStorage.getItem('optHintOn');
   if (optHintOn !== null) OPT_HINT_ON = optHintOn === '1';
   const ohDelay = localStorage.getItem('optHintDelay');
@@ -7340,14 +7344,14 @@ function loadSettings() {
   if (phraseOptHint) PHRASE_OPT_HINT = phraseOptHint;
   if (!PHRASE_OPT_HINT) PHRASE_OPT_HINT = t('default_opt_hint');
 
-  // 答错提示
+  // wrong hint
   const wrongHintOn = localStorage.getItem('wrongHintOn');
   if (wrongHintOn !== null) WRONG_HINT_ON = wrongHintOn === '1';
   const pw = localStorage.getItem('phraseWrong');
   if (pw) PHRASE_WRONG = pw;
   if (!PHRASE_WRONG) PHRASE_WRONG = t('default_wrong');
 
-  // 浏览答案延迟 / 答对反馈
+  // browse answer delay / correct feedback
   const browseAnsDelay = localStorage.getItem('browseAnsDelay');
   if (browseAnsDelay) BROWSE_ANSWER_DELAY = parseFloat(browseAnsDelay) * 1000;
   const confettiOn = localStorage.getItem('confettiOn');
@@ -7358,7 +7362,7 @@ function loadSettings() {
   if (phraseCorrect) PHRASE_CORRECT = phraseCorrect;
   if (!PHRASE_CORRECT) PHRASE_CORRECT = t('default_correct');
 
-  // TTS 音色参数
+  // TTS voice params
   const ttsRate = localStorage.getItem('ttsRate');
   if (ttsRate) TTS_RATE = parseFloat(ttsRate);
   const ttsPitch = localStorage.getItem('ttsPitch');
@@ -7366,19 +7370,19 @@ function loadSettings() {
   const ttsVoiceName = localStorage.getItem('ttsVoiceName');
   if (ttsVoiceName !== null) TTS_VOICE_NAME = ttsVoiceName;
 
-  // 答案播报延迟
+  // answer speech delay
   const delay = localStorage.getItem('delay');
   if (delay) SPEAK_DELAY = parseFloat(delay) * 1000;
   const browseDelay = localStorage.getItem('browseDelay');
   if (browseDelay) BROWSE_SPEAK_DELAY = parseFloat(browseDelay) * 1000;
 
-  // 选项数量 / 倒计时 / 防误触
+  // option count / countdown / touch guard
   const oc = localStorage.getItem('optCount');
   if (oc) OPT_COUNT = parseInt(oc);
   const otd = localStorage.getItem('optTouchDelay');
   if (otd !== null) OPT_TOUCH_DELAY = parseInt(otd);
   const ndur = localStorage.getItem('ndur');
-  // NDUR 优先用 localStorage，其次跟随 SRS_CONFIG.practice_advance_sec
+  // NDUR prefers localStorage, falls back to SRS_CONFIG.practice_advance_sec
   if (ndur) NDUR = parseFloat(ndur) * 1000;
   else NDUR = SRS_CONFIG.practice_advance_sec * 1000;
   const bdur = localStorage.getItem('bdur');
@@ -7397,7 +7401,7 @@ function loadSettings() {
   });
 
   window.addEventListener('load', () => {
-    // 开关同步
+    // toggle sync
     const htEl = document.getElementById('hint-toggle');
     if (htEl) htEl.checked = READ_HINT;
     const qptEl = document.getElementById('quiz-prompt-toggle');
@@ -7407,7 +7411,7 @@ function loadSettings() {
     const whtEl = document.getElementById('wrong-hint-toggle');
     if (whtEl) whtEl.checked = WRONG_HINT_ON;
 
-    // 文案同步
+    // phrase sync
     const ps2 = document.getElementById('phrase-select');
     if (ps2) ps2.value = PHRASE_SELECT;
     const pw2 = document.getElementById('phrase-wrong');
@@ -7415,7 +7419,7 @@ function loadSettings() {
     const pohEl = document.getElementById('phrase-opt-hint');
     if (pohEl) pohEl.value = PHRASE_OPT_HINT;
 
-    // 浏览答案延迟 / 答对反馈
+    // browse answer delay / correct feedback
     const badEl = document.getElementById('dbg-browse-ans-delay');
     if (badEl && browseAnsDelay) { badEl.value = browseAnsDelay; document.getElementById('dbg-browse-ans-delay-val').textContent = `${parseFloat(browseAnsDelay).toFixed(1)}s`; }
     const cfEl = document.getElementById('confetti-toggle');
@@ -7425,21 +7429,21 @@ function loadSettings() {
     const pcEl = document.getElementById('phrase-correct');
     if (pcEl) pcEl.value = PHRASE_CORRECT;
 
-    // TTS 参数同步
+    // TTS param sync
     const rateEl = document.getElementById('tts-rate');
     if (rateEl) { rateEl.value = TTS_RATE; document.getElementById('tts-rate-val').textContent = TTS_RATE.toFixed(2); }
     const pitchEl = document.getElementById('tts-pitch');
     if (pitchEl) { pitchEl.value = TTS_PITCH; document.getElementById('tts-pitch-val').textContent = TTS_PITCH.toFixed(1); }
-    // 音色列表在语音列表加载后填充
+    // voice list populated after voice list loads
     populateVoiceList();
 
-    // 选项数量
+    // option count
     const ocEl = document.getElementById('opt-count');
     if (ocEl) { ocEl.value = OPT_COUNT; document.getElementById('opt-count-val').textContent = `${OPT_COUNT}个`; }
     const otdEl = document.getElementById('opt-touch-delay');
     if (otdEl) { otdEl.value = OPT_TOUCH_DELAY; document.getElementById('opt-touch-delay-val').textContent = `${OPT_TOUCH_DELAY}ms`; }
 
-    // 延迟滑块同步
+    // delay slider sync
     const qpdEl = document.getElementById('dbg-qpdelay');
     if (qpdEl && qpDelay) { qpdEl.value = qpDelay; document.getElementById('dbg-qpdelay-val').textContent = `${parseFloat(qpDelay).toFixed(1)}s`; }
     const ohdEl = document.getElementById('dbg-ohdelay');
@@ -7453,7 +7457,7 @@ function loadSettings() {
     const bdurEl = document.getElementById('dbg-bdur');
     if (bdurEl && bdur) { bdurEl.value = bdur; document.getElementById('dbg-bdur-val').textContent = bdur === '0' ? t('common_manual') : `${bdur}s`; }
 
-    // CSS var 滑块同步
+    // CSS var slider sync
     [
       {id:'fs-opt',suf:'',def:'26'},{id:'fs-ans',suf:'',def:'48'},
       {id:'fs-hint',suf:'',def:'15'},{id:'fs-btn',suf:'',def:'20'},
@@ -7487,7 +7491,7 @@ function escAttr(s) {
   return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// 创建 ObjectURL，自动 revoke 旧的（防泄漏）
+// create ObjectURL, auto-revoke old (leak prevention)
 function setObjURL(card, field, blob) {
   if (card[field] && card[field].startsWith('blob:')) URL.revokeObjectURL(card[field]);
   card[field] = blob ? URL.createObjectURL(blob) : '';
@@ -7500,7 +7504,7 @@ function audioMimeFromUrl(url) {
             wav:'audio/wav' })[ext] || 'audio/mp4';
 }
 
-// 并发限制辅助函数：最多 limit 个异步任务并行
+// concurrency limiter: max limit async tasks in parallel
 async function parallelMapLimit(arr, limit, fn) {
   const entries = arr.entries();
   const workers = Array.from({ length: limit }, async () => {
@@ -7514,7 +7518,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('common_downloading'); }
 
   try {
-    // 1. 通过 server_deck_cards 获取该牌组的 card_id 列表（按排序）
+    // 1. get card_id list for deck via server_deck_cards (ordered)
     const { data: links, error: linkErr } = await _sb.from('server_deck_cards')
       .select('card_id').eq('deck_id', deckId).order('sort_order');
     if (linkErr) throw linkErr;
@@ -7522,22 +7526,22 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
 
     const cardIds = links.map(l => l.card_id);
 
-    // 2. 查询 cards_pool 获取卡片详情和媒体路径
+    // 2. query cards_pool for card details and media paths
     const { data: cards, error: cardErr } = await _sb.from('cards_pool')
       .select('card_id,card_name,image_url,audio_url')
       .in('card_id', cardIds);
     if (cardErr) throw cardErr;
     if (!cards || !cards.length) { showCloudToast(t('sync_no_card_data'), true); return; }
 
-    // 按 sort_order 排列
+    // order by sort_order
     const cardMap = {};
     cards.forEach(c => { cardMap[c.card_id] = c; });
     const ordered = cardIds.map(id => cardMap[id]).filter(Boolean);
 
-    // 3. 生成 deck key
+    // 3. generate deck key
     const key = 'cloud_' + deckId;
 
-    // 4. 下载媒体并组装卡片（并发 3 路，卡内图音并行）
+    // 4. download media and assemble cards (concurrency 3, image+audio parallel per card)
     const deckCards = [];
     await parallelMapLimit(ordered, 3, async (c, i) => {
       const card = { id: c.card_id, name: c.card_name, img: '', audioUrl: '', details: [] };
@@ -7568,10 +7572,10 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
 
     if (!deckCards.length) { showCloudToast(t('sync_no_valid_cards'), true); return; }
 
-    // 记录同步时间戳
+    // record sync timestamp
     localStorage.setItem('yihai_sync_at_' + key, new Date().toISOString());
 
-    // 4. 写入内存 + 持久化
+    // 4. write to memory + persist
     DECKS[key] = deckCards;
     const existing = DECKS_META.findIndex(m => m.key === key);
     if (existing >= 0) DECKS_META[existing] = { key, name: deckName, source: 'cloud' };
@@ -7579,11 +7583,11 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     saveDeckIndex();
     saveDeckCards(key, deckCards);
 
-    // 5. 刷新 UI（切换到新牌组）
+    // 5. refresh UI (switch to new deck)
     currentDeck = key;
     renderDeckList();
-    // noToast=true 表示从 runSync 内部调用，runSync 会在状态同步后统一调用 updateDeckStats()
-    // 避免此处 IDB 状态未就绪时的竞态覆盖
+    // noToast=true means called from within runSync, which calls updateDeckStats() after state sync
+    // avoid race overwrite when IDB state isn't ready yet
     if (!noToast) updateDeckStats();
 
     if (!noToast) showCloudToast(t('toast_import_done', { name: deckName, count: deckCards.length }));
@@ -7602,7 +7606,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
   const localKey = existing.key;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('sync_syncing'); }
 
-  // 媒体下载
+  // media download
   async function downloadMedia(cardId, imageUrl, audioUrl) {
     let img = '', audioUrlBlob = '';
     const tasks = [];
@@ -7631,7 +7635,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     const syncNow = new Date().toISOString();
     const lastSyncAt = localStorage.getItem('yihai_sync_at_' + localKey) || '';
 
-    // 1. 拿服务器 card_id 列表（轻量，只传 ID）
+    // 1. get server card_id list (lightweight, IDs only)
     const { data: links, error: linkErr } = await _sb.from('server_deck_cards')
       .select('card_id').eq('deck_id', deckId).order('sort_order');
     if (linkErr) throw linkErr;
@@ -7639,19 +7643,19 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     const serverIds = links.map(l => l.card_id);
     const serverIdSet = new Set(serverIds);
 
-    // 2. 读本地
+    // 2. read local
     const localCards = DECKS[localKey] || [];
     const localMap = {};
     localCards.forEach(c => { localMap[c.id] = c; });
 
-    // 3. 分类：新增（本地没有）、已有（本地存在）
+    // 3. classify: new (not local), existing (local)
     const newIds = serverIds.filter(id => !localMap[id]);
     const existingIds = serverIds.filter(id => localMap[id]);
 
-    // 4. 对已有卡片：增量查询（只拉 updated_at > lastSyncAt 的）
+    // 4. for existing cards: delta query (only pull updated_at > lastSyncAt)
     let changedMap = {}; // { card_id: {card_name, image_url, audio_url} }
     if (existingIds.length > 0 && lastSyncAt) {
-      // 分批查询，避免 IN 列表过长（Supabase 限制）
+      // batch query to avoid long IN lists (Supabase limit)
       const batchSize = 100;
       for (let b = 0; b < existingIds.length; b += batchSize) {
         const batch = existingIds.slice(b, b + batchSize);
@@ -7662,7 +7666,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
         if (!chErr && changed) changed.forEach(c => { changedMap[c.card_id] = c; });
       }
     } else if (!lastSyncAt) {
-      // 首次同步（无 lastSyncAt）：已有卡片也全查
+      // first sync (no lastSyncAt): query all existing cards too
       const batchSize = 100;
       for (let b = 0; b < existingIds.length; b += batchSize) {
         const batch = existingIds.slice(b, b + batchSize);
@@ -7672,9 +7676,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
         if (!aErr && all) all.forEach(c => { changedMap[c.card_id] = c; });
       }
     }
-    // 若 lastSyncAt 存在且 changedMap 为空 → 所有已有卡片均无变更
+    // if lastSyncAt exists and changedMap is empty → no existing cards changed
 
-    // 5. 查询新增卡片的完整数据
+    // 5. query complete data for new cards
     let newCardMap = {};
     if (newIds.length > 0) {
       const batchSize = 100;
@@ -7687,17 +7691,17 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
       }
     }
 
-    // 6. 处理已有卡片：仅变更的才更新
+    // 6. process existing cards: only update changed ones
     let updated = 0, skipped = 0;
     const merged = [];
     for (const cid of existingIds) {
       const local = localMap[cid];
       const server = changedMap[cid];
       if (server) {
-        // 服务器有更新
+        // server has update
         let changed = false;
         if (local.name !== server.card_name) { local.name = server.card_name; changed = true; }
-        // 只在媒体 URL 不同时下载
+        // only download if media URL differs
         if (server.image_url && server.image_url !== local._imgUrl) {
           const media = await downloadMedia(cid, server.image_url, null);
           if (media.img) { local.img = media.img; changed = true; }
@@ -7711,12 +7715,12 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
         if (changed) updated++;
         else skipped++;
       } else {
-        skipped++; // 无变更，直接保留
+        skipped++; // no change, keep as-is
       }
       merged.push(local);
     }
 
-    // 7. 处理新增卡片（并发 3 路）
+    // 7. process new cards (concurrency 3)
     let added = 0;
     await parallelMapLimit(newIds, 3, async (cid) => {
       const server = newCardMap[cid];
@@ -7731,19 +7735,19 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
       added++;
     });
 
-    // 8. 删除同步：服务器已移除的卡片不同步保留（与 Anki 逻辑一致）
+    // 8. delete sync: cards removed from server not kept locally (matches Anki)
 
-    // 9. 保存
+    // 9. save
     localStorage.setItem('yihai_sync_at_' + localKey, syncNow);
     DECKS[localKey] = merged;
     saveDeckCards(localKey, merged);
 
     currentDeck = localKey;
-    // 标记为云端牌组
+    // mark as cloud deck
     const metaIdx = DECKS_META.findIndex(m => m.key === localKey);
     if (metaIdx >= 0) DECKS_META[metaIdx].source = 'cloud';
     renderDeckList();
-    // noToast=true 表示从 runSync 内部调用，runSync 会在状态同步后统一调用 updateDeckStats()
+    // noToast=true means called from within runSync, which calls updateDeckStats() after state sync
     if (!noToast) updateDeckStats();
 
     let msg;
@@ -7776,13 +7780,13 @@ function showCloudToast(msg, isErr) {
 
 function openSettings(){
   document.getElementById('settings-overlay').classList.add('open');
-  // 每次打开时刷新音色列表，确保 iOS 语音包加载后能显示
+  // refresh voice list on each open, ensure iOS voice packs show after loading
   populateVoiceList();
   loadDailyGoalUI();
 }
 function closeSettings(){
   document.getElementById('settings-overlay').classList.remove('open');
-  // 关设置面板时立即推参数到云端
+  // push config to cloud immediately when settings close
   if (_pushConfigTimer) { clearTimeout(_pushConfigTimer); _pushConfigTimer = null; cloudPushConfig(); }
 }
 function closeSettingsIfOutside(e){ if(e.target===document.getElementById('settings-overlay'))closeSettings(); }
@@ -7796,11 +7800,11 @@ function toggleTheme(checkbox){
 }
 function setTheme(el) {
   setThemeValue(el.dataset.theme);
-  // 高亮选中的主题卡
+  // highlight selected theme card
   document.querySelectorAll('.theme-card').forEach(function(c) {
     c.classList.toggle('active', c.dataset.theme === el.dataset.theme);
   });
-  // 同步设置页深色模式开关
+  // sync dark mode toggle in settings
   const tog=document.getElementById('dark-toggle');
   if(tog) tog.checked = el.dataset.theme === 'dark';
   debouncePushConfig();
@@ -7811,7 +7815,7 @@ function setThemeValue(theme) {
   localStorage.setItem('theme', theme);
 }
 function showTheme() {
-  // 高亮当前主题
+  // highlight current theme
   var cur = document.documentElement.getAttribute('data-theme') || 'default';
   document.querySelectorAll('.theme-card').forEach(function(c) {
     c.classList.toggle('active', c.dataset.theme === cur);
@@ -7819,7 +7823,7 @@ function showTheme() {
   showScreen('screen-theme');
 }
 function showAbout() {
-  // 读取版本号
+  // read version number
   var vEl = document.getElementById('about-version');
   if (vEl && typeof APP_VERSION !== 'undefined') {
     vEl.textContent = APP_VERSION;
@@ -7827,11 +7831,11 @@ function showAbout() {
   showScreen('screen-about');
 }
 (function(){
-  // 恢复主题 — 支持 default/jade/amber/dark
+  // restore theme — supports default/jade/amber/dark
   var themeVal=localStorage.getItem('theme');
   if(!themeVal||themeVal==='light')themeVal='default';
   var isDark=themeVal==='dark'||(!themeVal&&window.matchMedia('(prefers-color-scheme: dark)').matches);
-  // 旧版 'light'/'dark' 迁移
+  // migrate old 'light'/'dark' settings
   if(themeVal==='dark'||isDark){
     document.documentElement.classList.add('dark');
     document.documentElement.setAttribute('data-theme','dark');
@@ -7842,7 +7846,7 @@ function showAbout() {
   var tog=document.getElementById('dark-toggle');if(tog)tog.checked=isDark;
   var rtTog=document.getElementById('realtime-upload-toggle');if(rtTog)rtTog.checked=_realtimeUpload;
 
-  // 1. UI 初始化 — 立即渲染，不等待 Supabase CDN
+  // 1. UI init — render immediately, don't wait for Supabase CDN
   (async function initUI() {
     try {
       migrateV5IfNeeded();
@@ -7861,7 +7865,7 @@ function showAbout() {
     } catch(e) { console.error('initUI error:', e); }
   })();
 
-  // 2. 云端初始化 — Supabase SDK 加载完成后执行
+  // 2. cloud init — runs after Supabase SDK loads
   async function initCloud() {
     window.addEventListener('offline', function() {
       if (_syncEnabled) { log.info('sync', 'network offline — entering offline mode'); _sessionOffline = true; updateCloudTabUI(); _scheduleSessionRetry(); }
@@ -7875,7 +7879,7 @@ function showAbout() {
       await restoreCloudSession();
     } catch(e) { console.warn('[cloud] session restore error:', e.message); }
 
-    // SDK auth 状态监听 — token 续签 / 过期登出时自动更新 UI
+    // SDK auth state listener — auto-update UI on token refresh / expiry
     if (_sb) {
       _sb.auth.onAuthStateChange(function(event, session) {
         if (event === 'TOKEN_REFRESHED' && session) {
@@ -7887,16 +7891,16 @@ function showAbout() {
           logAppEvent('session_restore_token_refreshed', { uid: _cloudUserId });
           updateCloudTabUI();
         } else if (event === 'SIGNED_OUT' && _syncEnabled && !_sessionOffline) {
-          // _syncEnabled 仍 true → 非主动登出（doCloudLogout 已先置 false）
-          // _sessionOffline 时保留 offline 模式，不覆盖（restoreCloudSession 已判为网络问题）
-          // SDK 检测到 token 无法续签 → 静默登出, 显示登录表单
+          // _syncEnabled still true → not active logout (doCloudLogout already set it false)
+          // keep offline mode when _sessionOffline (restoreCloudSession already flagged network issue)
+          // SDK detected token can't be refreshed → silent logout, show login form
           logAppEvent('session_restore_sdk_signout', {});
           _syncEnabled    = false;
           _sessionOffline = false;
           _cloudUserEmail = '';
           updateCloudTabUI();
         }
-        // 忽略 INITIAL_SESSION — restoreCloudSession 已处理
+        // ignore INITIAL_SESSION — already handled by restoreCloudSession
       });
     }
 
@@ -7909,8 +7913,8 @@ function showAbout() {
     upsertDeviceRegistry();
   }
 
-  // 等待 Supabase SDK 就绪后再 initCloud（defer 脚本在 inline 之后执行）
-  // 若曾登录过，立即标记为恢复中，避免打开设置时闪"未登录"
+  // wait for Supabase SDK before initCloud (defer script runs after inline)
+  // if ever logged in, immediately mark as restoring to avoid flash of "not logged in"
   if (localStorage.getItem('yihai_has_ever_logged_in') === '1') {
     _sessionRestoring = true;
   }
@@ -7921,7 +7925,7 @@ function showAbout() {
     } else if (++_cloudRetries < 50) {
       setTimeout(_tryInitCloud, 200);
     } else {
-      // SDK 超时加载失败（离线/CDN 不可达）
+      // SDK timeout (offline/CDN unreachable)
       _sessionRestoring = false;
       updateCloudTabUI();
     }
@@ -7930,15 +7934,15 @@ function showAbout() {
 })();
 
 // ════════════════════════════════════════════════════════════════
-// v4.3  统计屏 + SRS 设置 Tab + 首页第三列
+// v4.3  stats screen + SRS settings tab + home 3rd column
 // ════════════════════════════════════════════════════════════════
 
-// ── 统计屏导航 ────────────────────────────────────────────────
+// ── stats screen nav ────────────────────────────────────────────
 let _statsOrigin = 'screen-home';
 function openStats() {
   _statsOrigin = document.querySelector('.screen.active')?.id || 'screen-home';
-  _statsAllStates = [];   // 清空缓存，强制从 IndexedDB 重新读取
-  // 等待最后一次 SRS 写入完成，确保读到最新状态
+  _statsAllStates = [];   // clear cache, force re-read from IndexedDB
+  // wait for last SRS write to ensure latest state
   _lastSrsWrite.finally(() => {
     switchStatsTab(0);
     showScreen('screen-stats');
@@ -7960,15 +7964,15 @@ function switchStatsTab(n) {
   else if (n === 3) renderStatsTrials();
 }
 
-// ── Tab 0：今日概况 ───────────────────────────────────────────
+// ── Tab 0: today overview ────────────────────────────────────────
 async function renderStatsToday() {
   const dp       = getDailyProgress();
   const knownKeys = new Set(DECKS_META.map(m => m.key));
 
-  // 当跨设备同步已填充 dp 统计时优先使用（同步是练习完成/手动/切前台时触发，不在统计时拉云端）
+  // prefer cross-device aggregated dp when synced (sync runs on practice complete/manual/foreground, not on stats open)
   const hasSyncDp = (dp.reviewed_today || 0) > 0;
   if (hasSyncDp) {
-    // 使用同步后的跨设备汇总数据
+    // use cross-device aggregated data after sync
     const totalSec = dp.active_duration_sec || 0;
     const durStr   = totalSec <= 0 ? '0' : totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
     const sus = (await getAllCardStates(null)).filter(s => s.suspended && knownKeys.has(s.deck_key)).length;
@@ -7982,7 +7986,7 @@ async function renderStatsToday() {
       <div class="stats-kpi"><div class="stats-kpi-num">${dp.daily_new_today||0}</div><div class="stats-kpi-lbl">新卡</div></div>
       <div class="stats-kpi"><div class="stats-kpi-num" style="color:${sus>0?'#7c3aed':'var(--text)'}">${sus}</div><div class="stats-kpi-lbl">待确认</div></div>`;
   } else {
-    // 未同步：从本地 TrialLog 计算（仅当日）
+    // not synced: calculate from local TrialLog (today only)
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
     const trials = (await getTrialLogs(null, 1)).filter(t => t.timestamp >= todayStart.getTime());
     const uniqueToday = new Set(trials.map(t => t.card_id)).size;
@@ -8013,7 +8017,7 @@ async function renderStatsToday() {
       <div class="stats-kpi"><div class="stats-kpi-num" style="color:${sus>0?'#7c3aed':'var(--text)'}">${sus}</div><div class="stats-kpi-lbl">待确认</div></div>`;
   }
 
-  // 近7天柱状图（每天练习卡片数）
+  // 7-day bar chart (cards practiced per day)
   const week7 = await getTrialLogs(null, 7);
   const dayMap = {};
   for (let i = 6; i >= 0; i--) {
@@ -8040,7 +8044,7 @@ async function renderStatsToday() {
   document.getElementById('st-chart').innerHTML = chartHtml;
 }
 
-// ── Tab 1：牌组概况 ───────────────────────────────────────────
+// ── Tab 1: deck overview ────────────────────────────────────────
 async function renderStatsDeck() {
   const key    = currentDeck;
   const states = await getAllCardStates(key);
@@ -8055,14 +8059,14 @@ async function renderStatsDeck() {
     if (s.srs_stage === 'review')    review++;
     if (s.srs_stage === 'relearning') relearning++;
   });
-  // 总卡片数用牌组实际大小，不受 CardState 是否同步影响
+  // total cards from actual deck size, unaffected by CardState sync status
   const deck = DECKS[key];
   const total = deck ? deck.length : states.length;
-  // 待开始 = 总卡数 - 已知有状态的卡数（含无 CardState 的卡）
+  // new = total cards - cards with known state (incl cards without CardState)
   const newC = Math.max(0, total - (newState + learning + review + relearning + sus));
   const mastered = states.filter(s => s.srs_stage === 'review' && s.interval >= SRS_CONFIG.maximum_interval && !s.suspended).length;
 
-  // 练习天数 = 云端已计天数 + 本地未同步部分
+  // practice days = cloud counted days + local unsynced portion
   var practiceDays = 0;
   var cloudDays = 0, cloudLastDate = '';
   try {
@@ -8074,7 +8078,7 @@ async function renderStatsDeck() {
     }
   } catch(e) {}
   practiceDays = cloudDays;
-  // 补充本地未同步的新增天数
+  // supplement local unsynced new days
   if (cloudLastDate) {
     var localTrials = await getTrialLogs(key, 90);
     var extraDays = new Set();
@@ -8096,7 +8100,7 @@ async function renderStatsDeck() {
       <div class="deck-ov-item"><div class="deck-ov-num" style="color:var(--ocean)">${practiceDays}</div><div class="deck-ov-lbl">练习天数</div></div>
     </div>`;
 
-  // 未来7天到期预测
+  // 7-day due forecast
   const forecast = {};
   for (let i = 0; i < 7; i++) forecast[addDays(today, i)] = 0;
   states.filter(s => s.srs_stage === 'review' && s.due_date && !s.suspended).forEach(s => {
@@ -8118,7 +8122,7 @@ async function renderStatsDeck() {
   }</div>`;
 }
 
-// ── Tab 2：卡片状态 ────────────────────────────────────────────
+// ── Tab 2: card state ────────────────────────────────────────────
 async function renderStatsCards(filter) {
   if (filter) _statsCurrentFilter = filter;
   _statsAllStates = await getAllCardStates(currentDeck);
@@ -8128,7 +8132,7 @@ async function renderStatsCards(filter) {
   const today = todayStr();
   const now   = Date.now();
 
-  // 补充无 CardState 的卡片（从未答过，视为待开始），确保"全部"和其它筛选中都可见
+  // add cards without CardState (never answered, treat as new), visible in "All" and other filters
   const stateMap = {};
   _statsAllStates.forEach(s => { stateMap[s.card_id] = s; });
   cards.forEach(c => {
@@ -8163,7 +8167,7 @@ async function renderStatsCards(filter) {
       ? `<img src="${c.img}" alt="">`
       : `<span>${c.img || '🃏'}</span>`;
 
-    // 状态标签（review 阶段按 interval 区分：< maximum_interval=复习中，>= 已掌握）
+    // status label (review stage: interval < maximum_interval=In Review, >= Mastered)
     const _thresh = SRS_CONFIG.maximum_interval;
     let badge = '';
     if (s.suspended)                     badge = '<span class="sbadge sbadge-sus">' + t('stats_filter_sus') + '</span>';
@@ -8174,7 +8178,7 @@ async function renderStatsCards(filter) {
       ? '<span class="sbadge sbadge-review">' + t('stats_filter_review') + '</span>'
       : '<span class="sbadge sbadge-inreview">' + t('stats_filter_inreview') + '</span>';
 
-    // 下次复习
+    // next review
     let dueStr = '';
     if (s.srs_stage === 'review' && s.due_date) {
       dueStr = s.due_date <= today ? t('stats_due_today') : s.due_date.slice(5).replace('-','/');
@@ -8183,7 +8187,7 @@ async function renderStatsCards(filter) {
       dueStr = mins <= 0 ? t('stats_pending_steps') : mins < 60 ? t('stats_mins_later', { mins }) : t('stats_hours_later', { hours: Math.round(mins/60) });
     }
 
-    // lapses 颜色
+    // lapses color
     const ls = s.lapses_streak || 0;
     const lsClass = ls >= SRS_CONFIG.daily_remove_lapses ? 'danger' : ls > 0 ? 'warn' : '';
     const lsHtml  = ls > 0 ? `<div class="scard-lapse ${lsClass}">${t('stats_lapse_streak', { count: ls })}</div>` : '';
@@ -8208,10 +8212,10 @@ function filterCards(btn, filter) {
   renderStatsCards(filter);
 }
 
-// ── Tab 3：练习记录 ────────────────────────────────────────────
+// ── Tab 3: practice log ──────────────────────────────────────────
 async function renderStatsTrials() {
   const trials = await getTrialLogs(currentDeck, 7);
-  // getTrialLogs 已过滤 _retrying，升序排列；取最新100条倒序展示
+  // getTrialLogs already filters _retrying, ascending; show latest 100 in reverse
   const recent = [...trials].reverse().slice(0, 100);
   const cards  = DECKS[currentDeck] || [];
   const cardMap = {};
@@ -8239,13 +8243,13 @@ async function renderStatsTrials() {
   }).join('')}</div>`;
 }
 
-// ── 卡片详情面板 ───────────────────────────────────────────────
+// ── card detail panel ────────────────────────────────────────────
 async function openCardDetail(stateKey) {
   if (!stateKey) return;
   const overlay = document.getElementById('card-detail-overlay');
   const body    = document.getElementById('card-detail-body');
 
-  // 读 CardState
+  // read CardState
   const parts = stateKey.split('::');
   const deckKey = parts[0], cardId = parts[1];
   const state = await getCardState(deckKey, cardId);
@@ -8256,9 +8260,9 @@ async function openCardDetail(stateKey) {
   const today   = todayStr();
   const now     = Date.now();
 
-  // 阶段显示
+  // stage display
   const STAGE_LBL = { new:t('stage_new'), learning:t('stage_learning'), review:t('stage_review'), relearning:t('stage_relearning') };
-  // 下次预测（显示计算过程方便调试）
+  // next prediction (show calculation for debugging)
   function predict(rating) {
     const s = JSON.parse(JSON.stringify(state));
     const ns = processAnswer(s, rating, today);
@@ -8273,7 +8277,7 @@ async function openCardDetail(stateKey) {
   }
 
 
-  // 答题历史
+  // answer history
   const trials = await getTrialLogs(null, 7);
   const hist   = trials.filter(t => t.card_id === cardId).slice(-8);
   const RLBL   = { again:t('rating_again'), hard:t('rating_hard'), good:t('rating_good'), easy:t('rating_easy') };
@@ -8360,11 +8364,11 @@ async function unsuspendCard(stateKey, action) {
   if (!state) return;
 
   if (action === 'reset') {
-    // 用 newCardState 重建完整初始状态，不留任何历史字段
+    // rebuild fresh CardState, no history fields retained
     const fresh = newCardState(deckKey, cardId);
     await saveCardState(fresh);
   } else {
-    // 仅解除挂起，保留所有 SRS 进度
+    // just unsuspend, keep all SRS progress
     state.suspended        = false;
     state.suspended_reason = '';
     await saveCardState(state);
@@ -8374,7 +8378,7 @@ async function unsuspendCard(stateKey, action) {
   renderStatsCards();
 }
 
-// ── SRS 设置 Tab ─────────────────────────────────────────────
+// ── SRS settings tab ────────────────────────────────────────────
 function onSrsSlider(key, rawVal, el, suffix, decimals, displayTransform) {
   const numVal = parseFloat(rawVal);
   saveSrsConfigKey(key, numVal);
@@ -8383,10 +8387,10 @@ function onSrsSlider(key, rawVal, el, suffix, decimals, displayTransform) {
   document.getElementById(el.id + '-val').textContent = formatted + suffix;
 }
 
-// 学习/重学步长输入（逗号分隔的分钟数数组）
+// learning/relearning steps input (comma-separated minutes array)
 function onSrsStepsInput(key, raw) {
-  // 解析每段：纯数字=分钟，支持 m/h/d（大小写不敏感）
-  // 例：1m 10m 1h 1d → [1, 10, 60, 1440]
+  // parse each segment: number=minutes, supports m/h/d (case-insensitive)
+  // e.g. 1m 10m 1h 1d → [1, 10, 60, 1440]
   const nums = raw.split(',').map(s => {
     const t = s.trim().toLowerCase();
     if (!t) return NaN;
@@ -8403,7 +8407,7 @@ function onSrsStepsInput(key, raw) {
   if (!nums.length) return;
   saveSrsConfigKey(key, nums);
 
-  // hint：把分钟数转回易读格式显示（小写单位）
+  // hint: convert minutes to readable format (lowercase unit)
   const hintId = key === 'learning_steps' ? 'srs-learning-steps-hint' : 'srs-relearning-steps-hint';
   const hintEl = document.getElementById(hintId);
   if (hintEl) {
@@ -8416,7 +8420,7 @@ function onSrsStepsInput(key, raw) {
   }
 }
 
-// Learn Ahead Limit 输入（m / h，存储为秒）
+// Learn Ahead Limit input (m/h, stored as seconds)
 function onSrsLearnAheadInput(raw) {
   const t = raw.trim().toLowerCase();
   const match = t.match(/^([\d.]+)\s*([mh]?)$/);
@@ -8435,7 +8439,7 @@ function secsToLabel(secs) {
   return Math.round(secs / 60) + 'm';
 }
 
-// Anki 默认值预设
+// Anki default preset
 const SRS_PRESETS = {
   default: {
     learning_steps       : [1, 10],
@@ -8464,7 +8468,7 @@ function applySrsPreset(name) {
 function syncSrsSettingsUI() {
   const cfg = SRS_CONFIG;
 
-  // 步骤输入框（数组转逗号分隔字符串，单位智能选择）
+  // step input (array to comma-separated string with smart unit selection)
   function minsToLabel(n) {
     if (n >= 1440 && n % 1440 === 0) return (n / 1440) + 'd';
     if (n >= 60   && n % 60   === 0) return (n / 60)   + 'h';
@@ -8506,7 +8510,7 @@ function syncSrsSettingsUI() {
   const lhlEl = document.getElementById('srs-learning-hard-lapse');
   if (lhlEl) lhlEl.checked = !!cfg.learning_hard_counts_lapse;
 
-  // learn_ahead_limit（文本输入框）
+  // learn_ahead_limit (text input)
   const laEl = document.getElementById('srs-learn-ahead');
   if (laEl) {
     laEl.value = secsToLabel(cfg.learn_ahead_limit);
@@ -8514,7 +8518,7 @@ function syncSrsSettingsUI() {
     if (laH) laH.textContent = secsToLabel(cfg.learn_ahead_limit);
   }
 
-  // 练习模式勾选
+  // practice mode radio
   const curMode = cfg.session_mode || 'normal';
   ['normal', 'hard', 'survival'].forEach(m => {
     const el = document.getElementById('mode-check-' + m);
@@ -8549,7 +8553,7 @@ function loadDailyGoalUI() {
     document.getElementById('general-daily-goal-val').textContent = goal + t('common_card_unit'); }
 }
 
-// SRS Tab 打开时同步一次（通过修改 openSettings 调用链实现）
+// sync once when SRS tab opens (via modified openSettings call chain)
 function openSettingsWithSrs() {
   document.getElementById('settings-overlay').classList.add('open');
   populateVoiceList();
@@ -8557,7 +8561,7 @@ function openSettingsWithSrs() {
   loadDailyGoalUI();
 }
 
-// ── 首页第三列（今日完成）─────────────────────────────────────
+// ── home 3rd column (today done) ─────────────────────────────────
 function renderDeckList() {
   const grid = document.getElementById('deck-grid');
   if (!DECKS_META.length) {
@@ -8589,7 +8593,7 @@ function renderDeckList() {
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
         '<span>'+t('common_delete')+'</span>' +
       '</button>';
-    const navChevron = '<button class="album-nav-btn caregiver-only" onclick="event.stopPropagation();showDeckDetailFor(\''+m.key+'\')" '+t('home_deck_manage')+'>' +
+    const navChevron = '<button class="album-nav-btn advanced-only" onclick="event.stopPropagation();showDeckDetailFor(\''+m.key+'\')" '+t('home_deck_manage')+'>' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
       '</button>';
     return '<div class="deck-card" data-deck="'+m.key+'" data-swipeable>' +
@@ -8604,9 +8608,9 @@ function renderDeckList() {
       '</div>' +
     '</div>';
   }).join('');
-  // 初始化左滑手势（仅一次）
+  // init swipe gestures (once)
   if (!grid._swipeInit) { initDeckSwipe(grid); grid._swipeInit = true; }
-  // 滚动时关闭左滑卡片
+  // close swiped cards on scroll
   var scrollEl = document.querySelector('.home-scroll');
   if (scrollEl && !scrollEl._swipeScrollInit) {
     scrollEl.addEventListener('scroll', closeAllSwipedCards, { passive: true });
@@ -8614,7 +8618,7 @@ function renderDeckList() {
   }
 }
 
-// ── 左滑手势 ───────────────────────────────────────────────────
+// ── swipe gestures ──────────────────────────────────────────────
 var SWIPE_ACTIONS_WIDTH = 192; // 3 buttons × 64px
 var SWIPE_THRESHOLD     = 40;
 var _swipeState = null;
@@ -8625,13 +8629,13 @@ function initDeckSwipe(grid) {
   grid.addEventListener('touchmove',  onSwipeTouchMove,  { passive: false });
   grid.addEventListener('touchend',   onSwipeTouchEnd,   { passive: true });
   grid.addEventListener('touchcancel', onSwipeTouchCancel,{ passive: true });
-  // 鼠标点击：直接进详情（不绑定到 deck-card-inner — 事件委托已处理 tap）
+  // mouse click: enter details directly (not bound to deck-card-inner — event delegation handles tap)
   grid.addEventListener('click', onDeckClick, { passive: true });
 }
 function onDeckClick(e) {
   var inner = e.target.closest('.deck-card-inner');
   if (!inner) return;
-  // 如果左滑打开状态，先关闭不导航
+  // if swipe is open, close without navigating
   var x = getTranslateX(inner);
   if (x < -10) { closeAllSwipedCards(); return; }
   selectDeck(inner);
@@ -8713,7 +8717,7 @@ function sourceIcon(src) {
   return src === 'builtin' ? '🏠 ' : src === 'cloud' ? '☁️ ' : src === 'local' ? '📂 ' : '';
 }
 
-// updateDeckStats：刷新到期和新卡两列
+// updateDeckStats: refresh due and new card columns
 async function updateDeckStats() {
   for (const m of DECKS_META) {
     if (m.key === 'random') continue;
@@ -8725,7 +8729,7 @@ async function updateDeckStats() {
       if (newEl) newEl.textContent = String(stats.new || 0);
     } catch(e) {
       console.warn('updateDeckStats error', m.key, e.message);
-      // 失败时清空占位符，显示 0
+      // clear placeholder on failure, show 0
       const dueEl = document.querySelector(`.deck-stat-num.due[data-deck="${m.key}"]`);
       const newEl = document.querySelector(`.deck-stat-num.new-c[data-deck="${m.key}"]`);
       if (dueEl) dueEl.textContent = '0';
@@ -8735,7 +8739,7 @@ async function updateDeckStats() {
 }
 
 
-// ── 自制确认弹窗（替代 iOS PWA 被屏蔽的 confirm）─────────────
+// ── custom confirm dialog (replaces iOS PWA blocked confirm) ────
 function showConfirmDialog(msg) {
   return new Promise(resolve => {
     const mask = document.createElement('div');
@@ -8756,7 +8760,7 @@ function showConfirmDialog(msg) {
   });
 }
 
-// ── Toast 通用工具 ─────────────────────────────────────────────
+// ── Toast utilities ────────────────────────────────────────────
 function showToastMsg(msg) {
   const t = document.createElement('div');
   t.textContent = msg;
@@ -8768,10 +8772,10 @@ function showToastMsg(msg) {
   setTimeout(() => t.remove(), 2500);
 }
 
-// Service Worker 暂未启用（GitHub Pages App-Bound Domain 限制）
-// 待绑定独立域名后恢复
+// Service Worker disabled (GitHub Pages App-Bound Domain restriction)
+// restore after binding custom domain
 
-// 禁止长按右键菜单
+// disable long-press right-click menu
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 </script>

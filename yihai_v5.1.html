@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="zh" data-mode="patient">
+<html lang="zh" data-mode="standard">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -8,7 +8,7 @@
 <meta data-i18n-content="app_short_name" name="apple-mobile-web-app-title" content="忆海拾光">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0ea5e9">
-<meta data-i18n-content="meta_description" name="description" content="记忆练习 — 看图识物">
+<meta data-i18n-content="meta_description" name="description" content="看图识物 — 快乐学习">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -277,7 +277,7 @@ body {
 }
 .deck-card:last-child .deck-card-inner { border-bottom: none; }
 .deck-card-inner:active { background: var(--surf2); }
-[data-mode="patient"] .caregiver-only { display: none !important; }
+[data-mode="standard"] .advanced-only { display: none !important; }
 .deck-card-inner.selected { background: var(--red-lt); }
 .deck-card-inner.selected .deck-name { color: var(--red-dk); }
 .deck-card-inner::before {
@@ -1321,7 +1321,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 #sync-modal-bar { height:100%; width:0%; background:var(--ocean); border-radius:3px; transition:width .3s ease; }
 #sync-modal-pct { font-size:12px; font-weight:600; color:var(--ocean); min-width:36px; text-align:right; }
 
-/* ═══ Action Sheet (caregiver + button) ═══ */
+/* ═══ Action Sheet (advanced + button) ═══ */
 .action-sheet-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.38); z-index: 998;
@@ -1420,7 +1420,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-scroll" id="home-scroll">
     <div class="album-section-lbl">
       <span id="album-section-lbl" data-i18n="home_album_section">我的相册</span>
-      <button class="btn-new-deck caregiver-only" onclick="openActionSheet()" data-i18n-aria="home_new_deck" aria-label="新建牌组" data-i18n="home_new_deck_btn">＋ 新建</button>
+      <button class="btn-new-deck advanced-only" onclick="openActionSheet()" data-i18n-aria="home_new_deck" aria-label="新建牌组" data-i18n="home_new_deck_btn">＋ 新建</button>
     </div>
     <div class="home-section">
       <div class="deck-grid" id="deck-grid">
@@ -1676,7 +1676,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <!-- mode switch -->
     <div class="mine-mode-row">
       <div class="mine-mode-lbl">
-        <div class="mine-mode-title" id="mine-mode-title" data-i18n="mine_mode_title">照护者模式</div>
+        <div class="mine-mode-title" id="mine-mode-title" data-i18n="mine_mode_title">高级模式</div>
         <div class="mine-mode-sub" id="mine-mode-sub" data-i18n="mine_mode_sub">开启后可管理牌组与制卡</div>
       </div>
       <label class="stoggle">
@@ -1755,8 +1755,8 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="about-title" data-i18n="about_app_name">忆海拾光</div>
     <div class="about-sub" id="about-version">v5.1.0</div>
     <div class="about-desc">
-      <p style="margin-bottom:12px" data-i18n="about_desc1">忆海拾光是一款帮助记忆练习的工具，通过看图识物的方式，帮助用户每天进行轻松的记忆训练。</p>
-      <p style="margin-bottom:12px" data-i18n="about_desc2">基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让训练更有效。</p>
+      <p style="margin-bottom:12px" data-i18n="about_desc1">忆海拾光是一款轻松有趣的学习工具，通过看图识物的方式，让用户每天愉快地复习。</p>
+      <p style="margin-bottom:12px" data-i18n="about_desc2">基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让学习更高效。</p>
       <p data-i18n="about_desc3">数据完全离线可用，登录后可跨设备同步。</p>
     </div>
   </div>
@@ -1828,7 +1828,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
-<!-- ══════════════ ACTION SHEET (caregiver + button) ══════════════ -->
+<!-- ══════════════ ACTION SHEET (advanced + button) ══════════════ -->
 <div class="action-sheet-overlay" id="action-sheet" onclick="closeActionSheet(event)">
   <div class="action-sheet">
     <div class="action-sheet-group">
@@ -1875,7 +1875,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <!-- State A: not logged in (rendered when _cloudUserEmail is empty and not restoring) -->
     <div id="account-state-logged-out" style="display:none">
       <div class="account-section">
-        <div class="account-desc" data-i18n="account_desc">登录后可同步服务器牌组，训练记录自动上传。未登录仅支持手工导入，数据完全离线。</div>
+        <div class="account-desc" data-i18n="account_desc">登录后可同步服务器牌组，学习记录自动上传。未登录仅支持手工导入，数据完全离线。</div>
         <input class="account-field" type="email" id="account-email" data-i18n-placeholder="account_email_ph" placeholder="邮箱" autocomplete="email" inputmode="email">
         <input class="account-field" type="password" id="account-password" data-i18n-placeholder="account_pwd_ph" placeholder="密码" autocomplete="current-password">
         <button class="account-btn account-btn-primary" id="account-login-btn" onclick="doAccountLogin()" data-i18n="account_login_btn">登 录</button>
@@ -2285,7 +2285,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-section">
             <div class="sheet-section-lbl" data-i18n="settings_sync_account">同步账户</div>
             <div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5" data-i18n="settings_cloud_desc">
-              登录后可同步服务器牌组，训练记录自动上传。未登录时仅支持手工导入，数据完全离线。
+              登录后可同步服务器牌组，学习记录自动上传。未登录时仅支持手工导入，数据完全离线。
             </div>
             <div style="display:flex;flex-direction:column;gap:8px">
               <input type="email" id="cloud-email" placeholder="邮箱" data-i18n-placeholder="settings_cloud_email_ph"
@@ -3188,9 +3188,9 @@ async function runSync(opts) {
     });
     var uid = getCurrentUserId();
     var pendingCount = allTrials.filter(function(t) { return !t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid); }).length;
-    for (var t of allTrials) {
-      if (!t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid)) {
-        try { await syncTrialLog(t); syncStats.trials++; } catch(e) { /* skip */ }
+    for (var tr of allTrials) {
+      if (!tr.synced_at && tr.deck_key && (!tr.user_id || tr.user_id === uid)) {
+        try { await syncTrialLog(tr); syncStats.trials++; } catch(e) { /* skip */ }
       }
     }
     // 2. config sync
@@ -4578,7 +4578,11 @@ let _lastSrsWrite    = Promise.resolve(); // most recent _writeSrs Promise, for 
 let _launchBusy  = false; // prevent duplicate start-practice clicks
 let _browseCards = [];
 let _browseIdx   = 0;
-let _appMode     = localStorage.getItem('yihai_app_mode') || 'patient'; // 'patient' | 'caregiver'
+// Migrate old mode names
+  let _stored = localStorage.getItem('yihai_app_mode');
+  if (_stored === 'patient') _stored = 'standard';
+  else if (_stored === 'caregiver') _stored = 'advanced';
+  let _appMode = _stored || 'standard';; // 'standard' | 'advanced'
 
 // ── practice mode SRS state ────────────────────────────────────
 let _cardStartTs     = 0;     // current card display timestamp (for response_time calc)
@@ -4745,9 +4749,9 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// ── caregiver mode ───────────────────────────────────────────────
+// ── advanced mode ───────────────────────────────────────────────
 function onAppModeToggle(el) {
-  _appMode = el.checked ? 'caregiver' : 'patient';
+  _appMode = el.checked ? 'advanced' : 'standard';
   localStorage.setItem('yihai_app_mode', _appMode);
   document.documentElement.setAttribute('data-mode', _appMode);
   updateTabBarMode();
@@ -4756,18 +4760,18 @@ function onAppModeToggle(el) {
 }
 
 function updateTabBarMode() {
-  const isPatient = _appMode === 'patient';
+  const isStandard = _appMode === 'standard';
   document.querySelectorAll('.home-tabbar').forEach(tb => {
     const fab = tb.querySelector('.tab-item.action');
     if (!fab) return;
     const span = fab.querySelector('span');
-    if (isPatient) {
+    if (isStandard) {
       fab.onclick = onFabTap;
       if (span) span.textContent = t('nav_start_practice');
       const svg = fab.querySelector('svg');
       if (svg) svg.innerHTML = '<polygon points="6 3 20 12 6 21 6 3"/>';
     } else {
-      fab.onclick = onCaregiverFabTap;
+      fab.onclick = onAdvancedFabTap;
       if (span) span.textContent = t('nav_start_create');
       const svg = fab.querySelector('svg');
       if (svg) svg.innerHTML = '<line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/>';
@@ -4777,14 +4781,14 @@ function updateTabBarMode() {
 
 function updateHomeTopbar() {
   const modeToggle = document.getElementById('app-mode-toggle');
-  if (modeToggle) modeToggle.checked = _appMode === 'caregiver';
+  if (modeToggle) modeToggle.checked = _appMode === 'advanced';
   const modeTitle = document.getElementById('mine-mode-title');
   const modeSub = document.getElementById('mine-mode-sub');
   if (modeTitle) modeTitle.textContent = t('mine_mode_title');
-  if (modeSub) modeSub.textContent = _appMode === 'caregiver' ? t('mine_mode_on') : t('mine_mode_off');
+  if (modeSub) modeSub.textContent = _appMode === 'advanced' ? t('mine_mode_on') : t('mine_mode_off');
 }
 
-function onCaregiverFabTap() { showCreateCard(); }
+function onAdvancedFabTap() { showCreateCard(); }
 
 // ── card creator form ────────────────────────────────────
 var _ccImageBlob = null, _ccAudioBlob = null;
@@ -5527,7 +5531,7 @@ const I18N = {
     // App meta
     app_title: 'Memory Glimmers',
     app_short_name: 'Glimmers',
-    meta_description: 'Memory practice — picture recognition',
+    meta_description: 'Picture-word matching — learn with fun',
     // Common
     common_item_unit: '',
     common_back: 'Back',
@@ -5561,12 +5565,12 @@ const I18N = {
     mine_menu_theme: 'Theme',
     mine_menu_about: 'About',
     mine_menu_import: 'Import File',
-    mine_mode_title: 'Caregiver Mode',
+    mine_mode_title: 'Advanced Mode',
     mine_mode_sub: 'Enable to manage decks and create cards',
     mine_mode_on: 'Enabled',
     mine_mode_off: 'Disabled — enable to manage decks and create cards',
     account_title: 'Account',
-    account_desc: 'Login to sync server decks. Training records auto-upload.',
+    account_desc: 'Login to sync server decks. Progress syncs automatically.',
     account_email_ph: 'Email',
     account_pwd_ph: 'Password',
     account_login_btn: 'Login',
@@ -5612,7 +5616,7 @@ const I18N = {
     settings_section_failure: 'Failure Protection', settings_daily_remove: 'Daily Remove (consecutive lapses)', settings_auto_suspend: 'Auto Suspend (total lapses)', settings_learning_hard_lapse: 'Count Learning Hard as Lapse', settings_learning_hard_desc: 'Recommended: prevents bypassing failure count via repeated Hard',
     settings_section_duration: 'Duration Guard', settings_warn_duration: 'Reminder (minutes)',
     settings_section_learn_ahead: 'Learn Ahead Window', settings_learn_ahead: 'Learn Ahead Limit (min / hr)', settings_learn_ahead_desc: 'After main queue exhausted, only learning cards with due_ts within this window are appended. Cards beyond (e.g. 1d steps) end the session. Anki default 20m.',
-    settings_sync_account: 'Sync Account', settings_cloud_desc: 'Login to sync server decks. Training records auto-upload. Offline mode supports manual import only.',
+    settings_sync_account: 'Sync Account', settings_cloud_desc: 'Login to sync server decks. Progress syncs automatically. Offline mode supports manual import only.',
     settings_cloud_email_ph: 'Email', settings_cloud_pwd_ph: 'Password', settings_cloud_login: 'Login', settings_cloud_restoring: 'Restoring session…',
     settings_cloud_sync_btn: '\u{1F504} Sync', settings_cloud_logout: 'Logout',
     settings_realtime_desc: 'Real-time upload during practice (when off, syncs only on open/foreground/completion, saves power)',
@@ -5626,8 +5630,8 @@ const I18N = {
     theme_cinnabar: 'Cinnabar · Red',
     about_title: 'About',
     about_app_name: 'Memory Glimmers',
-    about_desc1: 'Memory Glimmers is a memory practice tool. Through picture recognition, it helps users do relaxed daily memory exercises.',
-    about_desc2: 'Based on the SM-2 spaced repetition algorithm, it intelligently schedules review rhythms. Supports multilingual cards, speech, and cloud sync for more effective practice.',
+    about_desc1: 'Memory Glimmers is a fun and easy learning tool. Through picture-word matching, users can review daily with ease.',
+    about_desc2: 'Based on the SM-2 spaced repetition algorithm, it intelligently schedules review rhythms. Supports multilingual cards, speech, and cloud sync for effective learning.',
     about_desc3: 'Data is fully available offline. Login to sync across devices.',
     dd_add_card: 'Add Card',
     cc_title: 'Create Card',
@@ -5766,7 +5770,7 @@ const I18N = {
   'zh-CN': {
     app_title: '忆海拾光',
     app_short_name: '忆海拾光',
-    meta_description: '记忆练习 — 看图识物',
+    meta_description: '看图识物 — 快乐学习',
     common_back: '返回',
     common_cancel: '取消',
     common_confirm: '确认',
@@ -5797,12 +5801,12 @@ const I18N = {
     mine_menu_theme: '主题',
     mine_menu_about: '关于',
     mine_menu_import: '导入文件',
-    mine_mode_title: '照护者模式',
+    mine_mode_title: '高级模式',
     mine_mode_sub: '开启后可管理牌组与制卡',
     mine_mode_on: '已开启',
     mine_mode_off: '已关闭 — 开启后可管理牌组与制卡',
     account_title: '账户',
-    account_desc: '登录后可同步服务器牌组，训练记录自动上传。未登录仅支持手工导入，数据完全离线。',
+    account_desc: '登录后可同步服务器牌组，学习记录自动上传。未登录仅支持手工导入，数据完全离线。',
     account_email_ph: '邮箱',
     account_pwd_ph: '密码',
     account_login_btn: '登 录',
@@ -5848,7 +5852,7 @@ const I18N = {
     settings_section_failure: '失败保护', settings_daily_remove: '当日移出（连失次）', settings_auto_suspend: '自动挂起（累计失败）', settings_learning_hard_lapse: '学习阶段 Hard 计入连失', settings_learning_hard_desc: '建议开启，防止反复答 Hard 绕过失败计数',
     settings_section_duration: '时长保护（练习模式）', settings_warn_duration: '提醒时长（分钟）',
     settings_section_learn_ahead: '提前出题窗口', settings_learn_ahead: 'Learn Ahead Limit（m / h）', settings_learn_ahead_desc: '主队列做完后，due_ts 在此窗口内的学习卡才追加出题。超过窗口（如 1d 步骤）session 直接结束。Anki 默认 20m。',
-    settings_sync_account: '同步账户', settings_cloud_desc: '登录后可同步服务器牌组，训练记录自动上传。未登录时仅支持手工导入，数据完全离线。',
+    settings_sync_account: '同步账户', settings_cloud_desc: '登录后可同步服务器牌组，学习记录自动上传。未登录时仅支持手工导入，数据完全离线。',
     settings_cloud_email_ph: '邮箱', settings_cloud_pwd_ph: '密码', settings_cloud_login: '登录', settings_cloud_restoring: '正在恢复登录…',
     settings_cloud_sync_btn: '🔄 同步', settings_cloud_logout: '退出',
     settings_realtime_desc: '学习中实时上传（关闭后仅打开/前台/练习完成时同步，更省电）',
@@ -5862,8 +5866,8 @@ const I18N = {
     theme_cinnabar: '朱砂·红韵',
     about_title: '关于',
     about_app_name: '忆海拾光',
-    about_desc1: '忆海拾光是一款帮助记忆练习的工具，通过看图识物的方式，帮助用户每天进行轻松的记忆训练。',
-    about_desc2: '基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让训练更有效。',
+    about_desc1: '忆海拾光是一款轻松有趣的学习工具，通过看图识物的方式，让用户每天愉快地复习。',
+    about_desc2: '基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让学习更高效。',
     about_desc3: '数据完全离线可用，登录后可跨设备同步。',
     dd_add_card: '添加卡片',
     cc_title: '制卡',
@@ -6002,7 +6006,7 @@ const I18N = {
   'es': {
     app_title: 'Memory Glimmers',
     app_short_name: 'Glimmers',
-    meta_description: 'Práctica de memoria — reconocimiento visual',
+    meta_description: 'Reconocimiento visual — aprende con diversion',
     common_back: 'Volver',
     common_cancel: 'Cancelar',
     common_confirm: 'Confirmar',
@@ -6038,7 +6042,7 @@ const I18N = {
     mine_mode_on: 'Activado',
     mine_mode_off: 'Desactivado — activar para gestionar mazos',
     account_title: 'Cuenta',
-    account_desc: 'Inicia sesion para sincronizar mazos del servidor. Las practicas se suben automaticamente.',
+    account_desc: 'Inicia sesion para sincronizar mazos del servidor. El progreso se sincroniza automaticamente.',
     account_email_ph: 'Correo',
     account_pwd_ph: 'Contrasena',
     account_login_btn: 'Iniciar sesion',
@@ -6098,8 +6102,8 @@ const I18N = {
     theme_cinnabar: 'Cinabrio · Rojo',
     about_title: 'Acerca de',
     about_app_name: 'Memory Glimmers',
-    about_desc1: 'Memory Glimmers es una herramienta de practica de memoria. Mediante reconocimiento visual, ayuda a realizar ejercicios diarios relajados.',
-    about_desc2: 'Basado en el algoritmo de repeticion espaciada SM-2, programa ritmos de repaso inteligentemente. Soporta tarjetas multilingues, voz y sincronizacion en la nube.',
+    about_desc1: 'Memory Glimmers es una herramienta de aprendizaje divertida y sencilla. Mediante reconocimiento visual, los usuarios pueden repasar diariamente con facilidad.',
+    about_desc2: 'Basado en el algoritmo de repeticion espaciada SM-2, programa ritmos de repaso inteligentes. Soporta tarjetas multilingues, voz y sincronizacion en la nube para un aprendizaje efectivo.',
     about_desc3: 'Datos disponibles sin conexion. Inicia sesion para sincronizar entre dispositivos.',
     dd_add_card: 'Agregar tarjeta',
     cc_title: 'Crear tarjeta',
@@ -8622,7 +8626,7 @@ function renderDeckList() {
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
         '<span>'+t('common_delete')+'</span>' +
       '</button>';
-    const navChevron = '<button class="album-nav-btn caregiver-only" onclick="event.stopPropagation();showDeckDetailFor(\''+m.key+'\')" '+t('home_deck_manage')+'>' +
+    const navChevron = '<button class="album-nav-btn advanced-only" onclick="event.stopPropagation();showDeckDetailFor(\''+m.key+'\')" '+t('home_deck_manage')+'>' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
       '</button>';
     return '<div class="deck-card" data-deck="'+m.key+'" data-swipeable>' +
