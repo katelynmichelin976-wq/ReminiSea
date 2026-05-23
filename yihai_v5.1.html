@@ -2611,8 +2611,12 @@ async function restoreCloudSession() {
       try { parsed = JSON.parse(localStorage.getItem('yihai_session_backup') || 'null'); } catch(e) {}
     }
 
-    // Level 1: getSession() (SDK auto-refreshes with refresh_token)
-    var { data, error } = await _sb.auth.getSession();
+    // Level 1: getSession() with timeout (broken proxy/network can hang indefinitely)
+    var _l1TimedOut = false;
+    var { data, error } = await Promise.race([
+      _sb.auth.getSession(),
+      new Promise(function(r) { setTimeout(function(){ _l1TimedOut = true; r({ data: null, error: { message: 'timeout' } }); }, 7000); })
+    ]);
     if (!error && data.session) {
       _syncEnabled      = true;
       _sessionOffline   = false;
@@ -2623,6 +2627,20 @@ async function restoreCloudSession() {
       migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
       localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
       logAppEvent('session_restore_l1_ok', { uid: _cloudUserId });
+      return;
+    }
+    // network timeout → skip Level 2/3, go directly to offline fallback
+    if (_l1TimedOut) {
+      logAppEvent('session_restore_l1_timeout', {
+        hasToken: !!parsed, hasTokenEmail: !!(parsed && parsed.user && parsed.user.email)
+      });
+      if (parsed && parsed.user && parsed.user.email) {
+        _cloudUserEmail = parsed.user.email;
+        _cloudUserId    = parsed.user.id || _cloudUserId;
+        _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
+        _sessionOffline = true;
+        _scheduleSessionRetry();
+      }
       return;
     }
     logAppEvent('session_restore_l1_fail', {
@@ -5475,7 +5493,7 @@ function stopAllPromptTimers() {
 }
 
 // start speech prompt sequence after entering a card
-function startCardPrompts(pickedOpts) {
+function startCardPrompts(pickedOpts, optLang) {
   clearPromptTimers();
   // Phase 1: quiz prompt
   tQuizPromptTimer = setTimeout(() => {
@@ -5485,7 +5503,7 @@ function startCardPrompts(pickedOpts) {
     tOptHintTimer = setTimeout(() => {
       tOptHintTimer = null;
       if (OPT_HINT_ON && pickedOpts && pickedOpts.length) {
-        speakOptHint(pickedOpts);
+        speakOptHint(pickedOpts, optLang);
       }
     }, OPT_HINT_DELAY);
   }, QUIZ_PROMPT_DELAY);
@@ -6455,42 +6473,51 @@ function speakSequence(items, onDone, pause = 350, sid = sessionId) {
 // option hint: replace {A}{B}{C}{D} with actual options and speak sequentially
 // option hint: parse {A}{B}{C} and pause char . (one .=100ms)
 // example: "Choose from {A}.{B}.{C}"
-function speakOptHint(opts) {
+function speakOptHint(opts, optLang) {
   if (!opts || !opts.length) return;
   const labels = ['A','B','C','D'];
-  const PAUSE_MS = 100; // pause duration per .
+  const PAUSE_MS = 100;
+  const uiLang = getLocale();
+  const oLang = optLang || 'zh-CN';
 
-  // step 1: replace wildcards with actual option text
-  let text = PHRASE_OPT_HINT;
-  opts.forEach((opt, i) => {
-    if (i < labels.length) text = text.replace(`{${labels[i]}}`, opt);
-  });
-  // remove unreplaced wildcards
-  text = text.replace(/\{[A-D]\}/g, '');
-
-  // step 2: split into segments by pause char .
+  // parse template into segments: text (UI lang) / {var} (card lang) / pause
   const parts = [];
-  const re = /([^.]+)|(\.+)/g;
+  const re = /\{[A-D]\}|\.+/g;
+  const tmpl = PHRASE_OPT_HINT;
+  let lastIdx = 0;
   let m;
-  while ((m = re.exec(text)) !== null) {
-    if (m[1]) {
-      const t = m[1].trim();
-      if (t) parts.push({ type: 'text', val: t });
-    } else if (m[2]) {
-      parts.push({ type: 'pause', ms: m[2].length * PAUSE_MS });
+  while ((m = re.exec(tmpl)) !== null) {
+    if (m.index > lastIdx) {
+      const txt = tmpl.slice(lastIdx, m.index).trim();
+      if (txt) parts.push({ type: 'text', val: txt, lang: uiLang });
     }
+    const raw = m[0];
+    if (raw === '.' || /^\.+$/.test(raw)) {
+      parts.push({ type: 'pause', ms: raw.length * PAUSE_MS });
+    } else {
+      const label = raw[1];
+      const idx = labels.indexOf(label);
+      if (idx >= 0 && idx < opts.length) {
+        const optText = opts[idx].trim();
+        if (optText) parts.push({ type: 'var', val: optText, lang: oLang });
+      }
+    }
+    lastIdx = m.index + raw.length;
+  }
+  if (lastIdx < tmpl.length) {
+    const txt = tmpl.slice(lastIdx).trim();
+    if (txt) parts.push({ type: 'text', val: txt, lang: uiLang });
   }
 
-  // step 3: sequential playback, pause segments use setTimeout
   const sid = sessionId;
   function playParts(arr) {
-    if (sid !== sessionId) return;  // session switched, abort
+    if (sid !== sessionId) return;
     if (!arr.length) return;
     const [head, ...tail] = arr;
     if (head.type === 'pause') {
       setTimeout(() => playParts(tail), head.ms);
     } else {
-      speakDirect(head.val, () => playParts(tail));
+      speakDirect(head.val, () => playParts(tail), head.lang);
     }
   }
   playParts(parts);
@@ -6625,7 +6652,7 @@ function render() {
   stopAllPromptTimers();
   // pass actual option text for option hint speech
   const pickedTexts = picked.map(({ name }) => name);
-  startCardPrompts(pickedTexts);
+  const optLang = q.nameLang || resolveFieldLang(q.name); startCardPrompts(pickedTexts, optLang);
 }
 
 function revealBrowse(q) {
@@ -6701,7 +6728,7 @@ function onSel(e, idx, btn) {
     // ── correct ──────────────────────────────────────────────
     tone('ok');
     if (CONFETTI_ON) setTimeout(spawnConfetti, 100);
-    if (CORRECT_HINT_ON) setTimeout(() => speakDirect(PHRASE_CORRECT, null), 300);
+    if (CORRECT_HINT_ON) setTimeout(() => speakDirect(PHRASE_CORRECT, null, getLocale()), 300);
 
     // T1 rating mapping: 1st correct→Good, 2nd correct (after 1st wrong)→Hard
     if (currentMode !== 'browse' && q._srsState) {
