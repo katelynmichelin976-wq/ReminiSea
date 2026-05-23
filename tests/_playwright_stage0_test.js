@@ -5,7 +5,7 @@ const { chromium } = require('playwright');
   let pass = 0, fail = 0;
   const A = (label, cond) => { if (cond) { pass++; console.log('  ✓', label); } else { fail++; console.log('  ✗', label); } };
 
-  await page.goto('http://localhost:8080/.claude/worktrees/v5-stage0-i18n/yihai_v4.11.html');
+  await page.goto('http://localhost:8080/yihai_v5.1.html');
   await page.waitForFunction(() => typeof getLocale === 'function');
 
   // 默认检测（无 localStorage）

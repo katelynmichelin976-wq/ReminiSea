@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
     else       { fail++; console.error('  \x1b[31m✗\x1b[0m', label); }
   };
 
-  const URL = 'http://localhost:8080/.claude/worktrees/v5-stage0-i18n/yihai_v4.11.html';
+  const URL = 'http://localhost:8080/yihai_v5.1.html';
   await page.goto(URL);
   await page.waitForTimeout(1500);
 
