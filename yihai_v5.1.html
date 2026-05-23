@@ -1403,7 +1403,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version">v5.1.0</span>
+      <span class="home-version" onclick="openDiagPanel(event)" title="点击5次打开诊断面板">v5.1.0</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2514,6 +2514,20 @@ function getCurrentUserId() {
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
 const APP_VERSION = '5.1.0';
+
+// ── PWA 诊断面板入口（tap version 5× 加载）───────────────────
+var _diagTapCount = 0, _diagTapTimer = null;
+function openDiagPanel(e) {
+  _diagTapCount++;
+  clearTimeout(_diagTapTimer);
+  _diagTapTimer = setTimeout(function(){ _diagTapCount = 0; }, 2000);
+  if (_diagTapCount < 5) return;
+  _diagTapCount = 0;
+  if (window._yhDiag) { window._yhDiag.toggle(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://katelynmichelin976-wq.github.io/ReminiSea/tests/yh_diag.js?t=' + Date.now();
+  document.head.appendChild(s);
+}
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用

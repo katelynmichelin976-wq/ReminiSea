@@ -35,16 +35,28 @@
       <span style="color:#38bdf8;font-weight:bold;font-size:14px">🔍 忆海诊断</span>
       <span id="_yh_ver" style="color:#475569;font-size:11px"></span>
       <div style="flex:1"></div>
-      <button id="_yh_refresh" style="background:#1d4ed8;color:#fff;border:none;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:12px">↺ 刷新</button>
-      <button id="_yh_close" style="background:#374151;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:12px">✕</button>
+      <button id="_yh_refresh" style="background:#1d4ed8;color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px;touch-action:none">↺ 刷新</button>
+      <button id="_yh_close" style="background:#374151;color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px;touch-action:none">✕</button>
     </div>
     <div id="_yh_tabs" style="display:flex;background:#1e293b;border-bottom:2px solid #0f172a;flex-shrink:0"></div>
     <div id="_yh_body" style="flex:1;overflow:auto;padding:12px 14px"></div>`;
   document.body.appendChild(panel);
 
-  // 初始定位：贴右边
+  // 安全区域检测（避开手机状态栏/刘海）
+  var _safeTop = 0, _safeBottom = 0;
+  try {
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;top:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none';
+    document.body.appendChild(d);
+    var cs = getComputedStyle(d);
+    _safeTop = parseInt(cs.paddingTop) || 0;
+    _safeBottom = parseInt(cs.paddingBottom) || 0;
+    document.body.removeChild(d);
+  } catch(e) {}
+
+  // 初始定位：贴右边，避开安全区域
   panel.style.left = Math.max(0, window.innerWidth - panel.offsetWidth) + 'px';
-  panel.style.top = '0px';
+  panel.style.top = Math.max(_safeTop, 0) + 'px';
 
   // 拖拽支持
   const hdr = document.getElementById('_yh_hdr');
@@ -58,7 +70,7 @@
   hdr.addEventListener('pointermove', e => {
     if (!_drag) return;
     const x = Math.max(-(panel.offsetWidth - 80), Math.min(window.innerWidth - 80, e.clientX - _drag.ox));
-    const y = Math.max(0, Math.min(window.innerHeight - 48, e.clientY - _drag.oy));
+    const y = Math.max(_safeTop, Math.min(window.innerHeight - 48, e.clientY - _drag.oy));
     panel.style.left = x + 'px';
     panel.style.top = y + 'px';
   });

@@ -69,7 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v4.11.html` | Main training app (v4.11.15, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v4.11.html` | Main training app (v4.11.19, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
 | `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
 | `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
@@ -77,7 +77,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 测试
 | File | Purpose |
 |------|---------|
-| `tests/srs_test.js` | Node.js SRS unit tests (83 cases) |
+| `tests/srs_test.js` | Node.js SRS unit tests (85 cases) |
 | `tests/yihai_v4.4_test.js` | v4.4 utility tests (98 cases) |
 | `tests/yihai_v4.8_test.js` | v4.8 utility tests (46 cases) |
 | `tests/yihai_v4.9_test.js` | v4.9 config merge tests (48 cases) |
@@ -141,25 +141,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v4.11.18**（worktree `v5-stage0-i18n` 含阶段 0 + Wave 1，尚未发布）。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v4.11.19**（稳定线上版，`yihai_v4.11.html`）；**v5.1.0**（Wave 1 + i18n，`yihai_v5.1.html`，待验收发布）。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
-**worktree 进度（2026-05-22）：**
+**v5.1.0 主要变更：**
 - 阶段 0 i18n 地基：`detectLocale/t/getLocale/setLocale/detectScript/resolveFieldLang/normalizeField`，TTS `lang` 参数，`.yhspack` 字段语言迁移
 - 医疗术语清理：删除 AD 建议值功能，meta 改「记忆练习」
-- Wave 1 dev.1：Tab Bar（首页/FAB/我的）+ `screen-mine`（统计/设置/导入/账号卡）
-- Wave 1 dev.2：点牌组行直接进浏览，`startBrowse` 加 `_launchBusy` 保护
-- Wave 1 dev.3：`_statsOrigin` 记录来源屏，统计返回回原屏
-- Wave 1 dev.4：新浏览屏 `screen-browse`（大图+名称+TTS+描述+翻页），脱离 screen-quiz
-- Wave 1 dev.5：账户屏 `screen-account`（三态：登录/恢复中/已登录 + 同步按钮 + 实时上传开关）
-- Wave 1 dev.6：设置屏改革——移除文字 Tab（4→3 Tab），通用 Tab 新增每日学习目标滑块
-- Wave 1 dev.7：牌组详情屏 screen-deck-detail（统计三列 + 浏览/练习/导出/共享/删除操作） + 左滑手势（导出/共享/删除）
-- 照护者制卡表单：screen-create-card（牌组选择/卡片名称/图片/详情/录音 + 连续制卡）
-- 我的屏补全：主题选择器（screen-theme，4 套视觉主题）+ 关于页（screen-about）
-- 牌组详情屏补全：卡片列表 + 左滑编辑/删除 + 添加卡片按钮
-- 左滑牌组行：重命名 + 删除（替换导出/共享）
-- exportDeck/shareDeck 实际实现（.yhspack 导出下载 / Web Share）
+- Wave 1 导航重构：Tab Bar（首页/FAB/我的）+ 各功能屏（浏览/账户/设置/牌组详情/制卡/主题/关于）
+- i18n Stage 1：221 个 key × 3 语言（zh-CN/en/es），JS 硬编码字符串全部替换为 t()
+- PWA 诊断面板入口移植自 v4.11.19（版本号连击 5 次）
 
-**导航结构（Wave 1 后）：**
+**导航结构（Wave 1 后，yihai_v5.1.html）：**
 - `screen-home`：首页（默认），底部 `.home-tabbar`（首页激活）
 - `screen-mine`：我的，底部 `.home-tabbar`（我的激活）
 - `screen-quiz`：练习/浏览（进入时无 Tab Bar）

@@ -363,6 +363,10 @@ tbody tr.clickable { cursor: pointer; }
 .content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 .content::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
+/* ── Log Day Filter ── */
+.cal-nav-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.badge-default { background: #e2e8f0; color: #64748b; }
+
 /* ═══ Misc Utility ═══ */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
@@ -485,6 +489,7 @@ tbody tr.clickable { cursor: pointer; }
     <button class="detail-tab" data-subtab="calendar" onclick="switchDetailTab('calendar')">月历</button>
     <button class="detail-tab" data-subtab="cardstates" onclick="switchDetailTab('cardstates')">卡牌状态</button>
     <button class="detail-tab" data-subtab="config" onclick="switchDetailTab('config')">参数配置</button>
+    <button class="detail-tab" data-subtab="logs" onclick="switchDetailTab('logs')">日志</button>
   </div>
   <div class="detail-body" id="detail-body"></div>
 </div>
@@ -514,6 +519,8 @@ let _calYear = new Date().getFullYear();
 let _calMonth = new Date().getMonth() + 1;
 let _cardStatesShowDeck = true;
 var _configShowSrs = true, _configShowUi = true;
+let _logSubType = 'trials'; // 'trials' | 'events'
+let _logDays = 7;           // 1 | 7 | 30
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', async () => {
@@ -934,6 +941,10 @@ async function switchDetailTab(tab) {
     case 'config':
       body.innerHTML = '<div class="skeleton" style="height:300px"></div>';
       await renderPatientConfig(_selectedPatientId, body);
+      break;
+    case 'logs':
+      body.innerHTML = '<div class="skeleton" style="height:300px"></div>';
+      await renderPatientLogs(_selectedPatientId, body);
       break;
   }
 }
@@ -1519,6 +1530,120 @@ function buildDeckFailureTable(decks) {
   </table></div>`;
 }
 
+// ═══ Detail: Logs ═══
+
+async function renderPatientLogs(userId, body) {
+  body.innerHTML = buildLogHeaderHTML(userId) +
+    '<div id="log-results"><div class="skeleton" style="height:200px"></div></div>';
+  await loadPatientLogs(userId);
+}
+
+function reloadPatientLogs(userId) {
+  renderPatientLogs(userId, document.getElementById('detail-body'));
+}
+
+function buildLogHeaderHTML(userId) {
+  const dayBtns = [
+    { label: '今天', val: 1 },
+    { label: '近 7 天', val: 7 },
+    { label: '近 30 天', val: 30 },
+  ].map(b =>
+    `<button class="cal-nav-btn${_logDays === b.val ? ' active' : ''}"
+      onclick="_logDays=${b.val};reloadPatientLogs('${userId}')">${b.label}</button>`
+  ).join('');
+
+  const typeBtns = [
+    { label: '答题记录', val: 'trials' },
+    { label: '应用事件', val: 'events' },
+  ].map(b =>
+    `<button class="detail-tab${_logSubType === b.val ? ' active' : ''}"
+      onclick="_logSubType='${b.val}';reloadPatientLogs('${userId}')">${b.label}</button>`
+  ).join('');
+
+  return `
+    <div style="display:flex;gap:0;margin-bottom:12px;">
+      ${typeBtns}
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      ${dayBtns}
+    </div>
+  `;
+}
+
+async function loadPatientLogs(userId) {
+  const container = document.getElementById('log-results');
+  if (!container) return;
+  container.innerHTML = '<div class="skeleton" style="height:200px"></div>';
+  try {
+    if (_logSubType === 'trials') {
+      const data = await callEdgeFunction('get-patient-calendar', { userId, days: _logDays });
+      container.innerHTML = buildTrialLogHTML(data.trials || []);
+    } else {
+      const data = await callEdgeFunction('get-patient-events', { userId, days: _logDays });
+      container.innerHTML = buildEventLogHTML(data.events || []);
+    }
+  } catch(e) {
+    container.innerHTML = errorState('加载日志失败：' + e.message, "loadPatientLogs('" + userId + "')");
+  }
+}
+
+function buildTrialLogHTML(trials) {
+  if (!trials || trials.length === 0) return emptyState('该时段无答题记录');
+  let rows = '';
+  trials.forEach(t => {
+    const ratingCls = t.rating === 'again' ? 'again' : t.rating === 'hard' ? 'hard'
+      : t.rating === 'good' ? 'good' : 'easy';
+    const ratingLabel = t.rating === 'again' ? '重来' : t.rating === 'hard' ? '困难'
+      : t.rating === 'good' ? '良好' : '简单';
+    const rt = t.responseTimeMs ? formatDuration(t.responseTimeMs) : '—';
+    const before = srsStageLabel(t.srsStageBefore) || '?';
+    const after = srsStageLabel(t.srsStageAfter) || '?';
+    rows += `<tr>
+      <td style="white-space:nowrap">${formatDate(t.timestamp)}</td>
+      <td style="min-width:120px;word-break:break-all">${t.cardName || t.cardId}</td>
+      <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.deckKey}</td>
+      <td><span class="trial-rating ${ratingCls}">${ratingLabel}</span></td>
+      <td style="white-space:nowrap">${rt}</td>
+      <td style="white-space:nowrap">${before} → ${after}</td>
+    </tr>`;
+  });
+  return `<div class="text-sm text-muted mb-2">共 ${trials.length} 条</div>
+    <div class="table-wrap"><table>
+    <thead><tr><th>时间</th><th>卡片名称</th><th>牌组</th><th>评分</th><th>响应</th><th>阶段变化</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function buildEventLogHTML(events) {
+  if (!events || events.length === 0) return emptyState('该时段无应用事件');
+
+  function eventBadge(type) {
+    let cls = 'badge';
+    if (type === 'login' || type === 'logout') cls += ' badge-primary';
+    else if (type.startsWith('sync_')) cls += ' badge-success';
+    else if (type === 'log:error') cls += ' badge-danger';
+    else if (type === 'log:warn') cls += ' badge-warning';
+    else cls += ' badge-default';
+    return '<span class="' + cls + '">' + type + '</span>';
+  }
+
+  let rows = '';
+  events.forEach(e => {
+    const payloadStr = JSON.stringify(e.payload || {});
+    const summary = payloadStr.length > 80 ? payloadStr.slice(0, 80) + '…' : payloadStr;
+    rows += `<tr>
+      <td style="white-space:nowrap">${formatDate(e.timestamp)}</td>
+      <td>${eventBadge(e.eventType)}</td>
+      <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.deckKey || '—'}</td>
+      <td style="font-family:monospace;font-size:11px;max-width:200px;word-break:break-all">${summary}</td>
+    </tr>`;
+  });
+  return `<div class="text-sm text-muted mb-2">共 ${events.length} 条</div>
+    <div class="table-wrap"><table>
+    <thead><tr><th>时间</th><th>事件类型</th><th>牌组</th><th>payload 摘要</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
 </script>
 </body>
 </html>
