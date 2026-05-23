@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="zh" data-i18n-lang data-mode="patient">
+<html lang="zh" data-mode="patient">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -1817,7 +1817,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <label class="cc-form-label" data-i18n="cc_audio_label">录音（可选）</label>
         <input type="file" id="cc-audio-input" accept="audio/*" hidden onchange="onCardAudioChange(event)" />
         <div class="cc-audio-upload" id="cc-audio-area" onclick="document.getElementById('cc-audio-input').click()">
-          <span id="cc-audio-label">点击上传录音文件</span>
+          <span id="cc-audio-label" data-i18n="cc_audio_upload">点击上传录音文件</span>
         </div>
       </div>
       <button class="cc-save-btn" id="cc-save-btn" onclick="saveCardFromForm()" data-i18n="cc_save">保存卡片</button>
@@ -4843,7 +4843,7 @@ function onCardAudioChange(e) {
   document.getElementById('cc-audio-label').textContent = '✅ ' + file.name;
 }
 
-function saveCardFromForm() {
+async function saveCardFromForm() {
   const name = document.getElementById('cc-name').value.trim();
   if (!name) { showCloudToast(t('cc_name_required'), true); return; }
 
@@ -4853,7 +4853,7 @@ function saveCardFromForm() {
 
   // 处理新建牌组
   if (deckKey === '__new__') {
-    const newName = prompt(t('home_new_deck_prompt'));
+    const newName = await showPromptDialog(t('home_new_deck_prompt'), '');
     if (!newName || !newName.trim()) { showCloudToast(t('home_deck_name_empty'), true); return; }
     deckName = newName.trim();
     deckKey = 'deck_' + Date.now();
@@ -4948,8 +4948,8 @@ function closeActionSheet(e) {
 }
 
 // Placeholder — will be implemented in subsequent waves
-function createEmptyDeck() {
-  const name = prompt(t('home_new_deck_prompt'));
+async function createEmptyDeck() {
+  const name = await showPromptDialog(t('home_new_deck_prompt'), '');
   if (!name || !name.trim()) return;
   const key = 'deck_' + Date.now();
   DECKS[key] = [];
