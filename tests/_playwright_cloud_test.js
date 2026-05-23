@@ -112,9 +112,8 @@ const CARD_COUNT = 33;
     await run(page, () => localStorage.removeItem('yihai_daily_progress'));
     console.log('  旧状态+DP 已清理');
 
-    await run(page, () => {
-      for (const b of document.querySelectorAll('button')) { if (b.textContent.includes('开始练习')) { b.click(); return; } }
-    });
+    // v5.1: click FAB or _launch('quiz') directly (deck card goes to detail screen)
+    await run(page, () => { if (typeof _launch === 'function') _launch('quiz'); });
     await wait(page, 5000);
 
     pass('进入练习屏', await run(page, () =>
@@ -277,11 +276,14 @@ const CARD_COUNT = 33;
     await wait(page2, 2000);
 
     await helper.openSettingsTab(page2, '云端');
-    const e2 = await page2.$('#cloud-email');
-    if (e2) { await e2.fill(''); await e2.fill(TEST_EMAIL); }
-    await page2.fill('#cloud-password', TEST_PASSWORD);
-    await run(page2, () => { const b = document.getElementById('cloud-login-btn'); if (b) b.click(); });
-    await wait(page2, 5000);
+    await run(page2, ({ em, pw }) => {
+      const e = document.getElementById('cloud-email');
+      const p = document.getElementById('cloud-password');
+      if (e) e.value = em;
+      if (p) p.value = pw;
+      const b = document.getElementById('cloud-login-btn');
+      if (b) b.click();
+    }, { em: TEST_EMAIL, pw: TEST_PASSWORD });
     let connected2 = false;
     for (let i = 0; i < 30; i++) {
       connected2 = await run(page2, () => {

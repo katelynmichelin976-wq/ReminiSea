@@ -2,7 +2,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 
-const BASE      = 'http://localhost:8080/yihai_v4.11.html';
+const BASE      = 'http://localhost:8080/yihai_v5.1.html';
 const PACK_PATH = path.resolve(__dirname, 'test_data/蔬菜水果本地版.yhspack');
 let passed = 0, failed = 0;
 
@@ -37,8 +37,7 @@ async function checkCurve(queue, label) {
   await page.goto(BASE);
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.home-gear-btn', { state: 'visible', timeout: 8000 });
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(1500);
   // Force zh-CN locale for consistent i18n testing
   await page.evaluate(() => setLocale('zh-CN'));
   await page.waitForTimeout(500);

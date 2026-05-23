@@ -1,4 +1,4 @@
-// Wave 1 照护者模式验证
+// Wave 1 advanced mode verification
 const { chromium } = require('playwright');
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -17,44 +17,44 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(500);
 
 
-  // 清除可能残留的 caregiver 模式
+  // Clear any residual advanced mode
   await page.evaluate(() => localStorage.removeItem('yihai_app_mode'));
   await page.reload();
   await page.waitForTimeout(1500);
 
-  // ── 1. 默认为患者模式 ─────────────────────────────────
-  console.log('\n── 默认患者模式 ──');
+  // ── 1. Default standard mode ────────────────────────────
+  console.log('\n── default standard mode ──');
   const modeInit = await page.evaluate(() => localStorage.getItem('yihai_app_mode'));
-  A('localStorage 无 mode（默认 patient）', modeInit === null || modeInit === 'patient');
+  A('localStorage has no mode (default standard)', modeInit === null || modeInit === 'standard');
 
   const fabText = await page.locator('.home-tabbar .tab-item.action span').first().textContent();
-  A('FAB 显示"开始练习"', fabText.trim() === '开始练习');
+  A('FAB shows "开始练习"', fabText.trim() === '开始练习');
 
   const plusHidden = await page.evaluate(() => {
     const btn = document.querySelector('.btn-new-deck');
     return !btn || btn.offsetParent === null;
   });
-  A('＋ 按钮隐藏', plusHidden);
+  A('+ button hidden', plusHidden);
 
-  // ── 2. 我的屏 → 模式切换开关 ───────────────────────────
-  console.log('\n── 我的屏模式切换 ──');
+  // ── 2. Mine screen → mode toggle ────────────────────────
+  console.log('\n── mine screen mode toggle ──');
   await page.locator('#screen-home .tab-item:last-child').click();
   await page.waitForTimeout(400);
 
   const toggleExists = await page.locator('#app-mode-toggle').count();
-  A('模式开关存在', toggleExists === 1);
+  A('mode toggle exists', toggleExists === 1);
 
   const toggleOff = await page.evaluate(() => !document.getElementById('app-mode-toggle').checked);
-  A('默认关闭（患者模式）', toggleOff);
+  A('default off (standard mode)', toggleOff);
 
   const titleText = await page.locator('#mine-mode-title').textContent();
-  A('标题显示"照护者模式"', titleText.trim() === '照护者模式');
+  A('title shows "高级模式"', titleText.trim() === '高级模式');
 
   const subText = await page.locator('#mine-mode-sub').textContent();
-  A('副标题显示"已关闭"', subText.includes('已关闭'));
+  A('subtitle shows "已关闭"', subText.includes('已关闭'));
 
-  // ── 3. 切换到照护者模式 ──────────────────────────────
-  console.log('\n── 切换为照护者模式 ──');
+  // ── 3. Switch to advanced mode ─────────────────────────
+  console.log('\n── switching to advanced mode ──');
   await page.evaluate(() => {
     const el = document.getElementById('app-mode-toggle');
     el.checked = true;
@@ -63,29 +63,29 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(300);
 
   const modeSet = await page.evaluate(() => localStorage.getItem('yihai_app_mode'));
-  A('localStorage 已设 caregiver', modeSet === 'caregiver');
+  A('localStorage set to advanced', modeSet === 'advanced');
 
   const toggleOn = await page.evaluate(() => document.getElementById('app-mode-toggle').checked);
-  A('开关已打开', toggleOn);
+  A('toggle is on', toggleOn);
 
   const subOn = await page.locator('#mine-mode-sub').textContent();
-  A('副标题显示"已开启"', subOn.trim() === '已开启');
+  A('subtitle shows "已开启"', subOn.trim() === '已开启');
 
-  // ── 4. 切回首页验证 FAB 变化 ─────────────────────────
-  console.log('\n── 首页 FAB 变化 ──');
+  // ── 4. Back to home → verify FAB change ────────────────
+  console.log('\n── home FAB change ──');
   await page.locator('#screen-mine .tab-item:first-child').click();
   await page.waitForTimeout(400);
 
   const fabText2 = await page.locator('.home-tabbar .tab-item.action span').first().textContent();
-  A('FAB 显示"开始制卡"', fabText2.trim() === '开始制卡');
+  A('FAB shows "开始制卡"', fabText2.trim() === '开始制卡');
 
   const plusVisible = await page.evaluate(() => {
     const btn = document.querySelector('.btn-new-deck');
     return btn && btn.offsetParent !== null;
   });
-  A('＋ 按钮可见', plusVisible);
+  A('+ button visible', plusVisible);
 
-  // ── 5. 点 ＋ 按钮 → Action Sheet ─────────────────────
+  // ── 5. Click + → Action Sheet ──────────────────────────
   console.log('\n── Action Sheet ──');
   await page.locator('.btn-new-deck').click();
   await page.waitForTimeout(300);
@@ -93,22 +93,22 @@ const { chromium } = require('playwright');
   const sheetOpen = await page.evaluate(() =>
     document.getElementById('action-sheet')?.classList.contains('open')
   );
-  A('Action sheet 打开', sheetOpen);
+  A('Action sheet opens', sheetOpen);
 
   const btnCount = await page.locator('.action-sheet-btn').count();
-  A('有 5 个操作按钮', btnCount === 5);
+  A('5 action buttons', btnCount === 5);
 
-  // 点取消关闭
+  // Click cancel to close
   await page.locator('.action-sheet-cancel').click();
   await page.waitForTimeout(300);
 
   const sheetClosed = await page.evaluate(() =>
     !document.getElementById('action-sheet')?.classList.contains('open')
   );
-  A('点取消 → 关闭', sheetClosed);
+  A('cancel → closed', sheetClosed);
 
-  // ── 6. 切回患者模式 ─────────────────────────────────
-  console.log('\n── 切回患者模式 ──');
+  // ── 6. Switch back to standard mode ────────────────────
+  console.log('\n── switching back to standard mode ──');
   await page.locator('#screen-home .tab-item:last-child').click();
   await page.waitForTimeout(400);
 
@@ -120,11 +120,11 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(300);
 
   const modeFinal = await page.evaluate(() => localStorage.getItem('yihai_app_mode'));
-  A('localStorage 已切回 patient', modeFinal === 'patient');
+  A('localStorage reverted to standard', modeFinal === 'standard');
 
-  // ── 7. 模式重载后持久化 ─────────────────────────────
-  console.log('\n── 持久化 ──');
-  // 先切回 caregiver
+  // ── 7. Mode persist after reload ──────────────────────
+  console.log('\n── persistence ──');
+  // Switch to advanced first
   await page.evaluate(() => {
     const el = document.getElementById('app-mode-toggle');
     el.checked = true;
@@ -136,23 +136,23 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(1500);
 
   const modePersist = await page.evaluate(() => localStorage.getItem('yihai_app_mode'));
-  A('重载后 mode 仍是 caregiver', modePersist === 'caregiver');
+  A('mode persists as advanced after reload', modePersist === 'advanced');
 
   const fabAfterReload = await page.locator('.home-tabbar .tab-item.action span').first().textContent();
-  A('重载后 FAB 显示"开始制卡"', fabAfterReload.trim() === '开始制卡');
+  A('FAB shows "开始制卡" after reload', fabAfterReload.trim() === '开始制卡');
 
   const plusAfterReload = await page.evaluate(() => {
     const btn = document.querySelector('.btn-new-deck');
     return btn && btn.offsetParent !== null;
   });
-  A('重载后 ＋ 按钮可见', plusAfterReload);
+  A('+ button visible after reload', plusAfterReload);
 
-  // ── 8. 清理：恢复 patient ──────────────────────────
-  await page.evaluate(() => localStorage.setItem('yihai_app_mode', 'patient'));
+  // ── 8. Cleanup: restore standard ─────────────────────
+  await page.evaluate(() => localStorage.setItem('yihai_app_mode', 'standard'));
 
-  // ── 汇总 ──────────────────────────────────────────
+  // ── Summary ─────────────────────────────────────────
   console.log(`\n${'═'.repeat(50)}`);
-  console.log(`  结果：${pass} 通过  ${fail} 失败`);
+  console.log(`  Result: ${pass} passed  ${fail} failed`);
   console.log('═'.repeat(50));
   await browser.close();
   process.exit(fail > 0 ? 1 : 0);

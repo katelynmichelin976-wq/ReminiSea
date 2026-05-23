@@ -40,7 +40,7 @@ function getCounts() { return { passed, failed, errors }; }
 
 // ── 设置面板 ──
 async function openSettingsTab(page, tabName) {
-  await run(page, (sel) => { const b = document.querySelector(sel); if (b) b.click(); }, '[aria-label="设置"]');
+  await run(page, () => { if (typeof openSettingsWithSrs === 'function') openSettingsWithSrs(); else openSettings(); });
   await wait(page, 500);
   if (tabName) {
     await run(page, (name) => {
@@ -62,15 +62,16 @@ async function closeSettings(page) {
 // ── 云端登录 ──
 async function cloudLogin(page, email, password) {
   await openSettingsTab(page, '云端');
-
-  const emailEl = await page.$('#cloud-email');
-  if (emailEl) { await emailEl.fill(''); await emailEl.fill(email); }
-  await page.fill('#cloud-password', password);
-  await wait(page, 200);
-
-  await run(page, () => { const b = document.getElementById('cloud-login-btn'); if (b) b.click(); });
+  // Use evaluate to bypass Playwright visibility checks for inactive tab panels
+  await run(page, ({ em, pw }) => {
+    const e = document.getElementById('cloud-email');
+    const p = document.getElementById('cloud-password');
+    if (e) e.value = em;
+    if (p) p.value = pw;
+    const b = document.getElementById('cloud-login-btn');
+    if (b) b.click();
+  }, { em: email, pw: password });
   await wait(page, 3000);
-
   for (let i = 0; i < 30; i++) {
     const connected = await run(page, () => {
       const sec = document.getElementById('cloud-connected-section');

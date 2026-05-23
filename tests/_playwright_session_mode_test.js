@@ -1,7 +1,7 @@
 // 练习模式（session_mode）UI + 持久化测试
 const { chromium } = require('playwright');
 
-const BASE = 'http://localhost:8080/yihai_v4.11.html';
+const BASE = 'http://localhost:8080/yihai_v5.1.html';
 let passed = 0, failed = 0;
 
 function assert(cond, msg) {
@@ -25,8 +25,7 @@ async function getCheckText(page, mode) {
   await page.goto(BASE);
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.home-gear-btn', { state: 'visible', timeout: 8000 });
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(1500);
   // Force zh-CN locale for consistent i18n testing
   await page.evaluate(() => setLocale('zh-CN'));
   await page.waitForTimeout(500);
@@ -70,8 +69,9 @@ async function getCheckText(page, mode) {
   console.log('\n── PHASE 3: 刷新后持久化 ──');
 
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.home-gear-btn', { state: 'visible', timeout: 8000 });
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(1500);
+  await page.evaluate(() => setLocale('zh-CN'));
+  await page.waitForTimeout(500);
   await page.evaluate(() => openSettingsWithSrs());
   await page.waitForTimeout(400);
 
