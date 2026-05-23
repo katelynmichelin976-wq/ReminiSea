@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230ea5e9'/%3E%3Ctext x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif'%3E忆%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title>忆海拾光 v4.9.16</title>
+<title>忆海拾光 v4.11.19</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -342,7 +342,7 @@ body {
   transition:opacity .2s, transform .2s;
 }
 
-/* Image wrapper — same inset as mid-zone */
+/* Image wrapper */
 .img-zone {
   flex-shrink:0;
   padding:0 16px;
@@ -356,7 +356,7 @@ body {
   justify-content:flex-end;
 }
 
-/* Target card — 1:1 square, capped height, always fixed */
+/* Target card — 1:1 square, capped height */
 .target-card {
   background:var(--surf2);
   border-radius:var(--r);
@@ -396,22 +396,22 @@ body {
 @keyframes dp{0%,70%,100%{transform:scale(.5);opacity:.3}35%{transform:scale(1);opacity:1}}
 .instr-txt { font-size:14px; color:var(--text2); font-weight:500; }
 
-/* Options zone — explicit height matching image; buttons fill it */
+/* Options zone — height driven by JS via vh-based variables */
 .opts-zone {
   width:100%; flex-shrink:0;
   display:flex; flex-direction:column;
   background:var(--surf); border-radius:var(--r);
-  border:1px solid var(--bd); padding:10px;
+  border:1px solid var(--bd); padding:var(--opts-pad, 14px);
   height:var(--opts-zone-h, auto);
   user-select:none; -webkit-user-select:none;
 }
 .opts {
   flex:1;
-  display:flex; flex-direction:column; gap:10px;
+  display:flex; flex-direction:column; gap:var(--opts-gap, 16px);
 }
 .opt {
   flex:1; height:var(--opt-btn-h, auto);
-  background:#fff; border:2.5px solid var(--ocean);
+  background:var(--surf); border:1.5px solid var(--bd2);
   border-radius:var(--rsm); cursor:pointer; outline:none;
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
   position:relative; overflow:hidden;
@@ -456,11 +456,11 @@ body {
   align-items:center; justify-content:center;
   background:var(--surf); border-radius:var(--r);
   border:1px solid var(--bd); box-shadow:var(--sh);
-  padding:18px 20px 14px; overflow:hidden;
+  padding:0; overflow:hidden;
   opacity:0; transform:scale(.96);
   transition:opacity .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
 }
-.answer-panel.show { opacity:1; transform:scale(1); }
+.answer-panel.show { opacity:1; transform:scale(1); padding:18px 20px 14px; }
 .answer-word {
   font-size:var(--fs-ans, 48px); font-weight:800; letter-spacing:var(--ls-ans, -1px);
   color:var(--text); line-height:1; text-align:center;
@@ -852,6 +852,20 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 }
 .srs-preset-btn:active { opacity: .8; }
 .srs-preset-btn--sec { background: var(--surf2); color: var(--text2); margin-top: 0; }
+
+/* ── iPad / tablet (≥600px) ── */
+@media (min-width: 600px) {
+  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-footer {
+    max-width: min(90vw, 720px);
+  }
+  .target-card { max-height: var(--img-max-h, 58vh); }
+}
+/* ── iPad Pro / large tablet (≥900px) ── */
+@media (min-width: 900px) {
+  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-footer {
+    max-width: min(92vw, 960px);
+  }
+}
 </style>
 </head>
 <body>
@@ -865,7 +879,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
     <div class="home-topbar">
       <div class="home-title-wrap">
         <span class="home-title">忆海拾光</span>
-        <span class="home-version">v4.9.16</span>
+        <span class="home-version" onclick="openDiagPanel(event)" title="点击5次打开诊断面板">v4.11.19</span>
         <button class="home-refresh-btn" onclick="forceRefresh()" aria-label="强制刷新">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/>
@@ -1140,6 +1154,21 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           </div>
         </div>
         <div class="sheet-section">
+          <div class="sheet-section-lbl">练习模式</div>
+          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('normal')">
+            <span class="sheet-row-lbl">普通<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px">固定20张，越做越顺</span></span>
+            <span id="mode-check-normal" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+          </div>
+          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('hard')">
+            <span class="sheet-row-lbl">困难<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px">SRS节律，最多30张</span></span>
+            <span id="mode-check-hard" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+          </div>
+          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('survival')">
+            <span class="sheet-row-lbl">生存<span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px">清空所有积压</span></span>
+            <span id="mode-check-survival" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+          </div>
+        </div>
+        <div class="sheet-section">
           <div class="sheet-section-lbl">存储维护</div>
           <div style="font-size:12px;color:var(--text3);margin-bottom:8px;line-height:1.5">检查并清理未被任何卡片引用的孤立媒体文件，释放存储空间。</div>
           <button id="check-media-btn"
@@ -1395,6 +1424,17 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             <input type="range" min="3" max="20" value="8" step="1" id="srs-auto-suspend" oninput="onSrsSlider('auto_suspend_lapses',this.value,this,'次')">
             <span class="sheet-row-val" id="srs-auto-suspend-val">8次</span>
           </div>
+          <div class="sheet-row" style="justify-content:space-between">
+            <div>
+              <span class="sheet-row-lbl">学习阶段 Hard 计入连失</span>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">AD 建议开启，防止反复答 Hard 绕过失败计数</div>
+            </div>
+            <label class="stoggle">
+              <input type="checkbox" id="srs-learning-hard-lapse" onchange="saveSrsConfigKey('learning_hard_counts_lapse',this.checked)">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
         </div>
 
         <div class="sheet-section" style="padding-bottom:16px">
@@ -1433,8 +1473,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             </div>
             <div style="display:flex;flex-direction:column;gap:8px">
               <input type="email" id="cloud-email" placeholder="邮箱"
-                style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--surf);color:var(--text);font-family:inherit"
-                value="zyhacl@gmail.com">
+                style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--surf);color:var(--text);font-family:inherit">
               <input type="password" id="cloud-password" placeholder="密码"
                 style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--surf);color:var(--text);font-family:inherit">
               <button id="cloud-login-btn"
@@ -1442,6 +1481,14 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
                 onclick="doCloudLogin()">登录</button>
               <div id="cloud-login-msg" style="font-size:11px;color:var(--text3);text-align:center;display:none"></div>
             </div>
+          </div>
+        </div>
+
+        <!-- 正在恢复会话 -->
+        <div id="cloud-restoring-section" style="display:none">
+          <div class="sheet-section">
+            <div class="sheet-section-lbl">同步账户</div>
+            <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">正在恢复登录…</div>
           </div>
         </div>
 
@@ -1453,7 +1500,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
               <span class="sheet-row-lbl" id="cloud-user-email"></span>
               <div style="display:flex;gap:6px">
                 <button style="padding:4px 10px;border:1px solid var(--blue);border-radius:6px;background:var(--blue-lt);color:var(--blue);font-size:11px;cursor:pointer;font-family:inherit"
-                  onclick="syncAll(currentDeck,true).catch(function(e){console.warn(e)})">🔄 同步</button>
+                  onclick="runSync({modal:true,decks:true,events:true,showToast:true,voice:true,deckKey:currentDeck}).catch(function(e){console.warn(e)})">🔄 同步</button>
                 <button style="padding:4px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--surf);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit"
                   onclick="doCloudLogout()">退出</button>
               </div>
@@ -1467,25 +1514,26 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
               </label>
             </div>
           </div>
-          <div class="sheet-section">
-            <div class="sheet-section-lbl">云端牌组</div>
-            <div class="sheet-row" style="flex-direction:column;align-items:stretch;gap:8px">
-              <div id="cloud-deck-list" style="font-size:13px;color:var(--text2)">点击「同步」获取云端牌组...</div>
-              <div id="cloud-progress" style="display:none;margin-top:4px">
-                <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-                  <span id="cloud-prog-text" style="font-size:11px;color:var(--text2)"></span>
-                  <span id="cloud-prog-pct" style="font-size:11px;font-weight:600;color:var(--blue)"></span>
-                </div>
-                <div style="height:4px;background:var(--bd);border-radius:2px;overflow:hidden">
-                  <div id="cloud-prog-bar" style="height:100%;background:var(--blue);border-radius:2px;width:0%;transition:width .15s"></div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
     </div><!-- /sheet-panels -->
+  </div>
+</div>
+
+<!-- 同步进度 Modal -->
+<div id="sync-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:280px;width:85%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+    <div id="sync-modal-title" style="font-size:17px;font-weight:700;color:#333;margin-bottom:12px">正在同步</div>
+    <div id="sync-modal-text" style="font-size:13px;color:#888;margin-bottom:10px"></div>
+    <div id="sync-modal-prog-wrap" style="margin-top:4px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span id="sync-modal-pct" style="font-size:12px;font-weight:600;color:var(--blue)"></span>
+      </div>
+      <div style="height:4px;background:#e8e8e8;border-radius:2px;overflow:hidden">
+        <div id="sync-modal-bar" style="height:100%;background:var(--blue);border-radius:2px;width:0%"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1529,7 +1577,8 @@ const SRS_CONFIG = {
 
   // 我们特有参数
   ease_min                : 1.30,
-  hard_step_multiplier    : 1.0,          // AD建议 1.5
+  hard_step_multiplier    : 1.0,          // 不再使用（已改用 Anki 平均规则）
+  learning_hard_counts_lapse: false,      // AD建议 true：learning 阶段 hard 计入连失
 
   // T1→T7 过渡（Phase 2 启用）
   t1_review_before_mix    : 2,
@@ -1555,6 +1604,9 @@ const SRS_CONFIG = {
   // 主队列耗尽后，due_ts 在此窗口内的 learning 卡才追加出题
   // 默认 1200s = 20 分钟，与 Anki 默认一致
   learn_ahead_limit        : 1200,
+
+  // 练习模式：'normal'=普通（体验弧，20张）| 'hard'=困难（SRS节律，30张上限）| 'survival'=生存（清空积压）
+  session_mode             : 'normal',
 };
 
 // ── SRS_CONFIG 持久化覆盖（从 localStorage 恢复用户修改）─────────
@@ -1604,10 +1656,6 @@ function todayStr() {
   return `${y}-${m}-${day}`;
 }
 // UTC 日期（与 Supabase trial_date 生成列一致，该列用 to_timestamp()::date = UTC）
-function utcTodayStr() {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
-}
 
 function addDays(dateStr, n) {
   const d = new Date(dateStr + 'T00:00:00');
@@ -1630,21 +1678,44 @@ function minsToTs(mins) {
   return Math.round(mins * 60 * 1000);
 }
 
-// ── IndexedDB：yihai_srs（version 3）────────────────────────────
+// ── IndexedDB：yihai_srs（v5: user_id 多用户隔离）────────────────
 const SRS_DB_NAME    = 'yihai_srs';
-const SRS_DB_VER     = 4;
+const SRS_DB_VER     = 6;
 const CS_STORE       = 'card_states';
 const TRIAL_STORE    = 'trials';
 const EVT_STORE      = 'app_events';
-const CSL_STORE      = 'card_state_log';
+const LOG_STORE      = 'yh_logs';
 
 let _srsDb = null;
 let _srsDbPromise = null;
+let _v5MigrationDone = false;
+
+function getCurrentUserId() {
+  // 已登录 → cloud user UUID；登出 → 最近一次登录的用户（持久化在 localStorage）；
+  // 从未登录 → deviceId 兜底。用户切换时新登录自动覆盖。
+  return _cloudUserId
+    || localStorage.getItem('yihai_last_cloud_user_id')
+    || getOrCreateDeviceId();
+}
 
 // ── Supabase 云同步 ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '4.9.14';
+const APP_VERSION = '4.11.19';
+
+// ── PWA 诊断面板入口（tap version 5× 加载）───────────────────
+var _diagTapCount = 0, _diagTapTimer = null;
+function openDiagPanel(e) {
+  _diagTapCount++;
+  clearTimeout(_diagTapTimer);
+  _diagTapTimer = setTimeout(function(){ _diagTapCount = 0; }, 2000);
+  if (_diagTapCount < 5) return;
+  _diagTapCount = 0;
+  if (window._yhDiag) { window._yhDiag.toggle(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://katelynmichelin976-wq.github.io/ReminiSea/tests/yh_diag.js?t=' + Date.now();
+  document.head.appendChild(s);
+}
 
 // CDN 加速媒体下载（v4.8）：设空串则回退到 Supabase Storage
 // v4.9: 暂不启用腾讯云 COS 回源，避免下载费用
@@ -1657,6 +1728,10 @@ let _lastOrphans = [];    // 媒体清理：暂存最近一次扫描的孤立 ke
 let _cloudUserEmail = '';
 let _cloudUserId = '';
 var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // 学习中实时上传开关
+let _sessionRestoring = false; // SDK 加载中或 session 恢复中，避免闪"未登录"
+var _onlineListenerActive = false; // 防止重复注册 online 监听
+var _syncInFlight = false;         // runSync 并发锁
+let _sessionOffline   = false; // 有凭证但网络失败，保留登录外观等待重连
 
 // CDN 媒体下载辅助：尝试 CDN 加速，失败则回退到 Supabase Storage
 function cdnMediaUrl(path) {
@@ -1679,37 +1754,181 @@ async function downloadMediaFromCDNorSupabase(path, mimeType) {
   return new Blob([data], { type: mimeType || 'image/jpeg' });
 }
 
+// 网络失败时注册 online 事件，恢复后自动重试 session
+function _scheduleSessionRetry() {
+  if (_onlineListenerActive) return;
+  _onlineListenerActive = true;
+  window.addEventListener('online', function _onOnline() {
+    log.info('sync', 'network online — retrying session restore');
+    _onlineListenerActive = false;
+    window.removeEventListener('online', _onOnline);
+    _sessionRestoring = true;
+    _sessionOffline   = false;
+    updateCloudTabUI();
+    restoreCloudSession().then(function() {
+      _sessionRestoring = false;
+      updateCloudTabUI();
+      if (_syncEnabled) runSync({ decks: false, showToast: true }).catch(function(){});
+    });
+  });
+}
+
+function _createSupabaseClient() {
+  return supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      storage: localStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false
+    }
+  });
+}
+
 // 启动时尝试恢复已有会话
 async function restoreCloudSession() {
   try {
-    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data, error } = await _sb.auth.getSession();
-    if (error) throw error;
-    if (data.session) {
-      _syncEnabled = true;
-      _cloudUserEmail = data.session.user.email;
-      _cloudUserId = data.session.user.id;
-      _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
+    _sb = _createSupabaseClient();
+
+    // 预读 localStorage token — 无需网络，可立即获得用户身份
+    // 注意：Supabase SDK 用 projectRef（不含域名）作 key，需与 SDK 保持一致
+    var sbKey = 'sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token';
+    var parsed = null;
+    try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
+    // 如果 SDK key 已被清除（SDK 内部检测到过期后会清理），尝试自有备份
+    if (!parsed) {
+      try { parsed = JSON.parse(localStorage.getItem('yihai_session_backup') || 'null'); } catch(e) {}
+    }
+
+    // 第1级：getSession()（SDK 自动用 refresh_token 续签）
+    var { data, error } = await _sb.auth.getSession();
+    if (!error && data.session) {
+      _syncEnabled      = true;
+      _sessionOffline   = false;
+      _cloudUserEmail   = data.session.user.email;
+      _cloudUserId      = data.session.user.id;
+      _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
+      localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+      migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
+      localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
+      logAppEvent('session_restore_l1_ok', { uid: _cloudUserId });
+      return;
+    }
+    logAppEvent('session_restore_l1_fail', {
+      hasError: !!error, errMsg: error && error.message,
+      hasToken: !!parsed, hasTokenEmail: !!(parsed && parsed.user && parsed.user.email)
+    });
+
+    // 第2级：手动 setSession（处理 SDK 读 localStorage 的竞态）
+    if (parsed && parsed.access_token && parsed.refresh_token) {
+      var r = await _sb.auth.setSession({ access_token: parsed.access_token, refresh_token: parsed.refresh_token });
+      if (!r.error && r.data.session) {
+        _syncEnabled      = true;
+        _sessionOffline   = false;
+        _cloudUserEmail   = r.data.session.user.email;
+        _cloudUserId      = r.data.session.user.id;
+        _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
+        migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
+        localStorage.setItem('yihai_session_backup', JSON.stringify(r.data.session));
+        logAppEvent('session_restore_l2_ok', { uid: _cloudUserId });
+        return;
+      }
+      // 区分：Supabase 明确拒绝（400 + 凭证无效错误码）才视为真实登出；
+      // 其余失败（网络、超时、message 为 undefined 等）一律走 offline 保留登录态。
+      // iOS PWA reload 后网络栈短暂不稳，refresh 请求容易失败但不代表账号失效。
+      var errMsg    = (r.error && r.error.message) || '';
+      var errStatus = r.error && r.error.status;
+      // Supabase 错误 message 可能是下划线（refresh_token_not_found）或空格（Refresh Token Not Found）
+      var isRealLogout = errStatus === 400 &&
+        /invalid.grant|refresh.token.not.found|user.not.found/i.test(errMsg);
+      if (!isRealLogout && parsed.user && parsed.user.email) {
+        // 不确定失败 → offline 模式，等 online 事件自动重试
+        logAppEvent('session_restore_l2_offline', {
+          errStatus: errStatus, errMsg: errMsg, hasEmail: true
+        });
+        _cloudUserEmail = parsed.user.email;
+        _cloudUserId    = parsed.user.id || _cloudUserId;
+        _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
+        _sessionOffline = true;
+        _scheduleSessionRetry();
+        return;
+      }
+      // 真实登出（token 服务端已失效）：清除备份，直接返回，显示登录界面
+      localStorage.removeItem('yihai_session_backup');
+      logAppEvent('session_restore_l2_real_logout', {
+        errStatus: errStatus, errMsg: errMsg, isRealLogout: isRealLogout
+      });
+      return;
+    }
+
+    // 第3级：300ms 重试（CDN 竞态兜底）
+    await new Promise(function(r){setTimeout(r,300)});
+    var retry = await _sb.auth.getSession();
+    if (retry.data && retry.data.session) {
+      _syncEnabled      = true;
+      _sessionOffline   = false;
+      _cloudUserEmail   = retry.data.session.user.email;
+      _cloudUserId      = retry.data.session.user.id;
+      _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
+      localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+      migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
+      localStorage.setItem('yihai_session_backup', JSON.stringify(retry.data.session));
+      logAppEvent('session_restore_l3_ok', { uid: _cloudUserId });
+    }
+    if (!_syncEnabled) {
+      logAppEvent('session_restore_l3_fail', {
+        hasToken: !!parsed, hasTokenEmail: !!(parsed && parsed.user && parsed.user.email)
+      });
+    }
+
+    // 全级失败兜底：有 localStorage token 但网络不可达 → offline 模式
+    if (!_syncEnabled && parsed && parsed.user && parsed.user.email) {
+      logAppEvent('session_restore_offline_fallback', {
+        hasToken: true, hasEmail: true
+      });
+      _cloudUserEmail = parsed.user.email;
+      _cloudUserId    = parsed.user.id || _cloudUserId;
+      _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
+      _sessionOffline = true;
+      _scheduleSessionRetry();
     }
   } catch(e) {
     if (typeof supabase !== 'undefined') {
-      _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      _sb = _createSupabaseClient();
     }
+    logAppEvent('session_restore_catch', { errMsg: e.message, supDefined: typeof supabase !== 'undefined' });
     console.warn('[sync] no saved session');
   }
 }
 
 function updateCloudTabUI() {
-  const loginSec = document.getElementById('cloud-login-section');
-  const connSec = document.getElementById('cloud-connected-section');
-  const userEl = document.getElementById('cloud-user-email');
-  if (_syncEnabled) {
-    if (loginSec) loginSec.style.display = 'none';
-    if (connSec) connSec.style.display = '';
+  const loginSec     = document.getElementById('cloud-login-section');
+  const connSec      = document.getElementById('cloud-connected-section');
+  const restoringSec = document.getElementById('cloud-restoring-section');
+  const userEl       = document.getElementById('cloud-user-email');
+  if (_sessionRestoring) {
+    if (loginSec)     loginSec.style.display     = 'none';
+    if (connSec)      connSec.style.display      = 'none';
+    if (restoringSec) restoringSec.style.display = '';
+  } else if (_syncEnabled) {
+    if (loginSec)     loginSec.style.display     = 'none';
+    if (connSec)      connSec.style.display      = '';
+    if (restoringSec) restoringSec.style.display = 'none';
     if (userEl) userEl.textContent = '✅ ' + _cloudUserEmail;
+  } else if (_sessionOffline && _cloudUserEmail) {
+    // 有凭证但网络失败：保留登录外观，等待重连
+    if (loginSec)     loginSec.style.display     = 'none';
+    if (connSec)      connSec.style.display      = '';
+    if (restoringSec) restoringSec.style.display = 'none';
+    if (userEl) userEl.textContent = '📵 ' + _cloudUserEmail + '（网络不稳定）';
   } else {
-    if (loginSec) loginSec.style.display = '';
-    if (connSec) connSec.style.display = 'none';
+    if (loginSec)     loginSec.style.display     = '';
+    if (connSec)      connSec.style.display      = 'none';
+    if (restoringSec) restoringSec.style.display = 'none';
+    // 预填上次登录邮箱，方便用户重新登录
+    const emailEl = document.getElementById('cloud-email');
+    if (emailEl && !emailEl.value) {
+      emailEl.value = localStorage.getItem('yihai_last_cloud_email') || '';
+    }
   }
 }
 
@@ -1727,19 +1946,29 @@ async function doCloudLogin() {
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '登录中...'; }
   if (msgEl) { msgEl.style.display = 'none'; }
   try {
-    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    _sb = _createSupabaseClient();
     const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
     if (error) throw error;
-    _syncEnabled = true;
+    _syncEnabled      = true;
+    _sessionOffline   = false;
+    _sessionRestoring = false;
     _cloudUserEmail = data.user.email;
     _cloudUserId = data.user.id;
+    localStorage.setItem('yihai_last_cloud_user_id', _cloudUserId);
+    localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
     _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
     localStorage.setItem('yihai_has_ever_logged_in', '1');
+    // 备份 session 至自有 key，防 SDK 因 refresh 失败自行清除后无法恢复
+    if (data.session) {
+      localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
+    }
+    // 先迁移离线记录再同步，避免 getAllCardStates 按 cloudUserId 过滤时漏掉 deviceId 记录
+    await migrateDeviceRecordsToUser(_cloudUserId);
     updateCloudTabUI();
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
     // 登录后全量同步（答题/状态/配置/牌组）
-    syncAll(currentDeck, false).catch(e => console.warn('[sync] login sync error:', e.message));
+    runSync({ modal: true, decks: true, events: true, title: '正在同步数据', voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
     if (msgEl) { msgEl.style.display = ''; msgEl.textContent = '登录失败：' + e.message; msgEl.style.color = '#9B3A2A'; }
@@ -1750,64 +1979,36 @@ async function doCloudLogin() {
 }
 
 async function doCloudLogout() {
-  var prevUserId = _cloudUserId;
   logAppEvent('logout', {});
   try {
     if (_sb) await _sb.auth.signOut();
   } catch(e) { console.warn('[sync] signOut error:', e.message); }
-  _syncEnabled = false;
+  _syncEnabled      = false;
+  _sessionOffline   = false;
+  _sessionRestoring = false;
   _cloudUserEmail = '';
-  _cloudUserId = '';
+  // v5: 不清 _cloudUserId — getCurrentUserId() 继续返回最近登录用户，
+  // 离线练习的数据归属正确。除非显式切换账号，新登录会覆盖。
   _sb = null;
 
-  // 清除当前用户的云端本地缓存，防止切换用户后数据混淆
-  if (prevUserId) {
-    // 清除云同步时间戳
-    localStorage.removeItem('yihai_global_sync_ts');
-    // 清除云牌组
-    var keepDecks = {}, keepMeta = [];
-    for (var i = 0; i < DECKS_META.length; i++) {
-      var m = DECKS_META[i];
-      if (m.source === 'cloud') { delete DECKS[m.key]; }
-      else { keepDecks[m.key] = DECKS[m.key]; keepMeta.push(m); }
-    }
-    DECKS_META = keepMeta;
-    saveDeckIndex();
-    // 清除 IndexedDB 中的 CardState 和 TrialLog
-    try {
-      var db = await openSrsDb();
-      await new Promise(function(res, rej) {
-        var tx = db.transaction(CS_STORE, 'readwrite');
-        tx.objectStore(CS_STORE).clear();
-        tx.oncomplete = res;
-        tx.onerror = function() { rej(tx.error); };
-      });
-      await new Promise(function(res, rej) {
-        var tx = db.transaction(TRIAL_STORE, 'readwrite');
-        tx.objectStore(TRIAL_STORE).clear();
-        tx.oncomplete = res;
-        tx.onerror = function() { rej(tx.error); };
-      });
-    } catch(e) { console.warn('[sync] logout cleanup:', e.message); }
-    renderDeckList();
-    updateDeckStats();
-  }
+  // 登出后等同于离线模式，云牌组保留可用。
+  localStorage.removeItem('yihai_global_sync_ts');
+  localStorage.removeItem('yihai_session_backup');
+  renderDeckList();
+  updateDeckStats();
 
   updateCloudTabUI();
-  // 清空云端牌组列表
-  var listEl = document.getElementById('cloud-deck-list');
-  if (listEl) listEl.innerHTML = '<span style="color:var(--text3)">请先登录</span>';
 }
 
 // 采集设备信息用于问题定位
 function getDeviceInfo() {
   try {
-    return JSON.stringify({
+    return {
       ua:     navigator.userAgent,
       screen: screen.width + 'x' + screen.height,
       lang:   navigator.language
-    });
-  } catch(e) { return null; }
+    };
+  } catch(e) { return {}; }
 }
 
 async function syncTrialLog(entry) {
@@ -1969,13 +2170,14 @@ async function syncPendingData(deckKey) {
   try {
     const db = await openSrsDb();
 
-    // 1. 补传未同步的 TrialLog（无 synced_at 的记录）
+    // 1. 补传未同步的 TrialLog（仅当前用户）
     const allTrials = await new Promise((res, rej) => {
       const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
       req.onsuccess = e => res(e.target.result || []);
       req.onerror   = e => rej(e.target.error);
     });
-    const pending = allTrials.filter(t => !t.synced_at);
+    const uid = getCurrentUserId();
+    const pending = allTrials.filter(t => !t.synced_at && (!t.user_id || t.user_id === uid));
     await parallelMapLimit(pending, 10, async t => {
       try { await syncTrialLog(t); } catch(e) { console.warn('[sync] backfill trial skip:', t.trial_id); }
     });
@@ -2119,202 +2321,128 @@ async function cloudPullConfig() {
   }
 }
 
-// ── 同步进度显示 ──
-function showSyncProg(curr, total, text) {
-  const prog = document.getElementById('cloud-progress');
-  const el   = document.getElementById('cloud-prog-text');
-  const pct  = document.getElementById('cloud-prog-pct');
-  const bar  = document.getElementById('cloud-prog-bar');
-  if (!prog) return;
-  prog.style.display = 'block';
-  if (el)  el.textContent  = text || '';
-  if (pct) pct.textContent = curr + '/' + total;
-  if (bar) bar.style.width  = (curr / total * 100) + '%';
-}
-function hideSyncProg() {
-  const prog = document.getElementById('cloud-progress');
-  if (prog) prog.style.display = 'none';
-}
 
-// 判断是否需要同步（有本地脏数据 OR 服务器有更新）
-async function checkSyncNeeded() {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return false;
+
+// 统一同步入口（v4.10）：支持模态进度条 + 语音播报 + 不同同步范围：支持模态进度条 + 语音播报 + 不同同步范围
+async function runSync(opts) {
+  if (!_syncEnabled || !_sb) { if (opts && opts.showToast) showCloudToast('未连接服务器', true); return; }
+  if (_syncInFlight) { if (opts && opts.showToast) showCloudToast('同步中…'); return; }
+  _syncInFlight = true;
+  var options = Object.assign({
+    modal: false,
+    title: '正在同步',
+    decks: false,
+    events: false,
+    showToast: false,
+    voice: false,
+    deckKey: currentDeck,
+  }, opts || {});
+  // 等待上次 SRS 写入完成
+  if (_lastSrsWrite) await _lastSrsWrite;
+  var modalEl = document.getElementById('sync-modal');
+  var titleEl = document.getElementById('sync-modal-title');
+  var textEl  = document.getElementById('sync-modal-text');
+  var barEl   = document.getElementById('sync-modal-bar');
+  var pctEl   = document.getElementById('sync-modal-pct');
+  function updateProg(text, pct) {
+    if (!options.modal) return;
+    if (textEl) textEl.textContent = text || '';
+    if (barEl) barEl.style.width = (pct || 0) + '%';
+    if (pctEl) pctEl.textContent = (pct || 0) + '%';
+  }
+  if (options.modal && modalEl) {
+    modalEl.style.display = 'flex';
+    if (titleEl) titleEl.textContent = options.title;
+    if (textEl) textEl.textContent = '正在连接...';
+    if (barEl) barEl.style.width = '0%';
+    if (pctEl) pctEl.textContent = '0%';
+    if (options.voice) { try { speechSynthesis.cancel(); speak(options.title); } catch(e) {} }
+  }
+  logAppEvent('sync_started', { deck_key: options.deckKey, mode: options.modal ? 'modal' : 'bg', decks: !!options.decks, events: !!options.events }, options.deckKey);
+  var syncStats = { trials: 0, events: 0, states_merged: 0, config: 0, decks: 0 };
   try {
-    // 1. 本地脏数据检查
-    const db = await openSrsDb();
-    const dirtyTrials = await new Promise((res, rej) => {
-      const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
-      req.onsuccess = e => { const all = e.target.result || []; res(all.filter(t => !t.synced_at && t.deck_key)); };
-      req.onerror = e => rej(e.target.error);
+    // 1. 上传 TrialLog（增量）
+    updateProg('正在上传练习记录...', 10);
+    var db = await openSrsDb();
+    var allTrials = await new Promise(function(res, rej) {
+      var r = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
+      r.onsuccess = function(e) { res(e.target.result || []); };
+      r.onerror   = function(e) { rej(e.target.error); };
     });
-    if (dirtyTrials.length > 0) return true;
-    // 2. 检查全局同步时间戳 vs 服务器
-    const lastSyncTs = parseInt(localStorage.getItem('yihai_global_sync_ts') || '0') || 0;
-    if (!lastSyncTs) return true;  // 首次同步
-    const { count, error } = await _sb.from('sync_card_states')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', _cloudUserId)
-      .gt('updated_at', lastSyncTs);
-    if (!error && count > 0) return true;
-    // 3. 检查配置更新
-    const { data: cfgData, error: cfgErr } = await _sb.from('sync_config')
-      .select('updated_at').eq('user_id', _cloudUserId).maybeSingle();
-    if (!cfgErr && cfgData && cfgData.updated_at > lastSyncTs) return true;
-    return false;
-  } catch(e) { return true; }  // 网络/数据库错误 → 保守同步
-}
-
-// 完整双向同步：上传所有未同步数据 → 下载云端 CardState 合并
-async function syncAll(deckKey, showToast, noDecks) {
-  if (!_syncEnabled || !_sb) return;
-  if (showToast) showCloudToast('同步中…');
-  logAppEvent('sync_started', { deck_key: deckKey, noDecks: !!noDecks }, deckKey);
-  var syncStats = { trials: 0, events: 0, csl: 0, states: 0, states_merged: 0, config: 0, decks: 0 };
-  try {
-    const totalSteps = noDecks ? 7 : 8;
-
-    // 1. 上传答题记录
-    showSyncProg(1, totalSteps, '正在上传练习记录...');
-    const db = await openSrsDb();
-    const allTrials = await new Promise((res, rej) => {
-      const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
-      req.onsuccess = e => res(e.target.result || []);
-      req.onerror   = e => rej(e.target.error);
-    });
-    const pendingCount = allTrials.filter(t => !t.synced_at && t.deck_key).length;
-    for (const t of allTrials) {
-      if (!t.synced_at && t.deck_key) { try { await syncTrialLog(t); syncStats.trials++; } catch(e) { /* skip */ } }
-    }
-
-    // 1.5 上传应用事件日志
-    showSyncProg(2, totalSteps, '正在上传事件日志...');
-    syncStats.events = await syncAppEvents();
-
-    // 1.6 上传 CardState 变更日志
-    showSyncProg(3, totalSteps, '正在上传状态日志...');
-    syncStats.csl = await syncCardStateLogs();
-
-    // 2. 同步卡牌状态：仅下载（上传由 DB trigger 从 TrialLog 自动派生）
-    showSyncProg(4, totalSteps, '正在同步练习状态...');
-    if (deckKey) {
-      syncStats.states_merged = await syncCardStatesFromCloud(deckKey);
-      // CardState 上传已交数据库 trigger（sync_trials INSERT → UPSERT sync_card_states）
-    }
-
-    // 5. 跨设备今日统计同步：从云端拉取今天全部答题记录
-    // 使用本地日期时间戳范围（而非 trial_date），避免 UTC+8 用户在 0:00-7:59
-    // 时 utcTodayStr() 返回前一天日期，把昨天的数据合并到今天
-    showSyncProg(5, totalSteps, '正在同步今日进度...');
-    const localDayStart = new Date(); localDayStart.setHours(0, 0, 0, 0);
-    const localDayEnd   = new Date(); localDayEnd.setHours(23, 59, 59, 999);
-    const { data: todayCloud } = await _sb.from('sync_trials')
-      .select('card_id, srs_stage_before, active_gap_ms, rating, timestamp')
-      .eq('user_id', _cloudUserId)
-      .gte('timestamp', localDayStart.getTime())
-      .lte('timestamp', localDayEnd.getTime());
-    if (todayCloud) {
-      const cloudNewSet = new Set();
-      let cloudDurationMs = 0;
-      for (const r of todayCloud) {
-        if (r.srs_stage_before === 'new') cloudNewSet.add(r.card_id);
-        if (r.active_gap_ms != null) cloudDurationMs += r.active_gap_ms;
+    var uid = getCurrentUserId();
+    var pendingCount = allTrials.filter(function(t) { return !t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid); }).length;
+    for (var t of allTrials) {
+      if (!t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid)) {
+        try { await syncTrialLog(t); syncStats.trials++; } catch(e) { /* skip */ }
       }
-      const cp = getDailyProgress();
-      const cloudNewToday = cloudNewSet.size;
-      const cloudReviewed = todayCloud.length;
-      const cloudDurationSec = Math.round(cloudDurationMs / 1000);
-      // 计算评级分布（每卡首次评为准）
-      const firstRating = {};
-      for (const r of todayCloud) {
-        if (!firstRating[r.card_id] || r.timestamp < firstRating[r.card_id].timestamp) {
-          firstRating[r.card_id] = r.rating;
-        }
-      }
-      let passN = 0, hardN = 0, failN = 0;
-      for (const k of Object.keys(firstRating)) {
-        const r = firstRating[k];
-        if (r === 'again') failN++;
-        else if (r === 'hard') hardN++;
-        else passN++;
-      }
-
-      // 云端 todayCloud 已包含步骤 1 上传的本地数据，是今日全设备权威合计
-      cp.daily_new_today   = cloudNewToday;
-      cp.reviewed_today    = cloudReviewed;
-      cp.active_duration_sec = cloudDurationSec;
-      cp.first_pass_today  = passN;
-      cp.first_hard_today  = hardN;
-      cp.first_fail_today  = failN;
-      saveDailyProgress(cp);
     }
-
-    // 5.5 拉取用户牌组练习天数
-    showSyncProg(6, totalSteps, '正在同步练习天数...');
+    // 2. 参数配置同步
+    updateProg('正在同步配置...', 40);
+    var cfgItems = await cloudPullConfig();
+    syncStats.config = cfgItems;
+    await cloudPushConfig();
+    // 3. 下载云端 CardState（增量合并）
+    updateProg('正在同步练习状态...', 60);
+    if (options.deckKey) {
+      syncStats.states_merged = await syncCardStatesFromCloud(options.deckKey);
+      updateProg('正在同步练习状态...', 75);
+    }
+    // 3.5 拉取用户牌组练习天数
     try {
-      const { data: deckStats } = await _sb.from('user_deck_stats')
+      var _dsResp = await _sb.from('user_deck_stats')
         .select('deck_key, practice_days, last_practice_date')
         .eq('user_id', _cloudUserId);
-      if (deckStats) {
-        localStorage.setItem('yihai_practice_days', JSON.stringify(deckStats));
-        // 写入对应 DECKS_META 的 practiceDays
-        for (const ds of deckStats) {
-          const m = DECKS_META.find(d => d.key === ds.deck_key);
-          if (m) m.practiceDays = ds.practice_days;
+      if (_dsResp.data) {
+        localStorage.setItem('yihai_practice_days', JSON.stringify(_dsResp.data));
+        for (var _ds of _dsResp.data) {
+          var _dm = DECKS_META.find(function(d) { return d.key === _ds.deck_key; });
+          if (_dm) _dm.practiceDays = _ds.practice_days;
         }
       }
     } catch(e) { console.warn('[sync] practice days fetch error:', e.message); }
-
-    // 7. 参数配置云端同步（先拉后推，避免本地空配置覆盖远端修改）
-    showSyncProg(7, totalSteps, '正在同步配置...');
-    const cfgItems = await cloudPullConfig();
-    syncStats.config = cfgItems;
-    await cloudPushConfig();
-
-    // 8. 牌组同步（仅登录后/手动同步时执行，不影响练习的自动同步）
-    let newDecks = 0, syncedDecks = 0;
-    if (!noDecks) {
-      showSyncProg(8, totalSteps, '正在同步牌组...');
-      const { data: serverDecks } = await _sb.from('server_decks').select('id,name');
-      if (serverDecks) {
-        for (const sd of serverDecks) {
+    // 4. 牌组同步（可选：登录后/手动同步）
+    var newDecks = 0, syncedDecks = 0;
+    if (options.decks) {
+      updateProg('正在同步牌组...', 80);
+      var serverDecks, sd, meta;
+      var dd = await _sb.from('server_decks').select('id,name');
+      if (dd.data) {
+        serverDecks = dd.data;
+        for (sd of serverDecks) {
           try {
-            const existing = DECKS_META.find(m => m.name === sd.name);
-            if (existing) {
-              await syncDeckFromCloud(sd.id, sd.name, null, true);
-              syncedDecks++;
-            } else {
-              await downloadDeckFromCloud(sd.id, sd.name, null, true);
-              newDecks++;
-            }
+            meta = DECKS_META.find(function(m) { return m.name === sd.name; });
+            if (meta) { await syncDeckFromCloud(sd.id, sd.name, null, true); syncedDecks++; }
+            else { await downloadDeckFromCloud(sd.id, sd.name, null, true); newDecks++; }
           } catch(e) { console.warn('[sync] skip deck:', sd.name, e.message); }
         }
-        // 下载/同步牌组后拉取每个云牌组的 CardState
-        for (const sd of serverDecks) {
+        for (sd of serverDecks) {
           try {
-            var meta = DECKS_META.find(m => m.name === sd.name);
+            meta = DECKS_META.find(function(m) { return m.name === sd.name; });
             if (meta) { syncStats.states_merged += await syncCardStatesFromCloud(meta.key); }
-          } catch(e) {}
+          } catch(e) { log.warn('sync', 'syncCardStatesFromCloud skip', e.message); }
         }
         renderDeckList();
         updateDeckStats();
       }
-      await refreshServerDeckList();
     }
-    hideSyncProg();
+    // 5. 事件日志（可选）
+    if (options.events) {
+      updateProg('正在上传日志...', 90);
+      syncStats.events = await syncAppEvents();
+    }
     syncStats.decks = newDecks + syncedDecks;
-
-    // 清理过期日志（非阻塞）
+    // 清理 & 标记
     purgeOldLogs();
-
     localStorage.setItem('yihai_global_sync_ts', String(Date.now()));
-
-    logAppEvent('sync_done', { deck_key: deckKey, stats: syncStats }, deckKey);
-
-    // 提示
-    if (showToast) {
-      const parts = [];
+    logAppEvent('sync_done', { deck_key: options.deckKey, stats: syncStats }, options.deckKey);
+    // 结束
+    updateProg('同步完成', 100);
+    if (options.modal && modalEl) {
+      setTimeout(function() { modalEl.style.display = 'none'; }, 800);
+    }
+    if (options.showToast) {
+      var parts = [];
       if (syncStats.trials > 0) parts.push('上传答题 ' + syncStats.trials);
-      if (syncStats.states > 0) parts.push('上传状态 ' + syncStats.states);
       if (syncStats.states_merged > 0) parts.push('状态更新 ' + syncStats.states_merged);
       if (syncStats.config > 0) parts.push('配置 ' + syncStats.config);
       if (newDecks > 0) parts.push('下载牌组 ' + newDecks);
@@ -2322,14 +2450,22 @@ async function syncAll(deckKey, showToast, noDecks) {
       if (parts.length > 0) showCloudToast('同步完成 · ' + parts.join(' · '));
       else if (pendingCount === 0 && syncStats.states_merged === 0 && !newDecks && !syncedDecks) showCloudToast('已是最新');
     }
-  } catch(e) { hideSyncProg(); console.warn('[sync] syncAll error:', e.message); if (showToast) showCloudToast('同步失败'); }
-  if (deckKey) updateDeckStats();
+  } catch(e) {
+    if (options.modal && modalEl) modalEl.style.display = 'none';
+    console.warn('[sync] runSync error:', e.message);
+    if (options.showToast) showCloudToast('同步失败', true);
+  } finally {
+    _syncInFlight = false;
+  }
+  if (options.deckKey) updateDeckStats();
 }
 
-// 练习完成后集中补传（仅上传，不下拉）
+// 练习完成后集中补传（仅上传未同步 TrialLog + 最新 CardState，不下拉）
 function backfillAfterPractice(deckKey) {
   if (!_syncEnabled || !_sb || !deckKey) return Promise.resolve();
-  return syncAll(deckKey, false, true).catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
+  return syncPendingData(deckKey)
+    .then(function() { return syncAppEvents(); })
+    .catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
 }
 
 function openSrsDb() {
@@ -2339,6 +2475,7 @@ function openSrsDb() {
     const req = indexedDB.open(SRS_DB_NAME, SRS_DB_VER);
     req.onupgradeneeded = e => {
       const db = e.target.result;
+      const oldVer = e.oldVersion;
       if (!db.objectStoreNames.contains(CS_STORE)) {
         db.createObjectStore(CS_STORE, { keyPath: 'state_key' });
       }
@@ -2348,13 +2485,23 @@ function openSrsDb() {
         ts.createIndex('timestamp',  'timestamp');
         ts.createIndex('synced_at',  'synced_at');
       }
-      // v4 新增：事件日志 store
       if (!db.objectStoreNames.contains(EVT_STORE)) {
         db.createObjectStore(EVT_STORE, { keyPath: 'event_id' });
       }
-      // v4 新增：CardState 变更日志 store
-      if (!db.objectStoreNames.contains(CSL_STORE)) {
-        db.createObjectStore(CSL_STORE, { keyPath: 'log_id' });
+      if (oldVer < 5) {
+        const csStore = e.target.transaction.objectStore(CS_STORE);
+        if (!csStore.indexNames.contains('user_id')) csStore.createIndex('user_id', 'user_id');
+        const trStore = e.target.transaction.objectStore(TRIAL_STORE);
+        if (!trStore.indexNames.contains('user_id')) trStore.createIndex('user_id', 'user_id');
+        localStorage.setItem('yihai_v5_migration_pending', '1');
+      }
+      if (oldVer < 6) {
+        if (!db.objectStoreNames.contains(LOG_STORE)) {
+          const ls = db.createObjectStore(LOG_STORE, { keyPath: 'log_id', autoIncrement: true });
+          ls.createIndex('timestamp', 'timestamp');
+          ls.createIndex('level', 'level');
+        }
+        console.log('[idb] upgraded yihai_srs v5→v6: yh_logs store created');
       }
     };
     req.onsuccess = e => { _srsDb = e.target.result; _srsDbPromise = null; res(_srsDb); };
@@ -2362,12 +2509,138 @@ function openSrsDb() {
   });
 }
 
+async function migrateV5IfNeeded() {
+  if (_v5MigrationDone) return;
+  if (localStorage.getItem('yihai_v5_migration_pending') !== '1') { _v5MigrationDone = true; return; }
+  const db = await openSrsDb();
+  if (!db) return;
+  const uid = getOrCreateDeviceId();
+  try {
+    const csTx = db.transaction(CS_STORE, 'readwrite');
+    const csStore = csTx.objectStore(CS_STORE);
+    const csAll = await new Promise(r => { csStore.getAll().onsuccess = e => r(e.target.result || []); });
+    let csUpdated = 0;
+    csAll.forEach(s => { if (!s.user_id) { s.user_id = uid; csStore.put(s); csUpdated++; } });
+    await new Promise((resolve, reject) => { csTx.oncomplete = resolve; csTx.onerror = reject; });
+    const trTx = db.transaction(TRIAL_STORE, 'readwrite');
+    const trStore = trTx.objectStore(TRIAL_STORE);
+    const trAll = await new Promise(r => { trStore.getAll().onsuccess = e => r(e.target.result || []); });
+    let trUpdated = 0;
+    trAll.forEach(t => { if (!t.user_id) { t.user_id = uid; trStore.put(t); trUpdated++; } });
+    await new Promise((resolve, reject) => { trTx.oncomplete = resolve; trTx.onerror = reject; });
+  } catch(e) { log.error('idb', 'migrateV5 failed', e.message); }
+  localStorage.removeItem('yihai_v5_migration_pending');
+  _v5MigrationDone = true;
+}
+
+// 登录时将本设备离线记录迁移到当前用户（仅限 deviceId 匹配的）
+async function migrateDeviceRecordsToUser(cloudUserId) {
+  var did = localStorage.getItem('yihai_device_id');
+  if (!did || !cloudUserId || did === cloudUserId) return;
+  var db = await openSrsDb();
+  if (!db) return;
+  try {
+    var csTx = db.transaction(CS_STORE, 'readwrite');
+    var csStore = csTx.objectStore(CS_STORE);
+    var csAll = await new Promise(function(r) { csStore.getAll().onsuccess = function(e) { r(e.target.result || []); }; });
+    var csN = 0;
+    csAll.forEach(function(s) { if (s.user_id === did) { s.user_id = cloudUserId; csStore.put(s); csN++; } });
+    await new Promise(function(resolve, reject) { csTx.oncomplete = resolve; csTx.onerror = reject; });
+
+    var trTx = db.transaction(TRIAL_STORE, 'readwrite');
+    var trStore = trTx.objectStore(TRIAL_STORE);
+    var trAll = await new Promise(function(r) { trStore.getAll().onsuccess = function(e) { r(e.target.result || []); }; });
+    var trN = 0;
+    trAll.forEach(function(t) { if (t.user_id === did) { t.user_id = cloudUserId; trStore.put(t); trN++; } });
+    await new Promise(function(resolve, reject) { trTx.oncomplete = resolve; trTx.onerror = reject; });
+  } catch(e) { log.error('idb', 'migrateDeviceId failed', e.message); }
+}
+
+// ── 诊断日志系统 ────────────────────────────────────────────────────
+// 等级优先级：URL ?log=debug > localStorage yihai_log_level > 默认 warn
+// IDB 写入：info 及以上；console 彩色输出：全等级可见（取决于当前等级）
+// DevTools 工具：window.yhLog.setLevel / show / showErrors / clear / export
+const _LOG_LEVELS  = { debug: 0, info: 1, warn: 2, error: 3 };
+const _LOG_COLORS  = { debug: 'color:#888', info: 'color:#0ea5e9', warn: 'color:#f59e0b', error: 'color:#ef4444' };
+const _urlLogParam = new URLSearchParams(location.search).get('log');
+let _logLevel = _LOG_LEVELS[_urlLogParam || localStorage.getItem('yihai_log_level') || 'warn'] ?? 2;
+
+function _writeLogToIdb(entry) {
+  openSrsDb().then(function(db) {
+    var tx = db.transaction(LOG_STORE, 'readwrite');
+    tx.objectStore(LOG_STORE).add(entry);
+    tx.oncomplete = function() { trimStore(db, LOG_STORE, 300); };
+  }).catch(function(){});
+}
+
+function _doLog(levelName, module, msg, data) {
+  var levelNum = _LOG_LEVELS[levelName] ?? 0;
+  if (levelNum < _logLevel) return;
+  var prefix = '[' + levelName.toUpperCase() + '][' + module + ']';
+  if (data !== undefined) {
+    console.log('%c' + prefix, _LOG_COLORS[levelName], msg, data);
+  } else {
+    console.log('%c' + prefix, _LOG_COLORS[levelName], msg);
+  }
+  if (levelNum >= _LOG_LEVELS.info) {
+    _writeLogToIdb({ level: levelName, module: module, msg: msg, data: data !== undefined ? JSON.stringify(data) : undefined, timestamp: Date.now(), synced_at: null });
+  }
+}
+
+var log = {
+  debug: function(mod, msg, data) { _doLog('debug', mod, msg, data); },
+  info:  function(mod, msg, data) { _doLog('info',  mod, msg, data); },
+  warn:  function(mod, msg, data) { _doLog('warn',  mod, msg, data); },
+  error: function(mod, msg, data) { _doLog('error', mod, msg, data); },
+  setLevel: function(name) {
+    if (_LOG_LEVELS[name] === undefined) { console.warn('yhLog: unknown level', name); return; }
+    _logLevel = _LOG_LEVELS[name];
+    localStorage.setItem('yihai_log_level', name);
+    console.log('%c[LOG] level set to ' + name, _LOG_COLORS[name]);
+  }
+};
+
+window.yhLog = {
+  setLevel: log.setLevel,
+  show: function(n) {
+    openSrsDb().then(function(db) {
+      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
+      r.onsuccess = function(e) {
+        var rows = e.target.result || [];
+        rows.slice(-(n || 50)).forEach(function(r) { console.log('[' + r.level + '][' + r.module + ']', r.msg, r.data || ''); });
+        console.log('── total', rows.length, 'entries ──');
+      };
+    }).catch(console.error);
+  },
+  showErrors: function() {
+    openSrsDb().then(function(db) {
+      var idx = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).index('level');
+      var r = idx.getAll('error');
+      r.onsuccess = function(e) { (e.target.result || []).forEach(function(r) { console.error('[' + r.module + ']', r.msg, r.data || ''); }); };
+    }).catch(console.error);
+  },
+  clear: function() {
+    openSrsDb().then(function(db) { db.transaction(LOG_STORE, 'readwrite').objectStore(LOG_STORE).clear(); }).catch(console.error);
+    console.log('[LOG] yh_logs cleared');
+  },
+  export: function() {
+    openSrsDb().then(function(db) {
+      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
+      r.onsuccess = function(e) {
+        var blob = new Blob([JSON.stringify(e.target.result, null, 2)], { type: 'application/json' });
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'yh_logs_' + Date.now() + '.json'; a.click();
+      };
+    }).catch(console.error);
+  }
+};
+
 // ── 数据埋点：应用事件日志 ──────────────────────────────────────────
 function isMember() {
   return localStorage.getItem('yihai_has_ever_logged_in') === '1';
 }
 
 function logAppEvent(type, payload, deckKey) {
+  log.debug('evt', type, payload);
   var event = {
     event_id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     event_type: type,
@@ -2391,29 +2664,6 @@ function logAppEvent(type, payload, deckKey) {
   }).catch(function(){});
 }
 
-function logCardStateChange(changeType, before, after) {
-  if (!isMember()) return;
-  var log = {
-    log_id: 'csl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    state_key: after.state_key,
-    card_id: after.card_id,
-    deck_key: after.deck_key,
-    change_type: changeType,
-    stage_before: (before && before.srs_stage) || '',
-    interval_before: (before && before.interval) || 0,
-    ease_before: (before && before.ease_factor) || 2.5,
-    stage_after: after.srs_stage,
-    interval_after: after.interval || 0,
-    ease_after: after.ease_factor || 2.5,
-    device_id: _deviceId || '',
-    timestamp: Date.now(),
-    synced_at: null
-  };
-  openSrsDb().then(function(db) {
-    db.transaction(CSL_STORE, 'readwrite').objectStore(CSL_STORE).put(log);
-  }).catch(function(){});
-  uploadCardStateLog(log);
-}
 
 // 设备注册（非阻塞）
 async function upsertDeviceRegistry() {
@@ -2423,63 +2673,97 @@ async function upsertDeviceRegistry() {
       user_id: _cloudUserId, device_id: _deviceId,
       device_info: getDeviceInfo(), last_seen: new Date().toISOString()
     }, { onConflict: 'user_id,device_id' });
-  } catch(e) {}
+  } catch(e) { log.warn('sync', 'upsertDeviceRegistry failed', e.message); }
 }
 
 async function uploadAppEvent(event) {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  if (!_syncEnabled || !_sb || !_cloudUserId) return false;
   try {
     var payload = { event_id: event.event_id, user_id: _cloudUserId, event_type: event.event_type, deck_key: event.deck_key, payload: event.payload, device_id: event.device_id, timestamp: event.timestamp };
     var _a = await _sb.from('app_events').insert(payload);
-    // 23505 = 记录已存在（logAppEvent 立即上传后 syncAppEvents 竞态重读导致）
-    if (!_a.error || _a.error.code === '23505') { event.synced_at = Date.now(); markEventSynced(event.event_id); }
-  } catch(e) {}
+    // 23505 = 记录已存在（重复上传，视为成功）
+    if (!_a.error || _a.error.code === '23505') { event.synced_at = Date.now(); return true; }
+    log.warn('sync', 'uploadAppEvent error', _a.error);
+    return false;
+  } catch(e) { log.warn('sync', 'uploadAppEvent exception', e.message); return false; }
 }
 
-async function uploadCardStateLog(log) {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return;
-  try {
-    var payload = { log_id: log.log_id, user_id: _cloudUserId, state_key: log.state_key, card_id: log.card_id, deck_key: log.deck_key, change_type: log.change_type, stage_before: log.stage_before, interval_before: log.interval_before, ease_before: log.ease_before, stage_after: log.stage_after, interval_after: log.interval_after, ease_after: log.ease_after, device_id: log.device_id, timestamp: log.timestamp };
-    var _a = await _sb.from('card_state_log').insert(payload);
-    if (!_a.error || _a.error.code === '23505') { log.synced_at = Date.now(); markCslSynced(log.log_id); }
-  } catch(e) {}
-}
 
-// 标记事件已同步（写回 IndexedDB）
-function markEventSynced(eventId) {
-  openSrsDb().then(function(db) {
-    var tx = db.transaction(EVT_STORE, 'readwrite');
-    var req = tx.objectStore(EVT_STORE).get(eventId);
-    req.onsuccess = function() { if (req.result) { req.result.synced_at = Date.now(); tx.objectStore(EVT_STORE).put(req.result); } };
-  }).catch(function(){});
-}
-
-function markCslSynced(logId) {
-  openSrsDb().then(function(db) {
-    var tx = db.transaction(CSL_STORE, 'readwrite');
-    var req = tx.objectStore(CSL_STORE).get(logId);
-    req.onsuccess = function() { if (req.result) { req.result.synced_at = Date.now(); tx.objectStore(CSL_STORE).put(req.result); } };
-  }).catch(function(){});
-}
-
-// syncAll 批量补传
+// 批量补传 AppEvents（含 warn/error 诊断日志）
 async function syncAppEvents() {
   if (!_syncEnabled || !_sb) return 0;
   var db = await openSrsDb();
-  var all = await new Promise(function(res, rej) { var r = db.transaction(EVT_STORE, 'readonly').objectStore(EVT_STORE).getAll(); r.onsuccess = function(e) { res(e.target.result || []); }; r.onerror = function(e) { rej(e.target.error); }; });
-  var uploaded = 0;
-  for (var i = 0; i < all.length; i++) { if (!all[i].synced_at) { try { await uploadAppEvent(all[i]); uploaded++; } catch(e) {} } }
-  return uploaded;
+
+  // 读取未同步业务事件
+  var evtAll = await new Promise(function(res, rej) {
+    var r = db.transaction(EVT_STORE, 'readonly').objectStore(EVT_STORE).getAll();
+    r.onsuccess = function(e) { res(e.target.result || []); };
+    r.onerror   = function(e) { rej(e.target.error); };
+  });
+  var pending = evtAll.filter(function(e) { return !e.synced_at; });
+
+  // 上传业务事件，收集成功 ID
+  var syncedIds = [];
+  for (var i = 0; i < pending.length; i++) {
+    var ok = await uploadAppEvent(pending[i]);
+    if (ok) syncedIds.push(pending[i].event_id);
+  }
+
+  // 单事务批量写回 synced_at（修复 markEventSynced 遗漏）
+  if (syncedIds.length > 0) {
+    var now = Date.now();
+    await new Promise(function(res, rej) {
+      var tx = db.transaction(EVT_STORE, 'readwrite');
+      var store = tx.objectStore(EVT_STORE);
+      syncedIds.forEach(function(id) {
+        var req = store.get(id);
+        req.onsuccess = function() { if (req.result) { req.result.synced_at = now; store.put(req.result); } };
+      });
+      tx.oncomplete = res;
+      tx.onerror = function(e) { log.error('sync', 'batch markSynced failed', e.target.error && e.target.error.message); rej(e.target.error); };
+    });
+  }
+
+  // 上传 warn/error 诊断日志（封装为 app_events 格式）
+  if (db.objectStoreNames.contains(LOG_STORE)) {
+    var logAll = await new Promise(function(res, rej) {
+      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
+      r.onsuccess = function(e) { res(e.target.result || []); };
+      r.onerror   = function(e) { rej(e.target.error); };
+    });
+    var pendingLogs = logAll.filter(function(l) { return !l.synced_at && (l.level === 'warn' || l.level === 'error'); });
+    var syncedLogIds = [];
+    for (var j = 0; j < pendingLogs.length; j++) {
+      var l = pendingLogs[j];
+      var syntheticEvt = {
+        event_id:   'log_' + (l.log_id || Date.now()) + '_' + Math.random().toString(36).slice(2, 5),
+        event_type: 'log:' + l.level,
+        deck_key:   '',
+        payload:    { module: l.module, msg: l.msg, data: l.data },
+        device_id:  _deviceId || '',
+        timestamp:  l.timestamp
+      };
+      var ok2 = await uploadAppEvent(syntheticEvt);
+      if (ok2) syncedLogIds.push(l.log_id);
+    }
+    if (syncedLogIds.length > 0) {
+      var now2 = Date.now();
+      await new Promise(function(res2, rej2) {
+        var tx2 = db.transaction(LOG_STORE, 'readwrite');
+        var s2 = tx2.objectStore(LOG_STORE);
+        syncedLogIds.forEach(function(id) {
+          var req2 = s2.get(id);
+          req2.onsuccess = function() { if (req2.result) { req2.result.synced_at = now2; s2.put(req2.result); } };
+        });
+        tx2.oncomplete = res2;
+        tx2.onerror = rej2;
+      });
+    }
+  }
+
+  return syncedIds.length;
 }
 
-async function syncCardStateLogs() {
-  if (!_syncEnabled || !_sb) return 0;
-  var db = await openSrsDb();
-  var all = await new Promise(function(res, rej) { var r = db.transaction(CSL_STORE, 'readonly').objectStore(CSL_STORE).getAll(); r.onsuccess = function(e) { res(e.target.result || []); }; r.onerror = function(e) { rej(e.target.error); }; });
-  var uploaded = 0;
-  for (var i = 0; i < all.length; i++) { if (!all[i].synced_at) { try { await uploadCardStateLog(all[i]); uploaded++; } catch(e) {} } }
-  return uploaded;
-}
 
 // 裁剪 store 到指定条数（保留最新）
 function trimStore(db, storeName, maxCount) {
@@ -2499,21 +2783,15 @@ function trimStore(db, storeName, maxCount) {
   };
 }
 
-// 清理过期日志（会员版：app_events 30 天，card_state_log 7 天）
+// 清理过期日志（app_events 30 天）
 async function purgeOldLogs() {
   try {
     var db = await openSrsDb();
     var cutoff30 = Date.now() - 30 * 86400000;
-    var cutoff7  = Date.now() - 7 * 86400000;
-    // app_events: 删 30 天前
     var evtTx = db.transaction(EVT_STORE, 'readwrite');
     var evtReq = evtTx.objectStore(EVT_STORE).openCursor();
     evtReq.onsuccess = function(e) { var c = e.target.result; if (c && c.value.timestamp < cutoff30) { c.delete(); c.continue(); } };
-    // card_state_log: 删 7 天前
-    var cslTx = db.transaction(CSL_STORE, 'readwrite');
-    var cslReq = cslTx.objectStore(CSL_STORE).openCursor();
-    cslReq.onsuccess = function(e) { var c = e.target.result; if (c && c.value.timestamp < cutoff7) { c.delete(); c.continue(); } };
-  } catch(e) {}
+  } catch(e) { log.warn('idb', 'purgeOldLogs failed', e.message); }
 }
 
 // ── CardState CRUD ───────────────────────────────────────────────
@@ -2526,6 +2804,7 @@ function newCardState(deckKey, cardId) {
     state_key       : makeStateKey(deckKey, cardId),
     card_id         : cardId,
     deck_key        : deckKey,
+    user_id         : getCurrentUserId(),
     srs_stage       : 'new',
     interval        : 0,
     ease_factor     : SRS_CONFIG.starting_ease,
@@ -2546,10 +2825,15 @@ function newCardState(deckKey, cardId) {
 async function getCardState(deckKey, cardId) {
   const db  = await openSrsDb();
   const key = makeStateKey(deckKey, cardId);
+  const uid = getCurrentUserId();
   return new Promise((res, rej) => {
     const req = db.transaction(CS_STORE, 'readonly')
                   .objectStore(CS_STORE).get(key);
-    req.onsuccess = e => res(e.target.result || null);
+    req.onsuccess = e => {
+      const s = e.target.result || null;
+      if (s && s.user_id && s.user_id !== uid) { res(null); return; }
+      res(s);
+    };
     req.onerror   = e => rej(e.target.error);
   });
 }
@@ -2557,6 +2841,7 @@ async function getCardState(deckKey, cardId) {
 async function saveCardState(state) {
   state.updated_at = Date.now();
   state.synced_at = null;
+  state.user_id = state.user_id || getCurrentUserId();
   const db = await openSrsDb();
   return new Promise((res, rej) => {
     const tx = db.transaction(CS_STORE, 'readwrite');
@@ -2568,6 +2853,7 @@ async function saveCardState(state) {
 
 // 仅写本地，不覆写 updated_at，不上传云端（用于云端进度回传的合并写入）
 async function saveCardStateLocal(state) {
+  state.user_id = state.user_id || getCurrentUserId();
   const db = await openSrsDb();
   return new Promise((res, rej) => {
     const tx = db.transaction(CS_STORE, 'readwrite');
@@ -2579,21 +2865,24 @@ async function saveCardStateLocal(state) {
 
 async function getAllCardStates(deckKey) {
   let db = await openSrsDb();
-  // IndexedDB 可能首次打开返回 undefined（onupgradeneeded 未完成）
   if (!db) { _srsDb = null; _srsDbPromise = null; db = await openSrsDb(); }
   if (!db) return [];
+  const uid = getCurrentUserId();
   return new Promise((res, rej) => {
     const req = db.transaction(CS_STORE, 'readonly')
                   .objectStore(CS_STORE).getAll();
     req.onsuccess = e => {
       const all = e.target.result || [];
-      res(deckKey ? all.filter(s => s.deck_key === deckKey) : all);
+      res(all.filter(s => {
+        if (!s.user_id || s.user_id === uid) return deckKey ? s.deck_key === deckKey : true;
+        return false;
+      }));
     };
     req.onerror = e => rej(e.target.error);
   });
 }
 
-// CardState 不存在时自动创建（getOrCreate）
+// Playwright test seam（_playwright_multi_user_sync_test.js 通过 page.evaluate 调用）
 async function getOrCreateCardState(deckKey, cardId) {
   let state = await getCardState(deckKey, cardId);
   if (!state) {
@@ -2605,6 +2894,7 @@ async function getOrCreateCardState(deckKey, cardId) {
 
 // ── TrialLog 写入 ────────────────────────────────────────────────
 async function writeTrialLog(entry) {
+  entry.user_id = entry.user_id || getCurrentUserId();
   const db = await openSrsDb();
   return new Promise((res, rej) => {
     const tx = db.transaction(TRIAL_STORE, 'readwrite');
@@ -2618,12 +2908,13 @@ async function writeTrialLog(entry) {
 async function getTrialLogs(deckKey, days) {
   const db    = await openSrsDb();
   const cutTs = days ? Date.now() - days * 86400 * 1000 : 0;
+  const uid = getCurrentUserId();
   return new Promise((res, rej) => {
     const req = db.transaction(TRIAL_STORE, 'readonly')
                   .objectStore(TRIAL_STORE).getAll();
     req.onsuccess = e => {
       let rows = (e.target.result || [])
-        .filter(r => r.timestamp >= cutTs && !r._retrying);
+        .filter(r => r.timestamp >= cutTs && !r._retrying && (!r.user_id || r.user_id === uid));
       if (deckKey) rows = rows.filter(r => r.deck_key === deckKey);
       rows.sort((a, b) => a.timestamp - b.timestamp);
       res(rows);
@@ -2667,8 +2958,13 @@ function processAnswer(state, rating, todayDateStr) {
       state.lapses_total++;
     } else if (rating === 'hard') {
       state.srs_stage = 'learning';
-      // step_index 不变，等待时间 = 当前步 × hard_step_multiplier
-      state.due_ts = now + minsToTs(steps[state.step_index] * cfg.hard_step_multiplier);
+      // step_index 不变。延迟 = Anki 规则：第一步取(当前+下一步)/2，后续不变
+      state.due_ts = now + minsToTs(
+        state.step_index === 0
+          ? (steps.length > 1 ? (steps[0] + steps[1]) / 2 : steps[0] * 1.5)
+          : steps[state.step_index]
+      );
+      if (cfg.learning_hard_counts_lapse) { state.lapses_streak++; state.lapses_total++; }
     } else if (rating === 'good') {
       state.lapses_streak = 0;
       state.step_index++;
@@ -2720,6 +3016,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.due_ts   = 0;
       _advanceReviewMode();
     } else if (rating === 'easy') {
+      state.lapses_streak = 0;
       state.ease_factor = Math.min(3.0, state.ease_factor + 0.15);
       state.interval = Math.max(
         cfg.minimum_interval,
@@ -2739,7 +3036,12 @@ function processAnswer(state, rating, todayDateStr) {
       state.lapses_streak++;
       state.lapses_total++;
     } else if (rating === 'hard') {
-      state.due_ts = now + minsToTs(steps[state.step_index] * cfg.hard_step_multiplier);
+      state.due_ts = now + minsToTs(
+        state.step_index === 0
+          ? (steps.length > 1 ? (steps[0] + steps[1]) / 2 : steps[0] * 1.5)
+          : steps[state.step_index]
+      );
+      if (cfg.learning_hard_counts_lapse) { state.lapses_streak++; state.lapses_total++; }
     } else {
       // good / easy
       state.lapses_streak = 0;
@@ -2786,11 +3088,76 @@ function getDailyProgress() {
     const dp = JSON.parse(raw);
     if (dp.date !== todayStr()) return newDailyProgress();  // 新的一天，重置
     return dp;
-  } catch(e) { return newDailyProgress(); }
+  } catch(e) { log.warn('idb', 'getDailyProgress parse error', e.message); return newDailyProgress(); }
 }
 
 function saveDailyProgress(dp) {
   localStorage.setItem(LS_DAILY, JSON.stringify(dp));
+}
+
+// ── 练习模式：难度曲线工具函数 ──────────────────────────────────────
+
+function difficultyScore(s) {
+  if (!s) return 0;
+  const efScore    = Math.max(0, 2.5 - (s.ease_factor || 2.5));   // 0~1.2
+  const lapseScore = Math.min(s.lapses_total || 0, 20) / 20;        // 0~1
+  // learning/relearning 阶段难度未知或正在重学，归入中间段
+  const stagBonus  = (s.srs_stage === 'relearning' || s.srs_stage === 'learning') ? 0.5 : 0;
+  return efScore + lapseScore + stagBonus;
+}
+
+// 将队列重排为"前易→中难→后易"穹顶曲线
+function applyCurve(queue) {
+  if (queue.length < 4) return queue;
+  const sorted = [...queue].sort((a, b) =>
+    difficultyScore(a._srsState) - difficultyScore(b._srsState)
+  );
+  const result = new Array(sorted.length);
+  let lo = 0, hi = sorted.length - 1;
+  for (let i = 0; i < sorted.length; i++) {
+    if (i % 2 === 0) result[lo++] = sorted[i];
+    else             result[hi--] = sorted[i];
+  }
+  return result;
+}
+
+// 普通模式：固定20张上限，hard卡不超过25%，结果过曲线
+function applyNormalMode(cards, stateMap, newSlots) {
+  const SESSION_SIZE = 20;
+  const HARD_RATIO   = 0.25;
+  const now   = Date.now();
+  const today = todayStr();
+  const hardCap = Math.floor(SESSION_SIZE * HARD_RATIO);
+
+  const due = cards.filter(c => {
+    const s = stateMap[c.id];
+    if (!s || s.suspended || _dailyRemovedToday[s.state_key]) return false;
+    if (s.srs_stage === 'review')     return s.due_date && s.due_date <= today;
+    if (s.srs_stage === 'relearning') return s.due_ts   && s.due_ts   <= now;
+    if (s.srs_stage === 'learning')   return s.due_ts   && s.due_ts   <= now;
+    return false;
+  });
+
+  const byDue = (a, b) =>
+    (stateMap[a.id].due_date || '').localeCompare(stateMap[b.id].due_date || '') ||
+    (stateMap[a.id].due_ts || 0) - (stateMap[b.id].due_ts || 0);
+
+  const hard = due.filter(c => difficultyScore(stateMap[c.id]) >= 0.4).sort(byDue);
+  const easy = due.filter(c => difficultyScore(stateMap[c.id]) <  0.4).sort(byDue);
+
+  const selHard = hard.slice(0, hardCap);
+  const selEasy = easy.slice(0, SESSION_SIZE - selHard.length);
+  const remain  = SESSION_SIZE - selHard.length - selEasy.length;
+  const selNew  = cards
+    .filter(c => { const s = stateMap[c.id]; return s && s.srs_stage === 'new' && !s.suspended; })
+    .slice(0, Math.max(0, Math.min(remain, newSlots)));
+
+  return applyCurve(
+    [...selEasy, ...selHard, ...selNew].map(card => {
+      const { options, correct } = buildOptions(card, cards);
+      return { ...card, options, correct, _srsState: stateMap[card.id] };
+    })
+  );
 }
 
 // ── buildSessionQueue ────────────────────────────────────────────
@@ -2889,24 +3256,39 @@ async function buildSessionQueue(deckKey) {
     })
     .slice(0, Math.max(0, newSlots));
 
-  // 组装完整队列，附上 _srsState
+  // 组装完整队列（生存/困难模式基础队列），附上 _srsState
   const queue = [...mainQueue, ...newCards].map(card => {
     const { options, correct } = buildOptions(card, cards);
     return { ...card, options, correct, _srsState: stateMap[card.id] };
   });
 
-  logAppEvent('build_queue', { deck_key: deckKey, new_cards_created: newCardsCreated, total_cards: cards.length, queue_length: queue.length, used_review: usedReview, review_slots: Math.max(0, reviewSlots), new_slots: newSlots, max_reviews: SRS_CONFIG.maximum_reviews_per_day, max_new: SRS_CONFIG.new_cards_per_day }, deckKey);
-  return queue;
+  // 按练习模式决定最终队列
+  const mode = SRS_CONFIG.session_mode || 'normal';
+  let finalQueue;
+  if (mode === 'normal') {
+    finalQueue = applyNormalMode(cards, stateMap, newSlots);
+  } else if (mode === 'hard') {
+    finalQueue = applyCurve(queue.slice(0, 30));
+  } else {
+    // survival：现有队列全量 + 曲线排列
+    finalQueue = applyCurve(queue);
+  }
+
+  logAppEvent('build_queue', { deck_key: deckKey, new_cards_created: newCardsCreated, total_cards: cards.length, queue_length: finalQueue.length, used_review: usedReview, review_slots: Math.max(0, reviewSlots), new_slots: newSlots, max_reviews: SRS_CONFIG.maximum_reviews_per_day, max_new: SRS_CONFIG.new_cards_per_day, mode }, deckKey);
+  return finalQueue;
 }
 
-// ── 获取 learning/relearning 未到期卡（用于主队列耗尽后追加）──────
+// ── 获取 learning/relearning 到期/即将到期卡（主队列耗尽后追加）────
+// 注意：learning/relearning 卡答完后新 due_ts 可能落在本 session 内
+// （hard 不改步长、again 重置到第一步），此时 due_ts ≤ now 仍需出题
 async function getPendingLearningCards(deckKey) {
   const cards  = DECKS[deckKey] || [];
   const states = await getAllCardStates(deckKey);
   const stateMap = {};
   states.forEach(s => { stateMap[s.card_id] = s; });
 
-  const windowTs = Date.now() + SRS_CONFIG.learn_ahead_limit * 1000;
+  const now     = Date.now();
+  const windowTs = now + SRS_CONFIG.learn_ahead_limit * 1000;
 
   return cards
     .filter(c => {
@@ -2914,8 +3296,7 @@ async function getPendingLearningCards(deckKey) {
       return s && (s.srs_stage === 'learning' || s.srs_stage === 'relearning')
         && !s.suspended
         && !_dailyRemovedToday[s.state_key]
-        && s.due_ts && s.due_ts > Date.now()
-        && s.due_ts <= windowTs;
+        && s.due_ts && s.due_ts <= windowTs;
     })
     .sort((a, b) => stateMap[a.id].due_ts - stateMap[b.id].due_ts)
     .map(card => {
@@ -2930,13 +3311,15 @@ async function getDeckStatsSrs(deckKey) {
   const today  = todayStr();
   const now    = Date.now();
   let due = 0, newC = 0, done = 0;
+  const deckCardIds = new Set((DECKS[deckKey] || []).map(c => c.id));
   const seenCards = new Set();
   states.forEach(s => {
     if (s.suspended) return;
+    if (!deckCardIds.has(s.card_id)) return;
     seenCards.add(s.card_id);
     if (s.srs_stage === 'new') { newC++; return; }
-    if (s.srs_stage === 'review' && s.due_date && s.due_date <= today) { due++; return; }
-    if ((s.srs_stage === 'learning' || s.srs_stage === 'relearning') && s.due_ts && s.due_ts <= now) { due++; return; }
+    if (s.srs_stage === 'review' && (!s.due_date || s.due_date <= today)) { due++; return; }
+    if ((s.srs_stage === 'learning' || s.srs_stage === 'relearning') && (!s.due_ts || s.due_ts <= now)) { due++; return; }
   });
   // 无 CardState 的卡片视为新卡（刚下载/导入后未练习）
   const deck = DECKS[deckKey];
@@ -3224,7 +3607,11 @@ function ldScript(src) {
   return new Promise((res, rej) => {
     if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
     const s = document.createElement('script');
-    s.src = src; s.onload = res; s.onerror = rej;
+    s.src = src; s.crossOrigin = 'anonymous';
+    if (src.includes('jszip/3.10.1')) {
+      s.integrity = 'sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG';
+    }
+    s.onload = res; s.onerror = rej;
     document.head.appendChild(s);
   });
 }
@@ -3235,10 +3622,10 @@ async function importYhspack(file) {
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
 
     const jsonFile = zip.file('deck.json');
-    if (!jsonFile) { alert('格式错误：未找到 deck.json'); return; }
+    if (!jsonFile) { showCloudToast('格式错误：未找到 deck.json', true); return; }
     const deckData = JSON.parse(await jsonFile.async('string'));
     const deck = deckData.deck;
-    if (!deck || !deck.cards) { alert('格式错误：deck.cards 不存在'); return; }
+    if (!deck || !deck.cards) { showCloudToast('格式错误：deck.cards 不存在', true); return; }
 
     const key = deck.id || ('deck_' + Date.now());
     const name = deck.name || file.name.replace('.yhspack','');
@@ -3280,7 +3667,7 @@ async function importYhspack(file) {
       cards.push(card);
     }
 
-    if (!cards.length) { alert('未找到有效卡片'); return; }
+    if (!cards.length) { showCloudToast('未找到有效卡片', true); return; }
 
     // 写入内存
     DECKS[key] = cards;
@@ -3301,7 +3688,7 @@ async function importYhspack(file) {
 
     showImportToast(name, cards.length);
   } catch(e) {
-    alert('导入失败：' + e.message);
+    showCloudToast('导入失败：' + e.message, true);
     console.error(e);
   }
 }
@@ -3369,6 +3756,7 @@ let tOptHintTimer    = null;
 let tAnswerTimer     = null;  // 答案播报延迟 timer
 let sessionId        = 0;     // 每次进入练习页自增，语音链检查id终止跨页面播报
 let _lastSrsWrite    = Promise.resolve(); // 最近一次 _writeSrs 的 Promise，用于等待写完
+let _launchBusy = false; // 防止重复点击开始练习
 
 // ── 练习模式 SRS 状态 ──────────────────────────────────────────
 let _cardStartTs     = 0;     // 当前卡片显示时间戳（response_time 计算用）
@@ -3426,7 +3814,9 @@ function startBrowse() {
   _launch('browse');
 }
 function startQuiz() {
+  if (_launchBusy) return;
   if (!currentDeck) return;
+  _launchBusy = true;
   warmupSpeech();
   _launch('quiz');
 }
@@ -3474,13 +3864,9 @@ function _launch(mode) {
     _sessionFirstRatings = {};
     logAppEvent('start_practice', { deck_key: currentDeck, mode: mode }, currentDeck);
 
-    // 先拉取云端状态（防止新设备 IndexedDB 为空时 buildSessionQueue
-    // 创建 new 状态并通过 saveCardState→syncCardState 实时上传，
-    // 覆盖其他设备已练习的正确状态）
-    syncCardStatesFromCloud(currentDeck).then(() => {
-      return buildSessionQueue(currentDeck);
-    }).then(queue => {
+    buildSessionQueue(currentDeck).then(queue => {
       if (queue.length === 0) {
+        _launchBusy = false;
         showFinish();
         return;
       }
@@ -3489,8 +3875,10 @@ function _launch(mode) {
       showScreen('screen-quiz');
       requestWakeLock();
       render();
+      _launchBusy = false;
     }).catch(err => {
       console.error('[srs] buildSessionQueue 构造失败，回退到完成界面', err?.name, err?.message, err);
+      _launchBusy = false;
       showFinish();
     });
   }
@@ -3501,12 +3889,13 @@ function goHome() {
   stopNRing(); stopAllPromptTimers();
   speechSynthesis.cancel();
   releaseWakeLock();
-  // 等待最后一次 SRS 写入完成，再刷新首页数字
+  // 等待最后一次 SRS 写入完成，再渲染首页（避免显示写入前的旧数据）
   _lastSrsWrite.finally(() => {
     renderDeckList();
     updateDeckStats();
+    _launchBusy = false;
+    showScreen('screen-home');
   });
-  showScreen('screen-home');
 }
 
 
@@ -3762,8 +4151,21 @@ function render() {
   timg.style.animation='none'; void timg.offsetWidth; timg.style.animation='';
   // img 字段：URL（blob/http/data）用 <img>，Emoji 或空值用 textContent
   const imgSrc = q.img || '';
+  const _card = timg.closest('.target-card');
+  _card.style.aspectRatio = '1/1';  // reset each question
   if (imgSrc.length > 4) {
-    timg.innerHTML = `<img src="${imgSrc}" alt="${q.name}" onerror="this.parentNode.textContent='🖼️'">`;
+    const _img = document.createElement('img');
+    _img.alt = q.name;
+    _img.onerror = () => { timg.textContent = '🖼️'; };
+    _img.onload = () => {
+      // 平板上横版图片（如16:9家庭照）使用原始比例，最大化图片区
+      if (window.innerWidth >= 600 && _img.naturalWidth > _img.naturalHeight * 1.15) {
+        _card.style.aspectRatio = `${_img.naturalWidth}/${_img.naturalHeight}`;
+      }
+    };
+    _img.src = imgSrc;
+    timg.innerHTML = '';
+    timg.appendChild(_img);
   } else {
     timg.textContent = imgSrc;
   }
@@ -3814,13 +4216,23 @@ function render() {
   document.getElementById('answer-panel').className = 'answer-panel';
   const _nb=document.getElementById('nxtbtn'); _nb.className='nxtbtn'; document.querySelector('.btm').classList.remove('active'); stopNRing();
 
-  // 选项区固定高度
+  // 选项区高度随 viewport 高度等比缩放
   requestAnimationFrame(() => {
-    const gap = 10, pad = 16, n = OPT_COUNT;
-    const btnH = 72;
-    const zoneH = btnH * n + gap * (n - 1) + pad;
+    const n = OPT_COUNT, vh = window.innerHeight;
+    const btnH = Math.round(Math.min(84, Math.max(52, vh * 0.09)));
+    const gap  = Math.round(Math.min(16, Math.max(8,  vh * 0.012)));
+    const padV = Math.round(Math.min(14, Math.max(8,  vh * 0.014)));
+    const zoneH = btnH * n + gap * (n - 1) + padV * 2;
     document.documentElement.style.setProperty('--opts-zone-h', `${zoneH}px`);
-    document.documentElement.style.setProperty('--opt-btn-h', `${btnH}px`);
+    document.documentElement.style.setProperty('--opt-btn-h',   `${btnH}px`);
+    document.documentElement.style.setProperty('--opts-gap',    `${gap}px`);
+    document.documentElement.style.setProperty('--opts-pad',    `${padV}px`);
+    if (window.innerWidth >= 600) {
+      const vvh = (window.visualViewport || {height: vh}).height;
+      const barH = (document.querySelector('.bar') || {offsetHeight: 70}).offsetHeight;
+      // 30 = content gap(10) + mid-zone padding-bottom(8) + safety(12)
+      document.documentElement.style.setProperty('--img-max-h', `${Math.max(vvh - barH - zoneH - 30, 120)}px`);
+    }
   });
 
   stopAllPromptTimers();
@@ -4082,8 +4494,10 @@ async function onNext() {
 
 // ── SRS 写入（练习模式专用）───────────────────────────────────
 async function _writeSrs(q, rating, attempt) {
-  const deckKey = currentDeck;
+  // Use the deck key from the card's SRS state (set at queue build time) to avoid
+  // a race where background sync's renderDeckList() resets currentDeck mid-session.
   const state   = q._srsState;
+  const deckKey = (state && state.deck_key) || currentDeck;
   if (!state || !deckKey) return;
 
   // 活跃时长记录（在 SRS 更新之前）
@@ -4119,15 +4533,13 @@ async function _writeSrs(q, rating, attempt) {
     await saveCardState(newState);
   }
 
-  // DailyProgress 更新
-  const isRetrying = false;
+  // DailyProgress 更新（每卡每日只计首次，learning 步骤重出不重复计数）
   const dp2 = getDailyProgress();
-  dp2.reviewed_today++;
   if (stageBefore === 'new') dp2.daily_new_today++;
-  // 当日首次评级计数（跨 session 累计，每卡每日只计首次评级）
   const firstRatingKey = 'yh_fr_' + todayStr() + '_' + state.card_id;
   if (!localStorage.getItem(firstRatingKey)) {
     localStorage.setItem(firstRatingKey, rating);
+    dp2.reviewed_today++;
     if (rating === 'again') dp2.first_fail_today++;
     else if (rating === 'hard') dp2.first_hard_today++;
     else dp2.first_pass_today++;
@@ -4158,6 +4570,7 @@ async function _writeSrs(q, rating, attempt) {
     trial_id             : trialId,
     card_id              : q.id,
     deck_key             : deckKey,
+    user_id              : getCurrentUserId(),
     session_id           : _sessionId,
 
     question_type        : 'T1',
@@ -4193,7 +4606,7 @@ async function _writeSrs(q, rating, attempt) {
     due_date            : newState.due_date || '',
     suspended           : newState.suspended,
     suspended_reason    : newState.suspended_reason || '',
-    _retrying            : isRetrying,
+    _retrying            : false,
     _warmup              : false,
     _mix_observe         : false,
   };
@@ -4286,8 +4699,9 @@ function _checkDurationWarning() {
 }
 
 function showRestToast() {
+  const mins = Math.round(SRS_CONFIG.warn_duration_sec / 60);
   const t = document.createElement('div');
-  t.textContent = '已练习 20 分钟，可以休息一下 😊';
+  t.textContent = `已练习 ${mins} 分钟，可以休息一下 😊`;
   t.style.cssText = `position:fixed;bottom:calc(120px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
@@ -4709,32 +5123,6 @@ function switchTab(n) {
   if (n === 4) updateCloudTabUI();
 }
 
-async function refreshServerDeckList() {
-  if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
-  const listEl = document.getElementById('cloud-deck-list');
-  try {
-    // 查询 server_decks 获取整理后的牌组列表
-    const { data: decks, error } = await _sb.from('server_decks').select('id,name').order('name');
-    if (error) throw error;
-    if (!decks || !decks.length) {
-      listEl.innerHTML = '<span style="color:var(--text3)">云端暂无牌组（请先在牌组管理工具中整理上传）</span>';
-      return;
-    }
-    let html = '';
-    decks.forEach(d => {
-      const exists = DECKS_META.find(m => m.name === d.name);
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)">'
-        + '<span style="font-size:16px">' + (exists ? '✅' : '📦') + '</span>'
-        + '<span style="flex:1;font-weight:500">' + esc(d.name) + '</span>'
-        + '<span style="font-size:11px;color:var(--text3)">' + (exists ? '已安装' : '未安装') + '</span>'
-        + '</div>';
-    });
-    listEl.innerHTML = html;
-  } catch(e) {
-    listEl.innerHTML = '<span style="color:var(--text3)">加载失败：' + esc(e.message) + '</span>';
-  }
-}
-
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = s;
@@ -4771,22 +5159,6 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
   if (!_syncEnabled || !_sb) { showCloudToast('未连接服务器', true); return; }
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '下载中...'; }
 
-  // 显示进度条（被 syncAll 调用时不显示逐卡进度，避免覆盖步骤指示）
-  const progEl  = document.getElementById('cloud-progress');
-  const textEl  = document.getElementById('cloud-prog-text');
-  const pctEl   = document.getElementById('cloud-prog-pct');
-  const barEl   = document.getElementById('cloud-prog-bar');
-  function setProgress(done, total) {
-    if (noToast) return;
-    if (!progEl) return;
-    progEl.style.display = 'block';
-    const pct = Math.round(done / total * 100);
-    textEl.textContent = `正在下载 ${done}/${total} 张...`;
-    pctEl.textContent = pct + '%';
-    barEl.style.width = pct + '%';
-  }
-  function hideProgress() { if (!noToast && progEl) progEl.style.display = 'none'; }
-
   try {
     // 1. 通过 server_deck_cards 获取该牌组的 card_id 列表（按排序）
     const { data: links, error: linkErr } = await _sb.from('server_deck_cards')
@@ -4808,15 +5180,11 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     cards.forEach(c => { cardMap[c.card_id] = c; });
     const ordered = cardIds.map(id => cardMap[id]).filter(Boolean);
 
-    const total = ordered.length;
-    setProgress(0, total);
-
     // 3. 生成 deck key
     const key = 'cloud_' + deckId;
 
     // 4. 下载媒体并组装卡片（并发 3 路，卡内图音并行）
     const deckCards = [];
-    let completed = 0;
     await parallelMapLimit(ordered, 3, async (c, i) => {
       const card = { id: c.card_id, name: c.card_name, img: '', audioUrl: '', details: [] };
       const tasks = [];
@@ -4842,10 +5210,9 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
       card._imgUrl = c.image_url || '';
       card._audUrl = c.audio_url || '';
       deckCards[i] = card;
-      setProgress(++completed, total);
     });
 
-    if (!deckCards.length) { hideProgress(); showCloudToast('无有效卡片', true); return; }
+    if (!deckCards.length) { showCloudToast('无有效卡片', true); return; }
 
     // 记录同步时间戳
     localStorage.setItem('yihai_sync_at_' + key, new Date().toISOString());
@@ -4861,17 +5228,15 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 5. 刷新 UI（切换到新牌组）
     currentDeck = key;
     renderDeckList();
-    updateDeckStats();
-    if (!noToast) refreshServerDeckList(); // 更新云端列表的"已导入"状态
+    // noToast=true 表示从 runSync 内部调用，runSync 会在状态同步后统一调用 updateDeckStats()
+    // 避免此处 IDB 状态未就绪时的竞态覆盖
+    if (!noToast) updateDeckStats();
 
-    hideProgress();
     if (!noToast) showCloudToast('✓ 已导入「' + deckName + '」' + deckCards.length + ' 张');
   } catch(e) {
-    hideProgress();
     if (!noToast) showCloudToast('下载失败：' + e.message, true);
     console.error('[cloud] download error:', e);
   } finally {
-    hideProgress();
     if (btnEl) { btnEl.disabled = false; btnEl.textContent = '下载'; }
   }
 }
@@ -4882,21 +5247,6 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
   if (!existing) { showCloudToast('本地无此牌组，请先下载', true); return; }
   const localKey = existing.key;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '同步中...'; }
-
-  const progEl  = document.getElementById('cloud-progress');
-  const textEl  = document.getElementById('cloud-prog-text');
-  const pctEl   = document.getElementById('cloud-prog-pct');
-  const barEl   = document.getElementById('cloud-prog-bar');
-  function setProgress(done, total) {
-    if (noToast) return;
-    if (!progEl) return;
-    progEl.style.display = 'block';
-    const pct = total ? Math.round(done / total * 100) : 100;
-    textEl.textContent = total ? `正在同步 ${done}/${total} 张...` : '检查更新中...';
-    pctEl.textContent = pct + '%';
-    barEl.style.width = pct + '%';
-  }
-  function hideProgress() { if (!noToast && progEl) progEl.style.display = 'none'; }
 
   // 媒体下载
   async function downloadMedia(cardId, imageUrl, audioUrl) {
@@ -4943,8 +5293,6 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 3. 分类：新增（本地没有）、已有（本地存在）
     const newIds = serverIds.filter(id => !localMap[id]);
     const existingIds = serverIds.filter(id => localMap[id]);
-
-    setProgress(0, newIds.length + existingIds.length);
 
     // 4. 对已有卡片：增量查询（只拉 updated_at > lastSyncAt 的）
     let changedMap = {}; // { card_id: {card_name, image_url, audio_url} }
@@ -5031,8 +5379,6 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
 
     // 8. 删除同步：服务器已移除的卡片不同步保留（与 Anki 逻辑一致）
 
-    setProgress(newIds.length + existingIds.length, newIds.length + existingIds.length);
-
     // 9. 保存
     localStorage.setItem('yihai_sync_at_' + localKey, syncNow);
     DECKS[localKey] = merged;
@@ -5043,10 +5389,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     const metaIdx = DECKS_META.findIndex(m => m.key === localKey);
     if (metaIdx >= 0) DECKS_META[metaIdx].source = 'cloud';
     renderDeckList();
-    updateDeckStats();
-    if (!noToast) refreshServerDeckList();
+    // noToast=true 表示从 runSync 内部调用，runSync 会在状态同步后统一调用 updateDeckStats()
+    if (!noToast) updateDeckStats();
 
-    hideProgress();
     let msg;
     if (!lastSyncAt) {
       msg = '✓ 首次同步完成：共 ' + merged.length + ' 张';
@@ -5057,11 +5402,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     }
     if (!noToast) showCloudToast(msg);
   } catch(e) {
-    hideProgress();
     if (!noToast) showCloudToast('同步失败：' + e.message, true);
     console.error('[sync] error:', e);
   } finally {
-    hideProgress();
     if (btnEl) { btnEl.disabled = false; btnEl.textContent = '🔄 同步'; }
   }
 }
@@ -5107,6 +5450,7 @@ function toggleTheme(checkbox){
   // 1. UI 初始化 — 立即渲染，不等待 Supabase CDN
   (async function initUI() {
     try {
+      migrateV5IfNeeded();
       await restoreDecks();
       if (!currentDeck && DECKS_META.length) {
         currentDeck = DECKS_META[0].key;
@@ -5118,50 +5462,67 @@ function toggleTheme(checkbox){
 
   // 2. 云端初始化 — Supabase SDK 加载完成后执行
   async function initCloud() {
+    window.addEventListener('offline', function() {
+      if (_syncEnabled) { log.info('sync', 'network offline — entering offline mode'); _sessionOffline = true; updateCloudTabUI(); _scheduleSessionRetry(); }
+    });
+
+    logAppEvent('session_restore_start', {
+      hasEverLoggedIn: localStorage.getItem('yihai_has_ever_logged_in') === '1',
+      SDK: 'supabase-js 2.105.4', app: APP_VERSION
+    });
     try {
       await restoreCloudSession();
     } catch(e) { console.warn('[cloud] session restore error:', e.message); }
 
+    // SDK auth 状态监听 — token 续签 / 过期登出时自动更新 UI
+    if (_sb) {
+      _sb.auth.onAuthStateChange(function(event, session) {
+        if (event === 'TOKEN_REFRESHED' && session) {
+          _cloudUserEmail = session.user.email;
+          _cloudUserId    = session.user.id;
+          _syncEnabled    = true;
+          _sessionOffline = false;
+          localStorage.setItem('yihai_session_backup', JSON.stringify(session));
+          logAppEvent('session_restore_token_refreshed', { uid: _cloudUserId });
+          updateCloudTabUI();
+        } else if (event === 'SIGNED_OUT' && _syncEnabled && !_sessionOffline) {
+          // _syncEnabled 仍 true → 非主动登出（doCloudLogout 已先置 false）
+          // _sessionOffline 时保留 offline 模式，不覆盖（restoreCloudSession 已判为网络问题）
+          // SDK 检测到 token 无法续签 → 静默登出, 显示登录表单
+          logAppEvent('session_restore_sdk_signout', {});
+          _syncEnabled    = false;
+          _sessionOffline = false;
+          _cloudUserEmail = '';
+          updateCloudTabUI();
+        }
+        // 忽略 INITIAL_SESSION — restoreCloudSession 已处理
+      });
+    }
+
+    _sessionRestoring = false;
+    updateCloudTabUI();
+
     var p = _lastSrsWrite || Promise.resolve();
     await p;
 
-    if (_syncEnabled && currentDeck) {
-      const needsSync = await checkSyncNeeded();
-      if (needsSync) {
-        showSyncProg(1, 1, '正在同步…');
-        try { await syncAll(currentDeck, false, true); }
-        catch(e) { console.warn('[cloud] startup sync error:', e.message); }
-        hideSyncProg();
-        await (_lastSrsWrite || Promise.resolve());
-        renderDeckList();  // 完整同步可能下载新牌组，需要重绘
-        updateDeckStats();
-      }
-      // needsSync=false → 本地数据已是最新，initUI 已渲染过
-    }
     upsertDeviceRegistry();
-
-    // 切回前台时自动同步
-    document.addEventListener('visibilitychange', async () => {
-      if (!document.hidden && _syncEnabled && currentDeck) {
-        const needsSync = await checkSyncNeeded();
-        if (needsSync) {
-          try { await syncAll(currentDeck, false, true); }
-          catch(e) { console.warn('[cloud] visibility sync error:', e.message); }
-          await (_lastSrsWrite || Promise.resolve());
-          renderDeckList();
-          updateDeckStats();
-        }
-      }
-    });
   }
 
   // 等待 Supabase SDK 就绪后再 initCloud（defer 脚本在 inline 之后执行）
+  // 若曾登录过，立即标记为恢复中，避免打开设置时闪"未登录"
+  if (localStorage.getItem('yihai_has_ever_logged_in') === '1') {
+    _sessionRestoring = true;
+  }
   var _cloudRetries = 0;
   function _tryInitCloud() {
     if (typeof supabase !== 'undefined') {
       initCloud().catch(function(e) { console.warn('[cloud] init error:', e.message); });
     } else if (++_cloudRetries < 50) {
       setTimeout(_tryInitCloud, 200);
+    } else {
+      // SDK 超时加载失败（离线/CDN 不可达）
+      _sessionRestoring = false;
+      updateCloudTabUI();
     }
   }
   setTimeout(_tryInitCloud, 100);
@@ -5195,7 +5556,8 @@ function switchStatsTab(n) {
 
 // ── Tab 0：今日概况 ───────────────────────────────────────────
 async function renderStatsToday() {
-  const dp     = getDailyProgress();
+  const dp       = getDailyProgress();
+  const knownKeys = new Set(DECKS_META.map(m => m.key));
 
   // 当跨设备同步已填充 dp 统计时优先使用（同步是练习完成/手动/切前台时触发，不在统计时拉云端）
   const hasSyncDp = (dp.reviewed_today || 0) > 0;
@@ -5203,7 +5565,7 @@ async function renderStatsToday() {
     // 使用同步后的跨设备汇总数据
     const totalSec = dp.active_duration_sec || 0;
     const durStr   = totalSec <= 0 ? '0' : totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
-    const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
+    const sus = (await getAllCardStates(null)).filter(s => s.suspended && knownKeys.has(s.deck_key)).length;
     document.getElementById('st-kpi').innerHTML = `
       <div class="stats-kpi"><div class="stats-kpi-num kpi-b">${dp.reviewed_today}</div><div class="stats-kpi-lbl">练习</div></div>
       <div class="stats-kpi"><div class="stats-kpi-num kpi-c">${dp.first_pass_today||0}</div><div class="stats-kpi-lbl">良好</div></div>
@@ -5233,7 +5595,7 @@ async function renderStatsToday() {
     });
     const totalSec = dp.active_duration_sec || 0;
     const durStr   = totalSec <= 0 ? '0' : totalSec < 60 ? '1' : Math.round(totalSec / 60) + '';
-    const sus = (await getAllCardStates(null)).filter(s => s.suspended).length;
+    const sus = (await getAllCardStates(null)).filter(s => s.suspended && knownKeys.has(s.deck_key)).length;
     document.getElementById('st-kpi').innerHTML = `
       <div class="stats-kpi"><div class="stats-kpi-num kpi-b">${uniqueToday}</div><div class="stats-kpi-lbl">练习</div></div>
       <div class="stats-kpi"><div class="stats-kpi-num kpi-c">${firstPass}</div><div class="stats-kpi-lbl">良好</div></div>
@@ -5420,10 +5782,10 @@ async function renderStatsCards(filter) {
     const lsClass = ls >= SRS_CONFIG.daily_remove_lapses ? 'danger' : ls > 0 ? 'warn' : '';
     const lsHtml  = ls > 0 ? `<div class="scard-lapse ${lsClass}">连失${ls}</div>` : '';
 
-    return `<div class="scard" onclick="openCardDetail('${s.state_key}')">
+    return `<div class="scard" onclick="openCardDetail('${escAttr(s.state_key)}')">
       <div class="scard-img">${imgHtml}</div>
       <div class="scard-info">
-        <div class="scard-name">${c.name || s.card_id}</div>
+        <div class="scard-name">${esc(c.name || s.card_id)}</div>
         <div class="scard-meta">${badge}${s.srs_stage==='review'?` · 间隔${s.interval}天 · ef${s.ease_factor.toFixed(1)}`:''}</div>
       </div>
       <div class="scard-right">
@@ -5463,9 +5825,9 @@ async function renderStatsTrials() {
     const d    = new Date(t.timestamp);
     const timeStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     const detailKey = t.card_id ? (currentDeck + '::' + t.card_id) : '';
-    return `<div class="trial-item" onclick="openCardDetail('${detailKey}')">
+    return `<div class="trial-item" onclick="openCardDetail('${escAttr(detailKey)}')">
       <div class="trial-rating ${RCLS[t.rating]||'tr-good'}">${RLBL[t.rating]||t.rating}</div>
-      <div class="trial-name">${name}</div>
+      <div class="trial-name">${esc(name)}</div>
       <div class="trial-time">${timeStr}</div>
     </div>`;
   }).join('')}</div>`;
@@ -5517,7 +5879,7 @@ async function openCardDetail(stateKey) {
         ? `<img src="${card.img}" style="width:48px;height:48px;object-fit:cover;border-radius:10px">`
         : `<span style="font-size:36px">${card.img||'🃏'}</span>`}
       <div>
-        <div style="font-size:20px;font-weight:800;color:var(--text)">${card.name||cardId}</div>
+        <div style="font-size:20px;font-weight:800;color:var(--text)">${esc(card.name||cardId)}</div>
         <div style="font-size:13px;color:var(--text2);margin-top:2px">${STAGE_LBL[state.srs_stage]||state.srs_stage}${state.suspended?' · 已挂起':''}</div>
       </div>
     </div>
@@ -5538,8 +5900,8 @@ async function openCardDetail(stateKey) {
     ${state.suspended?`
     <div class="cdh">挂起操作</div>
     <div style="display:flex;gap:8px;padding:8px 0 4px">
-      <button onclick="unsuspendCard('${stateKey}','reset')" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--ocean);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">初始化为新卡</button>
-      <button onclick="unsuspendCard('${stateKey}','resume')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--bd2);background:var(--surf);color:var(--text2);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">忽略继续</button>
+      <button onclick="unsuspendCard('${escAttr(stateKey)}','reset')" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--ocean);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">初始化为新卡</button>
+      <button onclick="unsuspendCard('${escAttr(stateKey)}','resume')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--bd2);background:var(--surf);color:var(--text2);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">忽略继续</button>
     </div>`:''}
 
     <div class="cdh">卡片操作</div>
@@ -5680,6 +6042,7 @@ const SRS_PRESETS = {
     maximum_reviews_per_day: 20,
     daily_remove_lapses  : 3,
     auto_suspend_lapses  : 8,
+    learning_hard_counts_lapse: true,
     warn_duration_sec    : 1200,
     learn_ahead_limit     : 1200,
   },
@@ -5750,6 +6113,9 @@ function syncSrsSettingsUI() {
   set('srs-auto-suspend',          cfg.auto_suspend_lapses,        '次');
   set('srs-warn-duration',         cfg.warn_duration_sec,          '分', 0, v => v / 60);
 
+  const lhlEl = document.getElementById('srs-learning-hard-lapse');
+  if (lhlEl) lhlEl.checked = !!cfg.learning_hard_counts_lapse;
+
   // learn_ahead_limit（文本输入框）
   const laEl = document.getElementById('srs-learn-ahead');
   if (laEl) {
@@ -5757,6 +6123,21 @@ function syncSrsSettingsUI() {
     const laH = document.getElementById('srs-learn-ahead-hint');
     if (laH) laH.textContent = secsToLabel(cfg.learn_ahead_limit);
   }
+
+  // 练习模式勾选
+  const curMode = cfg.session_mode || 'normal';
+  ['normal', 'hard', 'survival'].forEach(m => {
+    const el = document.getElementById('mode-check-' + m);
+    if (el) el.textContent = m === curMode ? '✓' : '';
+  });
+}
+
+function setSrsMode(mode) {
+  saveSrsConfigKey('session_mode', mode);
+  ['normal', 'hard', 'survival'].forEach(m => {
+    const el = document.getElementById('mode-check-' + m);
+    if (el) el.textContent = m === mode ? '✓' : '';
+  });
 }
 
 // SRS Tab 打开时同步一次（通过修改 openSettings 调用链实现）
@@ -5868,6 +6249,6 @@ function showToastMsg(msg) {
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4/dist/umd/supabase.min.js" integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5" crossorigin="anonymous" defer></script>
 </body>
 </html>
