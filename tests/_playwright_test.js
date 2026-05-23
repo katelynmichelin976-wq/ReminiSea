@@ -65,8 +65,11 @@ async function createTestYhspack() {
     await wait(page, 100);
     check('currentDeck 已切换', await run(page, () => currentDeck), '__test_import__');
 
-    // 切回内置测试牌组
-    await run(page, () => { const c = document.querySelector('.deck-card[data-deck="__builtin_test__"]'); if (c) c.click(); });
+    // 切回内置测试牌组（v5.1: click .deck-card-inner，通过 selectDeck 设置 currentDeck）
+    await run(page, () => {
+      const inner = document.querySelector('.deck-card[data-deck="__builtin_test__"] .deck-card-inner');
+      if (inner) selectDeck(inner);
+    });
     await wait(page, 100);
 
     // ═══════════════════ PHASE 2: 5 天练习 ═══════════════════
@@ -196,8 +199,8 @@ async function createTestYhspack() {
     pass('答题记录充足（≥20）', finalSt.trials >= 20);
     pass('含 good 评级', (finalSt.ratings['good'] || 0) > 0);
 
-    // 统计页
-    await run(page, () => { document.querySelector('.home-gear-btn').click(); });
+    // 统计页（v5.1: .home-gear-btn 已删除，改用 openStats()）
+    await run(page, () => { openStats(); });
     await wait(page, 500);
     const kpis = await run(page, () => {
       const n = document.querySelectorAll('.stats-kpi-num');
