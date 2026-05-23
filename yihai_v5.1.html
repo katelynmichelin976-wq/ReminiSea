@@ -1403,7 +1403,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" title="点击5次打开诊断面板">v5.1.0</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.1.0</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -1973,7 +1973,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_opt_count">选项数量</span>
             <input type="range" min="2" max="4" value="3" step="1" id="opt-count" oninput="onOptCount(this.value)">
-            <span class="sheet-row-val" id="opt-count-val">3个</span>
+            <span class="sheet-row-val" id="opt-count-val">3</span>
           </div>
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_touch_delay">防误触延迟</span>
@@ -4607,7 +4607,7 @@ async function deleteDeck(e, key) {
   e.stopPropagation();
   const meta = DECKS_META.find(m => m.key === key);
   if (!meta || meta.builtin) return;
-  const ok = await showConfirmDialog(`删除牌组「${esc(meta.name)}」？`);
+  const ok = await showConfirmDialog(t('deck_delete_confirm', { name: esc(meta.name) }));
   if (!ok) return;
   // 释放 ObjectURL 防止内存泄漏
   (DECKS[key] || []).forEach(c => {
@@ -5529,6 +5529,7 @@ const I18N = {
     app_short_name: 'Glimmers',
     meta_description: 'Memory practice — picture recognition',
     // Common
+    common_item_unit: '',
     common_back: 'Back',
     common_cancel: 'Cancel',
     common_confirm: 'Confirm',
@@ -5754,6 +5755,11 @@ const I18N = {
     default_opt_hint: 'Choose from {A}.{B}.{C}',
     default_wrong: 'Take it easy, try again',
     default_correct: 'Correct!',
+    deck_delete_confirm: 'Delete deck "{name}"?',
+    deck_empty_title: 'No decks yet',
+    deck_empty_sub: 'Go to "Mine" → "Import" and import a .yhspack file',
+    rest_toast: 'Practiced {n} min, take a rest 😊',
+    common_version_title: 'Tap 5 times to open diagnostic panel',
     import_url_coming: 'Download from URL coming soon.',
     card_predict_days: 'In {interval}d ({date})',
   },
@@ -5985,6 +5991,11 @@ const I18N = {
     default_opt_hint: '请在{A}.{B}.{C}中选择一个',
     default_wrong: '不要着急，再试一次',
     default_correct: '回答正确',
+    deck_delete_confirm: '删除牌组「{name}」？',
+    deck_empty_title: '还没有牌组',
+    deck_empty_sub: '点右下角「我的」→「导入文件」<br>导入 .yhspack 开始练习',
+    rest_toast: '已练习 {n} 分钟，可以休息一下 😊',
+    common_version_title: '点击5次打开诊断面板',
     import_url_coming: '从链接下载功能即将上线。',
     card_predict_days: '{interval}天后（{date}）',
   },
@@ -6216,6 +6227,11 @@ const I18N = {
     default_opt_hint: 'Elige entre {A}.{B}.{C}',
     default_wrong: 'Tranquilo, intentalo de nuevo',
     default_correct: '¡Correcto!',
+    deck_delete_confirm: '¿Eliminar mazo "{name}"?',
+    deck_empty_title: 'Sin mazos todavía',
+    deck_empty_sub: 'Ve a "Mi cuenta" → "Importar" e importa un archivo .yhspack',
+    rest_toast: 'Practicado {n} min, descansa 😊',
+    common_version_title: 'Toque 5 veces para abrir el panel de diagnóstico',
     import_url_coming: 'Descarga por URL disponible pronto.',
     card_predict_days: 'En {interval}d ({date})',
   },
@@ -6254,6 +6270,22 @@ function setLocale(loc) {
   if (typeof updateHomeTopbar === 'function') updateHomeTopbar();
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
+  // 切换语言后重置语音提示文案为当前语言默认值
+  ['phraseSelect','phraseOptHint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
+  PHRASE_SELECT   = t('quiz_select_hint');
+  PHRASE_OPT_HINT = t('default_opt_hint');
+  PHRASE_WRONG    = t('default_wrong');
+  PHRASE_CORRECT  = t('default_correct');
+  const phraseInputs = [
+    ['phrase-select',    PHRASE_SELECT],
+    ['phrase-opt-hint',  PHRASE_OPT_HINT],
+    ['phrase-wrong',     PHRASE_WRONG],
+    ['phrase-correct',   PHRASE_CORRECT],
+  ];
+  phraseInputs.forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
 }
 
 function applyI18n() {
@@ -7052,7 +7084,7 @@ function _checkDurationWarning() {
 function showRestToast() {
   const mins = Math.round(SRS_CONFIG.warn_duration_sec / 60);
   const t = document.createElement('div');
-  t.textContent = `已练习 ${mins} 分钟，可以休息一下 😊`;
+  t.textContent = t('rest_toast', { n: mins });
   t.style.cssText = `position:fixed;bottom:calc(120px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
@@ -7301,7 +7333,7 @@ function onOptTouchDelayChange(v) {
 
 function onOptCount(v) {
   OPT_COUNT = parseInt(v);
-  document.getElementById('opt-count-val').textContent = `${v}个`;
+  document.getElementById('opt-count-val').textContent = `${v}`;
   localStorage.setItem('optCount', v);
   debouncePushConfig();
 }
@@ -7330,6 +7362,7 @@ function loadSettings() {
   if (qpDelay) QUIZ_PROMPT_DELAY = parseFloat(qpDelay) * 1000;
   const ps = localStorage.getItem('phraseSelect');
   if (ps) PHRASE_SELECT = ps;
+  else PHRASE_SELECT = t('quiz_select_hint');
 
   // 选项提示
   const optHintOn = localStorage.getItem('optHintOn');
@@ -7435,7 +7468,7 @@ function loadSettings() {
 
     // 选项数量
     const ocEl = document.getElementById('opt-count');
-    if (ocEl) { ocEl.value = OPT_COUNT; document.getElementById('opt-count-val').textContent = `${OPT_COUNT}个`; }
+    if (ocEl) { ocEl.value = OPT_COUNT; document.getElementById('opt-count-val').textContent = `${OPT_COUNT}`; }
     const otdEl = document.getElementById('opt-touch-delay');
     if (otdEl) { otdEl.value = OPT_TOUCH_DELAY; document.getElementById('opt-touch-delay-val').textContent = `${OPT_TOUCH_DELAY}ms`; }
 
@@ -8563,8 +8596,8 @@ function renderDeckList() {
   if (!DECKS_META.length) {
     grid.innerHTML = `<div class="empty-state">
       <div class="empty-state-icon">📂</div>
-      <div class="empty-state-title">还没有牌组</div>
-      <div class="empty-state-sub">点右下角「我的」→「导入文件」<br>导入 .yhspack 开始练习</div>
+      <div class="empty-state-title">${t('deck_empty_title')}</div>
+      <div class="empty-state-sub">${t('deck_empty_sub')}</div>
     </div>`;
     currentDeck = null;
     return;
