@@ -39,6 +39,10 @@ async function checkCurve(queue, label) {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.home-gear-btn', { state: 'visible', timeout: 8000 });
   await page.waitForTimeout(800);
+  // Force zh-CN locale for consistent i18n testing
+  await page.evaluate(() => setLocale('zh-CN'));
+  await page.waitForTimeout(500);
+
 
   console.log('\n── PHASE 1: 导入牌组 ──');
 

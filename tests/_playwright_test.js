@@ -50,6 +50,8 @@ async function createTestYhspack() {
     section('PHASE 1: 导入 .yhspack');
     await page.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 500);
+    await page.evaluate(() => setLocale('zh-CN'));
+    await wait(page, 300);
 
     await page.setInputFiles('input[accept=".yhspack"]', YHPACK);
     await page.waitForSelector('.deck-card[data-deck="__test_import__"]', { timeout: 10000 }).catch(() => {});

@@ -97,6 +97,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_playwright_session_mode_test.js` | Playwright 游戏模式设置 UI + 持久化测试（13 断言） |
 | `tests/_playwright_session_mode_queue_test.js` | Playwright 队列难度曲线验证（14 断言，ef 首尾>中间） |
 | `tests/_check_session_mode_order.js` | Node.js 查询妈妈账号当日卡片，输出三种模式出牌顺序 |
+| `tests/yihai_v5.0_i18n_test.js` | 阶段 0 i18n 纯函数单测（detectLocale/t/detectScript/scriptToLang/resolveFieldLang/normalizeField） |
+| `tests/_playwright_i18n_stage1.js` | 阶段 1 i18n 浏览器验证（locale 切换/插值/非法locale/持久化，13 断言） |
+| `tests/_playwright_stage0_test.js` | 阶段 0 浏览器行为（locale 持久化、TTS 语言、.yhspack 导入字段语言） |
+| `tests/_playwright_nav_verify.js` | Wave 1 dev.1 导航骨架验证（17 断言：Tab Bar/我的屏/设置入口） |
+| `tests/_playwright_dev2_verify.js` | Wave 1 dev.2 点牌组进详情屏验证（8 断言） |
+| `tests/_playwright_browse_verify.js` | Wave 1 dev.4 浏览屏新设计验证（17 断言：DOM/进入/内容/翻页/返回） |
+| `tests/_playwright_deck_detail_verify.js` | Wave 1 牌组详情屏 + 左滑操作验证（14 断言：入口/操作按钮/删除/卡片结构/代码） |
+| `tests/_playwright_account_verify.js` | Wave 1 dev.5 账户屏验证（20 断言：入口/三态/导航/同步） |
+| `tests/_playwright_settings_verify.js` | Wave 1 dev.6 设置屏验证（14 断言：Tab 结构/每日目标/代码） |
 | `tests/test_data/` | Test .yhspack files |
 
 ### 文档
@@ -132,7 +141,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v4.11.19**。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v4.11.19**（稳定线上版，`yihai_v4.11.html`）；**v5.1.0**（Wave 1 + i18n，`yihai_v5.1.html`，待验收发布）。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.1.0 主要变更：**
+- 阶段 0 i18n 地基：`detectLocale/t/getLocale/setLocale/detectScript/resolveFieldLang/normalizeField`，TTS `lang` 参数，`.yhspack` 字段语言迁移
+- 医疗术语清理：删除 AD 建议值功能，meta 改「记忆练习」
+- Wave 1 导航重构：Tab Bar（首页/FAB/我的）+ 各功能屏（浏览/账户/设置/牌组详情/制卡/主题/关于）
+- i18n Stage 1：221 个 key × 3 语言（zh-CN/en/es），JS 硬编码字符串全部替换为 t()
+- PWA 诊断面板入口移植自 v4.11.19（版本号连击 5 次）
+
+**导航结构（Wave 1 后，yihai_v5.1.html）：**
+- `screen-home`：首页（默认），底部 `.home-tabbar`（首页激活）
+- `screen-mine`：我的，底部 `.home-tabbar`（我的激活）
+- `screen-quiz`：练习/浏览（进入时无 Tab Bar）
+- `screen-stats`：统计（无 Tab Bar，返回用 `closeStats()` 回 `_statsOrigin`）
+- `screen-finish`：完成（无 Tab Bar）
+- Settings：底部 Sheet overlay（不是独立 screen）
 
 ## Environment
 
@@ -178,7 +202,7 @@ node tests/_playwright_session_mode_queue_test.js  # 队列难度曲线（需先
 - **智能匹配** → 修复涉及哪个模块，优先跑对应模块测试（如 session 改动跑 cloud_test）
 - 确认改动无问题即可，不需要每次都跑全部 8 套 Playwright。
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, Playwright 12/39/21/18/13/14（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue）.
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, Playwright 12/39/21/18/13/14/6/17/8/17/20/14/14/13（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue/stage0/nav_verify/dev2_verify/browse_verify/account_verify/settings_verify/deck_detail_verify/i18n_stage1）.
 
 ## SRS Architecture
 
