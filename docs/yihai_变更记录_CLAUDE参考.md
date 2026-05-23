@@ -2,6 +2,16 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.1.0 Key Changes
+
+- **Wave 1 导航重构**: 首页改为 Tab Bar（首页/FAB/我的）。新增独立屏：`screen-browse`（浏览）、`screen-account`（账户）、`screen-deck-detail`（牌组详情，左滑重命名/导出/删除）、`screen-create-card`（制卡表单）。设置改为底部 Sheet overlay，不再是独立 screen。旧 `.home-gear-btn` 顶栏按钮删除。
+- **阶段 0 i18n 地基**: 新增 `detectLocale/t/getLocale/setLocale/detectScript/scriptToLang/resolveFieldLang/normalizeField`。TTS `speak()` 使用字段 `lang` 而非固定 zh-CN。`.yhspack` 导入时 `normalizeField` 自动推断 `lang`。
+- **i18n Stage 1**: 221 key × 3 语言（zh-CN/en/es）存入 `STRINGS` 常量；JS 所有硬编码中文替换为 `t(key)`；`data-i18n`/`data-i18n-placeholder`/`data-i18n-aria`/`data-i18n-content` 属性 + `applyI18n()` 全页扫描。
+- **牌组列表事件委托**: `initDeckSwipe(grid)` 注册 click/touchstart/move/end/cancel，`onDeckClick` 委托到 `.deck-card-inner`（`e.target.closest`），触摸左滑展开操作按钮，点击进详情。
+- **医疗术语清理**: 删除 AD 建议值功能（`_adMode`/AD 默认 SRS 参数），`<meta name="description">` 改「记忆练习」。
+- **PWA 诊断面板移植**: 版本号连击 5 次打开诊断面板（移植自 v4.11.19，适配 Wave 1 DOM 结构）。
+- **回归测试修复**: `_playwright_test.js` 更新 deck 选择方式（`.deck-card-inner` + `selectDeck(inner)`）和统计入口（`openStats()`），适配 Wave 1 导航变更。
+
 ## v4.11.19 Key Changes
 
 - **PWA 诊断面板入口**: 版本号连击 5 次即可在 PWA standalone 模式（无书签栏）打开诊断面板，不再依赖 bookmarklet 注入。加载 `https://katelynmichelin976-wq.github.io/ReminiSea/tests/yh_diag.js`，支持 toggle 显示/隐藏。

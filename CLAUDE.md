@@ -141,7 +141,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v4.11.19**（稳定线上版，`yihai_v4.11.html`）；**v5.1.0**（Wave 1 + i18n，`yihai_v5.1.html`，待验收发布）。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.1.0**（Wave 1 + i18n，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 **v5.1.0 主要变更：**
 - 阶段 0 i18n 地基：`detectLocale/t/getLocale/setLocale/detectScript/resolveFieldLang/normalizeField`，TTS `lang` 参数，`.yhspack` 字段语言迁移

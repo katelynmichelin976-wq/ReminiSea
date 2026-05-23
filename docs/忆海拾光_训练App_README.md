@@ -129,6 +129,17 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.1.0 — 2026-05-23
+
+**重构：Wave 1 导航 + i18n 地基**
+- Wave 1 导航架构：Tab Bar（首页/FAB开始练习/我的）+ 独立功能屏（浏览/账户/设置/牌组详情/制卡）
+- 阶段 0 i18n 地基：`detectLocale/t/getLocale/setLocale/detectScript/resolveFieldLang/normalizeField`；TTS `lang` 参数跟随字段语言；`.yhspack` 字段语言迁移
+- i18n Stage 1：221 个 key × 3 语言（zh-CN/en/es），JS 硬编码字符串全部替换为 `t()`
+- 医疗术语清理：删除 AD 建议值功能，meta 改「记忆练习」
+- PWA 诊断面板入口移植：版本号连击 5 次打开诊断面板
+
+---
+
 ### v4.11.19 — 2026-05-22
 
 **改进**
