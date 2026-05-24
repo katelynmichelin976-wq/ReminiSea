@@ -2,6 +2,13 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.1.2 Key Changes
+
+- **云端 UI 整合**: 删除设置面板「云端」Tab（`tab-3` / `cloud-login-section` / `cloud-connected-section` / `cloud-restoring-section`）。所有登录/登出/同步 UI 统一到 `screen-account`（账户屏）。删除 `doCloudLogin()`、`doCloudLogout()` 函数，登出逻辑内联到 `doAccountLogout()`。
+- **导入入口统一**: 删除散落的 `.yhspack` 导入触发点：首页隐藏 `#importFile` input、「我的」导入文件菜单项、Action Sheet「导入文件」和「从链接下载」按钮。导入操作统一走账户屏。
+- **updateCloudTabUI 进一步简化**: 仅保留 `updateMineProfile()` + `renderAccount()`，云端 DOM 操作全部移除。
+- **CSS**: `home-tabbar` 改为透明背景 + `::before` 伪元素圆角浮动风格；`mine-scroll` 加 `width: 100%; max-width: 500px; margin: 0 auto`；`home-scroll` 底部 padding 补全；平板媒体查询补全 `mine-scroll`/`mine-topbar`。
+
 ## v5.1.1 Key Changes
 
 - **Session restore 重写**: `restoreCloudSession()` → `restoreSession()`。删除 3 级恢复链（L1 getSession → L2 setSession with isRealLogout regex → L3 300ms retry），改为单次 getSession() + 7s 超时。任何失败统一离线（`_syncEnabled=false`），保留 `_cloudUserEmail`。online 事件监听内联到 restoreSession 失败分支，不再需要独立的 `_scheduleSessionRetry()`。

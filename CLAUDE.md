@@ -141,7 +141,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.1.1**（Wave 1 + i18n + session restore 重写，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.1.2**（UI 整合 + 云端入口统一，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.1.2 主要变更：**
+- 云端 UI 整合：删除设置面板「云端」Tab，所有登录/登出/同步操作统一到账户屏
+- 删除散落的导入入口（首页隐藏 input、我的-导入文件、Action Sheet 导入按钮），统一到账户屏
+- CSS：home-tabbar 改为浮动圆角风格、mine-scroll 响应式限宽
 
 **v5.1.1 主要变更：**
 - Session restore 重写：3 级恢复链（L1 getSession → L2 setSession → L3 retry）→ 单次 getSession() + 7s 超时。删除 `_sessionRestoring`/`_sessionOffline`/`_onlineListenerActive`/`_scheduleSessionRetry`/`isRealLogout`，状态模型 6 变量 → 3 变量。updateCloudTabUI 4 分支 → 3 分支。净减少 138 行。
