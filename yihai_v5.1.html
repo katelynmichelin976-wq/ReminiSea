@@ -170,7 +170,7 @@ body {
 .home-scroll {
   flex: 1; width: 100%; max-width: 500px;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 10px 16px 0;
+  padding: 10px 16px 16px;
   display: flex; flex-direction: column;
 }
 
@@ -310,12 +310,18 @@ body {
 /* ═══ Tab Bar ═══ */
 .home-tabbar {
   flex-shrink: 0;
-  width: 100%; max-width: 500px; margin: 0 auto;
-  padding-bottom: var(--safe-bottom);
-  background: var(--surf); border-top: 1px solid var(--bd);
-  box-shadow: 0 -2px 20px rgba(26,18,8,0.06);
+  width: 100%; max-width: 500px;
+  padding: 6px 16px var(--safe-bottom);
+  background: transparent;
   display: flex; align-items: flex-end;
   overflow: visible; position: relative; z-index: 10;
+}
+.home-tabbar::before {
+  content: ''; position: absolute; inset: 0 16px 0;
+  background: var(--surf); border-radius: 22px 22px 0 0;
+  border-top: 1px solid var(--bd);
+  box-shadow: 0 -2px 20px rgba(26,18,8,0.06);
+  z-index: 0;
 }
 .tab-item {
   flex: 1; display: flex; flex-direction: column;
@@ -323,7 +329,7 @@ body {
   gap: 4px; padding: 10px 4px 12px;
   background: none; border: none; cursor: pointer;
   color: var(--text3); font-size: 11px; font-weight: 500;
-  transition: color .2s; position: relative;
+  transition: color .2s; position: relative; z-index: 1;
   -webkit-tap-highlight-color: transparent;
 }
 .tab-item svg { width: 24px; height: 24px; }
@@ -354,6 +360,7 @@ body {
 }
 .mine-scroll {
   flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  width: 100%; max-width: 500px; margin: 0 auto;
   background: var(--bg); padding: 12px 0 28px;
 }
 .mine-profile {
@@ -362,7 +369,7 @@ body {
   border-radius: var(--r); margin: 0 16px 14px;
   border: 1px solid var(--bd); cursor: pointer;
   transition: opacity .15s; text-align: left;
-  width: calc(100% - 32px); max-width: calc(500px - 32px);
+  width: calc(100% - 32px);
 }
 .mine-profile:active { opacity: .65; }
 .mine-profile-avatar {
@@ -1041,14 +1048,14 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
 /* ── iPad / tablet (≥600px) ── */
 @media (min-width: 600px) {
-  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-tabbar {
+  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-tabbar, .mine-scroll, .mine-topbar {
     max-width: min(90vw, 720px);
   }
   .target-card { max-height: var(--img-max-h, 58vh); }
 }
 /* ── iPad Pro / large tablet (≥900px) ── */
 @media (min-width: 900px) {
-  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-tabbar {
+  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-tabbar, .mine-scroll, .mine-topbar {
     max-width: min(92vw, 960px);
   }
 }
@@ -1412,7 +1419,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       </button>
     </div>
     <!-- hidden file input -->
-    <input type="file" id="importFile" accept=".yhspack" style="display:none" onchange="importYhspack(this.files[0]).then(()=>this.value='')" aria-hidden="true">
   </div>
 
   <div class="divider"></div>
@@ -1667,11 +1673,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <span data-i18n="mine_menu_about">关于</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
-      <button class="mine-menu-item" onclick="document.getElementById('importFile').click()">
-        <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-        <span data-i18n="mine_menu_import">导入文件</span>
-        <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
     </div>
     <!-- mode switch -->
     <div class="mine-mode-row">
@@ -1836,14 +1837,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         <span data-i18n="action_create_deck">创建空牌组</span>
       </button>
-      <button class="action-sheet-btn" onclick="closeActionSheet();document.getElementById('importFile').click()">
-        <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span data-i18n="action_import_file">导入文件</span>
-      </button>
-      <button class="action-sheet-btn" onclick="closeActionSheet();importFromUrl()">
-        <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        <span data-i18n="action_import_url">从链接下载</span>
-      </button>
     </div>
     <div class="action-sheet-group">
       <button class="action-sheet-btn" onclick="closeActionSheet();exportDeck()">
@@ -1942,7 +1935,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <div class="sheet-tab active" onclick="switchTab(0)" data-i18n="settings_tab_general">通用</div>
       <div class="sheet-tab" onclick="switchTab(1)" data-i18n="settings_tab_voice">语音</div>
       <div class="sheet-tab" onclick="switchTab(2)">SRS</div>
-      <div class="sheet-tab" onclick="switchTab(3)" data-i18n="settings_tab_cloud">云端</div>
     </div>
 
     <div class="sheet-panels">
@@ -2279,60 +2271,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
       </div>
 
-      <div class="sheet-panel" id="tab-3">      <!-- cloud -->
-        <!-- not logged in -->
-        <div id="cloud-login-section">
-          <div class="sheet-section">
-            <div class="sheet-section-lbl" data-i18n="settings_sync_account">同步账户</div>
-            <div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5" data-i18n="settings_cloud_desc">
-              登录后可同步服务器牌组，学习记录自动上传。未登录时仅支持手工导入，数据完全离线。
-            </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <input type="email" id="cloud-email" placeholder="邮箱" data-i18n-placeholder="settings_cloud_email_ph"
-                style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--surf);color:var(--text);font-family:inherit">
-              <input type="password" id="cloud-password" placeholder="密码" data-i18n-placeholder="settings_cloud_pwd_ph"
-                style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--surf);color:var(--text);font-family:inherit">
-              <button id="cloud-login-btn"
-                style="padding:10px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit"
-                onclick="doCloudLogin()" data-i18n="settings_cloud_login">登录</button>
-              <div id="cloud-login-msg" style="font-size:11px;color:var(--text3);text-align:center;display:none"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- session restoring -->
-        <div id="cloud-restoring-section" style="display:none">
-          <div class="sheet-section">
-            <div class="sheet-section-lbl" data-i18n="settings_sync_account">同步账户</div>
-            <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px" data-i18n="settings_cloud_restoring">正在恢复登录…</div>
-          </div>
-        </div>
-
-        <!-- logged in -->
-        <div id="cloud-connected-section" style="display:none">
-          <div class="sheet-section">
-            <div class="sheet-section-lbl" data-i18n="settings_sync_account">同步账户</div>
-            <div class="sheet-row">
-              <span class="sheet-row-lbl" id="cloud-user-email"></span>
-              <div style="display:flex;gap:6px">
-                <button style="padding:4px 10px;border:1px solid var(--blue);border-radius:6px;background:var(--blue-lt);color:var(--blue);font-size:11px;cursor:pointer;font-family:inherit"
-                  onclick="runSync({modal:true,decks:true,events:true,showToast:true,voice:true,deckKey:currentDeck}).catch(function(e){console.warn(e)})" data-i18n="settings_cloud_sync_btn">🔄 同步</button>
-                <button style="padding:4px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--surf);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit"
-                  onclick="doCloudLogout()" data-i18n="settings_cloud_logout">退出</button>
-              </div>
-            </div>
-            <div class="sheet-row" style="margin-top:6px">
-              <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px">
-                <input type="checkbox" id="realtime-upload-toggle"
-                  onchange="_realtimeUpload=this.checked;localStorage.setItem('yihai_realtime_upload',_realtimeUpload)"
-                  style="accent-color:var(--blue)">
-                <span data-i18n="settings_realtime_desc">学习中实时上传（关闭后仅打开/前台/练习完成时同步，更省电）</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div><!-- /sheet-panels -->
   </div>
 </div>
@@ -2634,93 +2572,9 @@ function _onOnlineRetry() {
 }
 
 function updateCloudTabUI() {
-  const loginSec = document.getElementById('cloud-login-section');
-  const connSec  = document.getElementById('cloud-connected-section');
-  const userEl   = document.getElementById('cloud-user-email');
-
-  if (_syncEnabled) {
-    if (loginSec) loginSec.style.display = 'none';
-    if (connSec)  connSec.style.display  = '';
-    if (userEl)   userEl.textContent = '✅ ' + _cloudUserEmail;
-  } else if (_cloudUserEmail) {
-    if (loginSec) loginSec.style.display = 'none';
-    if (connSec)  connSec.style.display  = '';
-    if (userEl)   userEl.textContent = '📵 ' + _cloudUserEmail + t('account_offline_suffix');
-  } else {
-    if (loginSec) loginSec.style.display = '';
-    if (connSec)  connSec.style.display  = 'none';
-    var emailEl = document.getElementById('cloud-email');
-    if (emailEl && !emailEl.value) {
-      emailEl.value = localStorage.getItem('yihai_last_cloud_email') || '';
-    }
-  }
   updateMineProfile();
   var _acc_el = document.getElementById('screen-account');
   if (_acc_el && _acc_el.classList.contains('active')) renderAccount();
-}
-
-async function doCloudLogin() {
-  const emailEl = document.getElementById('cloud-email');
-  const pwdEl   = document.getElementById('cloud-password');
-  const btnEl   = document.getElementById('cloud-login-btn');
-  const msgEl   = document.getElementById('cloud-login-msg');
-  const email = (emailEl && emailEl.value) ? emailEl.value.trim() : '';
-  const pwd   = (pwdEl && pwdEl.value) ? pwdEl.value : '';
-  if (!email || !pwd) {
-    if (msgEl) { msgEl.style.display = ''; msgEl.textContent = t('account_login_validate'); msgEl.style.color = 'var(--text3)'; }
-    return;
-  }
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('account_logging_in'); }
-  if (msgEl) { msgEl.style.display = 'none'; }
-  try {
-    _sb = _createSupabaseClient();
-    const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
-    if (error) throw error;
-    _syncEnabled      = true;
-    _cloudUserEmail = data.user.email;
-    _cloudUserId = data.user.id;
-    localStorage.setItem('yihai_last_cloud_user_id', _cloudUserId);
-    localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
-    _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
-    localStorage.setItem('yihai_has_ever_logged_in', '1');
-    // backup session to own key, prevent SDK cleanup on refresh failure from losing login
-    if (data.session) {
-      localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
-    }
-    // migrate offline records before sync, avoid getAllCardStates filtering by cloudUserId missing deviceId records
-    await migrateDeviceRecordsToUser(_cloudUserId);
-    updateCloudTabUI();
-    logAppEvent('login', { email: email });
-    upsertDeviceRegistry();
-    // full sync after login (answers/state/config/decks)
-    runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
-  } catch(e) {
-    _syncEnabled = false;
-    if (msgEl) { msgEl.style.display = ''; msgEl.textContent = t('account_login_fail', { msg: e.message }); msgEl.style.color = '#9B3A2A'; }
-    console.warn('[sync] login failed:', e.message);
-  } finally {
-    if (btnEl) { btnEl.disabled = false; btnEl.textContent = t('account_login_btn'); }
-  }
-}
-
-async function doCloudLogout() {
-  logAppEvent('logout', {});
-  try {
-    if (_sb) await _sb.auth.signOut();
-  } catch(e) { console.warn('[sync] signOut error:', e.message); }
-  _syncEnabled      = false;
-  _cloudUserEmail = '';
-  // v5: don't clear _cloudUserId — getCurrentUserId() still returns last login,
-  // offline practice data belongs correctly. new login overwrites unless explicit account switch.
-  _sb = null;
-
-  // logout = offline mode, cloud decks remain usable.
-  localStorage.removeItem('yihai_global_sync_ts');
-  localStorage.removeItem('yihai_session_backup');
-  renderDeckList();
-  updateDeckStats();
-
-  updateCloudTabUI();
 }
 
 // collect device info for troubleshooting
@@ -5157,8 +5011,14 @@ async function doAccountLogin() {
   }
 }
 
-function doAccountLogout() {
-  doCloudLogout();
+async function doAccountLogout() {
+  logAppEvent('logout', {});
+  try { if (_sb) await _sb.auth.signOut(); } catch(e) { console.warn('[sync] signOut error:', e.message); }
+  _syncEnabled = false; _cloudUserEmail = ''; _sb = null;
+  localStorage.removeItem('yihai_global_sync_ts');
+  localStorage.removeItem('yihai_session_backup');
+  renderDeckList(); updateDeckStats();
+  updateCloudTabUI();
   renderAccount();
   updateMineProfile();
 }
@@ -7425,7 +7285,6 @@ loadSettings();
 function switchTab(n) {
   document.querySelectorAll('.sheet-tab').forEach((t,i)=>t.classList.toggle('active',i===n));
   document.querySelectorAll('.sheet-panel').forEach((p,i)=>p.classList.toggle('active',i===n));
-  if (n === 3) updateCloudTabUI();
 }
 
 function esc(s) {
