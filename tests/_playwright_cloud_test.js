@@ -37,7 +37,7 @@ const CARD_COUNT = 33;
     pass('登录成功，显示已连接界面', await helper.cloudLogin(page, TEST_EMAIL, TEST_PASSWORD));
 
     pass('显示登录邮箱', (await run(page, () => {
-      const el = document.getElementById('cloud-user-email');
+      const el = document.getElementById('account-hero-name');
       return el ? el.textContent : '';
     })).includes(TEST_EMAIL));
 
@@ -228,22 +228,14 @@ const CARD_COUNT = 33;
       return v ? v.textContent : null;
     }));
 
-    // 打开设置 → 云端 Tab 触发 updateCloudTabUI()（session restore 仅在切换到云端 Tab 时更新 UI）
-    await run(page, () => {
-      const b = document.querySelector('[aria-label="设置"]');
-      if (b) b.click();
-    });
+    // v5.1.2+: session restore sets _syncEnabled + _cloudUserEmail
+    // navigate to account screen to verify logged-in state
+    await run(page, () => { if (typeof showAccount === 'function') showAccount(); else { renderAccount(); showScreen('screen-account'); } });
     await wait(page, 500);
-    await run(page, () => {
-      const tabs = document.querySelectorAll('.sheet-tab');
-      for (const t of tabs) { if (t.textContent.includes('云端')) { t.click(); return; } }
-    });
-    await wait(page, 500);
-
     let restored = false;
     for (let i = 0; i < 30; i++) {
       restored = await run(page, () => {
-        const s = document.getElementById('cloud-connected-section');
+        const s = document.getElementById('account-state-logged-in');
         return s && window.getComputedStyle(s).display !== 'none';
       });
       if (restored) break;
@@ -252,7 +244,7 @@ const CARD_COUNT = 33;
     pass('刷新后自动恢复登录，显示已连接界面', restored);
 
     pass('刷新后邮箱显示正确', (await run(page, () => {
-      const el = document.getElementById('cloud-user-email');
+      const el = document.getElementById('account-hero-name');
       return el ? el.textContent : '';
     })).includes(TEST_EMAIL));
 
@@ -275,25 +267,7 @@ const CARD_COUNT = 33;
     await page2.goto(CFG.url, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page2, 2000);
 
-    await helper.openSettingsTab(page2, '云端');
-    await run(page2, ({ em, pw }) => {
-      const e = document.getElementById('cloud-email');
-      const p = document.getElementById('cloud-password');
-      if (e) e.value = em;
-      if (p) p.value = pw;
-      const b = document.getElementById('cloud-login-btn');
-      if (b) b.click();
-    }, { em: TEST_EMAIL, pw: TEST_PASSWORD });
-    let connected2 = false;
-    for (let i = 0; i < 30; i++) {
-      connected2 = await run(page2, () => {
-        const sec = document.getElementById('cloud-connected-section');
-        return sec && window.getComputedStyle(sec).display !== 'none';
-      });
-      if (connected2) break;
-      await wait(page2, 500);
-    }
-    pass('Device B 登录成功', connected2);
+    pass('Device B 登录成功', await helper.cloudLogin(page2, TEST_EMAIL, TEST_PASSWORD));
     await helper.waitSyncModal(page2, 40);
 
     console.log(`  Device B 初始主题: ${await run(page2, () => document.documentElement.classList.contains('dark') ? 'dark' : 'light')}`);

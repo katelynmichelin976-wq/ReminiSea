@@ -59,22 +59,22 @@ async function closeSettings(page) {
   await wait(page, 300);
 }
 
-// ── 云端登录 ──
+// ── 云端登录（v5.1.2+: account screen）──
 async function cloudLogin(page, email, password) {
-  await openSettingsTab(page, '云端');
-  // Use evaluate to bypass Playwright visibility checks for inactive tab panels
+  await run(page, () => { showScreen('screen-account'); });
+  await wait(page, 500);
   await run(page, ({ em, pw }) => {
-    const e = document.getElementById('cloud-email');
-    const p = document.getElementById('cloud-password');
+    const e = document.getElementById('account-email');
+    const p = document.getElementById('account-password');
     if (e) e.value = em;
     if (p) p.value = pw;
-    const b = document.getElementById('cloud-login-btn');
+    const b = document.getElementById('account-login-btn');
     if (b) b.click();
   }, { em: email, pw: password });
   await wait(page, 3000);
   for (let i = 0; i < 30; i++) {
     const connected = await run(page, () => {
-      const sec = document.getElementById('cloud-connected-section');
+      const sec = document.getElementById('account-state-logged-in');
       return sec && window.getComputedStyle(sec).display !== 'none';
     });
     if (connected) return true;
@@ -96,19 +96,20 @@ async function waitSyncModal(page, timeout) {
   return false;
 }
 
-// ── 云端退出 ──
+// ── 云端退出（v5.1.2+: account screen）──
 async function cloudLogout(page) {
-  await openSettingsTab(page, '云端');
+  await run(page, () => { showScreen('screen-account'); });
+  await wait(page, 500);
 
   await run(page, () => {
     const btns = document.querySelectorAll('button');
-    for (const b of btns) { if (b.getAttribute('onclick') === 'doCloudLogout()') { b.click(); return; } }
+    for (const b of btns) { if (b.getAttribute('onclick') === 'doAccountLogout()') { b.click(); return; } }
   });
 
   let loggedOut = false, syncDisabled = false;
   for (let i = 0; i < 30; i++) {
     loggedOut = await run(page, () => {
-      const sec = document.getElementById('cloud-login-section');
+      const sec = document.getElementById('account-state-logged-out');
       return sec && window.getComputedStyle(sec).display !== 'none';
     });
     syncDisabled = await run(page, () => !_syncEnabled);
