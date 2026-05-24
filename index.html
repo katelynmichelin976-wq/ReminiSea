@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.1.0</title>
+<title data-i18n="app_title">忆海拾光 v5.1.1</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -176,7 +176,7 @@ body {
 
 /* ── Top bar ── */
 .home-topbar {
-  width: 100%;
+  width: 100%; max-width: 500px;
   padding: calc(10px + var(--safe-top)) 16px 14px;
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0;
@@ -712,7 +712,7 @@ body {
 /* Tab bar */
 .sheet-tabs {
   display:flex; border-bottom:1px solid var(--bd);
-  flex-shrink:0; padding:0 8px;
+  flex-shrink:0; padding:0 16px;
 }
 .sheet-tab {
   flex:1; text-align:center;
@@ -728,7 +728,7 @@ body {
 .sheet-panel { display:none; padding:0 0 24px; }
 .sheet-panel.active { display:block; }
 /* Rows */
-.sheet-section { padding:14px 20px 0; }
+.sheet-section { padding:14px 16px 0; }
 .sheet-section-lbl { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; }
 .sheet-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:0.5px solid var(--bd); }
 .sheet-row:last-child { border-bottom:none; }
@@ -1321,7 +1321,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 #sync-modal-bar { height:100%; width:0%; background:var(--ocean); border-radius:3px; transition:width .3s ease; }
 #sync-modal-pct { font-size:12px; font-weight:600; color:var(--ocean); min-width:36px; text-align:right; }
 
-/* ═══ Action Sheet (caregiver + button) ═══ */
+/* ═══ Action Sheet (advanced + button) ═══ */
 .action-sheet-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.38); z-index: 998;
@@ -1403,7 +1403,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" title="点击5次打开诊断面板">v5.1.0</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.1.1</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -1753,7 +1753,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="about-scroll">
     <div class="about-icon">🧠</div>
     <div class="about-title" data-i18n="about_app_name">忆海拾光</div>
-    <div class="about-sub" id="about-version">v5.1.0</div>
+    <div class="about-sub" id="about-version">v5.1.1</div>
     <div class="about-desc">
       <p style="margin-bottom:12px" data-i18n="about_desc1">忆海拾光是一款轻松有趣的学习工具，通过看图识物的方式，让用户每天愉快地复习。</p>
       <p style="margin-bottom:12px" data-i18n="about_desc2">基于 SM-2 间隔重复算法，智能安排复习节奏。支持多语言卡片、语音朗读、云端同步，让学习更高效。</p>
@@ -1973,7 +1973,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_opt_count">选项数量</span>
             <input type="range" min="2" max="4" value="3" step="1" id="opt-count" oninput="onOptCount(this.value)">
-            <span class="sheet-row-val" id="opt-count-val">3个</span>
+            <span class="sheet-row-val" id="opt-count-val">3</span>
           </div>
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_touch_delay">防误触延迟</span>
@@ -2513,7 +2513,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.1.0';
+const APP_VERSION = '5.1.1';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -2540,10 +2540,7 @@ let _lastOrphans = [];    // media cleanup: cache last orphan scan keys
 let _cloudUserEmail = '';
 let _cloudUserId = '';
 var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // realtime upload toggle during learning
-let _sessionRestoring = false; // SDK loading or session restoring, avoid flashing "not logged in"
-var _onlineListenerActive = false; // prevent duplicate online listener registration
 var _syncInFlight = false;         // runSync concurrency lock
-let _sessionOffline   = false; // has credentials but network failed, keep login appearance, wait for reconnect
 
 // CDN media download helper: try CDN first, fallback to Supabase Storage
 function cdnMediaUrl(path) {
@@ -2566,25 +2563,6 @@ async function downloadMediaFromCDNorSupabase(path, mimeType) {
   return new Blob([data], { type: mimeType || 'image/jpeg' });
 }
 
-// register online event on network failure, auto-retry session when restored
-function _scheduleSessionRetry() {
-  if (_onlineListenerActive) return;
-  _onlineListenerActive = true;
-  window.addEventListener('online', function _onOnline() {
-    log.info('sync', 'network online — retrying session restore');
-    _onlineListenerActive = false;
-    window.removeEventListener('online', _onOnline);
-    _sessionRestoring = true;
-    _sessionOffline   = false;
-    updateCloudTabUI();
-    restoreCloudSession().then(function() {
-      _sessionRestoring = false;
-      updateCloudTabUI();
-      if (_syncEnabled) runSync({ decks: false, showToast: true }).catch(function(){});
-    });
-  });
-}
-
 function _createSupabaseClient() {
   return supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
@@ -2596,154 +2574,87 @@ function _createSupabaseClient() {
   });
 }
 
-// attempt to restore existing session on startup
-async function restoreCloudSession() {
-  try {
+// single getSession() call with 7s timeout — any failure → offline (keep credentials, retry on online)
+function restoreSession() {
+  logAppEvent('session_restore_start', { SDK: 'supabase-js' });
+  return Promise.resolve().then(function() {
     _sb = _createSupabaseClient();
 
-    // pre-read localStorage token — no network needed, immediate user identity
-    // note: Supabase SDK uses projectRef (no domain) as key, must match SDK
     var sbKey = 'sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token';
     var parsed = null;
     try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
-    // if SDK key cleared (SDK cleans on expiry detection), try own backup
     if (!parsed) {
       try { parsed = JSON.parse(localStorage.getItem('yihai_session_backup') || 'null'); } catch(e) {}
     }
-
-    // Level 1: getSession() (SDK auto-refreshes with refresh_token)
-    var { data, error } = await _sb.auth.getSession();
-    if (!error && data.session) {
-      _syncEnabled      = true;
-      _sessionOffline   = false;
-      _cloudUserEmail   = data.session.user.email;
-      _cloudUserId      = data.session.user.id;
-      _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
-      localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
-      migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
-      localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
-      logAppEvent('session_restore_l1_ok', { uid: _cloudUserId });
-      return;
-    }
-    logAppEvent('session_restore_l1_fail', {
-      hasError: !!error, errMsg: error && error.message,
-      hasToken: !!parsed, hasTokenEmail: !!(parsed && parsed.user && parsed.user.email)
-    });
-
-    // Level 2: manual setSession (handle SDK localStorage race)
-    if (parsed && parsed.access_token && parsed.refresh_token) {
-      var r = await _sb.auth.setSession({ access_token: parsed.access_token, refresh_token: parsed.refresh_token });
-      if (!r.error && r.data.session) {
-        _syncEnabled      = true;
-        _sessionOffline   = false;
-        _cloudUserEmail   = r.data.session.user.email;
-        _cloudUserId      = r.data.session.user.id;
-        _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
-        migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
-        localStorage.setItem('yihai_session_backup', JSON.stringify(r.data.session));
-        logAppEvent('session_restore_l2_ok', { uid: _cloudUserId });
-        return;
-      }
-      // distinguish: Supabase explicit rejection (400 + invalid credential code) = real logout;
-      // other failures (network, timeout, undefined message) → offline, keep login state.
-      // iOS PWA reload has brief network instability, refresh may fail but account is valid.
-      var errMsg    = (r.error && r.error.message) || '';
-      var errStatus = r.error && r.error.status;
-      // Supabase error message may be underscore (refresh_token_not_found) or spaced (Refresh Token Not Found)
-      var isRealLogout = errStatus === 400 &&
-        /invalid.grant|refresh.token.not.found|user.not.found/i.test(errMsg);
-      if (!isRealLogout && parsed.user && parsed.user.email) {
-        // indeterminate failure → offline mode, wait for online event auto-retry
-        logAppEvent('session_restore_l2_offline', {
-          errStatus: errStatus, errMsg: errMsg, hasEmail: true
-        });
-        _cloudUserEmail = parsed.user.email;
-        _cloudUserId    = parsed.user.id || _cloudUserId;
-        _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
-        _sessionOffline = true;
-        _scheduleSessionRetry();
-        return;
-      }
-      // real logout (token server-side invalid): clear backup, return, show login UI
-      localStorage.removeItem('yihai_session_backup');
-      logAppEvent('session_restore_l2_real_logout', {
-        errStatus: errStatus, errMsg: errMsg, isRealLogout: isRealLogout
-      });
+    if (!parsed || !parsed.user || !parsed.user.email) {
+      logAppEvent('session_restore_none', {});
       return;
     }
 
-    // Level 3: 300ms retry (CDN race fallback)
-    await new Promise(function(r){setTimeout(r,300)});
-    var retry = await _sb.auth.getSession();
-    if (retry.data && retry.data.session) {
-      _syncEnabled      = true;
-      _sessionOffline   = false;
-      _cloudUserEmail   = retry.data.session.user.email;
-      _cloudUserId      = retry.data.session.user.id;
-      _deviceId         = localStorage.getItem('yihai_device_id') || 'unknown';
-      localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
-      migrateDeviceRecordsToUser(_cloudUserId).catch(function(){});
-      localStorage.setItem('yihai_session_backup', JSON.stringify(retry.data.session));
-      logAppEvent('session_restore_l3_ok', { uid: _cloudUserId });
-    }
-    if (!_syncEnabled) {
-      logAppEvent('session_restore_l3_fail', {
-        hasToken: !!parsed, hasTokenEmail: !!(parsed && parsed.user && parsed.user.email)
-      });
-    }
+    var timedOut = false;
+    return Promise.race([
+      _sb.auth.getSession(),
+      new Promise(function(resolve) { setTimeout(function(){ timedOut = true; resolve({ data: { session: null }, error: { message: 'timeout' } }); }, 7000); })
+    ]).then(function(result) {
+      var data = result.data, error = result.error;
 
-    // all levels failed: has localStorage token but network unreachable → offline mode
-    if (!_syncEnabled && parsed && parsed.user && parsed.user.email) {
-      logAppEvent('session_restore_offline_fallback', {
-        hasToken: true, hasEmail: true
-      });
+      if (!error && data.session) {
+        _syncEnabled    = true;
+        _cloudUserEmail = data.session.user.email;
+        _cloudUserId    = data.session.user.id;
+        localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
+        localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+        logAppEvent('session_restore_ok', { uid: _cloudUserId });
+        updateCloudTabUI();
+        return;
+      }
+
+      _syncEnabled    = false;
       _cloudUserEmail = parsed.user.email;
-      _cloudUserId    = parsed.user.id || _cloudUserId;
-      _deviceId       = localStorage.getItem('yihai_device_id') || 'unknown';
-      _sessionOffline = true;
-      _scheduleSessionRetry();
-    }
-  } catch(e) {
-    if (typeof supabase !== 'undefined') {
-      _sb = _createSupabaseClient();
-    }
-    logAppEvent('session_restore_catch', { errMsg: e.message, supDefined: typeof supabase !== 'undefined' });
-    console.warn('[sync] no saved session');
-  }
+      _cloudUserId    = parsed.user.id || '';
+      logAppEvent('session_restore_offline', { reason: timedOut ? 'timeout' : (error && error.message) || 'no_session' });
+      updateCloudTabUI();
+
+      window.removeEventListener('online', _onOnlineRetry);
+      window.addEventListener('online', _onOnlineRetry);
+    });
+  }).catch(function(e) {
+    logAppEvent('session_restore_error', { errMsg: e.message });
+    _syncEnabled = false;
+    updateCloudTabUI();
+  });
+}
+
+function _onOnlineRetry() {
+  log.info('sync', 'online — retrying session restore');
+  window.removeEventListener('online', _onOnlineRetry);
+  restoreSession().then(function() {
+    if (_syncEnabled) runSync({ decks: false, showToast: true }).catch(function(){});
+  });
 }
 
 function updateCloudTabUI() {
-  const loginSec     = document.getElementById('cloud-login-section');
-  const connSec      = document.getElementById('cloud-connected-section');
-  const restoringSec = document.getElementById('cloud-restoring-section');
-  const userEl       = document.getElementById('cloud-user-email');
-  if (_sessionRestoring) {
-    if (loginSec)     loginSec.style.display     = 'none';
-    if (connSec)      connSec.style.display      = 'none';
-    if (restoringSec) restoringSec.style.display = '';
-  } else if (_syncEnabled) {
-    if (loginSec)     loginSec.style.display     = 'none';
-    if (connSec)      connSec.style.display      = '';
-    if (restoringSec) restoringSec.style.display = 'none';
-    if (userEl) userEl.textContent = '✅ ' + _cloudUserEmail;
-  } else if (_sessionOffline && _cloudUserEmail) {
-    // has credentials but network failed: keep login appearance, wait for reconnect
-    if (loginSec)     loginSec.style.display     = 'none';
-    if (connSec)      connSec.style.display      = '';
-    if (restoringSec) restoringSec.style.display = 'none';
-    if (userEl) userEl.textContent = '📵 ' + _cloudUserEmail + t('account_offline_suffix');
+  const loginSec = document.getElementById('cloud-login-section');
+  const connSec  = document.getElementById('cloud-connected-section');
+  const userEl   = document.getElementById('cloud-user-email');
+
+  if (_syncEnabled) {
+    if (loginSec) loginSec.style.display = 'none';
+    if (connSec)  connSec.style.display  = '';
+    if (userEl)   userEl.textContent = '✅ ' + _cloudUserEmail;
+  } else if (_cloudUserEmail) {
+    if (loginSec) loginSec.style.display = 'none';
+    if (connSec)  connSec.style.display  = '';
+    if (userEl)   userEl.textContent = '📵 ' + _cloudUserEmail + t('account_offline_suffix');
   } else {
-    if (loginSec)     loginSec.style.display     = '';
-    if (connSec)      connSec.style.display      = 'none';
-    if (restoringSec) restoringSec.style.display = 'none';
-    // prefill last login email for convenience
-    const emailEl = document.getElementById('cloud-email');
+    if (loginSec) loginSec.style.display = '';
+    if (connSec)  connSec.style.display  = 'none';
+    var emailEl = document.getElementById('cloud-email');
     if (emailEl && !emailEl.value) {
       emailEl.value = localStorage.getItem('yihai_last_cloud_email') || '';
     }
   }
   updateMineProfile();
-  // if account screen is visible, refresh its state too
   var _acc_el = document.getElementById('screen-account');
   if (_acc_el && _acc_el.classList.contains('active')) renderAccount();
 }
@@ -2766,8 +2677,6 @@ async function doCloudLogin() {
     const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
     if (error) throw error;
     _syncEnabled      = true;
-    _sessionOffline   = false;
-    _sessionRestoring = false;
     _cloudUserEmail = data.user.email;
     _cloudUserId = data.user.id;
     localStorage.setItem('yihai_last_cloud_user_id', _cloudUserId);
@@ -2800,8 +2709,6 @@ async function doCloudLogout() {
     if (_sb) await _sb.auth.signOut();
   } catch(e) { console.warn('[sync] signOut error:', e.message); }
   _syncEnabled      = false;
-  _sessionOffline   = false;
-  _sessionRestoring = false;
   _cloudUserEmail = '';
   // v5: don't clear _cloudUserId — getCurrentUserId() still returns last login,
   // offline practice data belongs correctly. new login overwrites unless explicit account switch.
@@ -3188,9 +3095,9 @@ async function runSync(opts) {
     });
     var uid = getCurrentUserId();
     var pendingCount = allTrials.filter(function(t) { return !t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid); }).length;
-    for (var t of allTrials) {
-      if (!t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid)) {
-        try { await syncTrialLog(t); syncStats.trials++; } catch(e) { /* skip */ }
+    for (var tr of allTrials) {
+      if (!tr.synced_at && tr.deck_key && (!tr.user_id || tr.user_id === uid)) {
+        try { await syncTrialLog(tr); syncStats.trials++; } catch(e) { /* skip */ }
       }
     }
     // 2. config sync
@@ -4611,7 +4518,7 @@ async function deleteDeck(e, key) {
   e.stopPropagation();
   const meta = DECKS_META.find(m => m.key === key);
   if (!meta || meta.builtin) return;
-  const ok = await showConfirmDialog(`删除牌组「${esc(meta.name)}」？`);
+  const ok = await showConfirmDialog(t('deck_delete_confirm', { name: esc(meta.name) }));
   if (!ok) return;
   // revoke ObjectURL to prevent memory leak
   (DECKS[key] || []).forEach(c => {
@@ -4749,7 +4656,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// ── caregiver mode ───────────────────────────────────────────────
+// ── advanced mode ───────────────────────────────────────────────
 function onAppModeToggle(el) {
   _appMode = el.checked ? 'advanced' : 'standard';
   localStorage.setItem('yihai_app_mode', _appMode);
@@ -5182,7 +5089,7 @@ function renderAccount() {
   resEl.style.display = 'none';
   inEl.style.display  = 'none';
 
-  if (_sessionRestoring) {
+  if (!_cloudUserEmail && localStorage.getItem('yihai_session_backup')) {
     resEl.style.display = '';
     return;
   }
@@ -5227,8 +5134,6 @@ async function doAccountLogin() {
     const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
     if (error) throw error;
     _syncEnabled      = true;
-    _sessionOffline   = false;
-    _sessionRestoring = false;
     _cloudUserEmail = data.user.email;
     _cloudUserId = data.user.id;
     localStorage.setItem('yihai_last_cloud_user_id', _cloudUserId);
@@ -5475,7 +5380,7 @@ function stopAllPromptTimers() {
 }
 
 // start speech prompt sequence after entering a card
-function startCardPrompts(pickedOpts) {
+function startCardPrompts(pickedOpts, optLang) {
   clearPromptTimers();
   // Phase 1: quiz prompt
   tQuizPromptTimer = setTimeout(() => {
@@ -5485,7 +5390,7 @@ function startCardPrompts(pickedOpts) {
     tOptHintTimer = setTimeout(() => {
       tOptHintTimer = null;
       if (OPT_HINT_ON && pickedOpts && pickedOpts.length) {
-        speakOptHint(pickedOpts);
+        speakOptHint(pickedOpts, optLang);
       }
     }, OPT_HINT_DELAY);
   }, QUIZ_PROMPT_DELAY);
@@ -5533,6 +5438,7 @@ const I18N = {
     app_short_name: 'Glimmers',
     meta_description: 'Picture-word matching — learn with fun',
     // Common
+    common_item_unit: '',
     common_back: 'Back',
     common_cancel: 'Cancel',
     common_confirm: 'Confirm',
@@ -5758,6 +5664,11 @@ const I18N = {
     default_opt_hint: 'Choose from {A}.{B}.{C}',
     default_wrong: 'Take it easy, try again',
     default_correct: 'Correct!',
+    deck_delete_confirm: 'Delete deck "{name}"?',
+    deck_empty_title: 'No decks yet',
+    deck_empty_sub: 'Go to "Mine" → "Import" and import a .yhspack file',
+    rest_toast: 'Practiced {n} min, take a rest 😊',
+    common_version_title: 'Tap 5 times to open diagnostic panel',
     import_url_coming: 'Download from URL coming soon.',
     card_predict_days: 'In {interval}d ({date})',
   },
@@ -5989,6 +5900,11 @@ const I18N = {
     default_opt_hint: '请在{A}.{B}.{C}中选择一个',
     default_wrong: '不要着急，再试一次',
     default_correct: '回答正确',
+    deck_delete_confirm: '删除牌组「{name}」？',
+    deck_empty_title: '还没有牌组',
+    deck_empty_sub: '点右下角「我的」→「导入文件」<br>导入 .yhspack 开始练习',
+    rest_toast: '已练习 {n} 分钟，可以休息一下 😊',
+    common_version_title: '点击5次打开诊断面板',
     import_url_coming: '从链接下载功能即将上线。',
     card_predict_days: '{interval}天后（{date}）',
   },
@@ -6220,6 +6136,11 @@ const I18N = {
     default_opt_hint: 'Elige entre {A}.{B}.{C}',
     default_wrong: 'Tranquilo, intentalo de nuevo',
     default_correct: '¡Correcto!',
+    deck_delete_confirm: '¿Eliminar mazo "{name}"?',
+    deck_empty_title: 'Sin mazos todavía',
+    deck_empty_sub: 'Ve a "Mi cuenta" → "Importar" e importa un archivo .yhspack',
+    rest_toast: 'Practicado {n} min, descansa 😊',
+    common_version_title: 'Toque 5 veces para abrir el panel de diagnóstico',
     import_url_coming: 'Descarga por URL disponible pronto.',
     card_predict_days: 'En {interval}d ({date})',
   },
@@ -6258,6 +6179,22 @@ function setLocale(loc) {
   if (typeof updateHomeTopbar === 'function') updateHomeTopbar();
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
+  // reset voice prompts to current locale defaults on language switch
+  ['phraseSelect','phraseOptHint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
+  PHRASE_SELECT   = t('quiz_select_hint');
+  PHRASE_OPT_HINT = t('default_opt_hint');
+  PHRASE_WRONG    = t('default_wrong');
+  PHRASE_CORRECT  = t('default_correct');
+  const phraseInputs = [
+    ['phrase-select',    PHRASE_SELECT],
+    ['phrase-opt-hint',  PHRASE_OPT_HINT],
+    ['phrase-wrong',     PHRASE_WRONG],
+    ['phrase-correct',   PHRASE_CORRECT],
+  ];
+  phraseInputs.forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
 }
 
 function applyI18n() {
@@ -6423,42 +6360,51 @@ function speakSequence(items, onDone, pause = 350, sid = sessionId) {
 // option hint: replace {A}{B}{C}{D} with actual options and speak sequentially
 // option hint: parse {A}{B}{C} and pause char . (one .=100ms)
 // example: "Choose from {A}.{B}.{C}"
-function speakOptHint(opts) {
+function speakOptHint(opts, optLang) {
   if (!opts || !opts.length) return;
   const labels = ['A','B','C','D'];
-  const PAUSE_MS = 100; // pause duration per .
+  const PAUSE_MS = 100;
+  const uiLang = getLocale();
+  const oLang = optLang || 'zh-CN';
 
-  // step 1: replace wildcards with actual option text
-  let text = PHRASE_OPT_HINT;
-  opts.forEach((opt, i) => {
-    if (i < labels.length) text = text.replace(`{${labels[i]}}`, opt);
-  });
-  // remove unreplaced wildcards
-  text = text.replace(/\{[A-D]\}/g, '');
-
-  // step 2: split into segments by pause char .
+  // parse template into segments: text (UI lang) / {var} (card lang) / pause
   const parts = [];
-  const re = /([^.]+)|(\.+)/g;
+  const re = /[\{｛][A-D][\}｝]|[\.。]+/g;
+  const tmpl = PHRASE_OPT_HINT;
+  let lastIdx = 0;
   let m;
-  while ((m = re.exec(text)) !== null) {
-    if (m[1]) {
-      const t = m[1].trim();
-      if (t) parts.push({ type: 'text', val: t });
-    } else if (m[2]) {
-      parts.push({ type: 'pause', ms: m[2].length * PAUSE_MS });
+  while ((m = re.exec(tmpl)) !== null) {
+    if (m.index > lastIdx) {
+      const txt = tmpl.slice(lastIdx, m.index).trim();
+      if (txt) parts.push({ type: 'text', val: txt, lang: uiLang });
     }
+    const raw = m[0];
+    if (raw === '.' || raw === '。' || /^[\.。]+$/.test(raw)) {
+      parts.push({ type: 'pause', ms: raw.length * PAUSE_MS });
+    } else {
+      const label = raw[1];
+      const idx = labels.indexOf(label);
+      if (idx >= 0 && idx < opts.length) {
+        const optText = opts[idx].trim();
+        if (optText) parts.push({ type: 'var', val: optText, lang: oLang });
+      }
+    }
+    lastIdx = m.index + raw.length;
+  }
+  if (lastIdx < tmpl.length) {
+    const txt = tmpl.slice(lastIdx).trim();
+    if (txt) parts.push({ type: 'text', val: txt, lang: uiLang });
   }
 
-  // step 3: sequential playback, pause segments use setTimeout
   const sid = sessionId;
   function playParts(arr) {
-    if (sid !== sessionId) return;  // session switched, abort
+    if (sid !== sessionId) return;
     if (!arr.length) return;
     const [head, ...tail] = arr;
     if (head.type === 'pause') {
       setTimeout(() => playParts(tail), head.ms);
     } else {
-      speakDirect(head.val, () => playParts(tail));
+      speakDirect(head.val, () => playParts(tail), head.lang);
     }
   }
   playParts(parts);
@@ -6593,7 +6539,7 @@ function render() {
   stopAllPromptTimers();
   // pass actual option text for option hint speech
   const pickedTexts = picked.map(({ name }) => name);
-  startCardPrompts(pickedTexts);
+  const optLang = q.nameLang || resolveFieldLang(q.name); startCardPrompts(pickedTexts, optLang);
 }
 
 function revealBrowse(q) {
@@ -6669,7 +6615,7 @@ function onSel(e, idx, btn) {
     // ── correct ──────────────────────────────────────────────
     tone('ok');
     if (CONFETTI_ON) setTimeout(spawnConfetti, 100);
-    if (CORRECT_HINT_ON) setTimeout(() => speakDirect(PHRASE_CORRECT, null), 300);
+    if (CORRECT_HINT_ON) setTimeout(() => speakDirect(PHRASE_CORRECT, null, getLocale()), 300);
 
     // T1 rating mapping: 1st correct→Good, 2nd correct (after 1st wrong)→Hard
     if (currentMode !== 'browse' && q._srsState) {
@@ -7055,14 +7001,14 @@ function _checkDurationWarning() {
 
 function showRestToast() {
   const mins = Math.round(SRS_CONFIG.warn_duration_sec / 60);
-  const t = document.createElement('div');
-  t.textContent = `已练习 ${mins} 分钟，可以休息一下 😊`;
-  t.style.cssText = `position:fixed;bottom:calc(120px + var(--safe-bottom));left:50%;
+  const el = document.createElement('div');
+  el.textContent = t('rest_toast', { n: mins });
+  el.style.cssText = `position:fixed;bottom:calc(120px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
 }
 
 // ── visibilitychange: reset idle timer on background switch, avoid false active time ──
@@ -7228,7 +7174,7 @@ function toggleCorrectHint(cb) {
 }
 
 function onPhraseChange(key, val) {
-  const normalize = s => s.replace(/。/g, '.');
+  const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
   if (key === 'select')  { PHRASE_SELECT   = normalize(val) || t('quiz_select_hint');   localStorage.setItem('phraseSelect',  PHRASE_SELECT); }
   if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || t('default_wrong');    localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
   if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
@@ -7305,7 +7251,7 @@ function onOptTouchDelayChange(v) {
 
 function onOptCount(v) {
   OPT_COUNT = parseInt(v);
-  document.getElementById('opt-count-val').textContent = `${v}个`;
+  document.getElementById('opt-count-val').textContent = `${v}`;
   localStorage.setItem('optCount', v);
   debouncePushConfig();
 }
@@ -7334,6 +7280,7 @@ function loadSettings() {
   if (qpDelay) QUIZ_PROMPT_DELAY = parseFloat(qpDelay) * 1000;
   const ps = localStorage.getItem('phraseSelect');
   if (ps) PHRASE_SELECT = ps;
+  else PHRASE_SELECT = t('quiz_select_hint');
 
   // option hint
   const optHintOn = localStorage.getItem('optHintOn');
@@ -7439,7 +7386,7 @@ function loadSettings() {
 
     // option count
     const ocEl = document.getElementById('opt-count');
-    if (ocEl) { ocEl.value = OPT_COUNT; document.getElementById('opt-count-val').textContent = `${OPT_COUNT}个`; }
+    if (ocEl) { ocEl.value = OPT_COUNT; document.getElementById('opt-count-val').textContent = `${OPT_COUNT}`; }
     const otdEl = document.getElementById('opt-touch-delay');
     if (otdEl) { otdEl.value = OPT_TOUCH_DELAY; document.getElementById('opt-touch-delay-val').textContent = `${OPT_TOUCH_DELAY}ms`; }
 
@@ -7868,44 +7815,28 @@ function showAbout() {
   // 2. cloud init — runs after Supabase SDK loads
   async function initCloud() {
     window.addEventListener('offline', function() {
-      if (_syncEnabled) { log.info('sync', 'network offline — entering offline mode'); _sessionOffline = true; updateCloudTabUI(); _scheduleSessionRetry(); }
+      if (_syncEnabled) { _syncEnabled = false; updateCloudTabUI(); }
     });
 
-    logAppEvent('session_restore_start', {
-      hasEverLoggedIn: localStorage.getItem('yihai_has_ever_logged_in') === '1',
-      SDK: 'supabase-js 2.105.4', app: APP_VERSION
-    });
-    try {
-      await restoreCloudSession();
-    } catch(e) { console.warn('[cloud] session restore error:', e.message); }
+    await restoreSession();
 
-    // SDK auth state listener — auto-update UI on token refresh / expiry
     if (_sb) {
       _sb.auth.onAuthStateChange(function(event, session) {
         if (event === 'TOKEN_REFRESHED' && session) {
           _cloudUserEmail = session.user.email;
           _cloudUserId    = session.user.id;
           _syncEnabled    = true;
-          _sessionOffline = false;
           localStorage.setItem('yihai_session_backup', JSON.stringify(session));
           logAppEvent('session_restore_token_refreshed', { uid: _cloudUserId });
           updateCloudTabUI();
-        } else if (event === 'SIGNED_OUT' && _syncEnabled && !_sessionOffline) {
-          // _syncEnabled still true → not active logout (doCloudLogout already set it false)
-          // keep offline mode when _sessionOffline (restoreCloudSession already flagged network issue)
-          // SDK detected token can't be refreshed → silent logout, show login form
+        } else if (event === 'SIGNED_OUT' && _syncEnabled) {
           logAppEvent('session_restore_sdk_signout', {});
           _syncEnabled    = false;
-          _sessionOffline = false;
           _cloudUserEmail = '';
           updateCloudTabUI();
         }
-        // ignore INITIAL_SESSION — already handled by restoreCloudSession
       });
     }
-
-    _sessionRestoring = false;
-    updateCloudTabUI();
 
     var p = _lastSrsWrite || Promise.resolve();
     await p;
@@ -7913,21 +7844,12 @@ function showAbout() {
     upsertDeviceRegistry();
   }
 
-  // wait for Supabase SDK before initCloud (defer script runs after inline)
-  // if ever logged in, immediately mark as restoring to avoid flash of "not logged in"
-  if (localStorage.getItem('yihai_has_ever_logged_in') === '1') {
-    _sessionRestoring = true;
-  }
   var _cloudRetries = 0;
   function _tryInitCloud() {
     if (typeof supabase !== 'undefined') {
       initCloud().catch(function(e) { console.warn('[cloud] init error:', e.message); });
     } else if (++_cloudRetries < 50) {
       setTimeout(_tryInitCloud, 200);
-    } else {
-      // SDK timeout (offline/CDN unreachable)
-      _sessionRestoring = false;
-      updateCloudTabUI();
     }
   }
   setTimeout(_tryInitCloud, 100);
@@ -8567,8 +8489,8 @@ function renderDeckList() {
   if (!DECKS_META.length) {
     grid.innerHTML = `<div class="empty-state">
       <div class="empty-state-icon">📂</div>
-      <div class="empty-state-title">还没有牌组</div>
-      <div class="empty-state-sub">点右下角「我的」→「导入文件」<br>导入 .yhspack 开始练习</div>
+      <div class="empty-state-title">${t('deck_empty_title')}</div>
+      <div class="empty-state-sub">${t('deck_empty_sub')}</div>
     </div>`;
     currentDeck = null;
     return;

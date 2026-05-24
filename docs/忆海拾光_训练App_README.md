@@ -129,6 +129,21 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.1.1 — 2026-05-24
+
+**重构：Session Restore 重写**
+- 3 级恢复链（L1 getSession → L2 setSession → L3 300ms retry）→ 单次 getSession() + 7s 超时
+- 删除 `_sessionRestoring`、`_sessionOffline`、`_onlineListenerActive`、`_scheduleSessionRetry`、`isRealLogout` 正则
+- 状态模型：6 变量 → 3 变量（`_syncEnabled`/`_cloudUserEmail`/`_cloudUserId`）
+- updateCloudTabUI：4 分支 → 3 分支；online 监听内联到 restoreSession 失败分支
+- 代码净减少 138 行
+
+**修复**
+- 首页 topbar 增加 `max-width:500px`，PC 浏览器桌面适配
+- 设置面板 sheet-section/sheet-tabs padding 统一为 16px，与其他页面一致
+
+---
+
 ### v5.1.0 — 2026-05-23
 
 **重构：Wave 1 导航 + i18n 地基**

@@ -2,6 +2,14 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.1.1 Key Changes
+
+- **Session restore 重写**: `restoreCloudSession()` → `restoreSession()`。删除 3 级恢复链（L1 getSession → L2 setSession with isRealLogout regex → L3 300ms retry），改为单次 getSession() + 7s 超时。任何失败统一离线（`_syncEnabled=false`），保留 `_cloudUserEmail`。online 事件监听内联到 restoreSession 失败分支，不再需要独立的 `_scheduleSessionRetry()`。
+- **状态模型简化**: 删除 `_sessionRestoring`（SDK 加载中）、`_sessionOffline`（凭证+网络失败）、`_onlineListenerActive`（防重注册）。UI 状态由 3 变量推导：`_syncEnabled=true` → 在线；`_syncEnabled=false && _cloudUserEmail` → 离线（📵）；`_cloudUserEmail` 为空 → 未登录。
+- **updateCloudTabUI 简化**: 4 分支 → 3 分支，移除 `_sessionRestoring` 和 `_sessionOffline` 引用。`cloud-restoring-section` DOM 节点保留但不再被 JS 引用。
+- **initCloud 简化**: 移除 `_sessionRestoring=true/false` 管理，移除 redundant `session_restore_start` 日志，SIGNED_OUT 处理不再区分 `_sessionOffline`。
+- **CSS 修复**: `.home-topbar` 添加 `max-width:500px`（其他 topbar 均已有，仅此遗漏）；`.sheet-section` padding `20px` → `16px`；`.sheet-tabs` padding `8px` → `16px`。
+
 ## v5.1.0 Key Changes
 
 - **Wave 1 导航重构**: 首页改为 Tab Bar（首页/FAB/我的）。新增独立屏：`screen-browse`（浏览）、`screen-account`（账户）、`screen-deck-detail`（牌组详情，左滑重命名/导出/删除）、`screen-create-card`（制卡表单）。设置改为底部 Sheet overlay，不再是独立 screen。旧 `.home-gear-btn` 顶栏按钮删除。

@@ -141,7 +141,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.1.0**（Wave 1 + i18n，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.1.1**（Wave 1 + i18n + session restore 重写，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.1.1 主要变更：**
+- Session restore 重写：3 级恢复链（L1 getSession → L2 setSession → L3 retry）→ 单次 getSession() + 7s 超时。删除 `_sessionRestoring`/`_sessionOffline`/`_onlineListenerActive`/`_scheduleSessionRetry`/`isRealLogout`，状态模型 6 变量 → 3 变量。updateCloudTabUI 4 分支 → 3 分支。净减少 138 行。
+- CSS 修复：首页 topbar 增加 max-width:500px（PC 浏览器适配），设置面板 sheet-section/sheet-tabs padding 统一为 16px。
 
 **v5.1.0 主要变更：**
 - 阶段 0 i18n 地基：`detectLocale/t/getLocale/setLocale/detectScript/resolveFieldLang/normalizeField`，TTS `lang` 参数，`.yhspack` 字段语言迁移
