@@ -59,6 +59,15 @@ img { -webkit-user-drag: none; pointer-events: none; }
   /* Safe area — centralized, single reference */
   --safe-top:    env(safe-area-inset-top, 44px);
   --safe-bottom: env(safe-area-inset-bottom, 34px);
+  /* z-index scale */
+  --z-base:    0;
+  --z-above:   2;
+  --z-bar:     10;
+  --z-tooltip: 20;
+  --z-overlay: 100;
+  --z-sheet:   200;
+  --z-toast:   900;
+  --z-dialog:  1000;
 }
 /* ── multi-theme support ── */
 html[data-theme="jade"] {
@@ -252,7 +261,7 @@ body {
   -webkit-tap-highlight-color: transparent; touch-action: pan-y;
   transition: background .12s, transform .28s cubic-bezier(.25,.46,.45,.94);
   display: flex; align-items: center; padding: 14px 18px 14px 34px;
-  border-bottom: 0.5px solid var(--bd); position: relative; z-index: 2;
+  border-bottom: 0.5px solid var(--bd); position: relative; z-index: var(--z-above);
 }
 .deck-card:last-child .deck-card-inner { border-bottom: none; }
 .deck-card-inner:active { background: var(--surf2); }
@@ -293,14 +302,14 @@ body {
   padding: 6px 16px var(--safe-bottom);
   background: transparent;
   display: flex; align-items: flex-end;
-  overflow: visible; position: relative; z-index: 10;
+  overflow: visible; position: relative; z-index: var(--z-bar);
 }
 .home-tabbar::before {
   content: ''; position: absolute; inset: 0 16px 0;
   background: var(--surf); border-radius: 22px 22px 0 0;
   border-top: 1px solid var(--bd);
   box-shadow: 0 -2px 20px rgba(26,18,8,0.06);
-  z-index: 0;
+  z-index: var(--z-base);
 }
 .tab-item {
   flex: 1; display: flex; flex-direction: column;
@@ -308,7 +317,7 @@ body {
   gap: 4px; padding: 10px 4px 12px;
   background: none; border: none; cursor: pointer;
   color: var(--text3); font-size: 11px; font-weight: 500;
-  transition: color .2s; position: relative; z-index: 1;
+  transition: color .2s; position: relative; z-index: var(--z-base);
   -webkit-tap-highlight-color: transparent;
 }
 .tab-item svg { width: 24px; height: 24px; }
@@ -387,7 +396,7 @@ body {
 
 /* custom confirm dialog (replaces iOS PWA blocked confirm()) */
 .yh-dialog-mask {
-  position: fixed; inset: 0; z-index: 1000;
+  position: fixed; inset: 0; z-index: var(--z-dialog);
   background: rgba(0,0,0,0.45);
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
@@ -650,8 +659,8 @@ body {
 .nring-p { fill:none; stroke:transparent; stroke-width:3; stroke-linecap:round; }
 .nxtbtn.counting .nring-t { stroke:rgba(255,255,255,.14); }
 .nxtbtn.counting .nring-p { stroke:rgba(255,255,255,.72); }
-.nring-lbl { position:relative; z-index:1; }
-.nring-sec { position:relative; z-index:1; font-size:13px; font-weight:600; opacity:.6; min-width:16px; }
+.nring-lbl { position:relative; z-index:var(--z-base); }
+.nring-sec { position:relative; z-index:var(--z-base); font-size:13px; font-weight:600; opacity:.6; min-width:16px; }
 
 /* Slide */
 .content { transition:opacity .2s, transform .2s; }
@@ -662,7 +671,7 @@ body {
    SETTINGS DRAWER — Tab layout
    ════════════════════════════════ */
 .settings-overlay {
-  position:fixed; inset:0; z-index:200;
+  position:fixed; inset:0; z-index:var(--z-sheet);
   background:rgba(0,0,0,0.38);
   display:none;
 }
@@ -714,7 +723,7 @@ body {
 .stoggle input:checked ~ .stoggle-thumb { transform:translateX(18px); }
 
 /* Confetti + jelly */
-#cc { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:999; }
+#cc { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:var(--z-toast); }
 @keyframes jelly{0%,100%{transform:scale(1)}20%{transform:scale(1.14,.86)}40%{transform:scale(.89,1.11)}60%{transform:scale(1.06,.95)}80%{transform:scale(.98,1.02)}}
 .jly{animation:jelly .42s ease}
 
@@ -736,7 +745,7 @@ body {
 /* ── Left-swipe action buttons on deck cards ── */
 .deck-card-actions {
   position: absolute; right: 0; top: 0; bottom: 0;
-  display: flex; z-index: 1;
+  display: flex; z-index: var(--z-base);
 }
 .swipe-action-btn {
   width: 64px; border: none; cursor: pointer;
@@ -960,7 +969,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 .trial-time { font-size: 12px; color: var(--text3); flex-shrink: 0; }
 /* Card detail sheet */
 .card-detail-overlay {
-  position: absolute; inset: 0; z-index: 50;
+  position: absolute; inset: 0; z-index: var(--z-overlay);
   background: rgba(0,0,0,0.38);
   display: none;
 }
@@ -1123,7 +1132,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 }
 .dd-card-actions {
   position: absolute; top: 0; right: 0; height: 100%;
-  display: flex; flex-direction: row; z-index: 1;
+  display: flex; flex-direction: row; z-index: var(--z-base);
 }
 .dd-card-act {
   width: 64px; height: 100%; border: none;
@@ -1135,7 +1144,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 .dd-card-act-edit { background: var(--ocean); }
 .dd-card-act-del  { background: #e53e3e; }
 .dd-card-inner {
-  position: relative; z-index: 2; background: var(--surf2);
+  position: relative; z-index: var(--z-above); background: var(--surf2);
   display: flex; align-items: center; gap: 14px; padding: 14px 18px;
   transition: transform .25s cubic-bezier(.4,0,.2,1); touch-action: pan-y;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
@@ -1269,7 +1278,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 }
 
 /* Sync progress modal — improve existing modal */
-#sync-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.45); z-index:999; align-items:center; justify-content:center; }
+#sync-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.45); z-index:var(--z-toast); align-items:center; justify-content:center; }
 #sync-modal.show { display:flex; }
 #sync-modal-box {
   background:var(--surf); border-radius:var(--r); padding:28px 24px; width:min(320px,88vw);
@@ -1285,7 +1294,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 /* ═══ Action Sheet (advanced + button) ═══ */
 .action-sheet-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.38); z-index: 998;
+  background: rgba(0,0,0,0.38); z-index: var(--z-overlay);
   display: none; align-items: flex-end; justify-content: center;
   pointer-events: none;
 }
@@ -4229,7 +4238,7 @@ function showImportToast(name, count) {
   el.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
-    z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
+    z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2500);
 }
@@ -6801,7 +6810,7 @@ function showRestToast() {
   el.style.cssText = `position:fixed;bottom:calc(120px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
-    z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
+    z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
@@ -7514,7 +7523,7 @@ function showCloudToast(msg, isErr) {
   t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:${isErr?'#9B3A2A':'var(--text)'};color:#fff;
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
-    z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
+    z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
 }
@@ -8481,7 +8490,7 @@ function showToastMsg(msg) {
   t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
-    z-index:9999;white-space:nowrap;animation:toastIn .3s ease`;
+    z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
 }
