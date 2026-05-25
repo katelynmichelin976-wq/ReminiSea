@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MediaSource 适配器测试</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; padding: 20px; background: #f5f5f5; color: #222; }
+h1 { margin-bottom: 8px; font-size: 18px; }
+.desc { color: #666; font-size: 13px; margin-bottom: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.card { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+.card-label { font-size: 12px; font-weight: 600; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.card-src { font-size: 11px; color: #aaa; margin-bottom: 10px; word-break: break-all; }
+.media-box { min-height: 120px; display: flex; align-items: center; justify-content: center; background: #f9f9f9; border-radius: 8px; overflow: hidden; position: relative; flex-direction: column; }
+.media-box img, .media-box video { max-width: 100%; max-height: 180px; object-fit: contain; display: block; }
+.media-box .emoji { font-size: 64px; }
+.status { font-size: 12px; padding: 6px 10px; border-radius: 6px; margin-bottom: 6px; text-align: center; }
+.status.loading { background: #e8f4ff; color: #0066cc; }
+.status.ok      { background: #e6f9ee; color: #1a8a3e; }
+.status.warn    { background: #fff8e1; color: #b36b00; }
+.status.error   { background: #ffeaea; color: #c00; }
+.status.info    { background: #f0f0f0; color: #555; line-height: 1.5; }
+.badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 99px; margin-bottom: 8px; font-weight: 600; }
+.badge.url    { background: #dbeafe; color: #1d4ed8; }
+.badge.webdav { background: #f3e8ff; color: #7c3aed; }
+.badge.emoji  { background: #fef9c3; color: #854d0e; }
+.badge.legacy { background: #f0fdf4; color: #166534; }
+.badge.empty  { background: #f0f0f0; color: #888; }
+.note { font-size: 11px; color: #aaa; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>MediaSource 适配器测试</h1>
+<p class="desc">验证三种媒体来源渲染效果。WebDAV 需填写下方常量后刷新页面。</p>
+
+<div id="root" class="grid"></div>
+
+<script>
+// ── 配置区（填入后刷新）──────────────────────────────────────────
+const WEBDAV_URL  = '';   // 如 'https://dav.jianguoyun.com/dav/'
+const WEBDAV_USER = '';   // WebDAV 用户名
+const WEBDAV_PASS = '';   // WebDAV 密码或 App Token
+
+// ── 测试用例 ─────────────────────────────────────────────────────
+const TEST_CASES = [
+  {
+    label: 'emoji',
+    src: '🍎',
+    note: 'emoji 直接显示，无需网络'
+  },
+  {
+    label: '直链图片（HTTPS）',
+    src: 'https://picsum.photos/seed/yihai/300/200',
+    note: 'Lorem Picsum 公开随机图'
+  },
+  {
+    label: '直链视频（HTTPS）',
+    src: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    note: 'W3Schools 公开测试视频，支持 seek'
+  },
+  {
+    label: 'Dropbox 图片',
+    src: '',   // 粘贴 Dropbox 分享链接，将 ?dl=0 改为 ?raw=1
+    note: '留空跳过；填入后刷新'
+  },
+  {
+    label: 'Dropbox 视频',
+    src: '',   // 粘贴 Dropbox mp4 分享链接，将 ?dl=0 改为 ?raw=1
+    note: '留空跳过；填入后刷新'
+  },
+  {
+    label: 'WebDAV 图片',
+    src: 'wd:test.jpg',
+    note: '需配置上方 WEBDAV_* 常量；MVP 整体下载'
+  },
+  {
+    label: 'WebDAV 视频',
+    src: 'wd:test.mp4',
+    note: '整体下载后播放，MVP 不支持 seek'
+  },
+  {
+    label: 'Supabase 旧路径',
+    src: 'ReminiSea/cards/sample.jpg',
+    note: '识别为旧格式，测试页不走 SDK'
+  },
+  {
+    label: '空值',
+    src: '',
+    note: '应显示占位提示'
+  },
+];
+
+// ── 工具函数 ──────────────────────────────────────────────────────
+function isEmoji(str) {
+  if (!str) return false;
+  if (str.includes('://') || str.includes('.') || str.includes('/')) return false;
+  return /^[\p{Emoji}\p{Extended_Pictographic}]+$/u.test(str.trim());
+}
+
+function isVideo(src) {
+  return /\.(mp4|mov|webm|avi|mkv)(\?|$)/i.test(src);
+}
+
+// ── resolveMedia ──────────────────────────────────────────────────
+async function resolveMedia(src) {
+  if (!src) return { type: 'empty', url: null };
+  if (isEmoji(src)) return { type: 'emoji', url: src };
+  if (src.startsWith('https://') || src.startsWith('http://')) {
+    return { type: 'url', url: src };
+  }
+  if (src.startsWith('wd:')) {
+    if (!WEBDAV_URL || !WEBDAV_USER) return { type: 'webdav_unconfigured', url: null };
+    const path = src.slice(3);
+    const base = WEBDAV_URL.replace(/\/$/, '');
+    const encoded = path.split('/').map(encodeURIComponent).join('/');
+    return { type: 'webdav', url: base + '/' + encoded };
+  }
+  // 无前缀 = 旧 Supabase 路径
+  return { type: 'supabase_legacy', url: src };
+}
+
+// ── fetchWebdav ───────────────────────────────────────────────────
+async function fetchWebdav(url) {
+  const auth = 'Basic ' + btoa(WEBDAV_USER + ':' + WEBDAV_PASS);
+  const resp = await fetch(url, { headers: { Authorization: auth } });
+  if (!resp.ok) throw new Error('WebDAV HTTP ' + resp.status);
+  return resp;
+}
+
+// ── renderMedia ───────────────────────────────────────────────────
+async function renderMedia(src, box) {
+  box.innerHTML = '<div class="status loading">⏳ 加载中…</div>';
+
+  try {
+    const resolved = await resolveMedia(src);
+
+    if (resolved.type === 'empty') {
+      box.innerHTML = '<div class="status warn">— 空值（占位）</div>';
+      return;
+    }
+    if (resolved.type === 'emoji') {
+      box.innerHTML = '<div class="emoji">' + resolved.url + '</div>';
+      return;
+    }
+    if (resolved.type === 'webdav_unconfigured') {
+      box.innerHTML = '<div class="status warn">⚠️ WebDAV 未配置<br><small>填写顶部常量后刷新</small></div>';
+      return;
+    }
+    if (resolved.type === 'supabase_legacy') {
+      box.innerHTML = '<div class="status info">📦 识别为 Supabase 旧路径<br><small>' + resolved.url + '</small></div>';
+      return;
+    }
+
+    // url 或 webdav
+    let finalUrl = resolved.url;
+    let objectUrl = null;
+
+    if (resolved.type === 'webdav') {
+      const resp = await fetchWebdav(resolved.url);
+      const blob = await resp.blob();
+      objectUrl = URL.createObjectURL(blob);
+      finalUrl = objectUrl;
+    }
+
+    const vid = isVideo(src || finalUrl);
+    const el = vid ? document.createElement('video') : document.createElement('img');
+    if (vid) { el.controls = true; }
+    el.src = finalUrl;
+
+    box.innerHTML = '';
+
+    const onSuccess = () => {
+      const tag = document.createElement('div');
+      tag.className = 'status ok';
+      tag.textContent = '✅ ' + resolved.type + (vid ? ' · 视频' : ' · 图片');
+      box.prepend(tag);
+    };
+    el.addEventListener(vid ? 'loadedmetadata' : 'load', onSuccess);
+    el.addEventListener('error', () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      box.innerHTML = '<div class="status error">❌ 加载失败<br><small>' + finalUrl.slice(0, 80) + '</small></div>';
+    });
+
+    box.appendChild(el);
+
+  } catch(e) {
+    box.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+  }
+}
+
+// ── 渲染卡片 ──────────────────────────────────────────────────────
+function badgeInfo(src) {
+  if (!src) return { cls: 'empty', text: '空' };
+  if (isEmoji(src)) return { cls: 'emoji', text: 'emoji' };
+  if (src.startsWith('https://') || src.startsWith('http://')) return { cls: 'url', text: 'HTTPS 直链' };
+  if (src.startsWith('wd:')) return { cls: 'webdav', text: 'WebDAV' };
+  return { cls: 'legacy', text: 'Supabase 旧格式' };
+}
+
+const root = document.getElementById('root');
+
+TEST_CASES.forEach(tc => {
+  // 跳过留空的 Dropbox 测试用例（src='' 但不是"空值"用例）
+  if (tc.src === '' && tc.label !== '空值') return;
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  const bid = badgeInfo(tc.src);
+  const boxId = 'box-' + Math.random().toString(36).slice(2);
+
+  card.innerHTML =
+    '<div class="card-label">' + tc.label + '</div>' +
+    '<span class="badge ' + bid.cls + '">' + bid.text + '</span>' +
+    '<div class="card-src">' + (tc.src || '（空）') + '</div>' +
+    '<div class="media-box" id="' + boxId + '"></div>' +
+    '<div class="note">' + tc.note + '</div>';
+
+  root.appendChild(card);
+  renderMedia(tc.src, document.getElementById(boxId));
+});
+</script>
+</body>
+</html>
