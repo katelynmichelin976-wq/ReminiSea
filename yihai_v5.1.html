@@ -6114,7 +6114,7 @@ function speak(text, delay = 0, onend = null, lang = null) {
   const go = () => {
     if (!voices.length) loadVoices();
     const utt = new SpeechSynthesisUtterance(text);
-    const useLang = lang || getLocale();
+    const useLang = lang || resolveFieldLang(text, getLocale());
     utt.lang = useLang;
     utt.rate = TTS_RATE;
     utt.pitch = TTS_PITCH;
@@ -6170,10 +6170,9 @@ function speakOptHint(opts, optLang) {
   if (!opts || !opts.length) return;
   const labels = ['A','B','C','D'];
   const PAUSE_MS = 100;
-  const uiLang = getLocale();
   const oLang = optLang || 'zh-CN';
 
-  // parse template into segments: text (UI lang) / {var} (card lang) / pause
+  // parse template into segments: text (detect from content) / {var} (card lang) / pause
   const parts = [];
   const re = /[\{｛][A-D][\}｝]|[\.。]+/g;
   const tmpl = PHRASE_OPT_HINT;
@@ -6182,7 +6181,7 @@ function speakOptHint(opts, optLang) {
   while ((m = re.exec(tmpl)) !== null) {
     if (m.index > lastIdx) {
       const txt = tmpl.slice(lastIdx, m.index).trim();
-      if (txt) parts.push({ type: 'text', val: txt, lang: uiLang });
+      if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, oLang) });
     }
     const raw = m[0];
     if (raw === '.' || raw === '。' || /^[\.。]+$/.test(raw)) {
@@ -6199,7 +6198,7 @@ function speakOptHint(opts, optLang) {
   }
   if (lastIdx < tmpl.length) {
     const txt = tmpl.slice(lastIdx).trim();
-    if (txt) parts.push({ type: 'text', val: txt, lang: uiLang });
+    if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, oLang) });
   }
 
   const sid = sessionId;
