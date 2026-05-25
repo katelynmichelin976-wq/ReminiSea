@@ -60,27 +60,6 @@ img { -webkit-user-drag: none; pointer-events: none; }
   --safe-top:    env(safe-area-inset-top, 44px);
   --safe-bottom: env(safe-area-inset-bottom, 34px);
 }
-html.dark {
-  --ocean:      #38bdf8;
-  --ocean-dk:   #0ea5e9;
-  --ocean-bg:   #0c1e2e;
-  --bg:         #071520;
-  --surf:       #0d2035;
-  --surf2:      #112840;
-  --text:       #e0f2fe;
-  --text2:      #7ec8e3;
-  --text3:      #2d5a7a;
-  --bd:         rgba(56,189,248,0.12);
-  --bd2:        rgba(56,189,248,0.22);
-  --blue:       #38bdf8;
-  --blue-bg:    #112840;
-  --blue-lt:    rgba(56,189,248,0.15);
-  --green-bg:   #042014;
-  --green-bd:   #065f46;
-  --diamond:    #38bdf8;
-  --diamond2:   #0c4a6e;
-  --sh:         0 2px 20px rgba(0,0,0,0.5);
-}
 /* ── multi-theme support ── */
 html[data-theme="jade"] {
   --ocean:      #1e7a52; --ocean-dk: #155e3e;
@@ -963,11 +942,11 @@ body {
 .sbadge-review  { background: var(--green-bg); color: var(--green); }
 .sbadge-relearn { background: #fee2e2; color: #b91c1c; }
 .sbadge-sus     { background: #fde8ff; color: #7c3aed; }
-html.dark .sbadge-learn   { background: #432e00; color: #fcd34d; }
-html.dark .sbadge-inreview{ background: #112840; color: #38bdf8; }
-html.dark .sbadge-review  { background: #042014; color: #6ee7b7; }
-html.dark .sbadge-relearn { background: #2d0707; color: #fca5a5; }
-html.dark .sbadge-sus     { background: #2e1147; color: #d8b4fe; }
+html[data-theme="dark"] .sbadge-learn   { background: #432e00; color: #fcd34d; }
+html[data-theme="dark"] .sbadge-inreview{ background: #112840; color: #38bdf8; }
+html[data-theme="dark"] .sbadge-review  { background: #042014; color: #6ee7b7; }
+html[data-theme="dark"] .sbadge-relearn { background: #2d0707; color: #fca5a5; }
+html[data-theme="dark"] .sbadge-sus     { background: #2e1147; color: #d8b4fe; }
 /* Trial list */
 .trial-item {
   display: flex; align-items: center; gap: 10px;
@@ -983,8 +962,8 @@ html.dark .sbadge-sus     { background: #2e1147; color: #d8b4fe; }
 .tr-hard  { background: #fef3c7; color: #92400e; }
 .tr-again { background: #fee2e2; color: #b91c1c; }
 .tr-easy  { background: var(--blue-bg); color: var(--blue); }
-html.dark .tr-hard { background: #432e00; color: #fcd34d; }
-html.dark .tr-again { background: #2d0707; color: #fca5a5; }
+html[data-theme="dark"] .tr-hard { background: #432e00; color: #fcd34d; }
+html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 .trial-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
 .trial-time { font-size: 12px; color: var(--text3); flex-shrink: 0; }
 /* Card detail sheet */
@@ -2868,7 +2847,7 @@ async function cloudPullConfig() {
     // apply theme (compat with old light/dark and new default/jade/amber/dark)
     var th = localStorage.getItem('theme');
     if (th) {
-      if (th === 'dark') { document.documentElement.classList.add('dark'); document.documentElement.setAttribute('data-theme','dark'); }
+      if (th === 'dark') { document.documentElement.setAttribute('data-theme','dark'); }
       else if (th !== 'light' && th !== 'default') { document.documentElement.setAttribute('data-theme', th); }
       var tog = document.getElementById('dark-toggle');
       if (tog) tog.checked = th === 'dark';
@@ -7565,7 +7544,7 @@ function closeSettingsIfOutside(e){ if(e.target===document.getElementById('setti
 
 // ── Theme ──────────────────────────────────────────────────────
 function toggleTheme(checkbox){
-  const isDark=checkbox?checkbox.checked:!document.documentElement.classList.contains('dark');
+  const isDark=checkbox?checkbox.checked:document.documentElement.getAttribute('data-theme')==='dark';
   setThemeValue(isDark?'dark':'default');
   const tog=document.getElementById('dark-toggle');if(tog)tog.checked=isDark;
   debouncePushConfig();
@@ -7582,7 +7561,6 @@ function setTheme(el) {
   debouncePushConfig();
 }
 function setThemeValue(theme) {
-  document.documentElement.classList.toggle('dark', theme === 'dark');
   document.documentElement.setAttribute('data-theme', theme === 'default' ? '' : theme);
   localStorage.setItem('theme', theme);
 }
@@ -7609,7 +7587,6 @@ function showAbout() {
   var isDark=themeVal==='dark'||(!themeVal&&window.matchMedia('(prefers-color-scheme: dark)').matches);
   // migrate old 'light'/'dark' settings
   if(themeVal==='dark'||isDark){
-    document.documentElement.classList.add('dark');
     document.documentElement.setAttribute('data-theme','dark');
     if(themeVal==='light'||themeVal==='default')localStorage.setItem('theme','dark');
   } else if(themeVal&&themeVal!=='default'&&themeVal!=='light'){
