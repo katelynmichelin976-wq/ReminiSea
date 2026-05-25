@@ -716,6 +716,9 @@ body {
 .sheet-row-lbl { flex:1; font-size:15px; font-weight:500; color:var(--text); }
 .sheet-row-val { font-size:14px; font-weight:700; color:var(--blue); min-width:34px; text-align:right; }
 .sheet-row input[type=range] { width:120px; accent-color:var(--blue); cursor:pointer; }
+.sheet-row-col { flex-direction:column; align-items:flex-start; gap:6px; }
+.sheet-mode-desc { font-size:12px; font-weight:400; color:var(--text3); margin-left:8px; }
+.sheet-mode-check { color:var(--blue); font-size:18px; font-weight:700; }
 .stoggle { position:relative; width:44px; height:26px; flex-shrink:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .stoggle input { opacity:0; width:0; height:0; position:absolute; }
 .stoggle-track { position:absolute; inset:0; background:var(--bd2); border-radius:13px; transition:background .25s; }
@@ -1973,7 +1976,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
               <div class="stoggle-thumb"></div>
             </label>
           </div>
-          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div class="sheet-row sheet-row-col">
             <span class="sheet-row-lbl" data-i18n="settings_correct_phrase">回答正确文案</span>
             <input type="text" id="phrase-correct" class="phrase-input" value="回答正确" oninput="onPhraseChange('correct',this.value)">
           </div>
@@ -1981,16 +1984,16 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="sheet-section">
           <div class="sheet-section-lbl" data-i18n="settings_section_mode">练习模式</div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('normal')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_normal">普通</span><span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px" data-i18n="settings_mode_normal_desc">固定20张，越做越顺</span></span>
-            <span id="mode-check-normal" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_normal">普通</span><span class="sheet-mode-desc" data-i18n="settings_mode_normal_desc">固定20张，越做越顺</span></span>
+            <span class="sheet-mode-check" id="mode-check-normal"></span>
           </div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('hard')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_hard">困难</span><span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px" data-i18n="settings_mode_hard_desc">SRS节律，最多30张</span></span>
-            <span id="mode-check-hard" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_hard">困难</span><span class="sheet-mode-desc" data-i18n="settings_mode_hard_desc">SRS节律，最多30张</span></span>
+            <span class="sheet-mode-check" id="mode-check-hard"></span>
           </div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('survival')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_survival">生存</span><span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px" data-i18n="settings_mode_survival_desc">清空所有积压</span></span>
-            <span id="mode-check-survival" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_survival">生存</span><span class="sheet-mode-desc" data-i18n="settings_mode_survival_desc">清空所有积压</span></span>
+            <span class="sheet-mode-check" id="mode-check-survival"></span>
           </div>
         </div>
         <div class="sheet-section">
@@ -2021,7 +2024,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
             <input type="range" min="0.5" max="10" value="2" step="0.5" id="dbg-qpdelay" oninput="onQpDelayChange(this.value)">
             <span class="sheet-row-val" id="dbg-qpdelay-val">2s</span>
           </div>
-          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div class="sheet-row sheet-row-col">
             <span class="sheet-row-lbl" data-i18n="settings_quiz_prompt_phrase">答题提示文案</span>
             <input type="text" id="phrase-select" class="phrase-input" value="请选择答案" oninput="onPhraseChange('select',this.value)">
           </div>
@@ -2042,7 +2045,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
             <input type="range" min="0.5" max="10" value="5" step="0.5" id="dbg-ohdelay" oninput="onOhDelayChange(this.value)">
             <span class="sheet-row-val" id="dbg-ohdelay-val">5s</span>
           </div>
-          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div class="sheet-row sheet-row-col">
             <span class="sheet-row-lbl" data-i18n="settings_opt_hint_phrase_label">选项提示文案（{A}{B}{C}替换为选项，. 为停顿100ms）</span>
             <input type="text" id="phrase-opt-hint" class="phrase-input" value="请在{A}.{B}.{C}中选择一个" oninput="onPhraseChange('optHint',this.value)">
           </div>
@@ -2058,7 +2061,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
               <div class="stoggle-thumb"></div>
             </label>
           </div>
-          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div class="sheet-row sheet-row-col">
             <span class="sheet-row-lbl" data-i18n="settings_wrong_phrase">答错提示文案</span>
             <input type="text" id="phrase-wrong" class="phrase-input" value="不要着急，再试一次" oninput="onPhraseChange('wrong',this.value)">
           </div>
