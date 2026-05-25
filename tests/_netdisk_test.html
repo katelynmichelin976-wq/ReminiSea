@@ -8,7 +8,16 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, sans-serif; padding: 20px; background: #f5f5f5; color: #222; }
 h1 { margin-bottom: 8px; font-size: 18px; }
-.desc { color: #666; font-size: 13px; margin-bottom: 20px; }
+.desc { color: #666; font-size: 13px; margin-bottom: 16px; }
+.login-bar { background: #fff; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.1); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.login-bar input { border: 1px solid #ddd; border-radius: 8px; padding: 6px 10px; font-size: 13px; outline: none; }
+.login-bar input:focus { border-color: #6366f1; }
+.login-bar button { background: #6366f1; color: #fff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+.login-bar button:hover { background: #4f46e5; }
+.login-status { font-size: 12px; margin-left: auto; }
+.login-status.ok   { color: #1a8a3e; }
+.login-status.none { color: #888; }
+.login-status.err  { color: #c00; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 .card { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
 .card-label { font-size: 12px; font-weight: 600; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
@@ -25,6 +34,7 @@ h1 { margin-bottom: 8px; font-size: 18px; }
 .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 99px; margin-bottom: 8px; font-weight: 600; }
 .badge.url    { background: #dbeafe; color: #1d4ed8; }
 .badge.webdav { background: #f3e8ff; color: #7c3aed; }
+.badge.priv   { background: #fce7f3; color: #9d174d; }
 .badge.emoji  { background: #fef9c3; color: #854d0e; }
 .badge.legacy { background: #f0fdf4; color: #166534; }
 .badge.empty  { background: #f0f0f0; color: #888; }
@@ -34,15 +44,29 @@ h1 { margin-bottom: 8px; font-size: 18px; }
 <body>
 
 <h1>MediaSource 适配器测试</h1>
-<p class="desc">验证三种媒体来源渲染效果。WebDAV 需填写下方常量后刷新页面。</p>
+<p class="desc">验证四种媒体来源渲染效果。WebDAV 需填写下方常量；priv: 需先登录。</p>
+
+<div class="login-bar">
+  <input id="email" type="email" placeholder="邮箱" style="width:180px">
+  <input id="pass"  type="password" placeholder="密码" style="width:120px">
+  <button onclick="doLogin()">登录</button>
+  <span id="login-status" class="login-status none">未登录（priv: 用例需要）</span>
+</div>
 
 <div id="root" class="grid"></div>
 
 <script>
 // ── 配置区（填入后刷新）──────────────────────────────────────────
+const SUPABASE_URL      = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
+
 const WEBDAV_URL  = '';   // 如 'https://dav.jianguoyun.com/dav/'
 const WEBDAV_USER = '';   // WebDAV 用户名
 const WEBDAV_PASS = '';   // WebDAV 密码或 App Token
+
+// ── 运行时状态 ────────────────────────────────────────────────────
+let _jwt = null;  // Supabase access token（登录后设置）
+const _signedUrlCache = new Map();  // path → { url, exp }
 
 // ── 测试用例 ─────────────────────────────────────────────────────
 const TEST_CASES = [
@@ -82,6 +106,27 @@ const TEST_CASES = [
     note: '整体下载后播放，MVP 不支持 seek'
   },
   {
+    label: 'priv: 音频（私有桶）',
+    src: 'priv:recordings/test.mp3',   // 替换为私有桶中真实存在的路径
+    note: '需先登录；Edge Function 签名后播放'
+  },
+  {
+    label: 'priv: 图片（私有桶）',
+    src: 'priv:images/test.jpg',       // 替换为私有桶中真实存在的路径
+    note: '需先登录；签名 URL 缓存 50 分钟'
+  },
+  {
+    label: 'priv: 视频（私有桶）',
+    src: 'priv:videos/test.mp4',       // 替换为私有桶中真实存在的路径
+    note: '需先登录；支持 seek（签名 URL 走原生 Range）'
+  },
+  {
+    label: 'priv: 未登录',
+    src: 'priv:recordings/test.mp3',
+    note: '未登录时应显示"需要登录"提示（刷新页面不登录即可测试）',
+    forceNoAuth: true
+  },
+  {
     label: 'Supabase 旧路径',
     src: 'ReminiSea/cards/sample.jpg',
     note: '识别为旧格式，测试页不走 SDK'
@@ -92,6 +137,36 @@ const TEST_CASES = [
     note: '应显示占位提示'
   },
 ];
+
+// ── 登录（Supabase Auth REST，不需要 SDK）────────────────────────
+async function doLogin() {
+  const email = document.getElementById('email').value.trim();
+  const pass  = document.getElementById('pass').value;
+  const st    = document.getElementById('login-status');
+  st.className = 'login-status none';
+  st.textContent = '登录中…';
+  try {
+    const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.msg || '登录失败');
+    _jwt = data.access_token;
+    st.className = 'login-status ok';
+    st.textContent = '✅ 已登录：' + email;
+    // 重新渲染 priv: 卡片
+    document.querySelectorAll('[data-src^="priv:"]').forEach(el => {
+      const src = el.dataset.src;
+      const forceNoAuth = el.dataset.forceNoAuth === 'true';
+      renderMedia(src, el, forceNoAuth);
+    });
+  } catch(e) {
+    st.className = 'login-status err';
+    st.textContent = '❌ ' + e.message;
+  }
+}
 
 // ── 工具函数 ──────────────────────────────────────────────────────
 function isEmoji(str) {
@@ -105,11 +180,30 @@ function isVideo(src) {
 }
 
 // ── resolveMedia ──────────────────────────────────────────────────
-async function resolveMedia(src) {
+async function resolveMedia(src, forceNoAuth) {
   if (!src) return { type: 'empty', url: null };
   if (isEmoji(src)) return { type: 'emoji', url: src };
   if (src.startsWith('https://') || src.startsWith('http://')) {
     return { type: 'url', url: src };
+  }
+  if (src.startsWith('priv:')) {
+    const jwt = forceNoAuth ? null : _jwt;
+    if (!jwt) return { type: 'priv_no_auth', url: null };
+    const path = src.slice(5);
+    const cached = _signedUrlCache.get(path);
+    if (cached && cached.exp > Date.now()) return { type: 'priv', url: cached.url };
+    const res = await fetch(SUPABASE_URL + '/functions/v1/sign-private-url', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error('sign-private-url ' + res.status + (err.message ? ': ' + err.message : ''));
+    }
+    const { signedUrl } = await res.json();
+    _signedUrlCache.set(path, { url: signedUrl, exp: Date.now() + 50 * 60 * 1000 });
+    return { type: 'priv', url: signedUrl };
   }
   if (src.startsWith('wd:')) {
     if (!WEBDAV_URL || !WEBDAV_USER) return { type: 'webdav_unconfigured', url: null };
@@ -131,11 +225,11 @@ async function fetchWebdav(url) {
 }
 
 // ── renderMedia ───────────────────────────────────────────────────
-async function renderMedia(src, box) {
+async function renderMedia(src, box, forceNoAuth) {
   box.innerHTML = '<div class="status loading">⏳ 加载中…</div>';
 
   try {
-    const resolved = await resolveMedia(src);
+    const resolved = await resolveMedia(src, forceNoAuth);
 
     if (resolved.type === 'empty') {
       box.innerHTML = '<div class="status warn">— 空值（占位）</div>';
@@ -143,6 +237,10 @@ async function renderMedia(src, box) {
     }
     if (resolved.type === 'emoji') {
       box.innerHTML = '<div class="emoji">' + resolved.url + '</div>';
+      return;
+    }
+    if (resolved.type === 'priv_no_auth') {
+      box.innerHTML = '<div class="status warn">🔒 需要登录<br><small>填写上方邮箱/密码后点登录</small></div>';
       return;
     }
     if (resolved.type === 'webdav_unconfigured') {
@@ -154,7 +252,7 @@ async function renderMedia(src, box) {
       return;
     }
 
-    // url 或 webdav
+    // url / priv / webdav
     let finalUrl = resolved.url;
     let objectUrl = null;
 
@@ -196,6 +294,7 @@ function badgeInfo(src) {
   if (!src) return { cls: 'empty', text: '空' };
   if (isEmoji(src)) return { cls: 'emoji', text: 'emoji' };
   if (src.startsWith('https://') || src.startsWith('http://')) return { cls: 'url', text: 'HTTPS 直链' };
+  if (src.startsWith('priv:')) return { cls: 'priv', text: '私有桶' };
   if (src.startsWith('wd:')) return { cls: 'webdav', text: 'WebDAV' };
   return { cls: 'legacy', text: 'Supabase 旧格式' };
 }
@@ -203,7 +302,6 @@ function badgeInfo(src) {
 const root = document.getElementById('root');
 
 TEST_CASES.forEach(tc => {
-  // 跳过留空的 Dropbox 测试用例（src='' 但不是"空值"用例）
   if (tc.src === '' && tc.label !== '空值') return;
 
   const card = document.createElement('div');
@@ -215,11 +313,14 @@ TEST_CASES.forEach(tc => {
     '<div class="card-label">' + tc.label + '</div>' +
     '<span class="badge ' + bid.cls + '">' + bid.text + '</span>' +
     '<div class="card-src">' + (tc.src || '（空）') + '</div>' +
-    '<div class="media-box" id="' + boxId + '"></div>' +
+    '<div class="media-box" id="' + boxId + '"' +
+      (tc.src && tc.src.startsWith('priv:') ? ' data-src="' + tc.src + '" data-force-no-auth="' + (tc.forceNoAuth || false) + '"' : '') +
+    '></div>' +
     '<div class="note">' + tc.note + '</div>';
 
   root.appendChild(card);
-  renderMedia(tc.src, document.getElementById(boxId));
+  const box = document.getElementById(boxId);
+  renderMedia(tc.src, box, tc.forceNoAuth || false);
 });
 </script>
 </body>
