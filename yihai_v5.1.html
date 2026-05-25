@@ -6062,7 +6062,7 @@ let speechReady = false;
 
 function loadVoices() {
   const v = speechSynthesis.getVoices();
-  if (v.length) voices = v;
+  if (v.length) { voices = v; console.log('[voices]', voices.map(x=>x.lang+' | '+x.name).join(', ')); }
 }
 loadVoices();
 if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
@@ -6150,6 +6150,9 @@ function speakDirect(text, onend, lang = null) {
   utt.lang = useLang; utt.rate = TTS_RATE; utt.pitch = TTS_PITCH; utt.volume = 1;
   const v = pickVoice(useLang); if (v) utt.voice = v;
   if (onend) utt.onend = onend;
+  if (v && v.lang !== useLang && v.lang.split('-')[0] !== useLang.split('-')[0]) {
+    console.log('[speakDirect] lang mismatch: wanted', useLang, 'got', v.lang, v.name);
+  }
   speechSynthesis.speak(utt);
   setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
 }
