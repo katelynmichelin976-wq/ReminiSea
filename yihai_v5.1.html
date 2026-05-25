@@ -4917,7 +4917,7 @@ function updateMineProfile() {
   const subEl  = document.getElementById('mine-profile-sub');
   const avEl   = document.getElementById('mine-avatar');
   if (!nameEl) return;
-  if (_cloudUserEmail) {
+  if (_syncEnabled && _cloudUserEmail) {
     nameEl.textContent = _cloudUserEmail;
     subEl.textContent  = t('mine_logged_in_sub');
     avEl.textContent   = _cloudUserEmail[0].toUpperCase();
@@ -4947,7 +4947,7 @@ function renderAccount() {
     resEl.style.display = '';
     return;
   }
-  if (_cloudUserEmail) {
+  if (_syncEnabled && _cloudUserEmail) {
     inEl.style.display = '';
     document.getElementById('account-avatar').textContent = _cloudUserEmail[0].toUpperCase();
     document.getElementById('account-hero-name').textContent = _cloudUserEmail;

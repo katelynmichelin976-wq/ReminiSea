@@ -157,22 +157,20 @@
       body.appendChild(kv('IDB 版本', DB_VER + ' ✓'));
 
       const se  = typeof _syncEnabled    !== 'undefined' ? _syncEnabled    : null;
-      const so  = typeof _sessionOffline !== 'undefined' ? _sessionOffline : null;
-      const sr  = typeof _sessionRestoring !== 'undefined' ? _sessionRestoring : null;
       const em  = typeof _cloudUserEmail !== 'undefined' ? _cloudUserEmail : null;
       const uid = typeof _cloudUserId    !== 'undefined' ? _cloudUserId    : null;
       const did = typeof _deviceId       !== 'undefined' ? _deviceId       : localStorage.getItem('yihai_device_id');
 
+      // v5.1.1: 3-variable model — state derived from _syncEnabled + _cloudUserEmail
       let sText = '未登录', sColor = '#64748b';
-      if (se === true)  { sText = '✓ 在线已登录'; sColor = '#22c55e'; }
-      else if (so)      { sText = '📵 离线模式（有凭证）'; sColor = '#f59e0b'; }
-      else if (sr)      { sText = '⏳ Session 恢复中'; sColor = '#60a5fa'; }
+      if (se === true)                        { sText = '✓ 在线已登录'; sColor = '#22c55e'; }
+      else if (em)                            { sText = '📵 离线（有凭证，同步暂停）'; sColor = '#f59e0b'; }
       body.appendChild(kv('连接状态', sText, sColor));
       body.appendChild(kv('邮箱', em || '—'));
       body.appendChild(kv('user_id', uid ? shortId(uid) + '…' : '—'));
       body.appendChild(kv('device_id', did ? shortId(did) + '…' : '—'));
       body.appendChild(kv('_syncEnabled', String(se)));
-      body.appendChild(kv('_sessionOffline', String(so)));
+      body.appendChild(kv('_cloudUserEmail', em || '(空)'));
 
       // IDB 计数
       body.appendChild(sec('本地 IDB 数据'));
@@ -475,7 +473,6 @@
       const lines = [
         'APP_VERSION: ' + (typeof APP_VERSION!=='undefined'?APP_VERSION:'?'),
         '_syncEnabled: '    + (typeof _syncEnabled!=='undefined'?_syncEnabled:'?'),
-        '_sessionOffline: ' + (typeof _sessionOffline!=='undefined'?_sessionOffline:'?'),
         '_cloudUserEmail: ' + (typeof _cloudUserEmail!=='undefined'?_cloudUserEmail:'?'),
         'device_id: '       + (typeof _deviceId!=='undefined'?_deviceId:localStorage.getItem('yihai_device_id')||'?'),
         'log_level: '       + (localStorage.getItem('yihai_log_level')||'warn(默认)'),
