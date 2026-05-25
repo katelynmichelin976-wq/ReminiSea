@@ -5196,7 +5196,6 @@ function startCardPrompts(pickedOpts, optLang) {
     // Phase 2: option hint (waits additional OPT_HINT_DELAY after quiz prompt)
     tOptHintTimer = setTimeout(() => {
       tOptHintTimer = null;
-      console.log('[startCardPrompts] optHint timer fired, ON:', OPT_HINT_ON, 'picked:', pickedOpts, 'optLang:', optLang);
       if (OPT_HINT_ON && pickedOpts && pickedOpts.length) {
         speakOptHint(pickedOpts, optLang);
       }
@@ -6151,7 +6150,6 @@ function speakDirect(text, onend, lang = null) {
   utt.lang = useLang; utt.rate = TTS_RATE; utt.pitch = TTS_PITCH; utt.volume = 1;
   const v = pickVoice(useLang); if (v) utt.voice = v;
   if (onend) utt.onend = onend;
-  console.log('[speakDirect] text:', JSON.stringify(text), 'lang:', useLang, 'voice:', v?.name||'none', 'voices:', voices.length);
   speechSynthesis.speak(utt);
   setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
 }
@@ -6173,8 +6171,12 @@ function speakOptHint(opts, optLang) {
   const labels = ['A','B','C','D'];
   const PAUSE_MS = 100;
   const oLang = optLang || 'zh-CN';
+  const uiLang = getLocale();
 
-  // parse template into segments: text (detect from content) / {var} (card lang) / pause
+  // parse template into segments:
+  //  text (UI chrome) → voice follows UI locale
+  //  {var} (card names) → voice follows card language (via resolveFieldLang)
+  //  pause
   const parts = [];
   const re = /[\{｛][A-D][\}｝]|[\.。]+/g;
   const tmpl = PHRASE_OPT_HINT;
@@ -6183,7 +6185,7 @@ function speakOptHint(opts, optLang) {
   while ((m = re.exec(tmpl)) !== null) {
     if (m.index > lastIdx) {
       const txt = tmpl.slice(lastIdx, m.index).trim();
-      if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, oLang) });
+      if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, uiLang) });
     }
     const raw = m[0];
     if (raw === '.' || raw === '。' || /^[\.。]+$/.test(raw)) {
@@ -6200,16 +6202,14 @@ function speakOptHint(opts, optLang) {
   }
   if (lastIdx < tmpl.length) {
     const txt = tmpl.slice(lastIdx).trim();
-    if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, oLang) });
+    if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, uiLang) });
   }
 
-  console.log('[speakOptHint] parts:', JSON.stringify(parts.map(p=>({t:p.type,v:p.val,l:p.lang}))));
   const sid = sessionId;
   function playParts(arr) {
-    if (sid !== sessionId) { console.log('[speakOptHint] aborted: sessionId mismatch', sid, sessionId); return; }
+    if (sid !== sessionId) return;
     if (!arr.length) return;
     const [head, ...tail] = arr;
-    console.log('[speakOptHint] playPart:', head.type, head.val||'', head.lang);
     if (head.type === 'pause') {
       setTimeout(() => playParts(tail), head.ms);
     } else {
