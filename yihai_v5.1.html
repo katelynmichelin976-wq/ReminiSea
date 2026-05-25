@@ -6191,7 +6191,7 @@ function speakOptHint(opts, optLang) {
       const idx = labels.indexOf(label);
       if (idx >= 0 && idx < opts.length) {
         const optText = opts[idx].trim();
-        if (optText) parts.push({ type: 'var', val: optText, lang: oLang });
+        if (optText) parts.push({ type: 'var', val: optText, lang: resolveFieldLang(optText, oLang) });
       }
     }
     lastIdx = m.index + raw.length;
