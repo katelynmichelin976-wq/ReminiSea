@@ -6111,7 +6111,6 @@ function pickVoice(lang) {
 }
 
 function speak(text, delay = 0, onend = null, lang = null) {
-  speechSynthesis.cancel();
   const go = () => {
     if (!voices.length) loadVoices();
     const utt = new SpeechSynthesisUtterance(text);
