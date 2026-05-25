@@ -663,10 +663,10 @@ body {
    ════════════════════════════════ */
 .settings-overlay {
   position:fixed; inset:0; z-index:200;
-  background:rgba(0,0,0,0); pointer-events:none;
-  transition:background .28s;
+  background:rgba(0,0,0,0.38);
+  display:none;
 }
-.settings-overlay.open { background:rgba(0,0,0,0.38); pointer-events:auto; }
+.settings-overlay.open { display:block; }
 .settings-sheet {
   position:absolute; bottom:0; left:50%;
   transform:translateX(-50%) translateY(100%);
@@ -961,12 +961,10 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 /* Card detail sheet */
 .card-detail-overlay {
   position: absolute; inset: 0; z-index: 50;
-  background: rgba(0,0,0,0); pointer-events: none;
-  transition: background .25s;
+  background: rgba(0,0,0,0.38);
+  display: none;
 }
-.card-detail-overlay.open {
-  background: rgba(0,0,0,0.38); pointer-events: auto;
-}
+.card-detail-overlay.open { display: block; }
 .card-detail-sheet {
   position: absolute; bottom: 8px;
   left: 50%; transform: translateX(-50%) translateY(100%);
