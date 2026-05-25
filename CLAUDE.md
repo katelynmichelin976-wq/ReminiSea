@@ -69,7 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v4.11.html` | Main training app (v4.11.19, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v5.1.html` | Main training app (v5.1.3, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
 | `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
 | `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
@@ -141,7 +141,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.1.2**（UI 整合 + 云端入口统一，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.1.3**（`_syncEnabled` 门禁修复，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.1.3 主要变更：**
+- 修复：`updateMineProfile`/`renderAccount` 登录状态判断增加 `_syncEnabled` 门禁，session 恢复失败时不再误显在线 UI
 
 **v5.1.2 主要变更：**
 - 云端 UI 整合：删除设置面板「云端」Tab，所有登录/登出/同步操作统一到账户屏

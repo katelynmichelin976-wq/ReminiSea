@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.1.3 Key Changes
+
+- **`_syncEnabled` 门禁**: `updateMineProfile()` 和 `renderAccount()` 的登录状态判断从 `_cloudUserEmail` 改为 `_syncEnabled && _cloudUserEmail`。session 恢复失败时 `_cloudUserEmail` 已有值但 `_syncEnabled=false`，此前会误显已登录头像和邮箱（显示为在线状态），修复后正确显示离线/未登录状态。
+
 ## v5.1.2 Key Changes
 
 - **云端 UI 整合**: 删除设置面板「云端」Tab（`tab-3` / `cloud-login-section` / `cloud-connected-section` / `cloud-restoring-section`）。所有登录/登出/同步 UI 统一到 `screen-account`（账户屏）。删除 `doCloudLogin()`、`doCloudLogout()` 函数，登出逻辑内联到 `doAccountLogout()`。
