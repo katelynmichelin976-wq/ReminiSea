@@ -650,21 +650,6 @@ body {
 .btm.active {
   padding: 8px 16px calc(12px + var(--safe-bottom));
 }
-/* Submit button — hidden (auto-submit replaces it) */
-.subbtn { display:none !important; }
-.ntip {
-  position:absolute; bottom:calc(100% + 9px); left:50%;
-  transform:translateX(-50%) scale(.9);
-  background:var(--text); color:var(--bg);
-  font-size:13px; font-weight:500; padding:8px 16px;
-  border-radius:11px; white-space:nowrap;
-  opacity:0; pointer-events:none;
-  transition:opacity .2s, transform .2s; z-index:20;
-}
-.ntip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--text); }
-.ntip.show { opacity:1; transform:translateX(-50%) scale(1); }
-@keyframes ndg{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
-.ndg{animation:ndg .32s ease}
 
 /* nxtbtn: hidden during quiz, shown after answer — no animation */
 .nxtbtn {
@@ -1540,10 +1525,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
   <!-- 4. Bottom: action buttons, fixed -->
   <div class="btm">
-    <button class="subbtn" id="subbtn" ontouchstart="" onclick="onSubmit()">
-      <span id="sublbl" data-i18n="quiz_confirm">确认答案</span>
-      <div class="ntip" id="ntip" data-i18n="quiz_select_hint">先选一个答案 👆</div>
-    </button>
     <button class="nxtbtn" id="nxtbtn" ontouchstart="" onclick="onNext()">
       <svg class="nring-svg" id="nrsvg"><rect class="nring-t" id="nrt" rx="20"/><rect class="nring-p" id="nrp" rx="20"/></svg>
       <span class="nring-lbl" id="nxt-lbl" data-i18n="quiz_next">下一题</span>
@@ -6336,7 +6317,6 @@ function render() {
     document.getElementById('opts-zone').style.display = 'none';
     document.getElementById('content').classList.remove('revealed');
     document.getElementById('answer-panel').className = 'answer-panel';
-    document.getElementById('subbtn').className = 'subbtn gone';
     revealBrowse(q);
     return;
   }
@@ -6525,18 +6505,6 @@ function onSel(e, idx, btn) {
 }
 
 // ── Submit ─────────────────────────────────────────────────────
-function onSubmit() {
-  if (revealed) return;
-  if (sel===null) {
-    const sb=document.getElementById('subbtn');
-    sb.classList.remove('ndg'); void sb.offsetWidth; sb.classList.add('ndg');
-    sb.addEventListener('animationend',()=>sb.classList.remove('ndg'),{once:true});
-    document.getElementById('ntip').classList.add('show');
-    setTimeout(()=>document.getElementById('ntip').classList.remove('show'),2000);
-    tone('clk'); return;
-  }
-  revealAnswer();
-}
 
 // ── Reveal ─────────────────────────────────────────────────────
 function revealAnswer() {
@@ -6564,8 +6532,6 @@ function revealAnswer() {
   },30);
 
   if (isOk) { /* tone and confetti now in onSel */ }
-
-  document.getElementById('subbtn').classList.add('gone');
 
   const hints = READ_HINT && q.details && q.details.length ? q.details : [];
 
