@@ -199,24 +199,35 @@ async function checkPersonalDeckUpdates() {
 
 ---
 
-## 七、本地 Key 清理
+## 七、本地 Key 与 ID 清理
 
 ### 7.1 现有问题
 
 | 问题 | 位置 | 说明 |
 |------|------|------|
 | `'cloud_' + deckId` | 第 7285 行 | 前缀编码来源语义 |
-| `'deck_' + Date.now()` | 第 4155/4585/4680 行 | 非稳定 ID，语义模糊 |
+| `'deck_' + Date.now()` | 第 4155/4585/4680 行 | 非稳定，跨用户可能冲突 |
+| `'c_' + Date.now() + random(4)` | 第 4604 行 | 非全局唯一，多用户同毫秒可冲突 |
 | source 靠 sync_at 推断 | 第 4088 行 | 非显式存储，容易漂移 |
 
-### 7.2 修正方案
+### 7.2 ID 唯一性设计原则
+
+- **Deck ID**：`crypto.randomUUID()`，全局唯一，一旦分配永久不变
+- **Card ID**：`crypto.randomUUID()`，全局唯一，一旦分配永久不变
+- **state_key**：`deck_id::card_id`，两个 UUID 组合，跨用户天然唯一
+- **历史存量**：旧格式（`c_xxx`、`deck_xxx`）ID 不变，只有新建对象改用 UUID
+
+### 7.3 修正方案
 
 ```javascript
 // 云端下载：直接用 decks.id，无前缀
-const key = deckId;   // 原：'cloud_' + deckId
+const key = deckId;                    // 原：'cloud_' + deckId
 
-// 本地新建：UUID 替代时间戳
-const key = crypto.randomUUID();   // 原：'deck_' + Date.now()
+// 本地新建牌组：UUID
+const key = crypto.randomUUID();       // 原：'deck_' + Date.now()
+
+// 新建卡片：UUID
+const id = crypto.randomUUID();        // 原：'c_' + Date.now() + '_' + random(4)
 
 // DECKS_META：显式存 deck_type
 { key, name, deck_type: 'personal' }   // 原：source 从 sync_at 推断
