@@ -51,6 +51,7 @@ h1 { margin-bottom: 8px; font-size: 18px; }
   <input id="email" type="email" placeholder="邮箱" style="width:160px">
   <input id="pass"  type="password" placeholder="密码" style="width:110px">
   <button onclick="doLogin()">登录</button>
+  <button onclick="doInitTestFile()" style="background:#059669">初始化测试文件</button>
   <span id="login-status" class="login-status none">未登录（priv: 用例需要）</span>
 </div>
 <div class="login-bar" style="margin-bottom:20px">
@@ -59,6 +60,7 @@ h1 { margin-bottom: 8px; font-size: 18px; }
   <input id="wd-user" type="text"     placeholder="用户名" style="width:110px">
   <input id="wd-pass" type="password" placeholder="密码" style="width:100px">
   <button onclick="doConnectWebdav()">连接</button>
+  <button onclick="doClearWdCache()" style="background:#6b7280">清除媒体缓存</button>
   <span id="wd-status" class="login-status none">未配置（wd: 用例需要）</span>
 </div>
 
@@ -127,13 +129,13 @@ const TEST_CASES = [
   },
   {
     label: 'WebDAV 图片',
-    src: 'wd:test.jpg',
-    note: '需配置上方 WEBDAV_* 常量；MVP 整体下载'
+    src: 'wd:test/2026-05-26_17-22-25.jpg',
+    note: '⚠️ 仅 Capacitor 原生 App 可用（浏览器 CORS 限制）；MVP 整体下载'
   },
   {
     label: 'WebDAV 视频',
-    src: 'wd:test.mp4',
-    note: '整体下载后播放，MVP 不支持 seek'
+    src: 'wd:test/2026-05-26_17-27-35.MOV',
+    note: '⚠️ 仅 Capacitor 原生 App 可用（浏览器 CORS 限制）；108MB，整体下载后播放'
   },
   {
     label: 'priv: 图片（私有桶）',
@@ -190,6 +192,38 @@ async function doLogin() {
   } catch(e) {
     st.className = 'login-status err';
     st.textContent = '❌ ' + e.message;
+  }
+}
+
+// ── 初始化测试文件（上传小 PNG 到当前用户私有桶）──────────────────
+async function doInitTestFile() {
+  const st = document.getElementById('login-status');
+  if (!_jwt) { st.className = 'login-status err'; st.textContent = '❌ 请先登录'; return; }
+  let userId;
+  try { userId = JSON.parse(atob(_jwt.split('.')[1])).sub; } catch(e) { st.textContent = '❌ 无法解析 JWT'; return; }
+
+  // 生成 64×64 紫色 PNG
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#6366f1'; ctx.fillRect(0, 0, 64, 64);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 32px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('✓', 32, 34);
+  const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+
+  st.className = 'login-status none'; st.textContent = '上传中…';
+  try {
+    const res = await fetch(
+      SUPABASE_URL + '/storage/v1/object/yihai-private/' + userId + '/images/test.png',
+      { method: 'POST', headers: { 'Authorization': 'Bearer ' + _jwt, 'Content-Type': 'image/png', 'x-upsert': 'true' }, body: blob }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || 'HTTP ' + res.status);
+    st.className = 'login-status ok'; st.textContent = '✅ 测试文件已上传，刷新卡片中…';
+    _signedUrlCache.clear();
+    _privBoxes.forEach(({ src, box }) => renderMedia(src, box, false));
+  } catch(e) {
+    st.className = 'login-status err'; st.textContent = '❌ 上传失败：' + e.message;
   }
 }
 
@@ -261,12 +295,57 @@ async function resolveMedia(src, forceNoAuth) {
   return { type: 'supabase_legacy', url: src };
 }
 
+// ── WebDAV IndexedDB 缓存 ────────────────────────────────────────
+const _wdDb = (function() {
+  let _p = null;
+  return () => _p || (_p = new Promise((res, rej) => {
+    const r = indexedDB.open('media_cache', 1);
+    r.onupgradeneeded = e => e.target.result.createObjectStore('files');
+    r.onsuccess = e => res(e.target.result);
+    r.onerror = rej;
+  }));
+})();
+
+async function _wdCacheGet(key) {
+  const db = await _wdDb();
+  return new Promise((res, rej) => {
+    const r = db.transaction('files').objectStore('files').get(key);
+    r.onsuccess = e => res(e.target.result || null);
+    r.onerror = rej;
+  });
+}
+
+async function _wdCachePut(key, blob) {
+  const db = await _wdDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('files', 'readwrite');
+    tx.objectStore('files').put(blob, key);
+    tx.oncomplete = res;
+    tx.onerror = rej;
+  });
+}
+
+async function doClearWdCache() {
+  const st = document.getElementById('wd-status');
+  const db = await _wdDb();
+  await new Promise((res, rej) => {
+    const tx = db.transaction('files', 'readwrite');
+    tx.objectStore('files').clear();
+    tx.oncomplete = res; tx.onerror = rej;
+  });
+  st.className = 'login-status ok'; st.textContent = '✅ 缓存已清除';
+}
+
 // ── fetchWebdav ───────────────────────────────────────────────────
 async function fetchWebdav(url) {
+  const cached = await _wdCacheGet(url);
+  if (cached) return { blob: cached, fromCache: true };
   const auth = 'Basic ' + btoa(WEBDAV_USER + ':' + WEBDAV_PASS);
   const resp = await fetch(url, { headers: { Authorization: auth } });
   if (!resp.ok) throw new Error('WebDAV HTTP ' + resp.status);
-  return resp;
+  const blob = await resp.blob();
+  await _wdCachePut(url, blob);
+  return { blob, fromCache: false };
 }
 
 // ── renderMedia ───────────────────────────────────────────────────
@@ -300,11 +379,28 @@ async function renderMedia(src, box, forceNoAuth) {
     // url / priv / webdav
     let finalUrl = resolved.url;
     let objectUrl = null;
+    let fromCache = false;
+
+    if (resolved.type === 'priv') {
+      const cacheKey = src.startsWith('priv:') ? src : ('priv:' + src);
+      const cached = await _wdCacheGet(cacheKey);
+      if (cached) {
+        fromCache = true;
+        objectUrl = URL.createObjectURL(cached);
+      } else {
+        const blobResp = await fetch(resolved.url);
+        if (!blobResp.ok) throw new Error('priv 下载失败 HTTP ' + blobResp.status);
+        const blob = await blobResp.blob();
+        await _wdCachePut(cacheKey, blob);
+        objectUrl = URL.createObjectURL(blob);
+      }
+      finalUrl = objectUrl;
+    }
 
     if (resolved.type === 'webdav') {
-      const resp = await fetchWebdav(resolved.url);
-      const blob = await resp.blob();
-      objectUrl = URL.createObjectURL(blob);
+      const result = await fetchWebdav(resolved.url);
+      fromCache = result.fromCache;
+      objectUrl = URL.createObjectURL(result.blob);
       finalUrl = objectUrl;
     }
 
@@ -318,7 +414,8 @@ async function renderMedia(src, box, forceNoAuth) {
     const onSuccess = () => {
       const tag = document.createElement('div');
       tag.className = 'status ok';
-      tag.textContent = '✅ ' + resolved.type + (vid ? ' · 视频' : ' · 图片');
+      const cacheLabel = fromCache ? '（缓存）' : '';
+      tag.textContent = '✅ ' + resolved.type + (vid ? ' · 视频' : ' · 图片') + cacheLabel;
       box.prepend(tag);
     };
     el.addEventListener(vid ? 'loadedmetadata' : 'load', onSuccess);
