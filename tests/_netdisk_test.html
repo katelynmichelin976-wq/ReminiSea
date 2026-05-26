@@ -106,24 +106,24 @@ const TEST_CASES = [
     note: '整体下载后播放，MVP 不支持 seek'
   },
   {
-    label: 'priv: 音频（私有桶）',
-    src: 'priv:recordings/test.mp3',   // 替换为私有桶中真实存在的路径
-    note: '需先登录；Edge Function 签名后播放'
-  },
-  {
     label: 'priv: 图片（私有桶）',
-    src: 'priv:images/test.jpg',       // 替换为私有桶中真实存在的路径
-    note: '需先登录；签名 URL 缓存 50 分钟'
+    src: 'priv:images/test.png',
+    note: '需先登录；Edge Function 签名后加载'
   },
   {
-    label: 'priv: 视频（私有桶）',
-    src: 'priv:videos/test.mp4',       // 替换为私有桶中真实存在的路径
-    note: '需先登录；支持 seek（签名 URL 走原生 Range）'
+    label: 'priv: 图片 × 2（缓存验证）',
+    src: 'priv:images/test.png',
+    note: '与上一张同路径，第二次应走内存缓存不再请求 Function'
+  },
+  {
+    label: 'priv: 文件不存在',
+    src: 'priv:videos/test.mp4',
+    note: '文件未上传，签名失败应显示 ❌ 错误'
   },
   {
     label: 'priv: 未登录',
-    src: 'priv:recordings/test.mp3',
-    note: '未登录时应显示"需要登录"提示（刷新页面不登录即可测试）',
+    src: 'priv:images/test.png',
+    note: '未登录时应显示"🔒 需要登录"',
     forceNoAuth: true
   },
   {
