@@ -79,6 +79,25 @@ const _signedUrlCache = new Map();  // path → { url, exp }
 const _privBoxes = [];  // { src, box, forceNoAuth } — 登录后重渲染用
 const _wdBoxes   = [];  // { src, box } — WebDAV 连接后重渲染用
 
+// ── 自动恢复 Supabase session（与主 app 同 origin 时共享 localStorage）──
+(function() {
+  try {
+    const ref = new URL(SUPABASE_URL).hostname.split('.')[0];
+    let parsed = null;
+    try { parsed = JSON.parse(localStorage.getItem('sb-' + ref + '-auth-token') || 'null'); } catch(e) {}
+    if (!parsed) {
+      try { parsed = JSON.parse(localStorage.getItem('yihai_session_backup') || 'null'); } catch(e) {}
+    }
+    if (!parsed || !parsed.access_token) return;
+    if (parsed.expires_at && parsed.expires_at < Math.floor(Date.now() / 1000)) return;
+    _jwt = parsed.access_token;
+    const email = (parsed.user && parsed.user.email) || '';
+    const st = document.getElementById('login-status');
+    st.className = 'login-status ok';
+    st.textContent = '✅ 已登录（已恢复）：' + email;
+  } catch(e) {}
+})();
+
 // ── 测试用例 ─────────────────────────────────────────────────────
 const TEST_CASES = [
   {
@@ -165,6 +184,11 @@ async function doLogin() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error_description || data.msg || '登录失败');
     _jwt = data.access_token;
+    // 写入 localStorage，刷新后 IIFE 可自动恢复
+    try {
+      const ref = new URL(SUPABASE_URL).hostname.split('.')[0];
+      localStorage.setItem('sb-' + ref + '-auth-token', JSON.stringify(data));
+    } catch(e) {}
     st.className = 'login-status ok';
     st.textContent = '✅ 已登录：' + email;
     // 重新渲染所有 priv: 卡片
