@@ -67,8 +67,9 @@ Deno.serve(async (req: Request) => {
   const fullPath = `${user.id}/${path}`;
   const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(fullPath, EXPIRY);
   if (error) {
+    const status = (error as any).status === 404 || /not found/i.test(error.message) ? 404 : 500;
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+      status,
       headers: { "Content-Type": "application/json", ...corsHeaders() },
     });
   }
