@@ -67,6 +67,7 @@ const WEBDAV_PASS = '';   // WebDAV 密码或 App Token
 // ── 运行时状态 ────────────────────────────────────────────────────
 let _jwt = null;  // Supabase access token（登录后设置）
 const _signedUrlCache = new Map();  // path → { url, exp }
+const _privBoxes = [];  // { src, box, forceNoAuth } — 登录后重渲染用
 
 // ── 测试用例 ─────────────────────────────────────────────────────
 const TEST_CASES = [
@@ -156,12 +157,8 @@ async function doLogin() {
     _jwt = data.access_token;
     st.className = 'login-status ok';
     st.textContent = '✅ 已登录：' + email;
-    // 重新渲染 priv: 卡片
-    document.querySelectorAll('[data-src^="priv:"]').forEach(el => {
-      const src = el.dataset.src;
-      const forceNoAuth = el.dataset.forceNoAuth === 'true';
-      renderMedia(src, el, forceNoAuth);
-    });
+    // 重新渲染所有 priv: 卡片
+    _privBoxes.forEach(({ src, box, forceNoAuth }) => renderMedia(src, box, forceNoAuth));
   } catch(e) {
     st.className = 'login-status err';
     st.textContent = '❌ ' + e.message;
@@ -313,13 +310,14 @@ TEST_CASES.forEach(tc => {
     '<div class="card-label">' + tc.label + '</div>' +
     '<span class="badge ' + bid.cls + '">' + bid.text + '</span>' +
     '<div class="card-src">' + (tc.src || '（空）') + '</div>' +
-    '<div class="media-box" id="' + boxId + '"' +
-      (tc.src && tc.src.startsWith('priv:') ? ' data-src="' + tc.src + '" data-force-no-auth="' + (tc.forceNoAuth || false) + '"' : '') +
-    '></div>' +
+    '<div class="media-box" id="' + boxId + '"></div>' +
     '<div class="note">' + tc.note + '</div>';
 
   root.appendChild(card);
   const box = document.getElementById(boxId);
+  if (tc.src && tc.src.startsWith('priv:')) {
+    _privBoxes.push({ src: tc.src, box, forceNoAuth: tc.forceNoAuth || false });
+  }
   renderMedia(tc.src, box, tc.forceNoAuth || false);
 });
 </script>
