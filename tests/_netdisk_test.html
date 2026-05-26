@@ -47,10 +47,19 @@ h1 { margin-bottom: 8px; font-size: 18px; }
 <p class="desc">验证四种媒体来源渲染效果。WebDAV 需填写下方常量；priv: 需先登录。</p>
 
 <div class="login-bar">
-  <input id="email" type="email" placeholder="邮箱" style="width:180px">
-  <input id="pass"  type="password" placeholder="密码" style="width:120px">
+  <strong style="font-size:12px;color:#555;white-space:nowrap">Supabase</strong>
+  <input id="email" type="email" placeholder="邮箱" style="width:160px">
+  <input id="pass"  type="password" placeholder="密码" style="width:110px">
   <button onclick="doLogin()">登录</button>
   <span id="login-status" class="login-status none">未登录（priv: 用例需要）</span>
+</div>
+<div class="login-bar" style="margin-bottom:20px">
+  <strong style="font-size:12px;color:#555;white-space:nowrap">WebDAV</strong>
+  <input id="wd-url"  type="url"      placeholder="服务器地址  https://dav.xxx.com/dav/" style="width:260px">
+  <input id="wd-user" type="text"     placeholder="用户名" style="width:110px">
+  <input id="wd-pass" type="password" placeholder="密码" style="width:100px">
+  <button onclick="doConnectWebdav()">连接</button>
+  <span id="wd-status" class="login-status none">未配置（wd: 用例需要）</span>
 </div>
 
 <div id="root" class="grid"></div>
@@ -60,14 +69,15 @@ h1 { margin-bottom: 8px; font-size: 18px; }
 const SUPABASE_URL      = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
 
-const WEBDAV_URL  = '';   // 如 'https://dav.jianguoyun.com/dav/'
-const WEBDAV_USER = '';   // WebDAV 用户名
-const WEBDAV_PASS = '';   // WebDAV 密码或 App Token
+let WEBDAV_URL  = '';   // 由配置栏动态设置
+let WEBDAV_USER = '';
+let WEBDAV_PASS = '';
 
 // ── 运行时状态 ────────────────────────────────────────────────────
 let _jwt = null;  // Supabase access token（登录后设置）
 const _signedUrlCache = new Map();  // path → { url, exp }
 const _privBoxes = [];  // { src, box, forceNoAuth } — 登录后重渲染用
+const _wdBoxes   = [];  // { src, box } — WebDAV 连接后重渲染用
 
 // ── 测试用例 ─────────────────────────────────────────────────────
 const TEST_CASES = [
@@ -162,6 +172,26 @@ async function doLogin() {
   } catch(e) {
     st.className = 'login-status err';
     st.textContent = '❌ ' + e.message;
+  }
+}
+
+// ── WebDAV 连接 ───────────────────────────────────────────────────
+async function doConnectWebdav() {
+  const url  = document.getElementById('wd-url').value.trim().replace(/\/$/, '') + '/';
+  const user = document.getElementById('wd-user').value.trim();
+  const pass = document.getElementById('wd-pass').value;
+  const st   = document.getElementById('wd-status');
+  if (!url || !user) { st.className = 'login-status err'; st.textContent = '❌ 请填写地址和用户名'; return; }
+  st.className = 'login-status none'; st.textContent = '连接中…';
+  try {
+    const auth = 'Basic ' + btoa(user + ':' + pass);
+    const resp = await fetch(url, { method: 'PROPFIND', headers: { Authorization: auth, Depth: '0' } });
+    if (resp.status !== 207 && resp.status !== 200) throw new Error('HTTP ' + resp.status);
+    WEBDAV_URL = url; WEBDAV_USER = user; WEBDAV_PASS = pass;
+    st.className = 'login-status ok'; st.textContent = '✅ 已连接：' + url;
+    _wdBoxes.forEach(({ src, box }) => renderMedia(src, box));
+  } catch(e) {
+    st.className = 'login-status err'; st.textContent = '❌ ' + e.message + '（可能是 CORS 或地址错误）';
   }
 }
 
@@ -317,6 +347,9 @@ TEST_CASES.forEach(tc => {
   const box = document.getElementById(boxId);
   if (tc.src && tc.src.startsWith('priv:')) {
     _privBoxes.push({ src: tc.src, box, forceNoAuth: tc.forceNoAuth || false });
+  }
+  if (tc.src && tc.src.startsWith('wd:')) {
+    _wdBoxes.push({ src: tc.src, box });
   }
   renderMedia(tc.src, box, tc.forceNoAuth || false);
 });
