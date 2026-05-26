@@ -53,9 +53,8 @@ CREATE TABLE decks (
                  -- 'personal' : 用户自建
                  -- 'shared'   : 预留
   card_count   INTEGER DEFAULT 0,
-  published_at TIMESTAMPTZ,               -- NULL = 草稿；有值 = 最近发布时间
   shared_at    TIMESTAMPTZ,               -- 预留：shared 时填写
-  updated_at   TIMESTAMPTZ DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ DEFAULT NOW(), -- 只在「发布」时更新，草稿编辑不动此字段
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -160,10 +159,14 @@ JOIN decks d ON d.id = sd.id;
 
 ### 6.1 状态定义
 
-| `published_at` | 含义 |
+复用 `decks.updated_at`，不新增字段：
+
+| `decks.updated_at` 与 `yihai_sync_at_{id}` 关系 | 含义 |
 |------|------|
-| `NULL` | 草稿，仅管理模式可见 |
-| 有值 | 已发布，普通模式自动同步 |
+| `updated_at <= lastSyncAt` | 无新发布，不拉取 |
+| `updated_at > lastSyncAt` | 有新发布，自动拉取 |
+
+**约定**：`decks.updated_at` 只在「发布」动作时更新，草稿编辑只更新 `deck_cards.updated_at`，不动 `decks.updated_at`。
 
 ### 6.2 流程
 
@@ -180,17 +183,16 @@ JOIN decks d ON d.id = sd.id;
 ### 6.3 自动更新判断逻辑
 
 ```javascript
-// session 就绪后
+// session 就绪后（复用现有 yihai_sync_at_ 机制）
 async function checkPersonalDeckUpdates() {
   const { data: decks } = await _sb.from('decks')
-    .select('id, name, published_at')
+    .select('id, name, updated_at')
     .eq('user_id', _cloudUserId)
-    .eq('deck_type', 'personal')
-    .not('published_at', 'is', null);
+    .eq('deck_type', 'personal');
 
   for (const deck of decks) {
     const lastSync = localStorage.getItem('yihai_sync_at_' + deck.id) || '';
-    if (deck.published_at > lastSync) {
+    if (deck.updated_at > lastSync) {
       await downloadDeckFromCloud(deck.id, deck.name);  // 全量下载
     }
   }
