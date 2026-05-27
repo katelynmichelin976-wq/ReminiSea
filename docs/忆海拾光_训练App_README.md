@@ -129,6 +129,19 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.1.4 — 2026-05-27
+
+**功能：牌组云端同步**
+- Migration 010：新建 `decks`/`deck_cards` 统一 schema，替代原 `server_decks`/`cards_pool`/`server_deck_cards` 三表；删除废弃表 `card_state_log`/`upload_log`
+- 本地 deck key 格式清理：去 `cloud_` 前缀，改用 `crypto.randomUUID()` 生成新牌组 key，`DECKS_META` 增加显式 `deck_type` 字段
+- 个人牌组云端同步：`uploadDeckToCloud`（首次上传）、`checkPersonalDeckUpdates`（session 就绪后拉取更新）、`saveDeck`/`deleteDeck` 推送云端
+- 发布机制：`publishDeck` 更新 `decks.updated_at`，牌组详情屏新增「发布」按钮，支持将个人牌组发布为公开 preset
+
+**测试**
+- 全部回归测试对齐新 schema（表名/key 格式/登录 UI/data-theme 主题检测）：_playwright_test / cloud_test / v4.10_regression / cross_device_sync / session_mode_queue 全绿
+
+---
+
 ### v5.1.3 — 2026-05-25
 
 **修复**

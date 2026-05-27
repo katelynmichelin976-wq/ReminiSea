@@ -2,6 +2,14 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.1.4 Key Changes
+
+- **Migration 010**: 新建 `decks`（`id TEXT PK, user_id, name, deck_type, card_count, updated_at`）和 `deck_cards`（`id BIGINT AI, deck_id FK, card_id, name, image_url, audio_url, sort_order`）。RLS：preset/shared 类型全员可读，personal 仅 owner 可读写。从 `server_decks`/`cards_pool`/`server_deck_cards` 迁移 preset 数据。删除废弃表 `card_state_log`、`upload_log`。
+- **Deck key 格式变更**: 旧格式 `cloud_XXXXXXXX`（带前缀）→ 新格式直接用 `decks.id`（8 字符 UUID 片段或完整 UUID）。`DECKS_META` 新增 `deck_type: 'preset'`（旧 `source: 'cloud'` 废弃）。`downloadDeckFromCloud` 改查 `deck_cards`（字段 `card_id/name/image_url/audio_url/sort_order`），不再查 `server_deck_cards`+`cards_pool`。
+- **个人牌组云端同步**: `uploadDeckToCloud(deckKey)` — 上传本地牌组到 `decks`+`deck_cards`（deck_type='personal'）。`checkPersonalDeckUpdates()` — session 就绪后对比 `decks.updated_at` 拉取更新。`saveDeck`/`deleteDeck` 触发 `uploadDeckToCloud`/`_sb.from('decks').delete()`。
+- **发布机制**: `publishDeck(deckKey)` — 将 `decks.deck_type` 更新为 `'preset'`，更新 `updated_at`，触发牌组列表刷新。牌组详情屏增加「发布」按钮（仅 `deck_type='personal'` 的牌组显示）。
+- **回归测试对齐**: `_playwright_cross_device_sync_test` 全面重写（server_decks→decks，old login UI→helper.cloudLogin，settings sync btn→runSync()，localStorage key去cloud_前缀）。cloud_test PHASE6 主题检测改用 `getAttribute('data-theme')`，jade/amber 替代 dark/light。v4.10_regression/session_mode_queue 同步适配。
+
 ## v5.1.3 Key Changes
 
 - **`_syncEnabled` 门禁**: `updateMineProfile()` 和 `renderAccount()` 的登录状态判断从 `_cloudUserEmail` 改为 `_syncEnabled && _cloudUserEmail`。session 恢复失败时 `_cloudUserEmail` 已有值但 `_syncEnabled=false`，此前会误显已登录头像和邮箱（显示为在线状态），修复后正确显示离线/未登录状态。

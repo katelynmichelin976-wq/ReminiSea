@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.1.3</title>
+<title data-i18n="app_title">忆海拾光 v5.1.4</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -59,27 +59,16 @@ img { -webkit-user-drag: none; pointer-events: none; }
   /* Safe area — centralized, single reference */
   --safe-top:    env(safe-area-inset-top, 44px);
   --safe-bottom: env(safe-area-inset-bottom, 34px);
-}
-html.dark {
-  --ocean:      #38bdf8;
-  --ocean-dk:   #0ea5e9;
-  --ocean-bg:   #0c1e2e;
-  --bg:         #071520;
-  --surf:       #0d2035;
-  --surf2:      #112840;
-  --text:       #e0f2fe;
-  --text2:      #7ec8e3;
-  --text3:      #2d5a7a;
-  --bd:         rgba(56,189,248,0.12);
-  --bd2:        rgba(56,189,248,0.22);
-  --blue:       #38bdf8;
-  --blue-bg:    #112840;
-  --blue-lt:    rgba(56,189,248,0.15);
-  --green-bg:   #042014;
-  --green-bd:   #065f46;
-  --diamond:    #38bdf8;
-  --diamond2:   #0c4a6e;
-  --sh:         0 2px 20px rgba(0,0,0,0.5);
+  --mw: 500px;
+  /* z-index scale */
+  --z-base:    0;
+  --z-above:   2;
+  --z-bar:     10;
+  --z-tooltip: 20;
+  --z-overlay: 100;
+  --z-sheet:   200;
+  --z-toast:   900;
+  --z-dialog:  1000;
 }
 /* ── multi-theme support ── */
 html[data-theme="jade"] {
@@ -168,7 +157,7 @@ body {
 #screen-home { justify-content: flex-start; overflow: hidden; }
 
 .home-scroll {
-  flex: 1; width: 100%; max-width: 500px;
+  flex: 1; width: 100%; max-width: var(--mw);
   overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 10px 16px 16px;
   display: flex; flex-direction: column;
@@ -176,7 +165,7 @@ body {
 
 /* ── Top bar ── */
 .home-topbar {
-  width: 100%; max-width: 500px;
+  width: 100%; max-width: var(--mw);
   padding: calc(10px + var(--safe-top)) 16px 14px;
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0;
@@ -273,7 +262,7 @@ body {
   -webkit-tap-highlight-color: transparent; touch-action: pan-y;
   transition: background .12s, transform .28s cubic-bezier(.25,.46,.45,.94);
   display: flex; align-items: center; padding: 14px 18px 14px 34px;
-  border-bottom: 0.5px solid var(--bd); position: relative; z-index: 2;
+  border-bottom: 0.5px solid var(--bd); position: relative; z-index: var(--z-above);
 }
 .deck-card:last-child .deck-card-inner { border-bottom: none; }
 .deck-card-inner:active { background: var(--surf2); }
@@ -310,18 +299,18 @@ body {
 /* ═══ Tab Bar ═══ */
 .home-tabbar {
   flex-shrink: 0;
-  width: 100%; max-width: 500px;
+  width: 100%; max-width: var(--mw);
   padding: 6px 16px var(--safe-bottom);
   background: transparent;
   display: flex; align-items: flex-end;
-  overflow: visible; position: relative; z-index: 10;
+  overflow: visible; position: relative; z-index: var(--z-bar);
 }
 .home-tabbar::before {
   content: ''; position: absolute; inset: 0 16px 0;
   background: var(--surf); border-radius: 22px 22px 0 0;
   border-top: 1px solid var(--bd);
   box-shadow: 0 -2px 20px rgba(26,18,8,0.06);
-  z-index: 0;
+  z-index: var(--z-base);
 }
 .tab-item {
   flex: 1; display: flex; flex-direction: column;
@@ -329,7 +318,7 @@ body {
   gap: 4px; padding: 10px 4px 12px;
   background: none; border: none; cursor: pointer;
   color: var(--text3); font-size: 11px; font-weight: 500;
-  transition: color .2s; position: relative; z-index: 1;
+  transition: color .2s; position: relative; z-index: var(--z-base);
   -webkit-tap-highlight-color: transparent;
 }
 .tab-item svg { width: 24px; height: 24px; }
@@ -355,12 +344,12 @@ body {
 /* ═══ mine screen ═══ */
 .mine-topbar {
   padding: calc(var(--safe-top) + 4px) 16px 6px;
-  width: 100%; max-width: 500px; margin: 0 auto; flex-shrink: 0;
+  width: 100%; max-width: var(--mw); margin: 0 auto; flex-shrink: 0;
   background: var(--surf);
 }
 .mine-scroll {
   flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  width: 100%; max-width: 500px; margin: 0 auto;
+  width: 100%; max-width: var(--mw); margin: 0 auto;
   background: var(--bg); padding: 12px 0 28px;
 }
 .mine-profile {
@@ -408,7 +397,7 @@ body {
 
 /* custom confirm dialog (replaces iOS PWA blocked confirm()) */
 .yh-dialog-mask {
-  position: fixed; inset: 0; z-index: 1000;
+  position: fixed; inset: 0; z-index: var(--z-dialog);
   background: rgba(0,0,0,0.45);
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
@@ -447,7 +436,7 @@ body {
 
 /* ── Top bar: back + progress ── */
 .bar {
-  width:100%; max-width:500px; flex-shrink:0;
+  width:100%; max-width:var(--mw); flex-shrink:0;
   display:flex; align-items:center; gap:12px;
   padding: calc(10px + var(--safe-top)) 16px 12px;
 }
@@ -474,7 +463,7 @@ body {
 
 /* ── Image zone: full-width square, NEVER changes size ── */
 .img-zone {
-  width:100%; max-width:500px; flex-shrink:0;
+  width:100%; max-width:var(--mw); flex-shrink:0;
   padding:0 16px;
 }
 .target-card-wrap {
@@ -485,32 +474,19 @@ body {
 /* ── Middle zone: shared by opts and answer-panel ── */
 .mid-zone {
   flex:1; min-height:0;
-  width:100%; max-width:500px;
-  padding:0 16px;
+  width:100%; max-width:var(--mw);
+  padding:0 16px 8px;
   display:flex; flex-direction:column;
+  justify-content:flex-end;
 }
 
 /* legacy .content used for slide animation */
 .content {
   flex:1; min-height:0;
-  width:100%; max-width:500px;
+  width:100%; max-width:var(--mw);
   display:flex; flex-direction:column;
   gap:10px;
   transition:opacity .2s, transform .2s;
-}
-
-/* Image wrapper */
-.img-zone {
-  flex-shrink:0;
-  padding:0 16px;
-}
-
-/* Mid zone: fills everything between image and btm */
-.mid-zone {
-  flex:1; min-height:0;
-  padding:0 16px 8px;
-  display:flex; flex-direction:column;
-  justify-content:flex-end;
 }
 
 /* Target card — 1:1 square, capped height */
@@ -525,8 +501,6 @@ body {
   max-height:44vh;
 }
 .target-card > .target-img { border-radius:var(--r); overflow:hidden; }
-.revealed .target-card { box-shadow:var(--sh); }
-
 .target-img {
   width:100%; height:100%;
   border-radius:var(--r);
@@ -601,11 +575,9 @@ body {
 @keyframes blink{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(1.02)}}
 .opt.correct { border-color:var(--green); background:var(--green-bg); }
 .opt.correct .otxt { color:var(--green); }
-.opt.correct::after { display:none; }
 .opt.wrong  { border-color:var(--bd2); background:var(--surf2); opacity:.35; }
-.opt.wrong::after { display:none; }
 .opt.dim    { opacity:.25; pointer-events:none; }
-.opt.dim::after { display:none; }
+.opt.correct::after, .opt.wrong::after, .opt.dim::after { display:none; }
 
 /* Answer panel — fills mid-zone, same space as opts-zone */
 .answer-panel {
@@ -639,7 +611,7 @@ body {
 
 /* Bottom — collapses when nxtbtn hidden */
 .btm {
-  width:100%; max-width:500px; flex-shrink:0;
+  width:100%; max-width:var(--mw); flex-shrink:0;
   padding: 0 16px;
   display:flex; flex-direction:column;
 }
@@ -650,21 +622,6 @@ body {
 .btm.active {
   padding: 8px 16px calc(12px + var(--safe-bottom));
 }
-/* Submit button — hidden (auto-submit replaces it) */
-.subbtn { display:none !important; }
-.ntip {
-  position:absolute; bottom:calc(100% + 9px); left:50%;
-  transform:translateX(-50%) scale(.9);
-  background:var(--text); color:var(--bg);
-  font-size:13px; font-weight:500; padding:8px 16px;
-  border-radius:11px; white-space:nowrap;
-  opacity:0; pointer-events:none;
-  transition:opacity .2s, transform .2s; z-index:20;
-}
-.ntip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--text); }
-.ntip.show { opacity:1; transform:translateX(-50%) scale(1); }
-@keyframes ndg{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
-.ndg{animation:ndg .32s ease}
 
 /* nxtbtn: hidden during quiz, shown after answer — no animation */
 .nxtbtn {
@@ -686,11 +643,8 @@ body {
 .nring-p { fill:none; stroke:transparent; stroke-width:3; stroke-linecap:round; }
 .nxtbtn.counting .nring-t { stroke:rgba(255,255,255,.14); }
 .nxtbtn.counting .nring-p { stroke:rgba(255,255,255,.72); }
-.nring-lbl { position:relative; z-index:1; }
-.nring-sec { position:relative; z-index:1; font-size:13px; font-weight:600; opacity:.6; min-width:16px; }
-
-/* Slide */
-.content { transition:opacity .2s, transform .2s; }
+.nring-lbl { position:relative; z-index:var(--z-base); }
+.nring-sec { position:relative; z-index:var(--z-base); font-size:13px; font-weight:600; opacity:.6; min-width:16px; }
 .sout{opacity:0;transform:translateX(-22px)}
 .sin {opacity:0;transform:translateX(22px)}
 
@@ -698,15 +652,15 @@ body {
    SETTINGS DRAWER — Tab layout
    ════════════════════════════════ */
 .settings-overlay {
-  position:fixed; inset:0; z-index:200;
-  background:rgba(0,0,0,0); pointer-events:none;
-  transition:background .28s;
+  position:fixed; inset:0; z-index:var(--z-sheet);
+  background:rgba(0,0,0,0.38);
+  display:none;
 }
-.settings-overlay.open { background:rgba(0,0,0,0.38); pointer-events:auto; }
+.settings-overlay.open { display:block; }
 .settings-sheet {
   position:absolute; bottom:0; left:50%;
   transform:translateX(-50%) translateY(100%);
-  width:100%; max-width:500px;
+  width:100%; max-width:var(--mw);
   background:var(--surf); border-radius:24px 24px 0 0;
   border-top:0.5px solid var(--bd);
   padding-bottom: calc(16px + var(--safe-bottom));
@@ -721,15 +675,15 @@ body {
   display:flex; border-bottom:1px solid var(--bd);
   flex-shrink:0; padding:0 16px;
 }
-.sheet-tab {
+.sheet-tab, .stats-tab {
   flex:1; text-align:center;
-  padding:9px 2px 8px;
-  font-size:12px; font-weight:600; color:var(--text3);
+  font-weight:600; color:var(--text3);
   cursor:pointer; border-bottom:2px solid transparent;
   transition:color .15s, border-color .15s;
   -webkit-tap-highlight-color:transparent;
 }
-.sheet-tab.active { color:var(--red); border-bottom-color:var(--red); }
+.sheet-tab { padding:9px 2px 8px; font-size:12px; }
+.sheet-tab.active, .stats-tab.active { color:var(--red); border-bottom-color:var(--red); }
 /* Tab panels */
 .sheet-panels { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .sheet-panel { display:none; padding:0 0 24px; }
@@ -742,6 +696,9 @@ body {
 .sheet-row-lbl { flex:1; font-size:15px; font-weight:500; color:var(--text); }
 .sheet-row-val { font-size:14px; font-weight:700; color:var(--blue); min-width:34px; text-align:right; }
 .sheet-row input[type=range] { width:120px; accent-color:var(--blue); cursor:pointer; }
+.sheet-row-col { flex-direction:column; align-items:flex-start; gap:6px; }
+.sheet-mode-desc { font-size:12px; font-weight:400; color:var(--text3); margin-left:8px; }
+.sheet-mode-check { color:var(--blue); font-size:18px; font-weight:700; }
 .stoggle { position:relative; width:44px; height:26px; flex-shrink:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .stoggle input { opacity:0; width:0; height:0; position:absolute; }
 .stoggle-track { position:absolute; inset:0; background:var(--bd2); border-radius:13px; transition:background .25s; }
@@ -750,7 +707,7 @@ body {
 .stoggle input:checked ~ .stoggle-thumb { transform:translateX(18px); }
 
 /* Confetti + jelly */
-#cc { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:999; }
+#cc { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:var(--z-toast); }
 @keyframes jelly{0%,100%{transform:scale(1)}20%{transform:scale(1.14,.86)}40%{transform:scale(.89,1.11)}60%{transform:scale(1.06,.95)}80%{transform:scale(.98,1.02)}}
 .jly{animation:jelly .42s ease}
 
@@ -772,7 +729,7 @@ body {
 /* ── Left-swipe action buttons on deck cards ── */
 .deck-card-actions {
   position: absolute; right: 0; top: 0; bottom: 0;
-  display: flex; z-index: 1;
+  display: flex; z-index: var(--z-base);
 }
 .swipe-action-btn {
   width: 64px; border: none; cursor: pointer;
@@ -790,9 +747,9 @@ body {
 
 /* ═══ card creator form ═══ */
 #screen-create-card { justify-content: flex-start; overflow: hidden; align-items: center; }
-.cc-topbar { width: 100%; max-width: 500px; padding: calc(var(--safe-top) + 8px) 12px 6px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.cc-topbar { width: 100%; max-width: var(--mw); padding: calc(var(--safe-top) + 8px) 12px 6px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .cc-topbar-title { flex: 1; text-align: center; font-size: 17px; font-weight: 700; color: var(--text); }
-.cc-body { flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: 500px; padding: 12px 16px 32px; }
+.cc-body { flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: var(--mw); padding: 12px 16px 32px; }
 .cc-form { display: flex; flex-direction: column; gap: 14px; }
 .cc-form-group { display: flex; flex-direction: column; gap: 6px; }
 .cc-form-label { font-size: 13px; font-weight: 700; color: var(--text2); }
@@ -858,27 +815,19 @@ body {
    ════════════════════════════════ */
 #screen-stats { justify-content: flex-start; overflow: hidden; align-items: center; }
 .stats-topbar {
-  width: 100%; max-width: 500px; flex-shrink: 0;
+  width: 100%; max-width: var(--mw); flex-shrink: 0;
   display: flex; align-items: center; justify-content: space-between;
   padding: calc(10px + var(--safe-top)) 16px 8px;
 }
 .stats-title { font-size: 17px; font-weight: 800; color: var(--ocean); }
 .stats-tabs {
-  width: 100%; max-width: 500px; flex-shrink: 0;
+  width: 100%; max-width: var(--mw); flex-shrink: 0;
   display: flex; border-bottom: 1px solid var(--bd);
   padding: 0 16px;
 }
-.stats-tab {
-  flex: 1; text-align: center;
-  padding: 9px 4px 8px;
-  font-size: 13px; font-weight: 600; color: var(--text3);
-  cursor: pointer; border-bottom: 2px solid transparent;
-  transition: color .15s, border-color .15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.stats-tab.active { color: var(--red); border-bottom-color: var(--red); }
+.stats-tab { padding:9px 4px 8px; font-size:13px; }
 .stats-body {
-  flex: 1; min-height: 0; width: 100%; max-width: 500px;
+  flex: 1; min-height: 0; width: 100%; max-width: var(--mw);
   overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
 .stats-panel { display: none; padding-bottom: calc(24px + var(--safe-bottom)); }
@@ -978,11 +927,11 @@ body {
 .sbadge-review  { background: var(--green-bg); color: var(--green); }
 .sbadge-relearn { background: #fee2e2; color: #b91c1c; }
 .sbadge-sus     { background: #fde8ff; color: #7c3aed; }
-html.dark .sbadge-learn   { background: #432e00; color: #fcd34d; }
-html.dark .sbadge-inreview{ background: #112840; color: #38bdf8; }
-html.dark .sbadge-review  { background: #042014; color: #6ee7b7; }
-html.dark .sbadge-relearn { background: #2d0707; color: #fca5a5; }
-html.dark .sbadge-sus     { background: #2e1147; color: #d8b4fe; }
+html[data-theme="dark"] .sbadge-learn   { background: #432e00; color: #fcd34d; }
+html[data-theme="dark"] .sbadge-inreview{ background: #112840; color: #38bdf8; }
+html[data-theme="dark"] .sbadge-review  { background: #042014; color: #6ee7b7; }
+html[data-theme="dark"] .sbadge-relearn { background: #2d0707; color: #fca5a5; }
+html[data-theme="dark"] .sbadge-sus     { background: #2e1147; color: #d8b4fe; }
 /* Trial list */
 .trial-item {
   display: flex; align-items: center; gap: 10px;
@@ -998,19 +947,17 @@ html.dark .sbadge-sus     { background: #2e1147; color: #d8b4fe; }
 .tr-hard  { background: #fef3c7; color: #92400e; }
 .tr-again { background: #fee2e2; color: #b91c1c; }
 .tr-easy  { background: var(--blue-bg); color: var(--blue); }
-html.dark .tr-hard { background: #432e00; color: #fcd34d; }
-html.dark .tr-again { background: #2d0707; color: #fca5a5; }
+html[data-theme="dark"] .tr-hard { background: #432e00; color: #fcd34d; }
+html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 .trial-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
 .trial-time { font-size: 12px; color: var(--text3); flex-shrink: 0; }
 /* Card detail sheet */
 .card-detail-overlay {
-  position: absolute; inset: 0; z-index: 50;
-  background: rgba(0,0,0,0); pointer-events: none;
-  transition: background .25s;
+  position: absolute; inset: 0; z-index: var(--z-overlay);
+  background: rgba(0,0,0,0.38);
+  display: none;
 }
-.card-detail-overlay.open {
-  background: rgba(0,0,0,0.38); pointer-events: auto;
-}
+.card-detail-overlay.open { display: block; }
 .card-detail-sheet {
   position: absolute; bottom: 8px;
   left: 50%; transform: translateX(-50%) translateY(100%);
@@ -1048,14 +995,36 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
 /* ── iPad / tablet (≥600px) ── */
 @media (min-width: 600px) {
-  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-tabbar, .mine-scroll, .mine-topbar {
+  .bar, .content, .img-zone, .mid-zone,
+  .home-scroll, .home-topbar, .home-tabbar,
+  .mine-scroll, .mine-topbar,
+  .btm, .settings-sheet,
+  .stats-tabs, .stats-body,
+  .browse-topbar, .browse-prog-wrap, .browse-body, .browse-nav,
+  .dd-topbar, .dd-body,
+  .account-topbar, .account-body,
+  .action-sheet,
+  .cc-topbar, .cc-body,
+  .theme-topbar, .theme-scroll,
+  .about-scroll {
     max-width: min(90vw, 720px);
   }
   .target-card { max-height: var(--img-max-h, 58vh); }
 }
 /* ── iPad Pro / large tablet (≥900px) ── */
 @media (min-width: 900px) {
-  .bar, .content, .img-zone, .mid-zone, .home-scroll, .home-tabbar, .mine-scroll, .mine-topbar {
+  .bar, .content, .img-zone, .mid-zone,
+  .home-scroll, .home-topbar, .home-tabbar,
+  .mine-scroll, .mine-topbar,
+  .btm, .settings-sheet,
+  .stats-tabs, .stats-body,
+  .browse-topbar, .browse-prog-wrap, .browse-body, .browse-nav,
+  .dd-topbar, .dd-body,
+  .account-topbar, .account-body,
+  .action-sheet,
+  .cc-topbar, .cc-body,
+  .theme-topbar, .theme-scroll,
+  .about-scroll {
     max-width: min(92vw, 960px);
   }
 }
@@ -1063,7 +1032,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 /* ═══ Browse Screen ═══ */
 #screen-browse { justify-content: flex-start; overflow: hidden; align-items: center; }
 .browse-topbar {
-  width: 100%; max-width: 500px;
+  width: 100%; max-width: var(--mw);
   padding: calc(var(--safe-top) + 8px) 12px 6px;
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
 }
@@ -1072,7 +1041,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .browse-prog-wrap {
-  width: 100%; max-width: 500px;
+  width: 100%; max-width: var(--mw);
   padding: 0 16px 6px; flex-shrink: 0;
 }
 .browse-prog-track { height: 4px; background: var(--bd2); border-radius: 2px; overflow: hidden; }
@@ -1082,7 +1051,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 }
 .browse-body {
   flex: 1; min-height: 0; overflow: hidden;
-  width: 100%; max-width: 500px;
+  width: 100%; max-width: var(--mw);
   padding: 0 16px; display: flex; flex-direction: column; gap: 10px;
 }
 .browse-photo {
@@ -1111,7 +1080,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 .browse-divider { height: 1px; background: var(--bd); flex-shrink: 0; }
 .browse-desc { font-size: 14px; color: var(--text3); line-height: 1.7; overflow: auto; }
 .browse-nav {
-  flex-shrink: 0; width: 100%; max-width: 500px;
+  flex-shrink: 0; width: 100%; max-width: var(--mw);
   padding: 8px 16px calc(14px + var(--safe-bottom));
   display: flex; gap: 12px;
 }
@@ -1134,17 +1103,11 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   transition: background 0.15s, transform 0.12s;
 }
 .browse-btn-next:active { transform: scale(0.97); background: var(--ocean-dk); }
-@media (min-width: 600px) {
-  .browse-topbar, .browse-prog-wrap, .browse-body, .browse-nav { max-width: min(90vw, 720px); }
-}
-@media (min-width: 900px) {
-  .browse-topbar, .browse-prog-wrap, .browse-body, .browse-nav { max-width: min(92vw, 960px); }
-}
 
 /* ═══ Deck Detail Screen ═══ */
 #screen-deck-detail { justify-content: flex-start; overflow: hidden; align-items: center; }
 .dd-topbar {
-  width: 100%; max-width: 500px;
+  width: 100%; max-width: var(--mw);
   padding: calc(var(--safe-top) + 8px) 12px 6px;
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
 }
@@ -1159,9 +1122,16 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   -webkit-tap-highlight-color: transparent; transition: transform .12s;
 }
 .dd-topbar-add:active { transform: scale(0.88); }
+.dd-topbar-publish {
+  padding: 6px 12px; border: none; border-radius: 14px;
+  background: var(--ocean); color: #fff; cursor: pointer;
+  font-size: 13px; font-weight: 600; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent; transition: transform .12s;
+}
+.dd-topbar-publish:active { transform: scale(0.92); }
 .dd-body {
   flex: 1; min-height: 0; overflow-y: auto;
-  width: 100%; max-width: 500px; padding: 0 16px 16px;
+  width: 100%; max-width: var(--mw); padding: 0 16px 16px;
 }
 .dd-card-row {
   position: relative; overflow: hidden; border-radius: var(--rsm);
@@ -1169,7 +1139,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 }
 .dd-card-actions {
   position: absolute; top: 0; right: 0; height: 100%;
-  display: flex; flex-direction: row; z-index: 1;
+  display: flex; flex-direction: row; z-index: var(--z-base);
 }
 .dd-card-act {
   width: 64px; height: 100%; border: none;
@@ -1181,7 +1151,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 .dd-card-act-edit { background: var(--ocean); }
 .dd-card-act-del  { background: #e53e3e; }
 .dd-card-inner {
-  position: relative; z-index: 2; background: var(--surf2);
+  position: relative; z-index: var(--z-above); background: var(--surf2);
   display: flex; align-items: center; gap: 14px; padding: 14px 18px;
   transition: transform .25s cubic-bezier(.4,0,.2,1); touch-action: pan-y;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
@@ -1206,24 +1176,18 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   text-align: center; padding: 24px; color: var(--text3); font-size: 13px;
 }
 .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--bd) 15%, var(--bd) 85%, transparent); margin: 0 16px; flex-shrink: 0; }
-@media (min-width: 600px) {
-  .dd-topbar, .dd-body { max-width: min(90vw, 720px); }
-}
-@media (min-width: 900px) {
-  .dd-topbar, .dd-body { max-width: min(92vw, 960px); }
-}
 
 /* ═══ Account Screen ═══ */
 #screen-account { justify-content: flex-start; overflow: hidden; align-items: center; }
 .account-topbar {
-  width: 100%; max-width: 500px;
+  width: 100%; max-width: var(--mw);
   padding: calc(var(--safe-top) + 8px) 12px 6px;
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
 }
 .account-topbar-title { flex: 1; text-align: center; font-size: 17px; font-weight: 700; color: var(--text); }
 .account-body {
   flex: 1; min-height: 0; overflow-y: auto;
-  width: 100%; max-width: 500px;
+  width: 100%; max-width: var(--mw);
   padding: 12px 16px;
 }
 .account-section { margin-bottom: 20px; }
@@ -1307,15 +1271,9 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   border: 1px solid var(--bd); margin-bottom: 8px;
 }
 
-@media (min-width: 600px) {
-  .account-topbar, .account-body { max-width: min(90vw, 720px); }
-}
-@media (min-width: 900px) {
-  .account-topbar, .account-body { max-width: min(92vw, 960px); }
-}
 
 /* Sync progress modal — improve existing modal */
-#sync-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.45); z-index:999; align-items:center; justify-content:center; }
+#sync-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.45); z-index:var(--z-toast); align-items:center; justify-content:center; }
 #sync-modal.show { display:flex; }
 #sync-modal-box {
   background:var(--surf); border-radius:var(--r); padding:28px 24px; width:min(320px,88vw);
@@ -1331,14 +1289,14 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 /* ═══ Action Sheet (advanced + button) ═══ */
 .action-sheet-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.38); z-index: 998;
+  background: rgba(0,0,0,0.38); z-index: var(--z-overlay);
   display: none; align-items: flex-end; justify-content: center;
   pointer-events: none;
 }
 .action-sheet-overlay.open { display: flex; pointer-events: auto; }
 .action-sheet {
   background: var(--surf); border-radius: var(--r) var(--r) 0 0;
-  width: 100%; max-width: 500px; padding: 8px 0 calc(8px + var(--safe-bottom));
+  width: 100%; max-width: var(--mw); padding: 8px 0 calc(8px + var(--safe-bottom));
   box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
 }
 .action-sheet-group { padding: 4px 0; }
@@ -1372,9 +1330,9 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
 /* ═══ theme picker ═══ */
 .screen-theme { justify-content: flex-start; overflow: hidden; align-items: center; }
-.theme-topbar { width: 100%; max-width: 500px; padding: calc(var(--safe-top) + 8px) 12px 6px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.theme-topbar { width: 100%; max-width: var(--mw); padding: calc(var(--safe-top) + 8px) 12px 6px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .theme-topbar-title { flex: 1; text-align: center; font-size: 17px; font-weight: 700; color: var(--text); }
-.theme-scroll { flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: 500px; padding: 16px; }
+.theme-scroll { flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: var(--mw); padding: 16px; }
 .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .theme-card { position: relative; border-radius: var(--rsm); border: 2px solid var(--bd2); background: var(--surf); overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent; padding: 0; transition: border-color .2s; }
 .theme-card:active { opacity: .7; }
@@ -1393,7 +1351,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
 /* ═══ about page ═══ */
 .screen-about { justify-content: flex-start; overflow: hidden; align-items: center; }
-.about-scroll { flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: 500px; padding: 32px 20px; text-align: center; }
+.about-scroll { flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: var(--mw); padding: 32px 20px; text-align: center; }
 .about-icon { font-size: 48px; margin-bottom: 12px; }
 .about-title { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
 .about-sub { font-size: 14px; color: var(--text3); margin-bottom: 24px; }
@@ -1410,7 +1368,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.1.3</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.1.4</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -1540,10 +1498,6 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
 
   <!-- 4. Bottom: action buttons, fixed -->
   <div class="btm">
-    <button class="subbtn" id="subbtn" ontouchstart="" onclick="onSubmit()">
-      <span id="sublbl" data-i18n="quiz_confirm">确认答案</span>
-      <div class="ntip" id="ntip" data-i18n="quiz_select_hint">先选一个答案 👆</div>
-    </button>
     <button class="nxtbtn" id="nxtbtn" ontouchstart="" onclick="onNext()">
       <svg class="nring-svg" id="nrsvg"><rect class="nring-t" id="nrt" rx="20"/><rect class="nring-p" id="nrp" rx="20"/></svg>
       <span class="nring-lbl" id="nxt-lbl" data-i18n="quiz_next">下一题</span>
@@ -1770,6 +1724,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="dd-topbar-title" id="dd-deck-name"></span>
+    <button class="dd-topbar-publish" id="dd-publish-btn" style="display:none" onclick="publishDeck(currentDeck)"></button>
     <button class="dd-topbar-add" onclick="showCreateCard(currentDeck)" aria-label="添加卡片" data-i18n-aria="dd_add_card">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
@@ -2009,7 +1964,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
               <div class="stoggle-thumb"></div>
             </label>
           </div>
-          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div class="sheet-row sheet-row-col">
             <span class="sheet-row-lbl" data-i18n="settings_correct_phrase">回答正确文案</span>
             <input type="text" id="phrase-correct" class="phrase-input" value="回答正确" oninput="onPhraseChange('correct',this.value)">
           </div>
@@ -2017,16 +1972,16 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="sheet-section">
           <div class="sheet-section-lbl" data-i18n="settings_section_mode">练习模式</div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('normal')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_normal">普通</span><span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px" data-i18n="settings_mode_normal_desc">固定20张，越做越顺</span></span>
-            <span id="mode-check-normal" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_normal">普通</span><span class="sheet-mode-desc" data-i18n="settings_mode_normal_desc">固定20张，越做越顺</span></span>
+            <span class="sheet-mode-check" id="mode-check-normal"></span>
           </div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('hard')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_hard">困难</span><span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px" data-i18n="settings_mode_hard_desc">SRS节律，最多30张</span></span>
-            <span id="mode-check-hard" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_hard">困难</span><span class="sheet-mode-desc" data-i18n="settings_mode_hard_desc">SRS节律，最多30张</span></span>
+            <span class="sheet-mode-check" id="mode-check-hard"></span>
           </div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('survival')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_survival">生存</span><span style="font-size:12px;font-weight:400;color:var(--text3);margin-left:8px" data-i18n="settings_mode_survival_desc">清空所有积压</span></span>
-            <span id="mode-check-survival" style="color:var(--blue);font-size:18px;font-weight:700"></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_survival">生存</span><span class="sheet-mode-desc" data-i18n="settings_mode_survival_desc">清空所有积压</span></span>
+            <span class="sheet-mode-check" id="mode-check-survival"></span>
           </div>
         </div>
         <div class="sheet-section">
@@ -2057,7 +2012,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             <input type="range" min="0.5" max="10" value="2" step="0.5" id="dbg-qpdelay" oninput="onQpDelayChange(this.value)">
             <span class="sheet-row-val" id="dbg-qpdelay-val">2s</span>
           </div>
-          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div class="sheet-row sheet-row-col">
             <span class="sheet-row-lbl" data-i18n="settings_quiz_prompt_phrase">答题提示文案</span>
             <input type="text" id="phrase-select" class="phrase-input" value="请选择答案" oninput="onPhraseChange('select',this.value)">
           </div>
@@ -2078,7 +2033,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
             <input type="range" min="0.5" max="10" value="5" step="0.5" id="dbg-ohdelay" oninput="onOhDelayChange(this.value)">
             <span class="sheet-row-val" id="dbg-ohdelay-val">5s</span>
           </div>
-          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div class="sheet-row sheet-row-col">
             <span class="sheet-row-lbl" data-i18n="settings_opt_hint_phrase_label">选项提示文案（{A}{B}{C}替换为选项，. 为停顿100ms）</span>
             <input type="text" id="phrase-opt-hint" class="phrase-input" value="请在{A}.{B}.{C}中选择一个" oninput="onPhraseChange('optHint',this.value)">
           </div>
@@ -2094,7 +2049,7 @@ html.dark .tr-again { background: #2d0707; color: #fca5a5; }
               <div class="stoggle-thumb"></div>
             </label>
           </div>
-          <div class="sheet-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div class="sheet-row sheet-row-col">
             <span class="sheet-row-lbl" data-i18n="settings_wrong_phrase">答错提示文案</span>
             <input type="text" id="phrase-wrong" class="phrase-input" value="不要着急，再试一次" oninput="onPhraseChange('wrong',this.value)">
           </div>
@@ -2451,7 +2406,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.1.3';
+const APP_VERSION = '5.1.4';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -2544,6 +2499,7 @@ function restoreSession() {
         localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
         logAppEvent('session_restore_ok', { uid: _cloudUserId });
         updateCloudTabUI();
+        checkPersonalDeckUpdates().catch(() => {});
         return;
       }
 
@@ -2887,7 +2843,7 @@ async function cloudPullConfig() {
     // apply theme (compat with old light/dark and new default/jade/amber/dark)
     var th = localStorage.getItem('theme');
     if (th) {
-      if (th === 'dark') { document.documentElement.classList.add('dark'); document.documentElement.setAttribute('data-theme','dark'); }
+      if (th === 'dark') { document.documentElement.setAttribute('data-theme','dark'); }
       else if (th !== 'light' && th !== 'default') { document.documentElement.setAttribute('data-theme', th); }
       var tog = document.getElementById('dark-toggle');
       if (tog) tog.checked = th === 'dark';
@@ -2983,7 +2939,7 @@ async function runSync(opts) {
     if (options.decks) {
       updateProg(t('sync_decks_prog'), 80);
       var serverDecks, sd, meta;
-      var dd = await _sb.from('server_decks').select('id,name');
+      var dd = await _sb.from('decks').select('id,name').eq('deck_type','preset');
       if (dd.data) {
         serverDecks = dd.data;
         for (sd of serverDecks) {
@@ -4134,11 +4090,29 @@ async function cleanOrphanMedia() {
 }
 
 async function restoreDecks() {
+  // one-time: migrate 'cloud_xxx' keys → 'xxx'
+  const rawIdx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
+  if (rawIdx.some(m => m.key && m.key.startsWith('cloud_'))) {
+    const migratedIdx = rawIdx.map(m => {
+      if (!m.key || !m.key.startsWith('cloud_')) return m;
+      const newKey = m.key.slice(6);
+      const cardsRaw = localStorage.getItem(LS_DECK_PREFIX + m.key);
+      if (cardsRaw) { localStorage.setItem(LS_DECK_PREFIX + newKey, cardsRaw); localStorage.removeItem(LS_DECK_PREFIX + m.key); }
+      const syncAt = localStorage.getItem('yihai_sync_at_' + m.key);
+      if (syncAt) { localStorage.setItem('yihai_sync_at_' + newKey, syncAt); localStorage.removeItem('yihai_sync_at_' + m.key); }
+      return { ...m, key: newKey, deck_type: 'preset' };
+    });
+    localStorage.setItem(LS_INDEX, JSON.stringify(migratedIdx));
+    setTimeout(() => migrateMediaKeys(rawIdx), 0);
+  }
+
   const idx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
-  // compat: infer source from cloud sync timestamp for unmarked data
+  // compat: migrate old entries without deck_type
   DECKS_META = idx.map(m => {
-    if (m.source) return m;
-    return { ...m, source: localStorage.getItem('yihai_sync_at_' + m.key) ? 'cloud' : 'local' };
+    if (m.deck_type) return m;
+    // compat: migrate old entries without deck_type
+    const deck_type = m.source === 'cloud' ? 'preset' : 'personal';
+    return { ...m, deck_type };
   });
   for (const { key } of idx) {
     try {
@@ -4180,6 +4154,25 @@ async function restoreDecks() {
   } catch(e) {}
 }
 
+async function migrateMediaKeys(oldIdx) {
+  const db = await openDB().catch(() => null);
+  if (!db) return;
+  for (const m of oldIdx) {
+    if (!m.key || !m.key.startsWith('cloud_')) continue;
+    const newKey = m.key.slice(6);
+    const tx = db.transaction('blobs', 'readwrite');
+    const store = tx.objectStore('blobs');
+    const allKeys = await new Promise(res => { const r = store.getAllKeys(); r.onsuccess = e => res(e.target.result); });
+    for (const k of allKeys) {
+      if (typeof k === 'string' && k.startsWith(m.key + '_')) {
+        const newK = newKey + k.slice(m.key.length);
+        const blob = await new Promise(res => { const r = store.get(k); r.onsuccess = e => res(e.target.result); });
+        if (blob) { store.put(blob, newK); store.delete(k); }
+      }
+    }
+  }
+}
+
 // ── .yhspack import ──────────────────────────────────────────────
 function ldScript(src) {
   return new Promise((res, rej) => {
@@ -4205,7 +4198,7 @@ async function importYhspack(file) {
     const deck = deckData.deck;
     if (!deck || !deck.cards) { showCloudToast(t('import_bad_format_cards'), true); return; }
 
-    const key = deck.id || ('deck_' + Date.now());
+    const key = deck.id || crypto.randomUUID();
     const name = deck.name || file.name.replace('.yhspack','');
     const deckLang = deck.language || 'zh-CN';
     const cards = [];
@@ -4279,7 +4272,7 @@ function showImportToast(name, count) {
   el.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
-    z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
+    z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2500);
 }
@@ -4384,6 +4377,11 @@ async function deleteDeck(e, key) {
   localStorage.removeItem(LS_DECK_PREFIX + key);
   saveDeckIndex();
   deleteMediaForDeck(key).catch(() => {});
+  if (meta.deck_type === 'personal' && _syncEnabled && _sb) {
+    _sb.from('deck_cards').delete().eq('deck_id', key).catch(() => {});
+    _sb.from('decks').delete().eq('id', key).catch(() => {});
+  }
+  localStorage.removeItem('yihai_sync_at_' + key);
   if (currentDeck === key) currentDeck = null;
   renderDeckList();
   updateDeckStats();
@@ -4635,9 +4633,9 @@ async function saveCardFromForm() {
     const newName = await showPromptDialog(t('home_new_deck_prompt'), '');
     if (!newName || !newName.trim()) { showCloudToast(t('home_deck_name_empty'), true); return; }
     deckName = newName.trim();
-    deckKey = 'deck_' + Date.now();
+    deckKey = crypto.randomUUID();
     DECKS[deckKey] = [];
-    DECKS_META.push({ key: deckKey, name: deckName, source: 'local' });
+    DECKS_META.push({ key: deckKey, name: deckName, deck_type: 'personal' });
     saveDeckIndex();
     // insert new option into selector and select it
     const opt = document.createElement('option');
@@ -4654,7 +4652,7 @@ async function saveCardFromForm() {
   const deck = DECKS[deckKey];
 
   // generate card ID
-  const id = 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  const id = crypto.randomUUID();
 
   // auto-detect language
   const deckLang = 'zh-CN'; // default Chinese
@@ -4693,6 +4691,7 @@ async function saveCardFromForm() {
   // persist
   saveDeckCards(deckKey, deck);
   saveDeckIndex();
+  uploadDeckToCloud(deckKey).catch(() => {});
 
   // wait for all media saves to complete
   Promise.all(savePromises).then(function() {
@@ -4730,11 +4729,12 @@ function closeActionSheet(e) {
 async function createEmptyDeck() {
   const name = await showPromptDialog(t('home_new_deck_prompt'), '');
   if (!name || !name.trim()) return;
-  const key = 'deck_' + Date.now();
+  const key = crypto.randomUUID();
   DECKS[key] = [];
-  DECKS_META.push({ key: key, name: name.trim(), source: 'local' });
+  DECKS_META.push({ key: key, name: name.trim(), deck_type: 'personal' });
   saveDeckIndex();
   saveDeckCards(key, []);
+  uploadDeckToCloud(key).catch(() => {});
   renderDeckList();
   updateDeckStats();
   showCloudToast(t('home_deck_created', { name: name.trim() }));
@@ -4917,7 +4917,7 @@ function updateMineProfile() {
   const subEl  = document.getElementById('mine-profile-sub');
   const avEl   = document.getElementById('mine-avatar');
   if (!nameEl) return;
-  if (_cloudUserEmail) {
+  if (_syncEnabled && _cloudUserEmail) {
     nameEl.textContent = _cloudUserEmail;
     subEl.textContent  = t('mine_logged_in_sub');
     avEl.textContent   = _cloudUserEmail[0].toUpperCase();
@@ -4947,7 +4947,7 @@ function renderAccount() {
     resEl.style.display = '';
     return;
   }
-  if (_cloudUserEmail) {
+  if (_syncEnabled && _cloudUserEmail) {
     inEl.style.display = '';
     document.getElementById('account-avatar').textContent = _cloudUserEmail[0].toUpperCase();
     document.getElementById('account-hero-name').textContent = _cloudUserEmail;
@@ -5046,6 +5046,12 @@ function showDeckDetail() {
   const meta = DECKS_META.find(m => m.key === currentDeck);
   if (!meta) return;
   document.getElementById('dd-deck-name').textContent = meta.name;
+  var publishBtn = document.getElementById('dd-publish-btn');
+  if (publishBtn) {
+    var showPublish = meta.deck_type === 'personal' && _syncEnabled;
+    publishBtn.style.display = showPublish ? '' : 'none';
+    publishBtn.textContent = t('common_publish');
+  }
   showScreen('screen-deck-detail');
   _ddRenderSid = sessionId;
   renderDeckCards();
@@ -5305,6 +5311,9 @@ const I18N = {
     common_ok: 'OK',
     common_save: 'Save',
     common_delete: 'Delete',
+    common_publish: 'Publish',
+    deck_published_ok: '{{name}} published — family devices will update automatically',
+    deck_publish_fail: 'Publish failed: {{msg}}',
     common_rename: 'Rename',
     common_export: 'Export',
     common_share: 'Share',
@@ -5542,6 +5551,9 @@ const I18N = {
     common_ok: '确定',
     common_save: '保存',
     common_delete: '删除',
+    common_publish: '发布',
+    deck_published_ok: '{{name}} 已发布，家人设备将自动更新',
+    deck_publish_fail: '发布失败：{{msg}}',
     common_rename: '重命名',
     common_export: '导出',
     common_share: '共享',
@@ -5778,6 +5790,9 @@ const I18N = {
     common_ok: 'Aceptar',
     common_save: 'Guardar',
     common_delete: 'Eliminar',
+    common_publish: 'Publicar',
+    deck_published_ok: '{{name}} publicado — los dispositivos familiares se actualizarán',
+    deck_publish_fail: 'Error al publicar: {{msg}}',
     common_rename: 'Renombrar',
     common_export: 'Exportar',
     common_share: 'Compartir',
@@ -6115,7 +6130,7 @@ let speechReady = false;
 
 function loadVoices() {
   const v = speechSynthesis.getVoices();
-  if (v.length) voices = v;
+  if (v.length) { voices = v; console.log('[voices]', voices.map(x=>x.lang+' | '+x.name).join(', ')); }
 }
 loadVoices();
 if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
@@ -6164,11 +6179,10 @@ function pickVoice(lang) {
 }
 
 function speak(text, delay = 0, onend = null, lang = null) {
-  speechSynthesis.cancel();
   const go = () => {
     if (!voices.length) loadVoices();
     const utt = new SpeechSynthesisUtterance(text);
-    const useLang = lang || getLocale();
+    const useLang = lang || resolveFieldLang(text, getLocale());
     utt.lang = useLang;
     utt.rate = TTS_RATE;
     utt.pitch = TTS_PITCH;
@@ -6204,6 +6218,9 @@ function speakDirect(text, onend, lang = null) {
   utt.lang = useLang; utt.rate = TTS_RATE; utt.pitch = TTS_PITCH; utt.volume = 1;
   const v = pickVoice(useLang); if (v) utt.voice = v;
   if (onend) utt.onend = onend;
+  if (v && v.lang !== useLang && v.lang.split('-')[0] !== useLang.split('-')[0]) {
+    console.log('[speakDirect] lang mismatch: wanted', useLang, 'got', v.lang, v.name);
+  }
   speechSynthesis.speak(utt);
   setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
 }
@@ -6224,10 +6241,13 @@ function speakOptHint(opts, optLang) {
   if (!opts || !opts.length) return;
   const labels = ['A','B','C','D'];
   const PAUSE_MS = 100;
-  const uiLang = getLocale();
   const oLang = optLang || 'zh-CN';
+  const uiLang = getLocale();
 
-  // parse template into segments: text (UI lang) / {var} (card lang) / pause
+  // parse template into segments:
+  //  text (UI chrome) → voice follows UI locale
+  //  {var} (card names) → voice follows card language (via resolveFieldLang)
+  //  pause
   const parts = [];
   const re = /[\{｛][A-D][\}｝]|[\.。]+/g;
   const tmpl = PHRASE_OPT_HINT;
@@ -6236,7 +6256,7 @@ function speakOptHint(opts, optLang) {
   while ((m = re.exec(tmpl)) !== null) {
     if (m.index > lastIdx) {
       const txt = tmpl.slice(lastIdx, m.index).trim();
-      if (txt) parts.push({ type: 'text', val: txt, lang: uiLang });
+      if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, uiLang) });
     }
     const raw = m[0];
     if (raw === '.' || raw === '。' || /^[\.。]+$/.test(raw)) {
@@ -6246,14 +6266,14 @@ function speakOptHint(opts, optLang) {
       const idx = labels.indexOf(label);
       if (idx >= 0 && idx < opts.length) {
         const optText = opts[idx].trim();
-        if (optText) parts.push({ type: 'var', val: optText, lang: oLang });
+        if (optText) parts.push({ type: 'var', val: optText, lang: resolveFieldLang(optText, oLang) });
       }
     }
     lastIdx = m.index + raw.length;
   }
   if (lastIdx < tmpl.length) {
     const txt = tmpl.slice(lastIdx).trim();
-    if (txt) parts.push({ type: 'text', val: txt, lang: uiLang });
+    if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, uiLang) });
   }
 
   const sid = sessionId;
@@ -6336,7 +6356,6 @@ function render() {
     document.getElementById('opts-zone').style.display = 'none';
     document.getElementById('content').classList.remove('revealed');
     document.getElementById('answer-panel').className = 'answer-panel';
-    document.getElementById('subbtn').className = 'subbtn gone';
     revealBrowse(q);
     return;
   }
@@ -6525,18 +6544,6 @@ function onSel(e, idx, btn) {
 }
 
 // ── Submit ─────────────────────────────────────────────────────
-function onSubmit() {
-  if (revealed) return;
-  if (sel===null) {
-    const sb=document.getElementById('subbtn');
-    sb.classList.remove('ndg'); void sb.offsetWidth; sb.classList.add('ndg');
-    sb.addEventListener('animationend',()=>sb.classList.remove('ndg'),{once:true});
-    document.getElementById('ntip').classList.add('show');
-    setTimeout(()=>document.getElementById('ntip').classList.remove('show'),2000);
-    tone('clk'); return;
-  }
-  revealAnswer();
-}
 
 // ── Reveal ─────────────────────────────────────────────────────
 function revealAnswer() {
@@ -6564,8 +6571,6 @@ function revealAnswer() {
   },30);
 
   if (isOk) { /* tone and confetti now in onSel */ }
-
-  document.getElementById('subbtn').classList.add('gone');
 
   const hints = READ_HINT && q.details && q.details.length ? q.details : [];
 
@@ -6866,7 +6871,7 @@ function showRestToast() {
   el.style.cssText = `position:fixed;bottom:calc(120px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
-    z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
+    z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
@@ -7324,33 +7329,20 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('common_downloading'); }
 
   try {
-    // 1. get card_id list for deck via server_deck_cards (ordered)
-    const { data: links, error: linkErr } = await _sb.from('server_deck_cards')
-      .select('card_id').eq('deck_id', deckId).order('sort_order');
+    // 1. get cards from deck_cards (ordered)
+    const { data: ordered, error: linkErr } = await _sb.from('deck_cards')
+      .select('card_id,name,image_url,audio_url')
+      .eq('deck_id', deckId).order('sort_order');
     if (linkErr) throw linkErr;
-    if (!links || !links.length) { showCloudToast(t('sync_deck_empty'), true); return; }
+    if (!ordered || !ordered.length) { showCloudToast(t('sync_deck_empty'), true); return; }
 
-    const cardIds = links.map(l => l.card_id);
-
-    // 2. query cards_pool for card details and media paths
-    const { data: cards, error: cardErr } = await _sb.from('cards_pool')
-      .select('card_id,card_name,image_url,audio_url')
-      .in('card_id', cardIds);
-    if (cardErr) throw cardErr;
-    if (!cards || !cards.length) { showCloudToast(t('sync_no_card_data'), true); return; }
-
-    // order by sort_order
-    const cardMap = {};
-    cards.forEach(c => { cardMap[c.card_id] = c; });
-    const ordered = cardIds.map(id => cardMap[id]).filter(Boolean);
-
-    // 3. generate deck key
-    const key = 'cloud_' + deckId;
+    // 3. deck key = decks.id 直接用，无前缀
+    const key = deckId;
 
     // 4. download media and assemble cards (concurrency 3, image+audio parallel per card)
     const deckCards = [];
     await parallelMapLimit(ordered, 3, async (c, i) => {
-      const card = { id: c.card_id, name: c.card_name, img: '', audioUrl: '', details: [] };
+      const card = { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] };
       const tasks = [];
       if (c.image_url) {
         tasks.push(
@@ -7384,8 +7376,8 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 4. write to memory + persist
     DECKS[key] = deckCards;
     const existing = DECKS_META.findIndex(m => m.key === key);
-    if (existing >= 0) DECKS_META[existing] = { key, name: deckName, source: 'cloud' };
-    else DECKS_META.push({ key, name: deckName, source: 'cloud' });
+    if (existing >= 0) DECKS_META[existing] = { key, name: deckName, deck_type: 'preset' };
+    else DECKS_META.push({ key, name: deckName, deck_type: 'preset' });
     saveDeckIndex();
     saveDeckCards(key, deckCards);
 
@@ -7442,7 +7434,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     const lastSyncAt = localStorage.getItem('yihai_sync_at_' + localKey) || '';
 
     // 1. get server card_id list (lightweight, IDs only)
-    const { data: links, error: linkErr } = await _sb.from('server_deck_cards')
+    const { data: links, error: linkErr } = await _sb.from('deck_cards')
       .select('card_id').eq('deck_id', deckId).order('sort_order');
     if (linkErr) throw linkErr;
     if (!links || !links.length) { showCloudToast(t('sync_deck_empty'), true); return; }
@@ -7465,8 +7457,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
       const batchSize = 100;
       for (let b = 0; b < existingIds.length; b += batchSize) {
         const batch = existingIds.slice(b, b + batchSize);
-        const { data: changed, error: chErr } = await _sb.from('cards_pool')
-          .select('card_id,card_name,image_url,audio_url')
+        const { data: changed, error: chErr } = await _sb.from('deck_cards')
+          .select('card_id,name,image_url,audio_url')
+          .eq('deck_id', deckId)
           .in('card_id', batch)
           .gt('updated_at', lastSyncAt);
         if (!chErr && changed) changed.forEach(c => { changedMap[c.card_id] = c; });
@@ -7476,8 +7469,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
       const batchSize = 100;
       for (let b = 0; b < existingIds.length; b += batchSize) {
         const batch = existingIds.slice(b, b + batchSize);
-        const { data: all, error: aErr } = await _sb.from('cards_pool')
-          .select('card_id,card_name,image_url,audio_url')
+        const { data: all, error: aErr } = await _sb.from('deck_cards')
+          .select('card_id,name,image_url,audio_url')
+          .eq('deck_id', deckId)
           .in('card_id', batch);
         if (!aErr && all) all.forEach(c => { changedMap[c.card_id] = c; });
       }
@@ -7490,8 +7484,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
       const batchSize = 100;
       for (let b = 0; b < newIds.length; b += batchSize) {
         const batch = newIds.slice(b, b + batchSize);
-        const { data: newCards, error: nErr } = await _sb.from('cards_pool')
-          .select('card_id,card_name,image_url,audio_url')
+        const { data: newCards, error: nErr } = await _sb.from('deck_cards')
+          .select('card_id,name,image_url,audio_url')
+          .eq('deck_id', deckId)
           .in('card_id', batch);
         if (!nErr && newCards) newCards.forEach(c => { newCardMap[c.card_id] = c; });
       }
@@ -7506,7 +7501,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
       if (server) {
         // server has update
         let changed = false;
-        if (local.name !== server.card_name) { local.name = server.card_name; changed = true; }
+        if (local.name !== server.name) { local.name = server.name; changed = true; }
         // only download if media URL differs
         if (server.image_url && server.image_url !== local._imgUrl) {
           const media = await downloadMedia(cid, server.image_url, null);
@@ -7531,7 +7526,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     await parallelMapLimit(newIds, 3, async (cid) => {
       const server = newCardMap[cid];
       if (!server) return;
-      const card = { id: cid, name: server.card_name, img: '', audioUrl: '', details: [] };
+      const card = { id: cid, name: server.name, img: '', audioUrl: '', details: [] };
       const media = await downloadMedia(cid, server.image_url, server.audio_url);
       card.img = media.img;
       card.audioUrl = media.audioUrl;
@@ -7551,7 +7546,8 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     currentDeck = localKey;
     // mark as cloud deck
     const metaIdx = DECKS_META.findIndex(m => m.key === localKey);
-    if (metaIdx >= 0) DECKS_META[metaIdx].source = 'cloud';
+    if (metaIdx >= 0 && !DECKS_META[metaIdx].deck_type)
+      DECKS_META[metaIdx].deck_type = 'preset';
     renderDeckList();
     // noToast=true means called from within runSync, which calls updateDeckStats() after state sync
     if (!noToast) updateDeckStats();
@@ -7573,13 +7569,122 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
   }
 }
 
+async function uploadDeckToCloud(key) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  const meta = DECKS_META.find(m => m.key === key);
+  if (!meta || meta.deck_type !== 'personal') return;
+  const cards = DECKS[key] || [];
+  try {
+    await _sb.from('decks').upsert({
+      id: key,
+      user_id: _cloudUserId,
+      name: meta.name,
+      deck_type: 'personal',
+      card_count: cards.length
+    }, { onConflict: 'id', ignoreDuplicates: false });
+    await _sb.from('deck_cards').delete().eq('deck_id', key);
+    if (cards.length > 0) {
+      const rows = cards.map((c, i) => ({
+        deck_id: key, card_id: c.id, name: c.name,
+        image_url: c._imgUrl || null, audio_url: c._audUrl || null, sort_order: i
+      }));
+      for (let b = 0; b < rows.length; b += 500)
+        await _sb.from('deck_cards').insert(rows.slice(b, b + 500));
+    }
+    console.log('[cloud] uploadDeckToCloud ok:', key, cards.length, 'cards');
+  } catch(e) {
+    console.warn('[cloud] uploadDeckToCloud fail:', e.message);
+  }
+}
+
+async function publishDeck(key) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) { showCloudToast(t('sync_offline'), true); return; }
+  const meta = DECKS_META.find(m => m.key === key);
+  if (!meta || meta.deck_type !== 'personal') return;
+  try {
+    await uploadDeckToCloud(key);
+    const { error } = await _sb.from('decks')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', key).eq('user_id', _cloudUserId);
+    if (error) throw error;
+    localStorage.setItem('yihai_sync_at_' + key, new Date().toISOString());
+    showCloudToast(t('deck_published_ok', { name: esc(meta.name) }));
+    console.log('[cloud] publishDeck ok:', key);
+  } catch(e) {
+    showCloudToast(t('deck_publish_fail', { msg: e.message }), true);
+    console.error('[cloud] publishDeck fail:', e);
+  }
+}
+
+async function checkPersonalDeckUpdates() {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  try {
+    const { data: remoteDecks, error } = await _sb.from('decks')
+      .select('id,name,updated_at')
+      .eq('user_id', _cloudUserId)
+      .eq('deck_type', 'personal');
+    if (error || !remoteDecks) return;
+    for (const rd of remoteDecks) {
+      const lastSync = localStorage.getItem('yihai_sync_at_' + rd.id) || '';
+      if (rd.updated_at > lastSync) {
+        const existingMeta = DECKS_META.find(m => m.key === rd.id);
+        const deckName = (existingMeta && existingMeta.name) || rd.name;
+        await downloadPersonalDeckFromCloud(rd.id, deckName);
+      }
+    }
+  } catch(e) {
+    console.warn('[cloud] checkPersonalDeckUpdates fail:', e.message);
+  }
+}
+
+async function downloadPersonalDeckFromCloud(deckId, deckName) {
+  if (!_syncEnabled || !_sb) return;
+  try {
+    const { data: cards, error } = await _sb.from('deck_cards')
+      .select('card_id,name,image_url,audio_url')
+      .eq('deck_id', deckId).order('sort_order');
+    if (error || !cards || !cards.length) return;
+    const syncNow = new Date().toISOString();
+    const deckCards = [];
+    await parallelMapLimit(cards, 3, async (c, i) => {
+      const card = { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] };
+      const tasks = [];
+      if (c.image_url) tasks.push(
+        downloadMediaFromCDNorSupabase(c.image_url)
+          .then(async blob => { card.img = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_img`, blob).catch(() => {}); })
+          .catch(e => console.warn('[cloud] img failed:', e.message))
+      );
+      if (c.audio_url) tasks.push(
+        downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url))
+          .then(async blob => { card.audioUrl = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_aud`, blob).catch(() => {}); })
+          .catch(e => console.warn('[cloud] aud failed:', e.message))
+      );
+      await Promise.all(tasks);
+      card._imgUrl = c.image_url || '';
+      card._audUrl = c.audio_url || '';
+      deckCards[i] = card;
+    });
+    localStorage.setItem('yihai_sync_at_' + deckId, syncNow);
+    DECKS[deckId] = deckCards;
+    const existingIdx = DECKS_META.findIndex(m => m.key === deckId);
+    if (existingIdx >= 0) DECKS_META[existingIdx] = { key: deckId, name: deckName, deck_type: 'personal' };
+    else DECKS_META.push({ key: deckId, name: deckName, deck_type: 'personal' });
+    saveDeckIndex();
+    saveDeckCards(deckId, deckCards);
+    renderDeckList();
+    console.log('[cloud] downloadPersonalDeckFromCloud ok:', deckId, deckCards.length, 'cards');
+  } catch(e) {
+    console.warn('[cloud] downloadPersonalDeckFromCloud fail:', e.message);
+  }
+}
+
 function showCloudToast(msg, isErr) {
   const t = document.createElement('div');
   t.textContent = msg;
   t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:${isErr?'#9B3A2A':'var(--text)'};color:#fff;
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
-    z-index:999;white-space:nowrap;animation:toastIn .3s ease`;
+    z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
 }
@@ -7599,7 +7704,7 @@ function closeSettingsIfOutside(e){ if(e.target===document.getElementById('setti
 
 // ── Theme ──────────────────────────────────────────────────────
 function toggleTheme(checkbox){
-  const isDark=checkbox?checkbox.checked:!document.documentElement.classList.contains('dark');
+  const isDark=checkbox?checkbox.checked:document.documentElement.getAttribute('data-theme')==='dark';
   setThemeValue(isDark?'dark':'default');
   const tog=document.getElementById('dark-toggle');if(tog)tog.checked=isDark;
   debouncePushConfig();
@@ -7616,7 +7721,6 @@ function setTheme(el) {
   debouncePushConfig();
 }
 function setThemeValue(theme) {
-  document.documentElement.classList.toggle('dark', theme === 'dark');
   document.documentElement.setAttribute('data-theme', theme === 'default' ? '' : theme);
   localStorage.setItem('theme', theme);
 }
@@ -7643,7 +7747,6 @@ function showAbout() {
   var isDark=themeVal==='dark'||(!themeVal&&window.matchMedia('(prefers-color-scheme: dark)').matches);
   // migrate old 'light'/'dark' settings
   if(themeVal==='dark'||isDark){
-    document.documentElement.classList.add('dark');
     document.documentElement.setAttribute('data-theme','dark');
     if(themeVal==='light'||themeVal==='default')localStorage.setItem('theme','dark');
   } else if(themeVal&&themeVal!=='default'&&themeVal!=='light'){
@@ -8548,7 +8651,7 @@ function showToastMsg(msg) {
   t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
     transform:translateX(-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
-    z-index:9999;white-space:nowrap;animation:toastIn .3s ease`;
+    z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
 }
