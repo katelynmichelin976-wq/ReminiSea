@@ -2930,7 +2930,7 @@ async function runSync(opts) {
     if (options.decks) {
       updateProg(t('sync_decks_prog'), 80);
       var serverDecks, sd, meta;
-      var dd = await _sb.from('server_decks').select('id,name');
+      var dd = await _sb.from('decks').select('id,name').eq('deck_type','preset');
       if (dd.data) {
         serverDecks = dd.data;
         for (sd of serverDecks) {
@@ -4081,11 +4081,29 @@ async function cleanOrphanMedia() {
 }
 
 async function restoreDecks() {
+  // one-time: migrate 'cloud_xxx' keys → 'xxx'
+  const rawIdx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
+  if (rawIdx.some(m => m.key && m.key.startsWith('cloud_'))) {
+    const migratedIdx = rawIdx.map(m => {
+      if (!m.key || !m.key.startsWith('cloud_')) return m;
+      const newKey = m.key.slice(6);
+      const cardsRaw = localStorage.getItem(LS_DECK_PREFIX + m.key);
+      if (cardsRaw) { localStorage.setItem(LS_DECK_PREFIX + newKey, cardsRaw); localStorage.removeItem(LS_DECK_PREFIX + m.key); }
+      const syncAt = localStorage.getItem('yihai_sync_at_' + m.key);
+      if (syncAt) { localStorage.setItem('yihai_sync_at_' + newKey, syncAt); localStorage.removeItem('yihai_sync_at_' + m.key); }
+      return { ...m, key: newKey, deck_type: 'preset' };
+    });
+    localStorage.setItem(LS_INDEX, JSON.stringify(migratedIdx));
+    setTimeout(() => migrateMediaKeys(rawIdx), 0);
+  }
+
   const idx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
-  // compat: infer source from cloud sync timestamp for unmarked data
+  // compat: migrate old entries without deck_type
   DECKS_META = idx.map(m => {
-    if (m.source) return m;
-    return { ...m, source: localStorage.getItem('yihai_sync_at_' + m.key) ? 'cloud' : 'local' };
+    if (m.deck_type) return m;
+    // compat: migrate old entries without deck_type
+    const deck_type = m.source === 'cloud' ? 'preset' : 'personal';
+    return { ...m, deck_type };
   });
   for (const { key } of idx) {
     try {
@@ -4127,6 +4145,25 @@ async function restoreDecks() {
   } catch(e) {}
 }
 
+async function migrateMediaKeys(oldIdx) {
+  const db = await openDB().catch(() => null);
+  if (!db) return;
+  for (const m of oldIdx) {
+    if (!m.key || !m.key.startsWith('cloud_')) continue;
+    const newKey = m.key.slice(6);
+    const tx = db.transaction('blobs', 'readwrite');
+    const store = tx.objectStore('blobs');
+    const allKeys = await new Promise(res => { const r = store.getAllKeys(); r.onsuccess = e => res(e.target.result); });
+    for (const k of allKeys) {
+      if (typeof k === 'string' && k.startsWith(m.key + '_')) {
+        const newK = newKey + k.slice(m.key.length);
+        const blob = await new Promise(res => { const r = store.get(k); r.onsuccess = e => res(e.target.result); });
+        if (blob) { store.put(blob, newK); store.delete(k); }
+      }
+    }
+  }
+}
+
 // ── .yhspack import ──────────────────────────────────────────────
 function ldScript(src) {
   return new Promise((res, rej) => {
@@ -4152,7 +4189,7 @@ async function importYhspack(file) {
     const deck = deckData.deck;
     if (!deck || !deck.cards) { showCloudToast(t('import_bad_format_cards'), true); return; }
 
-    const key = deck.id || ('deck_' + Date.now());
+    const key = deck.id || crypto.randomUUID();
     const name = deck.name || file.name.replace('.yhspack','');
     const deckLang = deck.language || 'zh-CN';
     const cards = [];
@@ -4582,9 +4619,9 @@ async function saveCardFromForm() {
     const newName = await showPromptDialog(t('home_new_deck_prompt'), '');
     if (!newName || !newName.trim()) { showCloudToast(t('home_deck_name_empty'), true); return; }
     deckName = newName.trim();
-    deckKey = 'deck_' + Date.now();
+    deckKey = crypto.randomUUID();
     DECKS[deckKey] = [];
-    DECKS_META.push({ key: deckKey, name: deckName, source: 'local' });
+    DECKS_META.push({ key: deckKey, name: deckName, deck_type: 'personal' });
     saveDeckIndex();
     // insert new option into selector and select it
     const opt = document.createElement('option');
@@ -4601,7 +4638,7 @@ async function saveCardFromForm() {
   const deck = DECKS[deckKey];
 
   // generate card ID
-  const id = 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  const id = crypto.randomUUID();
 
   // auto-detect language
   const deckLang = 'zh-CN'; // default Chinese
@@ -4677,9 +4714,9 @@ function closeActionSheet(e) {
 async function createEmptyDeck() {
   const name = await showPromptDialog(t('home_new_deck_prompt'), '');
   if (!name || !name.trim()) return;
-  const key = 'deck_' + Date.now();
+  const key = crypto.randomUUID();
   DECKS[key] = [];
-  DECKS_META.push({ key: key, name: name.trim(), source: 'local' });
+  DECKS_META.push({ key: key, name: name.trim(), deck_type: 'personal' });
   saveDeckIndex();
   saveDeckCards(key, []);
   renderDeckList();
@@ -7261,33 +7298,20 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('common_downloading'); }
 
   try {
-    // 1. get card_id list for deck via server_deck_cards (ordered)
-    const { data: links, error: linkErr } = await _sb.from('server_deck_cards')
-      .select('card_id').eq('deck_id', deckId).order('sort_order');
+    // 1. get cards from deck_cards (ordered)
+    const { data: ordered, error: linkErr } = await _sb.from('deck_cards')
+      .select('card_id,name,image_url,audio_url')
+      .eq('deck_id', deckId).order('sort_order');
     if (linkErr) throw linkErr;
-    if (!links || !links.length) { showCloudToast(t('sync_deck_empty'), true); return; }
+    if (!ordered || !ordered.length) { showCloudToast(t('sync_deck_empty'), true); return; }
 
-    const cardIds = links.map(l => l.card_id);
-
-    // 2. query cards_pool for card details and media paths
-    const { data: cards, error: cardErr } = await _sb.from('cards_pool')
-      .select('card_id,card_name,image_url,audio_url')
-      .in('card_id', cardIds);
-    if (cardErr) throw cardErr;
-    if (!cards || !cards.length) { showCloudToast(t('sync_no_card_data'), true); return; }
-
-    // order by sort_order
-    const cardMap = {};
-    cards.forEach(c => { cardMap[c.card_id] = c; });
-    const ordered = cardIds.map(id => cardMap[id]).filter(Boolean);
-
-    // 3. generate deck key
-    const key = 'cloud_' + deckId;
+    // 3. deck key = decks.id 直接用，无前缀
+    const key = deckId;
 
     // 4. download media and assemble cards (concurrency 3, image+audio parallel per card)
     const deckCards = [];
     await parallelMapLimit(ordered, 3, async (c, i) => {
-      const card = { id: c.card_id, name: c.card_name, img: '', audioUrl: '', details: [] };
+      const card = { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] };
       const tasks = [];
       if (c.image_url) {
         tasks.push(
@@ -7321,8 +7345,8 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 4. write to memory + persist
     DECKS[key] = deckCards;
     const existing = DECKS_META.findIndex(m => m.key === key);
-    if (existing >= 0) DECKS_META[existing] = { key, name: deckName, source: 'cloud' };
-    else DECKS_META.push({ key, name: deckName, source: 'cloud' });
+    if (existing >= 0) DECKS_META[existing] = { key, name: deckName, deck_type: 'preset' };
+    else DECKS_META.push({ key, name: deckName, deck_type: 'preset' });
     saveDeckIndex();
     saveDeckCards(key, deckCards);
 
@@ -7379,7 +7403,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     const lastSyncAt = localStorage.getItem('yihai_sync_at_' + localKey) || '';
 
     // 1. get server card_id list (lightweight, IDs only)
-    const { data: links, error: linkErr } = await _sb.from('server_deck_cards')
+    const { data: links, error: linkErr } = await _sb.from('deck_cards')
       .select('card_id').eq('deck_id', deckId).order('sort_order');
     if (linkErr) throw linkErr;
     if (!links || !links.length) { showCloudToast(t('sync_deck_empty'), true); return; }
@@ -7402,8 +7426,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
       const batchSize = 100;
       for (let b = 0; b < existingIds.length; b += batchSize) {
         const batch = existingIds.slice(b, b + batchSize);
-        const { data: changed, error: chErr } = await _sb.from('cards_pool')
-          .select('card_id,card_name,image_url,audio_url')
+        const { data: changed, error: chErr } = await _sb.from('deck_cards')
+          .select('card_id,name,image_url,audio_url')
+          .eq('deck_id', deckId)
           .in('card_id', batch)
           .gt('updated_at', lastSyncAt);
         if (!chErr && changed) changed.forEach(c => { changedMap[c.card_id] = c; });
@@ -7413,8 +7438,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
       const batchSize = 100;
       for (let b = 0; b < existingIds.length; b += batchSize) {
         const batch = existingIds.slice(b, b + batchSize);
-        const { data: all, error: aErr } = await _sb.from('cards_pool')
-          .select('card_id,card_name,image_url,audio_url')
+        const { data: all, error: aErr } = await _sb.from('deck_cards')
+          .select('card_id,name,image_url,audio_url')
+          .eq('deck_id', deckId)
           .in('card_id', batch);
         if (!aErr && all) all.forEach(c => { changedMap[c.card_id] = c; });
       }
@@ -7427,8 +7453,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
       const batchSize = 100;
       for (let b = 0; b < newIds.length; b += batchSize) {
         const batch = newIds.slice(b, b + batchSize);
-        const { data: newCards, error: nErr } = await _sb.from('cards_pool')
-          .select('card_id,card_name,image_url,audio_url')
+        const { data: newCards, error: nErr } = await _sb.from('deck_cards')
+          .select('card_id,name,image_url,audio_url')
+          .eq('deck_id', deckId)
           .in('card_id', batch);
         if (!nErr && newCards) newCards.forEach(c => { newCardMap[c.card_id] = c; });
       }
@@ -7443,7 +7470,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
       if (server) {
         // server has update
         let changed = false;
-        if (local.name !== server.card_name) { local.name = server.card_name; changed = true; }
+        if (local.name !== server.name) { local.name = server.name; changed = true; }
         // only download if media URL differs
         if (server.image_url && server.image_url !== local._imgUrl) {
           const media = await downloadMedia(cid, server.image_url, null);
@@ -7468,7 +7495,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     await parallelMapLimit(newIds, 3, async (cid) => {
       const server = newCardMap[cid];
       if (!server) return;
-      const card = { id: cid, name: server.card_name, img: '', audioUrl: '', details: [] };
+      const card = { id: cid, name: server.name, img: '', audioUrl: '', details: [] };
       const media = await downloadMedia(cid, server.image_url, server.audio_url);
       card.img = media.img;
       card.audioUrl = media.audioUrl;
@@ -7488,7 +7515,8 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     currentDeck = localKey;
     // mark as cloud deck
     const metaIdx = DECKS_META.findIndex(m => m.key === localKey);
-    if (metaIdx >= 0) DECKS_META[metaIdx].source = 'cloud';
+    if (metaIdx >= 0 && !DECKS_META[metaIdx].deck_type)
+      DECKS_META[metaIdx].deck_type = 'preset';
     renderDeckList();
     // noToast=true means called from within runSync, which calls updateDeckStats() after state sync
     if (!noToast) updateDeckStats();
