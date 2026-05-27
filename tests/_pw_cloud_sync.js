@@ -141,6 +141,7 @@ async function waitSyncDone(page) {
       pass('进入练习屏', false);
     }
 
+    pass('练习至少 1 张卡', practicedCards > 0);
     await run(page, () => goHome());
     await wait(page, 1000);
 
@@ -176,7 +177,7 @@ async function waitSyncDone(page) {
     pass('刷新后 UI 已渲染', await run(page, () => !!document.querySelector('.home-version')));
 
     // session 恢复后需先导航到账户屏，用 showAccount() 同时触发 renderAccount()
-    await run(page, () => showAccount());
+    await run(page, () => { if (typeof showAccount === 'function') showAccount(); else showScreen('screen-account'); });
     await wait(page, 500);
 
     let restored = false;
