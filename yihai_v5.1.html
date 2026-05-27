@@ -4095,7 +4095,7 @@ async function restoreDecks() {
       return { ...m, key: newKey, deck_type: 'preset' };
     });
     localStorage.setItem(LS_INDEX, JSON.stringify(migratedIdx));
-    setTimeout(() => migrateMediaKeys(rawIdx), 0);
+    await migrateMediaKeys(rawIdx);
   }
 
   const idx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
