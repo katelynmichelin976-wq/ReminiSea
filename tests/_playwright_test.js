@@ -53,7 +53,12 @@ async function createTestYhspack() {
     await page.evaluate(() => setLocale('zh-CN'));
     await wait(page, 300);
 
-    await page.setInputFiles('input[accept=".yhspack"]', YHPACK);
+    const yhpackBytes = Array.from(fs.readFileSync(YHPACK));
+    await page.evaluate(async (bytes) => {
+      const arr = new Uint8Array(bytes);
+      const file = new File([arr.buffer], '蔬菜水果本地版.yhspack', { type: 'application/zip' });
+      await importYhspack(file);
+    }, yhpackBytes);
     await page.waitForSelector('.deck-card[data-deck="__test_import__"]', { timeout: 10000 }).catch(() => {});
     const deckName = await run(page, () => {
       const el = document.querySelector('.deck-card[data-deck="__test_import__"] .deck-name');
@@ -61,7 +66,7 @@ async function createTestYhspack() {
     });
     pass('导入牌组出现在列表', deckName.includes('蔬菜水果本地版'));
 
-    await run(page, () => { const c = document.querySelector('.deck-card[data-deck="__test_import__"]'); if (c) c.click(); });
+    await run(page, () => { const c = document.querySelector('.deck-card[data-deck="__test_import__"] .deck-card-inner'); if (c) c.click(); });
     await wait(page, 100);
     check('currentDeck 已切换', await run(page, () => currentDeck), '__test_import__');
 
@@ -118,8 +123,6 @@ async function createTestYhspack() {
     for (let di = 0; di < DAYS.length; di++) {
       await run(page, d => { window.__fakeToday = d; }, DAYS[di]);
 
-      await run(page, () => { for (const t of document.querySelectorAll('.sheet-tab')) if (t.textContent.includes('今日')) { t.click(); return; } });
-      await wait(page, 100);
       await run(page, () => { for (const b of document.querySelectorAll('button')) if (b.textContent.includes('开始练习')) { b.click(); return; } });
 
       // 等练习屏激活（最多 3s）
