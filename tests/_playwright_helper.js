@@ -132,9 +132,16 @@ async function getDeckOverviewStats(page /*, deckKey */) {
   });
 }
 
+// ── 跳转到指定 screen ──
+async function navigateTo(page, screenId) {
+  await run(page, (id) => showScreen(id), screenId);
+  await wait(page, 400);
+}
+
 module.exports = {
   resetCounters, pass, check, section, wait, run, getCounts,
   getBaseUrl,
+  navigateTo,
   openSettingsTab, closeSettings,
   cloudLogin, cloudLogout, waitSyncModal,
   getDeckOverviewStats,
