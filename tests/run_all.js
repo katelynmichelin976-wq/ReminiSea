@@ -16,6 +16,7 @@ const UNIT_SUITES = [
   'yihai_v4.4_test.js',
   'yihai_v4.8_test.js',
   'yihai_v4.9_test.js',
+  'yihai_v5.0_i18n_test.js',
 ];
 
 const COL_W = 24;
@@ -30,7 +31,8 @@ for (const suite of UNIT_SUITES) {
   const result = spawnSync('node', [filePath], { encoding: 'utf8' });
 
   const output = (result.stdout || '') + (result.stderr || '');
-  const match  = output.match(/结果：(\d+) 通过\s+(\d+) 失败/);
+  const match  = output.match(/结果：(\d+) 通过\s+(\d+) 失败/)
+             || output.match(/通过 (\d+) \/ 失败 (\d+)/);
 
   if (!match) {
     console.log(`  ✗ ${suite.padEnd(COL_W)} — 运行失败`);
