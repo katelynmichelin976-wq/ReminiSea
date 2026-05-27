@@ -2491,6 +2491,7 @@ function restoreSession() {
         localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
         logAppEvent('session_restore_ok', { uid: _cloudUserId });
         updateCloudTabUI();
+        checkPersonalDeckUpdates().catch(() => {});
         return;
       }
 
@@ -4368,6 +4369,11 @@ async function deleteDeck(e, key) {
   localStorage.removeItem(LS_DECK_PREFIX + key);
   saveDeckIndex();
   deleteMediaForDeck(key).catch(() => {});
+  if (meta.deck_type === 'personal' && _syncEnabled && _sb) {
+    _sb.from('deck_cards').delete().eq('deck_id', key).catch(() => {});
+    _sb.from('decks').delete().eq('id', key).catch(() => {});
+  }
+  localStorage.removeItem('yihai_sync_at_' + key);
   if (currentDeck === key) currentDeck = null;
   renderDeckList();
   updateDeckStats();
@@ -4677,6 +4683,7 @@ async function saveCardFromForm() {
   // persist
   saveDeckCards(deckKey, deck);
   saveDeckIndex();
+  uploadDeckToCloud(deckKey).catch(() => {});
 
   // wait for all media saves to complete
   Promise.all(savePromises).then(function() {
@@ -4719,6 +4726,7 @@ async function createEmptyDeck() {
   DECKS_META.push({ key: key, name: name.trim(), deck_type: 'personal' });
   saveDeckIndex();
   saveDeckCards(key, []);
+  uploadDeckToCloud(key).catch(() => {});
   renderDeckList();
   updateDeckStats();
   showCloudToast(t('home_deck_created', { name: name.trim() }));
@@ -7535,6 +7543,115 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     console.error('[sync] error:', e);
   } finally {
     if (btnEl) { btnEl.disabled = false; btnEl.textContent = t('settings_cloud_sync_btn'); }
+  }
+}
+
+async function uploadDeckToCloud(key) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  const meta = DECKS_META.find(m => m.key === key);
+  if (!meta || meta.deck_type !== 'personal') return;
+  const cards = DECKS[key] || [];
+  try {
+    await _sb.from('decks').upsert({
+      id: key,
+      user_id: _cloudUserId,
+      name: meta.name,
+      deck_type: 'personal',
+      card_count: cards.length
+    }, { onConflict: 'id', ignoreDuplicates: false });
+    await _sb.from('deck_cards').delete().eq('deck_id', key);
+    if (cards.length > 0) {
+      const rows = cards.map((c, i) => ({
+        deck_id: key, card_id: c.id, name: c.name,
+        image_url: c._imgUrl || null, audio_url: c._audUrl || null, sort_order: i
+      }));
+      for (let b = 0; b < rows.length; b += 500)
+        await _sb.from('deck_cards').insert(rows.slice(b, b + 500));
+    }
+    console.log('[cloud] uploadDeckToCloud ok:', key, cards.length, 'cards');
+  } catch(e) {
+    console.warn('[cloud] uploadDeckToCloud fail:', e.message);
+  }
+}
+
+async function publishDeck(key) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) { showCloudToast(t('sync_offline'), true); return; }
+  const meta = DECKS_META.find(m => m.key === key);
+  if (!meta || meta.deck_type !== 'personal') return;
+  try {
+    await uploadDeckToCloud(key);
+    const { error } = await _sb.from('decks')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', key).eq('user_id', _cloudUserId);
+    if (error) throw error;
+    localStorage.setItem('yihai_sync_at_' + key, new Date().toISOString());
+    showCloudToast(t('deck_published_ok', { name: esc(meta.name) }));
+    console.log('[cloud] publishDeck ok:', key);
+  } catch(e) {
+    showCloudToast(t('deck_publish_fail', { msg: e.message }), true);
+    console.error('[cloud] publishDeck fail:', e);
+  }
+}
+
+async function checkPersonalDeckUpdates() {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  try {
+    const { data: remoteDecks, error } = await _sb.from('decks')
+      .select('id,name,updated_at')
+      .eq('user_id', _cloudUserId)
+      .eq('deck_type', 'personal');
+    if (error || !remoteDecks) return;
+    for (const rd of remoteDecks) {
+      const lastSync = localStorage.getItem('yihai_sync_at_' + rd.id) || '';
+      if (rd.updated_at > lastSync) {
+        const existingMeta = DECKS_META.find(m => m.key === rd.id);
+        const deckName = (existingMeta && existingMeta.name) || rd.name;
+        await downloadPersonalDeckFromCloud(rd.id, deckName);
+      }
+    }
+  } catch(e) {
+    console.warn('[cloud] checkPersonalDeckUpdates fail:', e.message);
+  }
+}
+
+async function downloadPersonalDeckFromCloud(deckId, deckName) {
+  if (!_syncEnabled || !_sb) return;
+  try {
+    const { data: cards, error } = await _sb.from('deck_cards')
+      .select('card_id,name,image_url,audio_url')
+      .eq('deck_id', deckId).order('sort_order');
+    if (error || !cards || !cards.length) return;
+    const syncNow = new Date().toISOString();
+    const deckCards = [];
+    await parallelMapLimit(cards, 3, async (c, i) => {
+      const card = { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] };
+      const tasks = [];
+      if (c.image_url) tasks.push(
+        downloadMediaFromCDNorSupabase(c.image_url)
+          .then(async blob => { card.img = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_img`, blob).catch(() => {}); })
+          .catch(e => console.warn('[cloud] img failed:', e.message))
+      );
+      if (c.audio_url) tasks.push(
+        downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url))
+          .then(async blob => { card.audioUrl = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_aud`, blob).catch(() => {}); })
+          .catch(e => console.warn('[cloud] aud failed:', e.message))
+      );
+      await Promise.all(tasks);
+      card._imgUrl = c.image_url || '';
+      card._audUrl = c.audio_url || '';
+      deckCards[i] = card;
+    });
+    localStorage.setItem('yihai_sync_at_' + deckId, syncNow);
+    DECKS[deckId] = deckCards;
+    const existingIdx = DECKS_META.findIndex(m => m.key === deckId);
+    if (existingIdx >= 0) DECKS_META[existingIdx] = { key: deckId, name: deckName, deck_type: 'personal' };
+    else DECKS_META.push({ key: deckId, name: deckName, deck_type: 'personal' });
+    saveDeckIndex();
+    saveDeckCards(deckId, deckCards);
+    renderDeckList();
+    console.log('[cloud] downloadPersonalDeckFromCloud ok:', deckId, deckCards.length, 'cards');
+  } catch(e) {
+    console.warn('[cloud] downloadPersonalDeckFromCloud fail:', e.message);
   }
 }
 
