@@ -69,7 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.1.html` | Main training app (v5.1.4, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v5.1.html` | Main training app (v5.1.5, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
 | `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
 | `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
@@ -141,13 +141,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.1.4**（牌组云端同步 + migration 010，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.1.5**（牌组云端同步 + migration 010，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.1.5 主要变更：**
+- fix: 移除 `publishDeck` 功能（preset/shared 权限设计问题，待后续重设计）
+- fix: `migrateMediaKeys` race condition — 从 v5.1.3 升级时 IndexedDB blob key 迁移推迟导致图片加载失败；改为 await 顺序执行
 
 **v5.1.4 主要变更：**
 - feat: migration 010 — `decks`/`deck_cards` 统一 schema，替代 `server_decks`/`cards_pool`/`server_deck_cards`；删除废弃表 `card_state_log`/`upload_log`
 - feat: 本地 deck key 格式清理 — 去 `cloud_` 前缀、`crypto.randomUUID()` 生成新 key、`DECKS_META` 显式 `deck_type`
 - feat: 个人牌组云端同步 — `uploadDeckToCloud`、`checkPersonalDeckUpdates`、`saveDeck`/`deleteDeck` 触发云端推送
-- feat: 发布机制 — `publishDeck` 更新 `decks.updated_at`，牌组详情屏新增「发布」按钮
 - test: 全部回归测试对齐新 schema（表名/key 格式/登录 UI/主题检测 data-theme）
 
 **v5.1.3 主要变更：**

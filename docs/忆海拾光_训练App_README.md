@@ -129,6 +129,14 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.1.5 — 2026-05-27
+
+**修复**
+- 移除 `publishDeck` 功能（preset/shared 权限设计未完善，待后续重新设计）
+- 修复 `migrateMediaKeys` race condition：从 v5.1.3 升级时，localStorage deck key 已去掉 `cloud_` 前缀，但 IndexedDB blob key 迁移被 `setTimeout` 推迟，导致 `restoreDecks` 读图时找不到 blob，图片全部显示为空；改为 `await` 顺序执行，确保迁移完成后再加载卡片
+
+---
+
 ### v5.1.4 — 2026-05-27
 
 **功能：牌组云端同步**

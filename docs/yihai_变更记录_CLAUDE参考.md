@@ -2,6 +2,11 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.1.5 Key Changes
+
+- **移除 publishDeck**: 删除「发布」按钮（`#dd-publish-btn`）、JS 可见性逻辑、`publishDeck()` 函数体、3 种语言 i18n key（`common_publish`/`deck_published_ok`/`deck_publish_fail`）。原因：preset/shared 权限边界未确定，普通用户不应直接将 deck_type 改为 preset。
+- **migrateMediaKeys race condition 修复**: `restoreDecks()` 中将 `setTimeout(() => migrateMediaKeys(rawIdx), 0)` 改为 `await migrateMediaKeys(rawIdx)`。从 v5.1.3 升级时，localStorage deck key 已即时迁移（去 `cloud_` 前缀），但 IDB blob key（`cloud_xxx_cardId_img` → `xxx_cardId_img`）被延迟执行，导致 `restoreDecks` 中 `loadMedia(newKey_cardId_img)` 找不到 blob，所有云端牌组图片显示为空。改为顺序 await 后，IDB 迁移完成才继续加载卡片。
+
 ## v5.1.4 Key Changes
 
 - **Migration 010**: 新建 `decks`（`id TEXT PK, user_id, name, deck_type, card_count, updated_at`）和 `deck_cards`（`id BIGINT AI, deck_id FK, card_id, name, image_url, audio_url, sort_order`）。RLS：preset/shared 类型全员可读，personal 仅 owner 可读写。从 `server_decks`/`cards_pool`/`server_deck_cards` 迁移 preset 数据。删除废弃表 `card_state_log`、`upload_log`。
