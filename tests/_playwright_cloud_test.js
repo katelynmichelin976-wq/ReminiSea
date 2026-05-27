@@ -17,7 +17,7 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
 const TEST_DECK_NAME = '蔬菜水果';
-const CLOUD_DECK_KEY = 'cloud_01edbdfd';
+const CLOUD_DECK_KEY = '01edbdfd';
 const CARD_COUNT = 33;
 
 (async () => {
@@ -47,7 +47,7 @@ const CARD_COUNT = 33;
 
     await run(page, async (name) => {
       try {
-        const { data: decks } = await _sb.from('server_decks').select('id,name').order('name');
+        const { data: decks } = await _sb.from('decks').select('id,name').eq('deck_type','preset').order('name');
         if (!decks) return;
         const sd = decks.find(d => d.name === name);
         if (sd) {

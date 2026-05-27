@@ -15,7 +15,7 @@ const { pass, check, section, wait, run, getBaseUrl } = helper;
 const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 const TEST_EMAIL = 'zyhacl@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
-const CLOUD_DECK_KEY = 'cloud_01edbdfd';
+const CLOUD_DECK_KEY = '01edbdfd';
 const CARD_COUNT = 33;
 
 (async () => {
@@ -55,7 +55,7 @@ const CARD_COUNT = 33;
     // 显式下载云端牌组
     await run(page, async (name) => {
       try {
-        const { data: decks } = await _sb.from('server_decks').select('id,name').order('name');
+        const { data: decks } = await _sb.from('decks').select('id,name').eq('deck_type','preset').order('name');
         if (!decks) return;
         const sd = decks.find(d => d.name === name);
         if (sd) {
@@ -65,10 +65,7 @@ const CARD_COUNT = 33;
       } catch(e) { console.warn('[test] deck sync error:', e.message); }
     }, '蔬菜水果');
 
-    pass('显示登录邮箱', (await run(page, () => {
-      const el = document.getElementById('cloud-user-email');
-      return el ? el.textContent : '';
-    })).includes(TEST_EMAIL));
+    pass('显示登录邮箱', (await run(page, () => _cloudUserEmail || '')).includes(TEST_EMAIL));
 
     // ═══════════════════ PHASE 3: 同步并验证主页 ═══════════════════
     section('PHASE 3: 同步并验证主页数据');
@@ -94,7 +91,7 @@ const CARD_COUNT = 33;
 
     // 记录首次云牌组数（用于 PH11 重新登录对比）
     const firstCloudDeckCount = await run(page, () =>
-      DECKS_META.filter(m => m.source === 'cloud').length
+      DECKS_META.filter(m => m.deck_type === 'preset').length
     );
     pass('首次登录有云牌组', firstCloudDeckCount > 0);
     console.log(`  首次云牌组: ${firstCloudDeckCount}`);
@@ -223,7 +220,7 @@ const CARD_COUNT = 33;
         headers: { 'Authorization': 'Bearer ' + tok.access_token, apikey: 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD' }
       });
       const all = await r.json();
-      const ds = all.find(d => d.deck_key === 'cloud_01edbdfd');
+      const ds = all.find(d => d.deck_key === '01edbdfd');
       return ds ? ds.practice_days : 0;
     });
     // also verify practice_days in DECKS_META matches
@@ -352,7 +349,7 @@ const CARD_COUNT = 33;
     let secondCount = 0;
     for (let i = 0; i < 60; i++) {
       secondCount = await run(page, () =>
-        DECKS_META.filter(m => m.source === 'cloud').length
+        DECKS_META.filter(m => m.deck_type === 'preset').length
       );
       if (secondCount > 0) break;
       await wait(page, 500);

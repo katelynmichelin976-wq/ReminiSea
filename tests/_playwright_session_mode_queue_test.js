@@ -45,8 +45,14 @@ async function checkCurve(queue, label) {
 
   console.log('\n── PHASE 1: 导入牌组 ──');
 
-  // 直接操作隐藏的 file input，触发 importYhspack
-  await page.locator('input[type="file"][accept=".yhspack"]').setInputFiles(PACK_PATH);
+  // 直接调 importYhspack，绕过已删除的 input[accept=".yhspack"] UI 入口
+  const { readFileSync } = require('fs');
+  const yhpackBytes = Array.from(readFileSync(PACK_PATH));
+  await page.evaluate(async (bytes) => {
+    const arr = new Uint8Array(bytes);
+    const file = new File([arr.buffer], '蔬菜水果本地版.yhspack', { type: 'application/zip' });
+    await importYhspack(file);
+  }, yhpackBytes);
   await page.waitForTimeout(3000);  // 等待导入（含图片处理）
 
   const deckKeys = await page.evaluate(() => Object.keys(DECKS || {}));

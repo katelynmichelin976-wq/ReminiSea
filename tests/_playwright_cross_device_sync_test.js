@@ -14,7 +14,8 @@
  * 测试账号：zyhacl@gmail.com
  */
 const { chromium } = require('playwright');
-const { getBaseUrl } = require('./_playwright_helper');
+const helper = require('./_playwright_helper');
+const { getBaseUrl } = helper;
 
 const BASE_URL = getBaseUrl();
 function pageUrl() { return BASE_URL + '?v=' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
@@ -23,8 +24,8 @@ const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
 const TEST_DECK_NAME = '__test_xdev__';
 const CARD_COUNT = 3;
 const TEST_DECK_ID = '56d301aa';
-const CLOUD_DECK_KEY = 'cloud_56d301aa';
-const OLD_DECK_KEY = 'cloud___test_xdev__';
+const CLOUD_DECK_KEY = '56d301aa';
+const OLD_DECK_KEY = '__test_xdev__';
 
 let passed = 0, failed = 0, errors = [];
 const pass = (l, v) => { if (v) { passed++; console.log(`  ✓ ${l}`); } else { failed++; errors.push(`✗ ${l}`); console.log(`  ✗ ${l}`); } };
@@ -33,7 +34,6 @@ const section = t => console.log(`\n${'═'.repeat(60)}\n  ${t}\n${'═'.repeat(
 const run = (page, fn, arg) => page.evaluate(fn, arg);
 const wait = (page, ms) => page.waitForTimeout(ms);
 const waitWrite = (pg) => pg.evaluate(async () => { if (_lastSrsWrite) await _lastSrsWrite; });
-const OPEN_SETTINGS = () => { if (typeof openSettingsWithSrs === 'function') openSettingsWithSrs(); else openSettings(); };
 const ts = () => Date.now();
 
 // ── 辅助：轮询等待条件 ──
@@ -63,67 +63,34 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     await loginPage.goto(pageUrl(), { waitUntil: 'domcontentloaded', timeout: 15000 });
     await wait(loginPage, 1000);
 
-    // 登录（合并操作减少 evaluate 次数）
-    await run(loginPage, OPEN_SETTINGS);
-    await wait(loginPage, 200);
-    await run(loginPage, () => {
-      const tabs = document.querySelectorAll('.sheet-tab');
-      for (const t of tabs) { if (t.textContent.includes('云端')) { t.click(); return; } }
-    });
-    await wait(loginPage, 200);
-    await loginPage.evaluate(({ em, pw }) => {
-      const e = document.getElementById('cloud-email');
-      const p = document.getElementById('cloud-password');
-      if (e) e.value = em;
-      if (p) p.value = pw;
-      const b = document.getElementById('cloud-login-btn');
-      if (b) b.click();
-    }, { em: TEST_EMAIL, pw: TEST_PASSWORD });
-
-    const loggedIn = await poll(loginPage, () => {
-      const sec = document.getElementById('cloud-connected-section');
-      return sec && window.getComputedStyle(sec).display !== 'none';
-    }, null, 'login', 15000, 200);
+    const loggedIn = await helper.cloudLogin(loginPage, TEST_EMAIL, TEST_PASSWORD);
     pass('登录成功', loggedIn);
 
     // 清理 + 创建数据（单次 evaluate 批量完成）
     const setupResult = await run(loginPage, async ({ deckId, deckName, count, oldKey, cloudKey }) => {
       const log = [];
-      // 获取 userId
       const uid = _cloudUserId;
 
-      // 删除旧牌组
-      const { data: oldDeck } = await _sb.from('server_decks').select('id').eq('name', deckName).maybeSingle();
-      if (oldDeck) {
-        await _sb.from('server_deck_cards').delete().eq('deck_id', oldDeck.id);
-        await _sb.from('server_decks').delete().eq('id', oldDeck.id);
-        log.push('oldDeckDeleted');
-      }
+      // 删除旧牌组（deck_cards 通过 CASCADE 自动删除）
+      await _sb.from('decks').delete().eq('id', deckId);
+      log.push('oldDeckDeleted');
 
-      // 清理各 deck_key 的历史数据
+      // 清理各 deck_key 的历史同步数据
       for (const dk of [cloudKey, oldKey]) {
         await _sb.from('sync_trials').delete().eq('user_id', uid).eq('deck_key', dk);
         await _sb.from('sync_card_states').delete().eq('user_id', uid).eq('deck_key', dk);
       }
       log.push('syncDataCleared');
 
-      // 创建 3 张测试卡
-      const cards = [
-        { card_id: 'xdev_01', card_name: '苹果', deck_name: deckName, source_file: 'test.yhspack' },
-        { card_id: 'xdev_02', card_name: '香蕉', deck_name: deckName, source_file: 'test.yhspack' },
-        { card_id: 'xdev_03', card_name: '橘子', deck_name: deckName, source_file: 'test.yhspack' },
-      ];
-      for (const c of cards) {
-        await _sb.from('cards_pool').upsert(c, { onConflict: 'card_id,deck_name,source_file' });
-      }
+      // 创建牌组（deck_type='preset' 让所有登录用户可读）
+      await _sb.from('decks').insert({ id: deckId, user_id: uid, name: deckName, deck_type: 'preset', card_count: count });
 
-      // 创建牌组
-      await _sb.from('server_decks').upsert({ id: deckId, name: deckName, description: '跨设备同步回归测试', card_count: count }, { onConflict: 'id' });
-
-      // 关联卡片
-      for (let i = 0; i < cards.length; i++) {
-        await _sb.from('server_deck_cards').upsert({ deck_id: deckId, card_id: cards[i].card_id, sort_order: i }, { onConflict: 'deck_id,card_id' });
-      }
+      // 创建卡片
+      await _sb.from('deck_cards').insert([
+        { deck_id: deckId, card_id: 'xdev_01', name: '苹果', sort_order: 0 },
+        { deck_id: deckId, card_id: 'xdev_02', name: '香蕉', sort_order: 1 },
+        { deck_id: deckId, card_id: 'xdev_03', name: '橘子', sort_order: 2 },
+      ]);
       log.push('testDataCreated');
       log.push('uid:' + uid.substring(0, 8));
       return log;
@@ -132,13 +99,9 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     console.log(`  setup: ${setupResult.join(' → ')}`);
 
     // 退出登录
-    await run(loginPage, () => {
-      const btns = document.querySelectorAll('button');
-      for (const b of btns) { if (b.getAttribute('onclick') === 'doCloudLogout()') { b.click(); return; } }
-    });
-    await wait(loginPage, 1000);
-    await run(loginPage, () => { const o = document.getElementById('settings-overlay'); if (o) o.classList.remove('open'); });
-    await wait(loginPage, 200);
+    const { loggedOut: p0out } = await helper.cloudLogout(loginPage);
+    if (!p0out) console.warn('  [warn] PHASE 0 logout may have failed');
+    await wait(loginPage, 500);
     await loginPage.close();
 
     console.log(`  Phase 0 耗时: ${((ts()-p0)/1000).toFixed(1)}s`);
@@ -152,27 +115,14 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     await wait(pageA, 1000);
 
     // 登录
-    await run(pageA, OPEN_SETTINGS); await wait(pageA, 200);
-    await run(pageA, () => { const t = document.querySelectorAll('.sheet-tab'); for (const x of t) { if (x.textContent.includes('云端')) { x.click(); return; } } });
-    await wait(pageA, 200);
-    await pageA.evaluate(({ em, pw }) => {
-      const e = document.getElementById('cloud-email');
-      const p = document.getElementById('cloud-password');
-      if (e) e.value = em;
-      if (p) p.value = pw;
-      const b = document.getElementById('cloud-login-btn');
-      if (b) b.click();
-    }, { em: TEST_EMAIL, pw: TEST_PASSWORD });
-
-    const connA = await poll(pageA, () => {
-      const s = document.getElementById('cloud-connected-section');
-      return s && window.getComputedStyle(s).display !== 'none';
-    }, null, 'deviceA login', 15000, 200);
+    const connA = await helper.cloudLogin(pageA, TEST_EMAIL, TEST_PASSWORD);
     pass('设备 A 登录成功', connA);
-    // 显式下载云端牌组（v5.1 登录后自动同步可能不包含 deck download）
-    await run(pageA, async (name, did) => {
+    await wait(pageA, 300);
+
+    // 显式下载云端牌组
+    await run(pageA, async (name) => {
       try {
-        const { data: decks } = await _sb.from('server_decks').select('id,name');
+        const { data: decks } = await _sb.from('decks').select('id,name').eq('deck_type','preset');
         if (!decks) return;
         const sd = decks.find(d => d.name === name);
         if (sd) {
@@ -180,25 +130,11 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
           else await downloadDeckFromCloud(sd.id, sd.name);
         }
       } catch(e) { console.warn('[test] deck sync error:', e.message); }
-    }, TEST_DECK_NAME, TEST_DECK_ID);
+    }, TEST_DECK_NAME);
 
-    // 手动触发同步（v4.10 不自动同步）
-    await run(pageA, () => {
-      const btns = document.querySelectorAll('button');
-      for (const b of btns) { if (b.textContent.includes('同步')) { b.click(); break; } }
-    });
-    for (let i = 0; i < 40; i++) {
-      const done = await run(pageA, () => {
-        const modal = document.getElementById('sync-modal');
-        return modal && modal.style.display === 'none';
-      });
-      if (done) break;
-      await wait(pageA, 500);
-    }
-
-    // 关闭设置
-    await run(pageA, () => { const o = document.getElementById('settings-overlay'); if (o) o.classList.remove('open'); });
-    await wait(pageA, 300);
+    // 拉取云端数据
+    await run(pageA, () => runSync({ deckKey: currentDeck, modal: false, decks: false, showToast: false }).catch(e => console.warn('[test] sync A pre:', e.message)));
+    await wait(pageA, 3000);
 
     // 等待测试牌组出现
     const deckFoundA = await poll(pageA, (name) => {
@@ -219,7 +155,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
 
     // 选中牌组 + 设置学习参数
     await run(pageA, (key) => {
-      const c = document.querySelector(`.deck-card[data-deck="${key}"]`);
+      const c = document.querySelector(`.deck-card[data-deck="${key}"] .deck-card-inner`);
       if (c) c.click();
     }, deckKeyA);
     await wait(pageA, 200);
@@ -289,22 +225,9 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     });
     await wait(pageA, 500);
 
-    // 手动同步（使用 UI 按钮 + 等待模态关闭）
-    await run(pageA, OPEN_SETTINGS); await wait(pageA, 200);
-    await run(pageA, () => {
-      const btns = document.querySelectorAll('button');
-      for (const b of btns) { if (b.textContent.includes('同步')) { b.click(); break; } }
-    });
-    for (let i = 0; i < 40; i++) {
-      const done = await run(pageA, () => {
-        const modal = document.getElementById('sync-modal');
-        return modal && modal.style.display === 'none';
-      });
-      if (done) break;
-      await wait(pageA, 500);
-    }
-    await run(pageA, () => { const o = document.getElementById('settings-overlay'); if (o) o.classList.remove('open'); });
-    await wait(pageA, 200);
+    // 同步上传练习数据
+    await run(pageA, () => runSync({ deckKey: currentDeck, modal: false, decks: false, showToast: false }).catch(e => console.warn('[test] sync A post:', e.message)));
+    await wait(pageA, 4000);
 
     // 验证首页统计
     const statsA = await run(pageA, (key) => getDeckStatsSrs(key), deckKeyA);
@@ -334,7 +257,6 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
 
     // 诊断：检查 IndexedDB trials 和 cloud trials
     const diagA = await run(pageA, async ({ key }) => {
-      // 本地 trials
       const db = await new Promise((res, rej) => {
         const r = indexedDB.open('yihai_srs', 6);
         r.onsuccess = e => res(e.target.result);
@@ -346,7 +268,6 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
         g.onsuccess = e => res((e.target.result || []).filter(t => t.deck_key === key));
         g.onerror = e => rej(e.target.error);
       });
-      // 云端 trials
       const { data: cloudTrials } = await _sb.from('sync_trials')
         .select('card_id,trial_id').eq('user_id', _cloudUserId).eq('deck_key', key);
       return {
@@ -370,28 +291,14 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     await wait(pageB, 1000);
 
     // 设备 B 登录
-    await run(pageB, OPEN_SETTINGS); await wait(pageB, 200);
-    await run(pageB, () => { const t = document.querySelectorAll('.sheet-tab'); for (const x of t) { if (x.textContent.includes('云端')) { x.click(); return; } } });
-    await wait(pageB, 200);
-    await pageB.evaluate(({ em, pw }) => {
-      const e = document.getElementById('cloud-email');
-      const p = document.getElementById('cloud-password');
-      if (e) e.value = em;
-      if (p) p.value = pw;
-      const b = document.getElementById('cloud-login-btn');
-      if (b) b.click();
-    }, { em: TEST_EMAIL, pw: TEST_PASSWORD });
-
-    const connB = await poll(pageB, () => {
-      const s = document.getElementById('cloud-connected-section');
-      return s && window.getComputedStyle(s).display !== 'none';
-    }, null, 'deviceB login', 15000, 200);
+    const connB = await helper.cloudLogin(pageB, TEST_EMAIL, TEST_PASSWORD);
     pass('设备 B 登录成功', connB);
+    await wait(pageB, 300);
 
     // 显式下载云端牌组
     await run(pageB, async (name) => {
       try {
-        const { data: decks } = await _sb.from('server_decks').select('id,name');
+        const { data: decks } = await _sb.from('decks').select('id,name').eq('deck_type','preset');
         if (!decks) return;
         const sd = decks.find(d => d.name === name);
         if (sd) {
@@ -402,13 +309,9 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     }, TEST_DECK_NAME);
     await wait(pageB, 3000);
 
-    await run(pageB, () => { const o = document.getElementById('settings-overlay'); if (o) o.classList.remove('open'); });
-    await wait(pageB, 300);
-
     // 诊断：检查 login syncAll 是否同步了 daily_progress 和 trials
     const diagBlogin = await run(pageB, async () => {
       const dp = getDailyProgress();
-      // 检查 IndexedDB 是否有云端同步下来的 card states
       const db = await new Promise((res, rej) => {
         const r = indexedDB.open('yihai_srs', 6);
         r.onsuccess = e => res(e.target.result);
@@ -428,7 +331,6 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
       };
     });
     console.log(`  [诊断] B登录后 DP: r=${diagBlogin.dp_r} n=${diagBlogin.dp_n} d=${diagBlogin.dp_d} localStates=${diagBlogin.localStateCount}`);
-    // v5.1: card states sync to cloud per-device; new device has 0 until deck opened
     pass('登录同步后 card states >= 0（新设备从0开始）', diagBlogin.localStateCount >= 0);
 
     // 等待测试牌组
@@ -448,7 +350,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
 
     // ★ 关键步骤：打开牌组 → 开始练习 → 触发 buildSessionQueue → 不答题
     await run(pageB, (key) => {
-      const c = document.querySelector(`.deck-card[data-deck="${key}"]`);
+      const c = document.querySelector(`.deck-card[data-deck="${key}"] .deck-card-inner`);
       if (c) c.click();
     }, deckMetaB.key);
     await wait(pageB, 200);
@@ -485,22 +387,9 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     }, { key: deckMetaB.key });
     console.log(`  [诊断] B打开牌组后本地: ${diagBafterOpen.stateCount}条 ${JSON.stringify(diagBafterOpen.stages)} dirty=${diagBafterOpen.dirtyCount}`);
 
-    // 设备 B 手动同步（使用 UI 按钮 + 等待模态关闭）
-    await run(pageB, OPEN_SETTINGS); await wait(pageB, 200);
-    await run(pageB, () => {
-      const btns = document.querySelectorAll('button');
-      for (const b of btns) { if (b.textContent.includes('同步')) { b.click(); break; } }
-    });
-    for (let i = 0; i < 40; i++) {
-      const done = await run(pageB, () => {
-        const modal = document.getElementById('sync-modal');
-        return modal && modal.style.display === 'none';
-      });
-      if (done) break;
-      await wait(pageB, 500);
-    }
-    await run(pageB, () => { const o = document.getElementById('settings-overlay'); if (o) o.classList.remove('open'); });
-    await wait(pageB, 200);
+    // 设备 B 同步
+    await run(pageB, () => runSync({ deckKey: currentDeck, modal: false, decks: false, showToast: false }).catch(e => console.warn('[test] sync B:', e.message)));
+    await wait(pageB, 4000);
 
     console.log(`  Phase 2 耗时: ${((ts()-p2)/1000).toFixed(1)}s`);
 
@@ -562,30 +451,7 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
     const loginPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     await loginPage.goto(pageUrl(), { waitUntil: 'domcontentloaded', timeout: 15000 });
     await loginPage.waitForTimeout(1000);
-    await run(loginPage, OPEN_SETTINGS);
-    await loginPage.waitForTimeout(200);
-    await loginPage.evaluate(() => {
-      const tabs = document.querySelectorAll('.sheet-tab');
-      for (const t of tabs) { if (t.textContent.includes('云端')) { t.click(); return; } }
-    });
-    await loginPage.waitForTimeout(200);
-    await loginPage.evaluate(({ em, pw }) => {
-      const e = document.getElementById('cloud-email');
-      const p = document.getElementById('cloud-password');
-      if (e) e.value = em;
-      if (p) p.value = pw;
-      const b = document.getElementById('cloud-login-btn');
-      if (b) b.click();
-    }, { em: TEST_EMAIL, pw: TEST_PASSWORD });
-    // 等登录
-    for (let i = 0; i < 20; i++) {
-      const ok = await loginPage.evaluate(() => {
-        const s = document.getElementById('cloud-connected-section');
-        return s && window.getComputedStyle(s).display !== 'none';
-      });
-      if (ok) break;
-      await loginPage.waitForTimeout(500);
-    }
+    await helper.cloudLogin(loginPage, TEST_EMAIL, TEST_PASSWORD);
     const uid = await loginPage.evaluate(() => _cloudUserId);
     if (uid) {
       await loginPage.evaluate(async ({ uid, dk, oldKey }) => {
@@ -593,16 +459,15 @@ async function poll(page, fn, arg, label, timeoutMs = 15000, intervalMs = 100) {
           await _sb.from('sync_trials').delete().eq('user_id', uid).eq('deck_key', d);
           await _sb.from('sync_card_states').delete().eq('user_id', uid).eq('deck_key', d);
         }
-        await _sb.from('server_deck_cards').delete().eq('deck_id', dk);
-        await _sb.from('server_decks').delete().eq('id', dk);
-        await _sb.from('cards_pool').delete().eq('deck_name', '__test_xdev__');
+        // deck_cards 通过 CASCADE 随 decks 一起删除
+        await _sb.from('decks').delete().eq('id', dk);
       }, { uid, dk: TEST_DECK_ID, oldKey: OLD_DECK_KEY });
-      // 清理本地 localStorage（防止残留到同一 Profile 的下次运行）
+      // 清理本地 localStorage
       await loginPage.evaluate(({ dk, oldKey }) => {
-        localStorage.removeItem('yihai_deck_cloud_' + dk);
+        localStorage.removeItem('yihai_deck_' + dk);
         localStorage.removeItem('yihai_deck_' + oldKey);
         const idx = JSON.parse(localStorage.getItem('yihai_decks_index') || '[]');
-        const filtered = idx.filter(m => m.key !== 'cloud_' + dk && m.key !== oldKey);
+        const filtered = idx.filter(m => m.key !== dk && m.key !== oldKey);
         localStorage.setItem('yihai_decks_index', JSON.stringify(filtered));
       }, { dk: TEST_DECK_ID, oldKey: OLD_DECK_KEY });
     }
