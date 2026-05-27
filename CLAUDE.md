@@ -69,7 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.1.html` | Main training app (v5.1.5, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
+| `yihai_v5.1.html` | Main training app (v5.1.6, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
 | `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
 | `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
 | `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
@@ -141,7 +141,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.1.5**（牌组云端同步 + migration 010，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.1.6**（牌组云端同步 + migration 010，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.1.6 主要变更：**
+- feat: 术语统一 — 首页标题「我的相册」→「我的牌组」，英文 My Albums → My Decks，西文 Mis Álbumes → Mis Mazos
 
 **v5.1.5 主要变更：**
 - fix: 移除 `publishDeck` 功能（preset/shared 权限设计问题，待后续重设计）

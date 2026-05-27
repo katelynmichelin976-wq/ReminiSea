@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.1.6 Key Changes
+
+- **术语统一**: 首页 `home_album_section` i18n key 的值从「我的相册 / My Albums / Mis Álbumes」改为「我的牌组 / My Decks / Mis Mazos」。HTML fallback 文本同步更新。CSS class（`album-section-lbl`）及代码内部标识符（`deck`/`DECKS`）不变。决策：「牌组+卡片」= Deck+Card，与 Anki 中文版术语对齐。
+
 ## v5.1.5 Key Changes
 
 - **移除 publishDeck**: 删除「发布」按钮（`#dd-publish-btn`）、JS 可见性逻辑、`publishDeck()` 函数体、3 种语言 i18n key（`common_publish`/`deck_published_ok`/`deck_publish_fail`）。原因：preset/shared 权限边界未确定，普通用户不应直接将 deck_type 改为 preset。
