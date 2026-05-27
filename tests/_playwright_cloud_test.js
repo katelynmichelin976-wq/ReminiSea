@@ -256,11 +256,12 @@ const CARD_COUNT = 33;
     }));
 
     // ═══════════════════ PHASE 6: 多设备 ═══════════════════
-    section('PHASE 6: 多设备同步（深色模式）');
+    section('PHASE 6: 多设备同步（主题）');
 
-    const deviceAThemeBefore = await run(page, () => document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    // v5.1 用 data-theme attribute（不是 class），避免使用 dark 主题（已不可靠）
+    const deviceAThemeBefore = await run(page, () => document.documentElement.getAttribute('data-theme') || 'default');
     console.log(`  Device A 当前主题: ${deviceAThemeBefore}`);
-    const targetTheme = deviceAThemeBefore === 'dark' ? 'light' : 'dark';
+    const targetTheme = deviceAThemeBefore === 'jade' ? 'amber' : 'jade';
 
     const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page2 = await ctx2.newPage();
@@ -270,13 +271,9 @@ const CARD_COUNT = 33;
     pass('Device B 登录成功', await helper.cloudLogin(page2, TEST_EMAIL, TEST_PASSWORD));
     await helper.waitSyncModal(page2, 40);
 
-    console.log(`  Device B 初始主题: ${await run(page2, () => document.documentElement.classList.contains('dark') ? 'dark' : 'light')}`);
+    console.log(`  Device B 初始主题: ${await run(page2, () => document.documentElement.getAttribute('data-theme') || 'default')}`);
 
-    await run(page, () => {
-      const tog = document.getElementById('dark-toggle');
-      if (tog) tog.checked = !tog.checked;
-      toggleTheme(document.getElementById('dark-toggle'));
-    });
+    await run(page, (th) => { setThemeValue(th); debouncePushConfig(); }, targetTheme);
     await wait(page, 1500);
     console.log(`  Device A 切换为: ${targetTheme}`);
 
@@ -284,17 +281,15 @@ const CARD_COUNT = 33;
     await run(page2, () => cloudPullConfig().catch(e => console.warn('[test] B pull:', e.message)));
     await wait(page2, 2000);
 
-    const deviceBTheme = await run(page2, () => document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    const deviceBTheme = await run(page2, () => document.documentElement.getAttribute('data-theme') || 'default');
     pass(`Device B 主题已同步为 ${targetTheme}`, deviceBTheme === targetTheme);
     console.log(`  Device B 主题: ${deviceBTheme}`);
     await page2.close();
     await ctx2.close();
 
-    await run(page, () => {
-      const tog = document.getElementById('dark-toggle');
-      if (tog) tog.checked = !tog.checked;
-      toggleTheme(document.getElementById('dark-toggle'));
-    });
+    await run(page, (th) => {
+      setThemeValue(th); debouncePushConfig();
+    }, deviceAThemeBefore);
     await wait(page, 1000);
 
     // ═══════════════════ PHASE 7: 退出 ═══════════════════
