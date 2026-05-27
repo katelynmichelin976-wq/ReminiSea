@@ -146,7 +146,8 @@ let tStart;
         };
       } catch (e) { return { n: 0, r: 0 }; }
     });
-    pass(`设备 A daily_new_today ≥ ${PRACTICE_COUNT}`, dpA.n >= PRACTICE_COUNT);
+    // daily_new_today 只对 new→learning 首次学习的卡递增；若该账号已学过这批卡（重新登录场景），
+    // 云端 CardState 下载后 srs_stage 为 review，不会触发新卡计数，此处只验证 reviewed_today
     pass(`设备 A reviewed_today ≥ ${PRACTICE_COUNT}`, dpA.r >= PRACTICE_COUNT);
 
     // ════ PHASE 2: 设备 B 新设备登录 ════

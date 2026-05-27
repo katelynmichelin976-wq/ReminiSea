@@ -127,17 +127,15 @@ async function createTestYhspack() {
         });
       }, DECK_ID);
 
-      // 重置 daily progress 以便每天都能练习
+      // 重置 daily progress 以便每天都能练习（正确 key: yihai_daily_progress）
       await run(page, () => {
         const today = new Date().toISOString().slice(0, 10);
-        try {
-          let dp = JSON.parse(localStorage.getItem('daily_progress') || '{}');
-          dp.reviewed_today = 0;
-          dp.daily_new_today = 0;
-          dp.date = today;
-          localStorage.setItem('daily_progress', JSON.stringify(dp));
-        } catch (e) { /* ignore */ }
-        // reset in-memory daily progress
+        const fresh = { date: today, reviewed_today: 0, daily_new_today: 0,
+                        first_fail_today: 0, first_hard_today: 0, first_pass_today: 0 };
+        localStorage.setItem('yihai_daily_progress', JSON.stringify(fresh));
+        // 清除当日首次评级去重记录（reviewed_today 计数依赖此）
+        Object.keys(localStorage).forEach(k => { if (k.startsWith('yh_fr_')) localStorage.removeItem(k); });
+        // 清除内存中的当日移除记录
         if (typeof _dailyRemovedToday !== 'undefined') {
           Object.keys(_dailyRemovedToday).forEach(k => delete _dailyRemovedToday[k]);
         }

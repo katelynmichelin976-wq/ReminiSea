@@ -65,14 +65,14 @@ console.log(`  ${totalIcon} 合计 ${UNIT_SUITES.length} 套件，${totalPassed 
 console.log('═'.repeat(60) + '\n');
 
 if (totalFailed > 0 || anyError) {
-  console.log('  Playwright 测试（需要 HTTP 服务器 + TEST_PASSWORD）：');
-  console.log('    $env:TEST_PASSWORD="xxx"; node tests/_playwright_test.js');
-  console.log('    $env:TEST_PASSWORD="xxx"; node tests/_playwright_v4.10_regression_test.js');
-  console.log('    $env:TEST_PASSWORD="xxx"; node tests/_playwright_cloud_test.js');
-  console.log('    $env:TEST_PASSWORD="xxx"; node tests/_playwright_cross_device_sync_test.js');
-  console.log('    $env:TEST_PASSWORD="xxx"; node tests/_playwright_offline_login_test.js\n');
+  console.log('  Playwright 测试（需要 HTTP 服务器，部分需 TEST_PASSWORD）：');
+  console.log('    node tests/_pw_ui_smoke.js');
+  console.log('    node tests/_pw_srs_e2e.js');
+  console.log('    $env:TEST_PASSWORD="xxx"; node tests/_pw_cloud_sync.js');
+  console.log('    $env:TEST_PASSWORD="xxx"; node tests/_pw_cross_device.js\n');
   process.exit(1);
 }
 
-console.log('  Playwright 测试（可选，需 HTTP 服务器 + TEST_PASSWORD）：');
-console.log('    $env:TEST_PASSWORD="xxx"; node tests/_playwright_test.js\n');
+console.log('  Playwright 测试（可选，需 HTTP 服务器）：');
+console.log('    node tests/_pw_ui_smoke.js');
+console.log('    node tests/_pw_srs_e2e.js\n');
