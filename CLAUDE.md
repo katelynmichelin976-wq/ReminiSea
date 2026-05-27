@@ -81,32 +81,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v4.4_test.js` | v4.4 utility tests (98 cases) |
 | `tests/yihai_v4.8_test.js` | v4.8 utility tests (46 cases) |
 | `tests/yihai_v4.9_test.js` | v4.9 config merge tests (48 cases) |
-| `tests/_playwright_test.js` | Playwright 单机版回归测试（12 断言） |
-| `tests/_playwright_cloud_test.js` | Playwright 网络版回归测试（21 断言，已合并 session_restore） |
-| `tests/_playwright_cross_device_sync_test.js` | Playwright 跨设备同步回归测试（18 断言） |
-| `tests/_playwright_session_restore_test.js` | Playwright 登录恢复测试（8 断言，已合并入 cloud_test PHASE 5） |
-| `tests/_playwright_user_switch_test.js` | Playwright 用户切换数据隔离测试（8 断言，已合并入 v4.10_regression PHASE 11） |
-| `tests/_playwright_v4.9.1_regression_test.js` | v4.9.1 回归测试（21 断言） |
-| `tests/_playwright_v4.10_regression_test.js` | v4.10 回归测试（39 断言，含多设备/离线/双开/重新登录验证） |
-| `tests/_playwright_helper.js` | Playwright 测试公共工具（cloudLogin/cloudLogout/断言等） |
-| `tests/_playwright_multi_user_sync_test.js` | Playwright 多用户数据隔离测试 |
+| `tests/yihai_v5.0_i18n_test.js` | 阶段 0 i18n 纯函数单测（detectLocale/t/detectScript/scriptToLang/resolveFieldLang/normalizeField，27 cases） |
+| `tests/run_all.js` | 单元测试统一入口（5 套件，304 断言） |
+| `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏三态/设置/i18n/函数存在性，~26 断言，无需登录） |
+| `tests/_pw_srs_e2e.js` | SRS 端到端（.yhspack 导入/5天练习/IDB验证/统计KPI/session_mode/队列曲线，~14 断言，无需登录） |
+| `tests/_pw_cloud_sync.js` | 云端流程（登录/decks 下载/同步验证/session restore/user_id 隔离/登出保留/重新登录，~25 断言） |
+| `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→云端同步→设备B接收/review不被覆写/DP不跨设备，12 断言） |
+| `tests/_playwright_helper.js` | Playwright 公共工具（cloudLogin/cloudLogout/navigateTo/waitSyncModal 等） |
 | `tests/_dump_idb.js` | F12 控制台诊断：IndexedDB CardState + localStorage 配置 |
-| `tests/_bookmarklet_diagnose.html` | 书签按钮版诊断工具 |
 | `tests/_diag_sync_state.js` | Playwright 云端 vs 本地数据对比 |
 | `tests/_check_due_count.js` | Node.js Supabase 直接查询到期数 |
-| `tests/_playwright_session_mode_test.js` | Playwright 游戏模式设置 UI + 持久化测试（13 断言） |
-| `tests/_playwright_session_mode_queue_test.js` | Playwright 队列难度曲线验证（14 断言，ef 首尾>中间） |
 | `tests/_check_session_mode_order.js` | Node.js 查询妈妈账号当日卡片，输出三种模式出牌顺序 |
-| `tests/yihai_v5.0_i18n_test.js` | 阶段 0 i18n 纯函数单测（detectLocale/t/detectScript/scriptToLang/resolveFieldLang/normalizeField） |
-| `tests/_playwright_i18n_stage1.js` | 阶段 1 i18n 浏览器验证（locale 切换/插值/非法locale/持久化，13 断言） |
-| `tests/_playwright_stage0_test.js` | 阶段 0 浏览器行为（locale 持久化、TTS 语言、.yhspack 导入字段语言） |
-| `tests/_playwright_nav_verify.js` | Wave 1 dev.1 导航骨架验证（17 断言：Tab Bar/我的屏/设置入口） |
-| `tests/_playwright_dev2_verify.js` | Wave 1 dev.2 点牌组进详情屏验证（8 断言） |
-| `tests/_playwright_browse_verify.js` | Wave 1 dev.4 浏览屏新设计验证（17 断言：DOM/进入/内容/翻页/返回） |
-| `tests/_playwright_deck_detail_verify.js` | Wave 1 牌组详情屏 + 左滑操作验证（14 断言：入口/操作按钮/删除/卡片结构/代码） |
-| `tests/_playwright_account_verify.js` | Wave 1 dev.5 账户屏验证（20 断言：入口/三态/导航/同步） |
-| `tests/_playwright_settings_verify.js` | Wave 1 dev.6 设置屏验证（14 断言：Tab 结构/每日目标/代码） |
 | `tests/test_data/` | Test .yhspack files |
+| `archive/old_tests/` | 归档的旧 Playwright 测试文件（25 个，已被上述 4 个模块替代） |
 
 ### 文档
 | File | Purpose |
@@ -197,37 +184,38 @@ git config core.hooksPath .githooks
 ## Development Commands
 
 ```powershell
-# Run SRS unit tests (required before/after modifying processAnswer or related logic)
+# 单元测试（全量，5 套件，304 断言）
+node tests/run_all.js
+
+# 或分套件跑（SRS/v4.4/v4.8/v4.9/i18n）
 node tests/srs_test.js
-
-# Run v4.4 utility tests (required before/after modifying simpleHash, escAttr, data format, sync logic)
 node tests/yihai_v4.4_test.js
-
-# Run v4.8 utility tests (required before/after modifying cdnMediaUrl, secsToLabel, parallelMapLimit, setObjURL)
 node tests/yihai_v4.8_test.js
-
-# Run v4.9 config merge tests (required before/after modifying cloudPushConfig/cloudPullConfig merge logic)
 node tests/yihai_v4.9_test.js
 
-# Run Playwright 回归测试（可视化浏览器，需先启动 HTTP 服务）
-# python -m http.server 8080 --directory C:\code
-node tests/_playwright_test.js
-$env:TEST_PASSWORD="xxx"; node tests/_playwright_v4.10_regression_test.js  # 文件名保留 v4.10，仍适用 v4.11
-$env:TEST_PASSWORD="xxx"; node tests/_playwright_cloud_test.js
-$env:TEST_PASSWORD="xxx"; node tests/_playwright_cross_device_sync_test.js
-# session_restore 和 user_switch 已分别合并入 cloud_test 和 v4.10_regression
-node tests/_playwright_session_mode_test.js        # 游戏模式 UI + 持久化
-node tests/_playwright_session_mode_queue_test.js  # 队列难度曲线（需先启动 HTTP 服务）
+# Playwright 回归测试（需先启动 HTTP 服务：python -m http.server 8080 --directory C:\code）
+
+# UI 冒烟（无需登录）
+node tests/_pw_ui_smoke.js
+
+# SRS 端到端（无需登录）
+node tests/_pw_srs_e2e.js
+
+# 云端流程（需 TEST_PASSWORD）
+$env:TEST_PASSWORD="xxx"; node tests/_pw_cloud_sync.js
+
+# 跨设备同步（需 TEST_PASSWORD）
+$env:TEST_PASSWORD="xxx"; node tests/_pw_cross_device.js
 ```
 
 **测试范围规则：**
-- **Bug 修复** → 只跑单元测试（srs + v4.4 + v4.8 + v4.9）
-- **发布** → 单元测试 + 最小回归（`_playwright_test.js` 单机版）
-- **全量回归** → 仅用户明确要求时跑
-- **智能匹配** → 修复涉及哪个模块，优先跑对应模块测试（如 session 改动跑 cloud_test）
-- 确认改动无问题即可，不需要每次都跑全部 8 套 Playwright。
+- **Bug 修复** → 只跑单元测试（`node tests/run_all.js`）
+- **发布** → 单元测试 + `_pw_ui_smoke.js` + `_pw_srs_e2e.js`
+- **云端/登录改动** → 加跑 `_pw_cloud_sync.js`
+- **跨设备/同步改动** → 加跑 `_pw_cross_device.js`
+- **全量回归** → 仅用户明确要求时跑全部 5 个 Playwright 文件
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, Playwright 12/39/21/18/13/14/6/17/8/17/20/14/14/13（单机/v4.10回归/网络/跨设备/session_mode/session_mode_queue/stage0/nav_verify/dev2_verify/browse_verify/account_verify/settings_verify/deck_detail_verify/i18n_stage1）.
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27（run_all.js 合计 304）；Playwright ui_smoke ~26 / srs_e2e ~14 / cloud_sync ~25 / cross_device 12。
 
 ## SRS Architecture
 
@@ -286,7 +274,7 @@ review → again → relearning
 15. **Supabase SDK defer load** — `<script src="supabase" defer>` 不阻塞 DOM 解析和渲染；`initCloud()` 在 SDK 就绪后自动执行。离线下 SDK 加载失败 → `restoreCloudSession()` 静默跳过 → 离线模式。
 16. **runSync 统一同步入口** — 所有同步操作必须通过 `runSync(options)`，不支持直接调旧 `syncAll`。`options.modal` 控制是否显示模态弹窗；`options.decks` 控制是否同步牌组。
 17. **DP 仅本地维护** — `daily_progress`（reviewed_today/daily_new_today）不跨设备同步。跨设备仅同步 CardState 和 TrialLog。DP 由答题时 `writeTrialLog` 写入，只读本地。
-18. **_writeSrs 改动后必须跑 Playwright** — `_writeSrs` 中的运行时错误（如 ReferenceError）会导致 TrialLog 静默丢失，Node.js 单测覆盖不到（单测只测 `processAnswer` 纯函数，不测 IndexedDB 写入路径）。改动 `_writeSrs` 或 TrialLog 构造逻辑后，至少跑 `_playwright_test.js`（单机版，33s，断言 `trials >= 20`）。教训：v4.11.9 删除 `const isRetrying = false` 漏改引用，`_retrying: isRetrying` → ReferenceError，所有 TrialLog 写入崩溃；SRS/v4.4/v4.8/v4.9 单测全绿未拦住。
+18. **_writeSrs 改动后必须跑 Playwright** — `_writeSrs` 中的运行时错误（如 ReferenceError）会导致 TrialLog 静默丢失，Node.js 单测覆盖不到（单测只测 `processAnswer` 纯函数，不测 IndexedDB 写入路径）。改动 `_writeSrs` 或 TrialLog 构造逻辑后，至少跑 `_pw_srs_e2e.js`（断言 `trials >= 20`）。教训：v4.11.9 删除 `const isRetrying = false` 漏改引用，`_retrying: isRetrying` → ReferenceError，所有 TrialLog 写入崩溃；SRS/v4.4/v4.8/v4.9 单测全绿未拦住。
 
 ## Coding & Editing Rules
 
