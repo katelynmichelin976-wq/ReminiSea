@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session Restore Test</title>
+<style>
+  body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+  h1 { font-size: 20px; }
+  .panel { background: #f5f5f5; border-radius: 8px; padding: 16px; margin: 12px 0; }
+  .panel h2 { font-size: 14px; margin: 0 0 12px 0; color: #666; }
+  .state { font-family: monospace; font-size: 13px; line-height: 1.8; }
+  .state span { display: inline-block; min-width: 140px; }
+  .state .val { color: #2563eb; font-weight: 600; }
+  .log { background: #1e1e1e; color: #d4d4d4; border-radius: 8px; padding: 12px; font: 12px monospace; max-height: 300px; overflow-y: auto; }
+  .log .ok { color: #4ade80; }
+  .log .fail { color: #f87171; }
+  .log .info { color: #60a5fa; }
+  button { padding: 8px 16px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; margin: 4px; font-size: 14px; }
+  button.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+  input { padding: 8px; border: 1px solid #ccc; border-radius: 6px; margin: 4px; font-size: 14px; width: 200px; }
+  #sdk-status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+  .sdk-wait { background: #fbbf24; color: #000; }
+  .sdk-ok { background: #4ade80; color: #000; }
+  .sdk-fail { background: #f87171; color: #fff; }
+</style>
+</head>
+<body>
+
+<h1>Session Restore — 独立测试 <span id="sdk-status" class="sdk-wait">SDK 等待中</span></h1>
+
+<div class="panel">
+  <h2>当前状态</h2>
+  <div class="state" id="state-panel"></div>
+</div>
+
+<div class="panel">
+  <h2>操作</h2>
+  <input type="email" id="email" placeholder="邮箱" autocomplete="email">
+  <input type="password" id="password" placeholder="密码" autocomplete="current-password">
+  <br>
+  <button class="primary" onclick="testLogin()">登录</button>
+  <button onclick="testLogout()">登出</button>
+  <button onclick="testRestore()">手动恢复 session</button>
+  <button onclick="clearAll()">清空 localStorage</button>
+</div>
+
+<div class="panel">
+  <h2>事件日志</h2>
+  <div class="log" id="log-panel"></div>
+</div>
+
+<script>
+// ── 配置 ──
+var SUPABASE_URL      = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
+
+// ── 状态（新设计：仅 3 个变量） ──
+var _syncEnabled    = false;
+var _cloudUserEmail = '';
+var _cloudUserId    = '';
+var _sb             = null;
+var _sdkReady       = false;
+
+// ── 日志 ──
+function log(msg, cls) {
+  var el = document.getElementById('log-panel');
+  var t = new Date().toLocaleTimeString();
+  el.innerHTML += '<div class="line ' + (cls||'') + '">[' + t + '] ' + msg + '</div>';
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── 状态渲染 ──
+function renderState() {
+  var uiState = _syncEnabled ? '✅ 在线' : (_cloudUserEmail ? '📵 离线' : '🔒 未登录');
+  document.getElementById('state-panel').innerHTML =
+    '<div><span>_syncEnabled:</span> <span class="val">' + _syncEnabled + '</span></div>' +
+    '<div><span>_cloudUserEmail:</span> <span class="val">' + (_cloudUserEmail || '&lt;空&gt;') + '</span></div>' +
+    '<div><span>_cloudUserId:</span> <span class="val">' + (_cloudUserId ? _cloudUserId.substring(0,8) + '…' : '&lt;空&gt;') + '</span></div>' +
+    '<div style="margin-top:8px"><span>UI 状态:</span> <span class="val">' + uiState + '</span></div>';
+}
+
+// ── Supabase client ──
+function _createSupabaseClient() {
+  return supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      storage: localStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false
+    }
+  });
+}
+
+// ── 新版 restoreSession ──
+function restoreSession() {
+  log('restoreSession() 开始', 'info');
+  return Promise.resolve().then(function() {
+    _sb = _createSupabaseClient();
+
+    // 1. 读 localStorage
+    var sbKey = 'sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token';
+    var parsed = null;
+    try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
+    if (!parsed) {
+      try { parsed = JSON.parse(localStorage.getItem('yihai_session_backup') || 'null'); } catch(e) {}
+    }
+
+    if (!parsed || !parsed.user || !parsed.user.email) {
+      log('restoreSession: 无凭证', 'info');
+      renderState();
+      return;
+    }
+    log('restoreSession: 有凭证 ' + parsed.user.email + '，调 getSession…', 'info');
+
+    // 2. getSession() + 7s timeout
+    var timedOut = false;
+    return Promise.race([
+      _sb.auth.getSession(),
+      new Promise(function(resolve) {
+        setTimeout(function() { timedOut = true; resolve({ data: { session: null }, error: { message: 'timeout' } }); }, 7000);
+      })
+    ]).then(function(result) {
+      var data = result.data, error = result.error;
+
+      // 3. 成功
+      if (!error && data.session) {
+        _syncEnabled    = true;
+        _cloudUserEmail = data.session.user.email;
+        _cloudUserId    = data.session.user.id;
+        localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
+        localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+        log('restoreSession: ✅ 在线 — ' + _cloudUserEmail, 'ok');
+        renderState();
+        return;
+      }
+
+      // 4. 任何失败 → 离线
+      _syncEnabled    = false;
+      _cloudUserEmail = parsed.user.email;
+      _cloudUserId    = parsed.user.id || '';
+      var reason = timedOut ? '超时' : (error ? error.message : '未知');
+      log('restoreSession: 📵 离线 (' + reason + ') — ' + _cloudUserEmail, 'fail');
+      renderState();
+
+      // 5. 注册一次性 online 重试
+      window.removeEventListener('online', _onOnlineRetry);
+      window.addEventListener('online', _onOnlineRetry);
+    });
+  }).catch(function(e) {
+    log('restoreSession: 异常 — ' + e.message, 'fail');
+    console.error(e);
+    _syncEnabled = false;
+    renderState();
+  });
+}
+
+function _onOnlineRetry() {
+  log('online 事件触发 — 重试', 'info');
+  window.removeEventListener('online', _onOnlineRetry);
+  restoreSession().then(function() {
+    if (_syncEnabled) log('重试成功 ✅', 'ok');
+  });
+}
+
+// ── 登录 ──
+function testLogin() {
+  var email = document.getElementById('email').value.trim();
+  var pwd   = document.getElementById('password').value;
+  if (!email || !pwd) { log('请输入邮箱和密码', 'fail'); return; }
+
+  log('登录请求: ' + email, 'info');
+  if (!_sdkReady) { log('SDK 未就绪，请等待', 'fail'); return; }
+
+  return Promise.resolve().then(function() {
+    _sb = _createSupabaseClient();
+    return _sb.auth.signInWithPassword({ email: email, password: pwd });
+  }).then(function(r) {
+    if (r.error) { throw r.error; }
+    _syncEnabled    = true;
+    _cloudUserEmail = r.data.user.email;
+    _cloudUserId    = r.data.user.id;
+    localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+    if (r.data.session) {
+      localStorage.setItem('yihai_session_backup', JSON.stringify(r.data.session));
+    }
+    log('登录成功: ' + _cloudUserEmail, 'ok');
+    renderState();
+  }).catch(function(e) {
+    log('登录异常: ' + e.message, 'fail');
+    console.error(e);
+    _syncEnabled = false;
+    renderState();
+  });
+}
+
+// ── 手动恢复 ──
+function testRestore() {
+  log('手动触发 restoreSession', 'info');
+  restoreSession();
+}
+
+// ── 登出 ──
+function testLogout() {
+  log('登出…', 'info');
+  var p = _sb ? _sb.auth.signOut().catch(function(){}) : Promise.resolve();
+  p.then(function() {
+    _syncEnabled    = false;
+    _cloudUserEmail = '';
+    _cloudUserId    = '';
+    localStorage.removeItem('yihai_session_backup');
+    window.removeEventListener('online', _onOnlineRetry);
+    log('已登出', 'info');
+    renderState();
+  });
+}
+
+// ── 清空 ──
+function clearAll() {
+  localStorage.clear();
+  _syncEnabled = false; _cloudUserEmail = ''; _cloudUserId = '';
+  document.getElementById('log-panel').innerHTML = '';
+  log('localStorage 已清空', 'info');
+  renderState();
+}
+
+// ── 初始化 ──
+function init() {
+  if (_sdkReady) return; // 防重
+  if (typeof supabase === 'undefined') {
+    log('SDK 仍未加载', 'fail');
+    return;
+  }
+  _sdkReady = true;
+  document.getElementById('sdk-status').textContent = 'SDK 就绪';
+  document.getElementById('sdk-status').className = 'sdk-ok';
+  log('SDK 就绪，开始 session 恢复', 'info');
+  restoreSession();
+}
+
+// 轮询 SDK（defer 脚本可能延迟）
+var _sdkChecks = 0;
+function _pollSdk() {
+  if (typeof supabase !== 'undefined') {
+    _sdkReady = true;
+    document.getElementById('sdk-status').textContent = 'SDK 就绪';
+    document.getElementById('sdk-status').className = 'sdk-ok';
+    log('SDK 就绪', 'info');
+    restoreSession();
+    return;
+  }
+  if (++_sdkChecks < 60) {
+    setTimeout(_pollSdk, 200);
+  } else {
+    document.getElementById('sdk-status').textContent = 'SDK 加载失败';
+    document.getElementById('sdk-status').className = 'sdk-fail';
+    log('SDK 加载超时（12s）', 'fail');
+    renderState();
+  }
+}
+setTimeout(_pollSdk, 300);
+</script>
+
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4/dist/umd/supabase.min.js" onload="if(!_sdkReady){_sdkReady=true;log('SDK onload','info');restoreSession();}"></script>
+</body>
+</html>
