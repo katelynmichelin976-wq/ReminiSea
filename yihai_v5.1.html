@@ -1122,6 +1122,13 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   -webkit-tap-highlight-color: transparent; transition: transform .12s;
 }
 .dd-topbar-add:active { transform: scale(0.88); }
+.dd-topbar-publish {
+  padding: 6px 12px; border: none; border-radius: 14px;
+  background: var(--ocean); color: #fff; cursor: pointer;
+  font-size: 13px; font-weight: 600; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent; transition: transform .12s;
+}
+.dd-topbar-publish:active { transform: scale(0.92); }
 .dd-body {
   flex: 1; min-height: 0; overflow-y: auto;
   width: 100%; max-width: var(--mw); padding: 0 16px 16px;
@@ -1717,6 +1724,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="dd-topbar-title" id="dd-deck-name"></span>
+    <button class="dd-topbar-publish" id="dd-publish-btn" style="display:none" onclick="publishDeck(currentDeck)"></button>
     <button class="dd-topbar-add" onclick="showCreateCard(currentDeck)" aria-label="添加卡片" data-i18n-aria="dd_add_card">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
@@ -5038,6 +5046,12 @@ function showDeckDetail() {
   const meta = DECKS_META.find(m => m.key === currentDeck);
   if (!meta) return;
   document.getElementById('dd-deck-name').textContent = meta.name;
+  var publishBtn = document.getElementById('dd-publish-btn');
+  if (publishBtn) {
+    var showPublish = meta.deck_type === 'personal' && _syncEnabled;
+    publishBtn.style.display = showPublish ? '' : 'none';
+    publishBtn.textContent = t('common_publish');
+  }
   showScreen('screen-deck-detail');
   _ddRenderSid = sessionId;
   renderDeckCards();
@@ -5297,6 +5311,9 @@ const I18N = {
     common_ok: 'OK',
     common_save: 'Save',
     common_delete: 'Delete',
+    common_publish: 'Publish',
+    deck_published_ok: '{{name}} published — family devices will update automatically',
+    deck_publish_fail: 'Publish failed: {{msg}}',
     common_rename: 'Rename',
     common_export: 'Export',
     common_share: 'Share',
@@ -5534,6 +5551,9 @@ const I18N = {
     common_ok: '确定',
     common_save: '保存',
     common_delete: '删除',
+    common_publish: '发布',
+    deck_published_ok: '{{name}} 已发布，家人设备将自动更新',
+    deck_publish_fail: '发布失败：{{msg}}',
     common_rename: '重命名',
     common_export: '导出',
     common_share: '共享',
@@ -5770,6 +5790,9 @@ const I18N = {
     common_ok: 'Aceptar',
     common_save: 'Guardar',
     common_delete: 'Eliminar',
+    common_publish: 'Publicar',
+    deck_published_ok: '{{name}} publicado — los dispositivos familiares se actualizarán',
+    deck_publish_fail: 'Error al publicar: {{msg}}',
     common_rename: 'Renombrar',
     common_export: 'Exportar',
     common_share: 'Compartir',
