@@ -11,7 +11,7 @@ const helper = require('./_playwright_helper');
 const { pass, section, wait, run, getCounts, getBaseUrl, cloudLogin, cloudLogout } = helper;
 
 const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
-const TEST_EMAIL = 'zyhacl@gmail.com';
+const TEST_EMAIL = 'zyhaff@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
 const TEST_DECK_NAME = '蔬菜水果';
 const PRACTICE_COUNT = 3;

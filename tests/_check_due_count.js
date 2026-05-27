@@ -39,14 +39,14 @@ async function check(email, password, label) {
 
 (async () => {
   await check('chenlian@263.net', '896896', '妈妈');
-  await check('zyhacl@gmail.com', '667788', '测试');
+  await check('zyhaff@gmail.com', '667788', '测试');
   // 查多余那条
   const mom = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   await mom.auth.signInWithPassword({ email: 'chenlian@263.net', password: '896896' });
   const { data: momStates } = await mom.from('sync_card_states').select('card_id,deck_key,srs_stage,due_date');
   const momCardIds = new Set(momStates.map(s => s.card_id));
   const test = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  await test.auth.signInWithPassword({ email: 'zyhacl@gmail.com', password: '667788' });
+  await test.auth.signInWithPassword({ email: 'zyhaff@gmail.com', password: '667788' });
   const { data: testStates } = await test.from('sync_card_states').select('card_id,deck_key,srs_stage,due_date');
   console.log('\n差异分析:');
   testStates.forEach(s => { if (!momCardIds.has(s.card_id)) console.log('  测试多出:', JSON.stringify(s)); });

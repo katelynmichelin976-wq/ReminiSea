@@ -9,7 +9,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const TEST_EMAIL = 'zyhacl@gmail.com';
+const TEST_EMAIL = 'zyhaff@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '667788';
 const CLOUD_DECK_KEY = 'cloud_01edbdfd';
 const URL = 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now();
