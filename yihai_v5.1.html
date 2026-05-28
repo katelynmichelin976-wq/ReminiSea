@@ -1714,6 +1714,45 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
+<!-- ══════════════ language picker ══════════════ -->
+<div class="screen screen-lang" id="screen-lang">
+  <div class="theme-topbar">
+    <button class="back-btn" onclick="cancelLang()" aria-label="返回" data-i18n-aria="common_back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="theme-topbar-title" data-i18n="settings_lang">界面语言</span>
+    <button class="lang-confirm-btn" onclick="confirmLang()" data-i18n="common_confirm">确定</button>
+  </div>
+  <div class="lang-scroll">
+    <div class="lang-list">
+      <div class="lang-row" data-lang="zh-CN" onclick="selectLang('zh-CN')">
+        <span class="lang-flag">🇨🇳</span>
+        <div class="lang-info">
+          <div class="lang-name">中文（简体）</div>
+          <div class="lang-name-sub">Chinese Simplified</div>
+        </div>
+        <span class="lang-check">✓</span>
+      </div>
+      <div class="lang-row" data-lang="en" onclick="selectLang('en')">
+        <span class="lang-flag">🇺🇸</span>
+        <div class="lang-info">
+          <div class="lang-name">English</div>
+          <div class="lang-name-sub">英语</div>
+        </div>
+        <span class="lang-check">✓</span>
+      </div>
+      <div class="lang-row" data-lang="es" onclick="selectLang('es')">
+        <span class="lang-flag">🇪🇸</span>
+        <div class="lang-info">
+          <div class="lang-name">Español</div>
+          <div class="lang-name-sub">西班牙语</div>
+        </div>
+        <span class="lang-check">✓</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ about ══════════════ -->
 <div class="screen screen-about" id="screen-about">
   <div class="theme-topbar">
@@ -1928,6 +1967,13 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
               <div class="stoggle-track"></div>
               <div class="stoggle-thumb"></div>
             </label>
+          </div>
+          <div class="sheet-row" onclick="openLangPicker()" style="cursor:pointer">
+            <span class="sheet-row-lbl" data-i18n="settings_lang">界面语言</span>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span id="settings-lang-val" style="color:var(--text3);font-size:13px"></span>
+              <span style="color:var(--text3);font-size:13px">›</span>
+            </div>
           </div>
         </div>
         <div class="sheet-section">
