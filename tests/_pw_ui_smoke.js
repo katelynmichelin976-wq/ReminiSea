@@ -161,13 +161,13 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     // 设置行显示当前语言
     await run(page, () => openSettingsWithSrs());
     await wait(page, 300);
+    pass('settings 中有「界面语言」入口行', await run(page, () =>
+      !!document.getElementById('settings-lang-val')
+    ));
     pass('settings-lang-val 显示「中文」', await run(page, () => {
       const el = document.getElementById('settings-lang-val');
       return el && el.textContent.trim() === '中文';
     }));
-    pass('settings 中有「界面语言」入口行', await run(page, () =>
-      !!document.getElementById('settings-lang-val')
-    ));
     await run(page, () => document.getElementById('settings-overlay').classList.remove('open'));
     await wait(page, 200);
 
