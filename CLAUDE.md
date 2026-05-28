@@ -4,171 +4,71 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**忆海拾光 (Memory Glimmers)** — A family memory & learning PWA. Single-file app (`yihai_v{version}.html`) with inline CSS/JS. Custom SM-2 SRS implementation, IndexedDB persistence, Supabase cloud sync, and GitHub Pages deployment. Flashcard-based picture-word learning, bedtime stories with family voice recordings, and more.
+**忆海拾光 (Memory Glimmers)** — 家庭记忆与学习卡片 PWA。单文件 app（`yihai_v{version}.html`），内联 CSS/JS，自定义 SM-2 SRS，IndexedDB 本地存储，Supabase 云同步，GitHub Pages 部署。
 
-## System Architecture
-
-```
-                         ┌──────────────────────────────────┐
-                         │        Supabase Cloud            │
-                         │                                  │
-                         │  ┌──────────┐  ┌──────────────┐  │
-                         │  │   Auth   │  │   Database   │  │
-                         │  │ (session │  │ cards_pool   │  │
-                         │  │  persist)│  │ server_decks │  │
-                         │  └──────────┘  │ srv_deck_crd │  │
-                         │                │ sync_trials  │  │
-                         │  ┌──────────┐  │ sync_card_st │  │
-                         │  │ Storage  │  └──────────────┘  │
-                         │  │ ReminiSea│                    │
-                         │  │ (images, │                    │
-                         │  │  audio)  │                    │
-                         │  └──────────┘                    │
-                         └──────┬───────────┬───────────────┘
-                                │           │
-                   upload /     │           │ download /
-                   sync cards   │           │ sync progress
-                                │           │
-              ┌─────────────────┘           └─────────────────┐
-              ▼                                               ▼
-   ┌─────────────────────┐                     ┌─────────────────────┐
-   │  deck_manager_v1    │                     │  yihai_v4.x         │
-   │  (牌组管理工具)       │                     │  (训练 App)          │
-   │                     │                     │                     │
-   │  上传 .yhspack       │                     │  每日 SRS 练习       │
-   │  合并 → 卡池         │                     │  浏览 / 测验模式      │
-   │  整理 → 牌组         │                     │  设置面板             │
-   │  导出 .yhspack       │                     │  云端 Tab (v4.4+)    │
-   └─────────────────────┘                     │                     │
-                                               │  ┌───────────────┐  │
-   ┌─────────────────────┐                     │  │  Local Store  │  │
-   │  index_v49          │                     │  │               │  │
-   │  (制卡工具 · 暂停)    │                     │  │ localStorage  │  │
-   │                     │                     │  │  - decks      │  │
-   │  编辑卡片内容        │                     │  │  - settings   │  │
-   │  导出 .yhspack ─────┼─── 文件导入 ────────▶│  │  - SRS config │  │
-   └─────────────────────┘                     │  │               │  │
-                                               │  │ IndexedDB     │  │
-                                               │  │  - media blob │  │
-                                               │  │  - CardState  │  │
-                                               │  │  - TrialLog   │  │
-                                               │  └───────────────┘  │
-                                               └─────────────────────┘
-```
-
-**Data flow:**
-- **Card maker** (`index_v49`) → exports `.yhspack` → **Deck manager** uploads → **Supabase** (cards_pool + Storage)
-- **Deck manager** organizes cards → **Supabase** (server_decks + server_deck_cards)
-- **Training app** downloads ← **Supabase** (server_decks → cards_pool → Storage media)
-- **Training app** uploads ← **Supabase** (sync_trials 承载完整状态快照 + sync_config)
-- **DB trigger** `fn_trial_to_card_state()` — sync_trials INSERT → 自动 UPSERT sync_card_states
-- **Training app** imports `.yhspack` directly (offline fallback)
+技术架构见 `docs/architecture.md`（数据表、存储层、关键数据流）。
 
 ## Key Files
 
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.1.html` | Main training app (v5.1.6, single HTML file — CSS + markup + JS all inline, Supabase cloud sync) |
-| `yihai_admin_v1.html` | Admin dashboard (doctor/caregiver monitoring panel, Supabase Edge Functions) |
-| `deck_manager_v1.html` | Deck manager tool (upload → merge → organize → export, Supabase integrated) — 已决定归入训练 App |
-| `index_v49.html` | Card maker tool (paused) — 后续手机端制卡替代 |
+| `yihai_v5.1.html` | 主训练 App（v5.1.6，单 HTML 文件，Supabase 云同步） |
+| `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
+| `index_v49.html` | 制卡工具（暂停）|
 
 ### 测试
 | File | Purpose |
 |------|---------|
-| `tests/srs_test.js` | Node.js SRS unit tests (85 cases) |
-| `tests/yihai_v4.4_test.js` | v4.4 utility tests (98 cases) |
-| `tests/yihai_v4.8_test.js` | v4.8 utility tests (46 cases) |
-| `tests/yihai_v4.9_test.js` | v4.9 config merge tests (48 cases) |
-| `tests/yihai_v5.0_i18n_test.js` | 阶段 0 i18n 纯函数单测（detectLocale/t/detectScript/scriptToLang/resolveFieldLang/normalizeField，27 cases） |
+| `tests/srs_test.js` | SRS 单元测试（85 cases） |
+| `tests/yihai_v4.4_test.js` | v4.4 工具函数测试（98 cases） |
+| `tests/yihai_v4.8_test.js` | v4.8 工具函数测试（46 cases） |
+| `tests/yihai_v4.9_test.js` | v4.9 配置合并测试（48 cases） |
+| `tests/yihai_v5.0_i18n_test.js` | i18n 纯函数单测（27 cases） |
 | `tests/run_all.js` | 单元测试统一入口（5 套件，304 断言） |
-| `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏三态/设置/i18n/函数存在性，~26 断言，无需登录） |
-| `tests/_pw_srs_e2e.js` | SRS 端到端（.yhspack 导入/5天练习/IDB验证/统计KPI/session_mode/队列曲线，~14 断言，无需登录） |
-| `tests/_pw_cloud_sync.js` | 云端流程（登录/decks 下载/同步验证/session restore/user_id 隔离/登出保留/重新登录，~25 断言） |
-| `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→云端同步→设备B接收/review不被覆写/DP不跨设备，12 断言） |
-| `tests/_playwright_helper.js` | Playwright 公共工具（cloudLogin/cloudLogout/navigateTo/waitSyncModal 等） |
-| `tests/_dump_idb.js` | F12 控制台诊断：IndexedDB CardState + localStorage 配置 |
-| `tests/_diag_sync_state.js` | Playwright 云端 vs 本地数据对比 |
-| `tests/_check_due_count.js` | Node.js Supabase 直接查询到期数 |
-| `tests/_check_session_mode_order.js` | Node.js 查询妈妈账号当日卡片，输出三种模式出牌顺序 |
-| `tests/test_data/` | Test .yhspack files |
-| `archive/old_tests/` | 归档的旧 Playwright 测试文件（25 个，已被上述 4 个模块替代） |
+| `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性，26 断言，无需登录） |
+| `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/曲线，14 断言，无需登录） |
+| `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登，26 断言） |
+| `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备，11 断言） |
+| `tests/_playwright_helper.js` | Playwright 公共工具（cloudLogin/cloudLogout/navigateTo 等） |
 
 ### 文档
 | File | Purpose |
 |------|---------|
-| `docs/srs_design_v6.9.md` | Authoritative SRS design spec |
-| `docs/忆海拾光_训练App_README.md` | Training app version history |
-| `docs/忆海拾光_管理看板_README.md` | Admin dashboard version history |
-| `docs/忆海拾光_训练App发布检查清单.md` | Release checklist |
-| `docs/yihai_开发问答.md` | Development Q&A |
-| `docs/yihai_实现说明.md` | Implementation manual |
-| `docs/忆海拾光_网络版实现说明_v4.9.md` | Cloud sync architecture doc (v4.9.12) |
-| `docs/忆海拾光_v5.0_腾讯云迁移设计方案.md` | v5.0 migration plan |
+| `docs/architecture.md` | 技术架构（数据表/存储层/数据流） |
+| `docs/srs_design_v6.9.md` | SRS 算法权威设计文档 |
+| `docs/忆海拾光_训练App_README.md` | 训练 App 版本历史 |
+| `docs/忆海拾光_训练App发布检查清单.md` | 发布检查清单 |
+| `docs/yihai_实现说明.md` | 实现说明（场景组织） |
+| `docs/yihai_变更记录_CLAUDE参考.md` | 完整变更历史（AI 参考） |
 
 ### 基础设施
 | File | Purpose |
 |------|---------|
-| `sql/supabase_schema.sql` | Database schema (8 tables) |
-| `sql/supabase_storage_policies.sql` | Storage RLS policies |
-| `sql/supabase_migration_002_sync_trials_after_state.sql` | Migration scripts |
-| `sql/supabase_migration_003_admin.sql` | Admin dashboard migration (admin_users + indexes + RPCs) |
-| `supabase/functions/` | Edge Functions (8 functions for admin API) |
-| `archive/` | Previous versions (v4.3–v4.8) |
-
-## v5.0 Plan（2026-05-19 更新）
-
-**技术架构不迁移，主线继续 PWA + Capacitor 打包。** 放弃 uni-app + 腾讯云方案。
-
-- 技术栈：单文件 HTML + Supabase + IndexedDB，保持不变
-- 分发：PWA（主屏幕）+ Capacitor 打包 → App Store / Google Play
-- 微信小程序方向暂不推进
-- 旧方案文档保留备查：`docs/忆海拾光_v5.0_腾讯云迁移设计方案.md`
+| `sql/supabase_schema.sql` | 数据库 schema |
+| `sql/supabase_storage_policies.sql` | Storage RLS 策略 |
+| `supabase/functions/` | Edge Functions（管理 API） |
+| `archive/` | 历史版本（v4.3–v4.8） |
 
 ## Recent Changes
 
-**当前版本：v5.1.6**（牌组云端同步 + migration 010，`yihai_v5.1.html`，线上版）；`yihai_v4.11.html` 保留作稳定回退备份。完整变更历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.1.6**（`yihai_v5.1.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
-**v5.1.6 主要变更：**
-- feat: 术语统一 — 首页标题「我的相册」→「我的牌组」，英文 My Albums → My Decks，西文 Mis Álbumes → Mis Mazos
+**v5.1.6：** 术语统一 — 「我的相册」→「我的牌组」，My Albums → My Decks，Mis Álbumes → Mis Mazos
 
-**v5.1.5 主要变更：**
-- fix: 移除 `publishDeck` 功能（preset/shared 权限设计问题，待后续重设计）
-- fix: `migrateMediaKeys` race condition — 从 v5.1.3 升级时 IndexedDB blob key 迁移推迟导致图片加载失败；改为 await 顺序执行
+**v5.1.5：** 移除 `publishDeck`（preset/shared 权限边界未定）；修复 `migrateMediaKeys` race condition（改 await 顺序执行，修复 v5.1.3 升级图片丢失）
 
-**v5.1.4 主要变更：**
-- feat: migration 010 — `decks`/`deck_cards` 统一 schema，替代 `server_decks`/`cards_pool`/`server_deck_cards`；删除废弃表 `card_state_log`/`upload_log`
-- feat: 本地 deck key 格式清理 — 去 `cloud_` 前缀、`crypto.randomUUID()` 生成新 key、`DECKS_META` 显式 `deck_type`
-- feat: 个人牌组云端同步 — `uploadDeckToCloud`、`checkPersonalDeckUpdates`、`saveDeck`/`deleteDeck` 触发云端推送
-- test: 全部回归测试对齐新 schema（表名/key 格式/登录 UI/主题检测 data-theme）
+**v5.1.4：** migration 010 — 新建 `decks`/`deck_cards` 替代旧三表；本地 deck key 去 `cloud_` 前缀；个人牌组云端同步（`uploadDeckToCloud`/`checkPersonalDeckUpdates`）
 
-**v5.1.3 主要变更：**
-- 修复：`updateMineProfile`/`renderAccount` 登录状态判断增加 `_syncEnabled` 门禁，session 恢复失败时不再误显在线 UI
+**v5.1.3：** `updateMineProfile`/`renderAccount` 增加 `_syncEnabled` 门禁，session 恢复失败时不误显在线 UI
 
-**v5.1.2 主要变更：**
-- 云端 UI 整合：删除设置面板「云端」Tab，所有登录/登出/同步操作统一到账户屏
-- 删除散落的导入入口（首页隐藏 input、我的-导入文件、Action Sheet 导入按钮），统一到账户屏
-- CSS：home-tabbar 改为浮动圆角风格、mine-scroll 响应式限宽
-
-**v5.1.1 主要变更：**
-- Session restore 重写：3 级恢复链（L1 getSession → L2 setSession → L3 retry）→ 单次 getSession() + 7s 超时。删除 `_sessionRestoring`/`_sessionOffline`/`_onlineListenerActive`/`_scheduleSessionRetry`/`isRealLogout`，状态模型 6 变量 → 3 变量。updateCloudTabUI 4 分支 → 3 分支。净减少 138 行。
-- CSS 修复：首页 topbar 增加 max-width:500px（PC 浏览器适配），设置面板 sheet-section/sheet-tabs padding 统一为 16px。
-
-**v5.1.0 主要变更：**
-- 阶段 0 i18n 地基：`detectLocale/t/getLocale/setLocale/detectScript/resolveFieldLang/normalizeField`，TTS `lang` 参数，`.yhspack` 字段语言迁移
-- 医疗术语清理：删除 AD 建议值功能，meta 改「记忆练习」
-- Wave 1 导航重构：Tab Bar（首页/FAB/我的）+ 各功能屏（浏览/账户/设置/牌组详情/制卡/主题/关于）
-- i18n Stage 1：221 个 key × 3 语言（zh-CN/en/es），JS 硬编码字符串全部替换为 t()
-- PWA 诊断面板入口移植自 v4.11.19（版本号连击 5 次）
-
-**导航结构（Wave 1 后，yihai_v5.1.html）：**
-- `screen-home`：首页（默认），底部 `.home-tabbar`（首页激活）
-- `screen-mine`：我的，底部 `.home-tabbar`（我的激活）
-- `screen-quiz`：练习/浏览（进入时无 Tab Bar）
-- `screen-stats`：统计（无 Tab Bar，返回用 `closeStats()` 回 `_statsOrigin`）
+**导航结构（v5.1.x）：**
+- `screen-home`：首页（默认），底部 `.home-tabbar`
+- `screen-mine`：我的，底部 `.home-tabbar`
+- `screen-quiz`：练习/浏览（无 Tab Bar）
+- `screen-stats`：统计（无 Tab Bar，`closeStats()` 回 `_statsOrigin`）
 - `screen-finish`：完成（无 Tab Bar）
-- Settings：底部 Sheet overlay（不是独立 screen）
+- Settings：底部 Sheet overlay
 
 ## Environment
 
@@ -177,141 +77,98 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## First-time Setup
 
 ```powershell
-# Enable git hooks (issue-auto-create on commit)
+# Enable git hooks
 git config core.hooksPath .githooks
 ```
 
 ## Development Commands
 
 ```powershell
-# 单元测试（全量，5 套件，304 断言）
+# 单元测试（全量，304 断言）
 node tests/run_all.js
 
-# 或分套件跑（SRS/v4.4/v4.8/v4.9/i18n）
-node tests/srs_test.js
-node tests/yihai_v4.4_test.js
-node tests/yihai_v4.8_test.js
-node tests/yihai_v4.9_test.js
-
-# Playwright 回归测试（需先启动 HTTP 服务：python -m http.server 8080 --directory C:\code）
-
-# UI 冒烟（无需登录）
+# Playwright（需先启动：python -m http.server 8080 --directory C:\code）
 node tests/_pw_ui_smoke.js
-
-# SRS 端到端（无需登录）
 node tests/_pw_srs_e2e.js
-
-# 云端流程（需 TEST_PASSWORD）
 $env:TEST_PASSWORD="xxx"; node tests/_pw_cloud_sync.js
-
-# 跨设备同步（需 TEST_PASSWORD）
 $env:TEST_PASSWORD="xxx"; node tests/_pw_cross_device.js
 ```
 
 **测试范围规则：**
-- **Bug 修复** → 只跑单元测试（`node tests/run_all.js`）
+- **Bug 修复** → `node tests/run_all.js`
 - **发布** → 单元测试 + `_pw_ui_smoke.js` + `_pw_srs_e2e.js`
 - **云端/登录改动** → 加跑 `_pw_cloud_sync.js`
 - **跨设备/同步改动** → 加跑 `_pw_cross_device.js`
-- **全量回归** → 仅用户明确要求时跑全部 5 个 Playwright 文件
+- **全量回归** → 仅用户明确要求时跑全部 4 个 Playwright 文件
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27（run_all.js 合计 304）；Playwright ui_smoke ~26 / srs_e2e ~14 / cloud_sync ~25 / cross_device 12。
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27（run_all.js 合计 304）；Playwright ui_smoke 26 / srs_e2e 14 / cloud_sync 26 / cross_device 11。
 
 ## SRS Architecture
 
-The `processAnswer` function implements an SM-2 variant with three stages: `learning`, `review`, `relearning`. See `srs_design_v6.9.md` for the complete state machine.
+`processAnswer` 实现 SM-2 变体，三阶段：`learning` → `review` ← `relearning`。完整状态机见 `srs_design_v6.9.md`。
 
-**State flow:**
-```
-new → learning → review (graduated)
-           ↑ good (regraduate)
-      relearning
-review → again → relearning
-```
+**关键保护机制：**
+- `daily_remove_lapses` (3)：连续失败 N 次当天移出队列
+- `auto_suspend_lapses` (8)：累计失败 N 次自动挂起
+- `learn_ahead_limit` (1200s)：防止跳过 learning 步骤
 
-**Key protection mechanisms:**
-- `daily_remove_lapses` (3): card removed from queue for the day after N consecutive failures
-- `auto_suspend_lapses` (8): card auto-suspended after N total failures
-- `learn_ahead_limit` (1200s): prevents learning steps from being bypassed
-- `learning_hard_counts_lapse` (false): AD 模式下 learning/relearning 阶段 hard 也计入连失
+**Learning hard 延迟：** 第一步 `(steps[0]+steps[1])/2`；仅一步时 `steps[0]×1.5`；第二步起不变。
 
-**Learning hard 延迟规则（废弃 hard_step_multiplier）：**
-- 第一步：`(steps[0] + steps[1]) / 2`（如 `[1,10]` → 5.5min）
-- 仅一步时：`steps[0] × 1.5`
-- 第二步起：不变（与 Anki 一致）
+**游戏难度模式（`SRS_CONFIG.session_mode`）：**
+- `normal`：20 张，hard≤5 张，其余 easy/new
+- `hard`：≤30 张 + `applyCurve()`（U 形曲线：首尾易中间难）
+- `survival`：全量积压 + curve
+- `difficultyScore(s)` — ef 反转 + lapses 归一 + learning/relearning +0.5 bonus
 
-**Storage layers:**
-- `localStorage`: deck index, card metadata, settings, SRS config overrides, daily progress
-- `IndexedDB yihai_media`: image/audio blobs
-- `IndexedDB yihai_srs v5`: CardState (`card_states` store) + TrialLog (`trials` store) + app_events
-
-**Parameter naming rule:** All SRS parameters align with Anki names — no suffixes. E.g. `learn_ahead_limit` not `learn_ahead_secs`.
-
-**游戏难度模式（v4.11.7+）：**
-- `SRS_CONFIG.session_mode`（`'normal'|'hard'|'survival'`，默认 `'normal'`，持久化到 `srs_session_mode`）
-- 三种模式影响 `buildSessionQueue` 的选牌和排序，不影响答题后的 SM-2 算法
-- `difficultyScore(s)` — ef 反转 + lapses 归一 + learning/relearning 阶段 +0.5 bonus（难度未知视同难）
-- `applyCurve(queue)` — 双指针交错排列，产生"首尾易、中间难"的 U 形曲线
-- 普通模式：20 张，hard≤25%（≤5 张），其余填 easy 和 new；困难模式：≤30 张 + curve；生存模式：全量积压 + curve
-- 剧情模式 = 复用现有浏览模式，不走 buildSessionQueue
+**参数命名规则：** 所有 SRS 参数对齐 Anki 命名，不加后缀。
 
 ## Development Rules
 
-1. **Single-file app** — all code lives in `yihai_v{version}.html`. No separate CSS/JS files.
-2. **Version in filename** — output file must be `yihai_v{version}.html` with version displayed in the app UI.
-3. **One version per iteration** — patch bump for fixes (v4.10.3 → v4.10.4), minor bump for features (v4.10 → v4.11), major for platform migration (v4 → v5).
-4. **No confirm()** — iOS PWA blocks it. Use `showConfirmDialog()` custom dialog instead.
-5. **SRS write race guard** — `_lastSrsWrite` promise chain; `goHome()`/`openStats()` must `await _lastSrsWrite` before reading.
-6. **sessionId** — increments on each `_launch`/`goHome` to break cross-page async speech chains.
-7. **warmupSpeech()** — must be called within user gesture on iOS (unlocks TTS + Audio simultaneously).
-8. **浏览器端改动必须先写 Playwright 测试复现再改代码** — 历史教训：Node.js 单测覆盖不到浏览器时序（DOM 渲染、SDK 异步加载、Service Worker）。直接改代码 → 测试全绿 → 用户一用就崩。流程：写测试复现 bug（预期失败）→ 改代码 → 测试通过 → 跑全部回归 → 提交。
-9. **Release prep** — remove test toolbar (`🗑 重置牌组`, `⏭ +1天`) and debug lines (`iv=X ef=X...`) before release.
-10. **Supabase cloud sync** — all Supabase calls wrapped in try/catch, fire-and-forget. `_syncEnabled` gates all sync; false = offline mode.
-11. **Cloud login** — Supabase SDK persists session in localStorage. `restoreCloudSession()` on startup, `updateCloudTabUI()` toggles login/deck-list UI. 三个 session 状态 flag：`_syncEnabled`（已验证在线）、`_sessionRestoring`（SDK 加载中或 session 恢复中，显示"正在恢复登录…"）、`_sessionOffline`（有凭证但网络失败，显示"📵 邮箱（网络不稳定）"并等 `online` 事件自动重连）。曾登录过的用户页面加载时同步设 `_sessionRestoring=true`，`initCloud()` 完成后清除并调 `updateCloudTabUI()`。
-12. **Incremental sync** — `syncDeckFromCloud` uses `cards_pool.updated_at > lastSyncAt` + `_imgUrl/_audUrl` URL comparison to skip unchanged media.
-13. **No smart sync skip** — `checkSyncNeeded()` 已在 v4.11.5 删除（含 epoch/ISO 比较 bug，且从未接入 `runSync`）。当前所有同步路径直接调 `runSync`，无跳过逻辑。
-14. **Per-card upload: TrialLog only** — 逐卡仅上传 `sync_trials`（含完整状态快照）；`sync_card_states` 由 DB trigger `fn_trial_to_card_state()` 自动维护；`card_state_log` 已废弃。
-15. **Supabase SDK defer load** — `<script src="supabase" defer>` 不阻塞 DOM 解析和渲染；`initCloud()` 在 SDK 就绪后自动执行。离线下 SDK 加载失败 → `restoreCloudSession()` 静默跳过 → 离线模式。
-16. **runSync 统一同步入口** — 所有同步操作必须通过 `runSync(options)`，不支持直接调旧 `syncAll`。`options.modal` 控制是否显示模态弹窗；`options.decks` 控制是否同步牌组。
-17. **DP 仅本地维护** — `daily_progress`（reviewed_today/daily_new_today）不跨设备同步。跨设备仅同步 CardState 和 TrialLog。DP 由答题时 `writeTrialLog` 写入，只读本地。
-18. **_writeSrs 改动后必须跑 Playwright** — `_writeSrs` 中的运行时错误（如 ReferenceError）会导致 TrialLog 静默丢失，Node.js 单测覆盖不到（单测只测 `processAnswer` 纯函数，不测 IndexedDB 写入路径）。改动 `_writeSrs` 或 TrialLog 构造逻辑后，至少跑 `_pw_srs_e2e.js`（断言 `trials >= 20`）。教训：v4.11.9 删除 `const isRetrying = false` 漏改引用，`_retrying: isRetrying` → ReferenceError，所有 TrialLog 写入崩溃；SRS/v4.4/v4.8/v4.9 单测全绿未拦住。
+1. **Single-file app** — 所有代码在 `yihai_v{version}.html`，无单独 CSS/JS 文件。
+2. **Version in filename** — 输出文件必须是 `yihai_v{version}.html`，UI 内显示版本号。
+3. **One version per iteration** — patch bump 修复，minor bump 功能，major 平台迁移。
+4. **No confirm()** — iOS PWA 会阻塞。用 `showConfirmDialog()` 自定义弹窗。
+5. **SRS write race guard** — `_lastSrsWrite` promise chain；`goHome()`/`openStats()` 必须 `await _lastSrsWrite` 后再读。
+6. **sessionId** — 每次 `_launch`/`goHome` 递增，打断跨页异步 TTS 链。
+7. **warmupSpeech()** — 必须在用户手势内调用（iOS 解锁 TTS + Audio）。
+8. **浏览器端改动必须先写 Playwright 测试** — Node.js 单测覆盖不到 DOM 渲染/SDK 异步加载。流程：写测试复现（预期失败）→ 改代码 → 测试通过 → 跑回归 → 提交。
+9. **Release prep** — 发布前移除测试工具栏（`🗑 重置牌组`、`⏭ +1天`）和调试行（`iv=X ef=X...`）。
+10. **Supabase cloud sync** — 所有 Supabase 调用包 try/catch，fire-and-forget。`_syncEnabled` 门控所有同步。
+11. **Cloud session** — SDK 自动持久化 session。启动时 `restoreCloudSession()`，状态：`_syncEnabled`（在线）、`_sessionRestoring`（恢复中）。
+12. **Per-card upload: TrialLog only** — 逐卡只上传 `sync_trials`；`sync_card_states` 由 DB trigger 自动维护。
+13. **runSync 统一入口** — 所有同步通过 `runSync(options)`。`options.modal` 控制弹窗；`options.decks` 控制牌组同步。
+14. **DP 仅本地** — `daily_progress` 不跨设备同步，只记本地。
+15. **`_writeSrs` 改动后必须跑 Playwright** — 运行时错误会导致 TrialLog 静默丢失，单测覆盖不到 IDB 写入路径。
 
 ## Coding & Editing Rules
 
-1. **Simplicity first** — 用最少代码解决问题。不添加未要求的功能，不为单次使用创建抽象，不处理不可能发生的错误场景。200 行能写成 50 行就重写。
-2. **Surgical changes** — 只改必须改的。不"改进"相邻代码/注释/格式，不重构没坏的东西，匹配现有风格即使你不喜欢。只清理你自己的改动造成的孤儿引用/变量/导入。不相关的死代码只提不删。
-3. **Goal-driven** — 把任务转化为可验证目标。"修 bug"→ 先写复现测试；"加功能"→ 先定义验收标准。多步骤任务先列计划+验证点。Dev Rule 8（浏览器端 Playwright 先行）是这一原则的具体化。
+1. **Simplicity first** — 最少代码解决问题。不添加未要求的功能，不为单次使用创建抽象。
+2. **Surgical changes** — 只改必须改的。不"改进"相邻代码，匹配现有风格。只清理自己改动造成的孤儿引用。
+3. **Goal-driven** — "修 bug" → 先写复现测试；"加功能" → 先定义验收标准。
 
 ## Workflow Rules
 
-1. **Bug fix** — 你报告现象后，我先查数据/代码定位根因，把分析摆出来。等你确认定位无误，再动手改。
-2. **Feature/enhancement** — 先列举可选路径和利弊，等你决定方向后，再进入实现。
-3. **文档先行** — `git add` 之前检查相关文档（README、docs/、CLAUDE.md 等）是否需要同步更新。功能新增或行为变更，先改文档再提交代码。
-4. **本地提交** — commit 可随时做，但提交前必须跑对应单元测试并全部通过。
-5. **发布需指令** — `git push` / 部署到 GitHub Pages 必须等你明确说「正式发布」或「推送」后才执行。
-6. **版本号仅在发布时 bump** — 开发过程中代码里版本号不变（保留上一发布版本）。发布时一个 commit 完成：bump 版本号（HTML 中 3 处：`<title>`、`.home-version`、`APP_VERSION` 常量）+ 复制 `yihai_v{version}.html` → `index.html` + 打 tag。版本号在 HTML 中的目的是运行时识别——本地缓存、远程部署、测试环境可能跑着不同版本。
-7. **Commit message** — 遵循 `type: v{version}: description (#issue)` 格式：
-   - `fix: v4.9.15: 迟到天数加成 (#8)` — 版本号是发现问题的已发布版本
-   - `feat: 牌组层级管理 (#13)` — 新功能不绑定版本号
-   - `docs: CLAUDE.md 同步` — 文档不绑定版本号
-   - `release: v4.9.16` — 发布 commit，包含 bump 版本号 + index.html + 文档同步
+1. **Bug fix** — 先查数据/代码定位根因，分析确认后再动手改。
+2. **Feature/enhancement** — 先列路径和利弊，确定方向后再实现。
+3. **文档先行** — `git add` 前检查 README/docs/CLAUDE.md 是否需同步。
+4. **本地提交** — commit 前必须跑对应单元测试并全部通过。
+5. **发布需指令** — `git push` / GitHub Pages 部署必须等明确「发布」指令。
+6. **版本号仅在发布时 bump** — 发布 commit 同时完成：HTML 3 处版本号 + 复制为 `index.html` + 打 tag。
+7. **Commit message** — 格式 `type: v{version}: description (#issue)`：
+   - `fix: v5.1.6: 描述 (#N)` — 版本号为发现问题的已发布版本
+   - `feat: 功能描述 (#N)` — 新功能不绑定版本号
+   - `release: v5.1.7` — 发布 commit
 
 ## Deployment
 
-发布流程：
-1. 所有测试通过（SRS + v4.4 + v4.8 + v4.9 + Playwright）
-2. **文档同步检查**（必须在 release commit 之前完成，与代码一起提交）：
-   - `CLAUDE.md`：更新 `当前版本` 表格里的版本号 + `Recent Changes` 版本号
-   - `docs/忆海拾光_训练App_README.md`：在「版本历史」顶部插入新版本条目
-   - `docs/yihai_变更记录_CLAUDE参考.md`：补充本版本的关键技术变更
-3. 修改 `yihai_v4.11.html` 中 **3 处**版本号：`<title>`、`.home-version`、`APP_VERSION` 常量
-4. 复制 `yihai_v4.11.html` → `index.html`
-5. 将上述所有改动（HTML + index.html + 文档）一起放入 `release: v4.x.x` commit
-6. `git tag v4.x.x`
-7. `git push; git push --tags`（PowerShell 不支持 `&&`）
-8. `$env:HTTPS_PROXY="http://127.0.0.1:10808"; gh release create v4.x.x --title "v4.x.x" --notes "..."`
+1. 所有测试通过（run_all.js + _pw_ui_smoke + _pw_srs_e2e）
+2. 文档同步：`CLAUDE.md` 版本号 + `docs/忆海拾光_训练App_README.md` + `docs/yihai_变更记录_CLAUDE参考.md`
+3. 修改 `yihai_v5.1.html` 中 **3 处**版本号：`<title>`、`.home-version`、`APP_VERSION`
+4. 复制 `yihai_v5.1.html` → `index.html`
+5. 所有改动放入 `release: v5.x.x` commit
+6. `git tag v5.x.x`
+7. `git push; git push --tags`
+8. `$env:HTTPS_PROXY="http://127.0.0.1:10808"; gh release create v5.x.x --title "v5.x.x" --notes "..."`
 9. GitHub Pages 自动部署到 https://katelynmichelin976-wq.github.io/gemi/
 
-**代理说明：** git 代理已全局配置（http.proxy + https.proxy = 127.0.0.1:10808）；`gh` 命令（包括 `gh issue create/close/comment`）依赖 `$env:HTTPS_PROXY` 环境变量，每次新 PowerShell 会话需重新设置。
-
-Card maker is a separate repo (`anki-maker`), not in this working directory.
+**代理说明：** git 代理已全局配置；`gh` 命令需每次新会话设置 `$env:HTTPS_PROXY=http://127.0.0.1:10808`。
