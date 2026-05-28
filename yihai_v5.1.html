@@ -1325,6 +1325,29 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 .screen-theme { justify-content: flex-start; overflow: hidden; align-items: center; }
 .theme-topbar { width: 100%; max-width: var(--mw); padding: calc(var(--safe-top) + 8px) 12px 6px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .theme-topbar-title { flex: 1; text-align: center; font-size: 17px; font-weight: 700; color: var(--text); }
+/* ── Language Picker ── */
+.lang-scroll { flex: 1; overflow-y: auto; padding: 12px 0; }
+.lang-list { background: var(--surf); border-radius: 12px; margin: 0 16px; overflow: hidden; }
+.lang-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--bd);
+  cursor: pointer;
+  transition: background .15s;
+}
+.lang-row:first-child { border-top: none; }
+.lang-flag { font-size: 24px; line-height: 1; flex-shrink: 0; }
+.lang-info { flex: 1; }
+.lang-name { font-size: 15px; color: var(--text); font-weight: 500; }
+.lang-name-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.lang-check { color: var(--ocean); font-size: 18px; font-weight: 700; display: none; }
+.lang-row.selected { background: var(--ocean-lt); }
+.lang-row.selected .lang-check { display: block; }
+.lang-confirm-btn {
+  background: none; border: none; color: var(--ocean);
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  padding: 4px 8px; font-family: inherit; line-height: 1;
+}
 .theme-scroll { flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: var(--mw); padding: 16px; }
 .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .theme-card { position: relative; border-radius: var(--rsm); border: 2px solid var(--bd2); background: var(--surf); overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent; padding: 0; transition: border-color .2s; }
