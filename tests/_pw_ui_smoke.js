@@ -5,7 +5,7 @@
  *
  * 覆盖：导航骨架、账户屏三态 DOM、设置入口、i18n 切换、核心函数存在性、语言选择器
  * 无需登录，无需 Supabase
- * 40 断言
+ * 41 断言
  */
 const { chromium } = require('playwright');
 const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
