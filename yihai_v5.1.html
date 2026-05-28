@@ -6121,6 +6121,45 @@ function setLocale(loc) {
   });
 }
 
+// ── Language Picker ────────────────────────────────────────────
+let _pendingLocale = null;
+
+function _updateSettingsLangVal() {
+  const el = document.getElementById('settings-lang-val');
+  if (!el) return;
+  const names = { 'zh-CN': '中文', 'en': 'English', 'es': 'Español' };
+  el.textContent = names[getLocale()] || getLocale();
+}
+
+function openLangPicker() {
+  closeSettings();
+  _pendingLocale = getLocale();
+  document.querySelectorAll('.lang-row').forEach(r => {
+    r.classList.toggle('selected', r.dataset.lang === _pendingLocale);
+  });
+  showScreen('screen-lang');
+}
+
+function selectLang(loc) {
+  _pendingLocale = loc;
+  document.querySelectorAll('.lang-row').forEach(r => {
+    r.classList.toggle('selected', r.dataset.lang === loc);
+  });
+}
+
+function confirmLang() {
+  if (_pendingLocale && _pendingLocale !== getLocale()) {
+    setLocale(_pendingLocale);
+  }
+  _pendingLocale = null;
+  showScreen('screen-mine');
+}
+
+function cancelLang() {
+  _pendingLocale = null;
+  showScreen('screen-mine');
+}
+
 function applyI18n() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
@@ -7724,6 +7763,7 @@ function openSettings(){
   // refresh voice list on each open, ensure iOS voice packs show after loading
   populateVoiceList();
   loadDailyGoalUI();
+  _updateSettingsLangVal();
 }
 function closeSettings(){
   document.getElementById('settings-overlay').classList.remove('open');
@@ -8473,6 +8513,7 @@ function openSettingsWithSrs() {
   populateVoiceList();
   syncSrsSettingsUI();
   loadDailyGoalUI();
+  _updateSettingsLangVal();
 }
 
 // ── home 3rd column (today done) ─────────────────────────────────
