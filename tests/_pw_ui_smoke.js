@@ -3,8 +3,9 @@
  * 依赖：python -m http.server 8080 --directory C:\code
  * 运行：node tests/_pw_ui_smoke.js
  *
- * 覆盖：导航骨架、账户屏三态 DOM、设置入口、i18n 切换、核心函数存在性
+ * 覆盖：导航骨架、账户屏三态 DOM、设置入口、i18n 切换、核心函数存在性、语言选择器
  * 无需登录，无需 Supabase
+ * 41 断言
  */
 const { chromium } = require('playwright');
 const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
@@ -102,6 +103,73 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     pass('旧元素 .browse-btn 已删除', await run(page, () =>
       document.querySelectorAll('.browse-btn').length === 0
     ));
+
+    // ════ PHASE 8: 语言选择器 ════
+    section('PHASE 8: 语言选择器');
+
+    // 函数与元素存在性
+    pass('screen-lang 元素存在', await run(page, () => !!document.getElementById('screen-lang')));
+    pass('openLangPicker 函数存在', await run(page, () => typeof openLangPicker === 'function'));
+    pass('selectLang 函数存在', await run(page, () => typeof selectLang === 'function'));
+    pass('confirmLang 函数存在', await run(page, () => typeof confirmLang === 'function'));
+    pass('cancelLang 函数存在', await run(page, () => typeof cancelLang === 'function'));
+
+    // 打开语言页
+    await run(page, () => setLocale('zh-CN'));
+    await wait(page, 200);
+    await run(page, () => showScreen('screen-mine'));
+    await wait(page, 300);
+    await run(page, () => openLangPicker());
+    await wait(page, 400);
+    pass('openLangPicker → screen-lang active', await run(page, () =>
+      document.getElementById('screen-lang')?.classList.contains('active')
+    ));
+    pass('当前语言行有 selected 样式', await run(page, () =>
+      document.querySelector('.lang-row.selected') !== null
+    ));
+    pass('zh-CN 行初始选中', await run(page, () =>
+      document.querySelector('.lang-row.selected')?.dataset.lang === 'zh-CN'
+    ));
+
+    // 选择 English，确定
+    await run(page, () => selectLang('en'));
+    await wait(page, 200);
+    pass('selectLang(en) → en 行高亮', await run(page, () =>
+      document.querySelector('.lang-row.selected')?.dataset.lang === 'en'
+    ));
+    await run(page, () => confirmLang());
+    await wait(page, 400);
+    pass('confirmLang → screen-mine active', await run(page, () =>
+      document.getElementById('screen-mine')?.classList.contains('active')
+    ));
+    pass('confirmLang → setLocale(en) 生效', await run(page, () => getLocale() === 'en'));
+
+    // 取消不保存
+    await run(page, () => setLocale('zh-CN'));
+    await wait(page, 200);
+    await run(page, () => openLangPicker());
+    await wait(page, 300);
+    await run(page, () => selectLang('es'));
+    await wait(page, 100);
+    await run(page, () => cancelLang());
+    await wait(page, 300);
+    pass('cancelLang → screen-mine active', await run(page, () =>
+      document.getElementById('screen-mine')?.classList.contains('active')
+    ));
+    pass('cancelLang → locale 未变（仍 zh-CN）', await run(page, () => getLocale() === 'zh-CN'));
+
+    // 设置行显示当前语言
+    await run(page, () => openSettingsWithSrs());
+    await wait(page, 300);
+    pass('settings 中有「界面语言」入口行', await run(page, () =>
+      !!document.getElementById('settings-lang-val')
+    ));
+    pass('settings-lang-val 显示「中文」', await run(page, () => {
+      const el = document.getElementById('settings-lang-val');
+      return el && el.textContent.trim() === '中文';
+    }));
+    await run(page, () => document.getElementById('settings-overlay').classList.remove('open'));
+    await wait(page, 200);
 
   } finally {
     const { passed, failed } = getCounts();
