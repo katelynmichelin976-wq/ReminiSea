@@ -52,7 +52,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.1.6**（`yihai_v5.1.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.1.7**（`yihai_v5.1.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.1.7：** 新增界面语言选择功能 — `screen-lang` 全屏选择页（中/英/西）+ 设置抽屉入口
 
 **v5.1.6：** 术语统一 — 「我的相册」→「我的牌组」，My Albums → My Decks，Mis Álbumes → Mis Mazos
 
