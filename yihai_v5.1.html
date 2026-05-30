@@ -2811,29 +2811,25 @@ async function cloudPushConfig() {
 
     // collect local UI params
     const localUi = {
-      readHint:       localStorage.getItem('readHint'),
-      quizPromptOn:   localStorage.getItem('quizPromptOn'),
-      quizPromptDelay:localStorage.getItem('quizPromptDelay'),
-      optHintOn:      localStorage.getItem('optHintOn'),
-      optHintDelay:   localStorage.getItem('optHintDelay'),
-      wrongHintOn:    localStorage.getItem('wrongHintOn'),
-      confettiOn:     localStorage.getItem('confettiOn'),
-      correctHintOn:  localStorage.getItem('correctHintOn'),
-      phraseSelect:   localStorage.getItem('phraseSelect'),
-      phraseWrong:    localStorage.getItem('phraseWrong'),
-      phraseOptHint:  localStorage.getItem('phraseOptHint'),
-      phraseCorrect:  localStorage.getItem('phraseCorrect'),
-      ttsRate:        localStorage.getItem('ttsRate'),
-      ttsPitch:       localStorage.getItem('ttsPitch'),
-      ttsVoiceName:   localStorage.getItem('ttsVoiceName'),
-      delay:          localStorage.getItem('delay'),
-      browseDelay:    localStorage.getItem('browseDelay'),
-      browseAnsDelay: localStorage.getItem('browseAnsDelay'),
-      optCount:       localStorage.getItem('optCount'),
-      optTouchDelay:  localStorage.getItem('optTouchDelay'),
-      ndur:           localStorage.getItem('ndur'),
-      bdur:           localStorage.getItem('bdur'),
-      theme:          localStorage.getItem('theme'),
+      confettiOn:         localStorage.getItem('confettiOn'),
+      correctHintOn:      localStorage.getItem('correctHintOn'),
+      phraseSelect:       localStorage.getItem('phraseSelect'),
+      phraseWrong:        localStorage.getItem('phraseWrong'),
+      phraseOptHint:      localStorage.getItem('phraseOptHint'),
+      phraseCorrect:      localStorage.getItem('phraseCorrect'),
+      ttsRate:            localStorage.getItem('ttsRate'),
+      ttsPitch:           localStorage.getItem('ttsPitch'),
+      ttsVoiceName:       localStorage.getItem('ttsVoiceName'),
+      voiceMuted:         localStorage.getItem('voiceMuted'),
+      ansReadDelay:       localStorage.getItem('ansReadDelay'),
+      optReadDelay:       localStorage.getItem('optReadDelay'),
+      voiceAssistEnabled: localStorage.getItem('voiceAssistEnabled'),
+      browseAnsDelay:     localStorage.getItem('browseAnsDelay'),
+      optCount:           localStorage.getItem('optCount'),
+      optTouchDelay:      localStorage.getItem('optTouchDelay'),
+      ndur:               localStorage.getItem('ndur'),
+      bdur:               localStorage.getItem('bdur'),
+      theme:              localStorage.getItem('theme'),
     };
     ['fs-opt','fs-ans','fs-hint','fs-btn','ls-opt','ls-ans','ls-hint','ls-btn'].forEach(k => {
       const v = localStorage.getItem(k);
@@ -4347,17 +4343,20 @@ let qIdx = 0, sel = null, revealed = false, wrongCount = 0;
 let nRaf = null, nStart = null;
 let NDUR = 6000;       // practice mode countdown (ms), 0=manual
 let BDUR = 4000;       // browse mode countdown (ms), 0=manual
-let SPEAK_DELAY        = 1200; // practice answer speech delay (ms)
-let BROWSE_SPEAK_DELAY = 1200; // browse answer speech delay (ms)
+// ── 全局语音参数 ──
+let ANS_READ_DELAY   = 1200; // 答案朗读延迟 ms（练习+浏览共用）
+const ENTRY_READ_DELAY = 1500; // 进题延迟 ms（固定不开放 UI）
+let OPT_READ_DELAY   = 5000; // 选项朗读延迟 ms（语音辅助专属）
+let VOICE_MUTED      = false; // 全局静音
+// ── 语音辅助参数 ──
+let VOICE_ASSIST_ENABLED = false; // 语音辅助开关
 
 // quiz prompt
 let QUIZ_PROMPT_ON   = true;    // quiz prompt toggle
-let QUIZ_PROMPT_DELAY = 2000;   // quiz prompt delay (ms)
 let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // quiz prompt text (i18n default English, overridden by loadPhrases)
 
 // option hint
 let OPT_HINT_ON      = true;    // option hint toggle
-let OPT_HINT_DELAY   = 5000;    // option hint delay (ms)
 let PHRASE_OPT_HINT  = ''; // populated by initPhrases() after t() is ready
 
 // wrong hint
@@ -5313,8 +5312,8 @@ function startCardPrompts(pickedOpts, optLang) {
       if (OPT_HINT_ON && pickedOpts && pickedOpts.length) {
         speakOptHint(pickedOpts, optLang);
       }
-    }, OPT_HINT_DELAY);
-  }, QUIZ_PROMPT_DELAY);
+    }, OPT_READ_DELAY);
+  }, ENTRY_READ_DELAY);
 }
 
 // ── Audio ──────────────────────────────────────────────────────
@@ -6555,7 +6554,7 @@ function revealBrowse(q) {
     } else {
       playAnswer(q, () => { if (sid === sessionId) startCountdown(); });
     }
-  }, BROWSE_SPEAK_DELAY);
+  }, ANS_READ_DELAY);
 }
 
 // ── Select ─────────────────────────────────────────────────────
@@ -6681,7 +6680,7 @@ function revealAnswer() {
     };
 
     playAnswer(q, afterAnswer);
-  }, SPEAK_DELAY);
+  }, ANS_READ_DELAY);
 
   // ── SRS write (practice mode) ────────────────────────────
   if (currentMode !== 'browse' && q._srsState) {
@@ -7085,26 +7084,6 @@ function onLsChange(key, v) {
   debouncePushConfig();
 }
 
-function toggleReadHint(cb) {
-  READ_HINT = cb.checked;
-  localStorage.setItem('readHint', READ_HINT ? '1' : '0');
-  debouncePushConfig();
-}
-function toggleQuizPrompt(cb) {
-  QUIZ_PROMPT_ON = cb.checked;
-  localStorage.setItem('quizPromptOn', QUIZ_PROMPT_ON ? '1' : '0');
-  debouncePushConfig();
-}
-function toggleOptHint(cb) {
-  OPT_HINT_ON = cb.checked;
-  localStorage.setItem('optHintOn', OPT_HINT_ON ? '1' : '0');
-  debouncePushConfig();
-}
-function toggleWrongHint(cb) {
-  WRONG_HINT_ON = cb.checked;
-  localStorage.setItem('wrongHintOn', WRONG_HINT_ON ? '1' : '0');
-  debouncePushConfig();
-}
 
 function onBrowseAnsDelayChange(v) {
   BROWSE_ANSWER_DELAY = parseFloat(v) * 1000;
@@ -7115,11 +7094,6 @@ function onBrowseAnsDelayChange(v) {
 function toggleConfetti(cb) {
   CONFETTI_ON = cb.checked;
   localStorage.setItem('confettiOn', CONFETTI_ON ? '1' : '0');
-  debouncePushConfig();
-}
-function toggleCorrectHint(cb) {
-  CORRECT_HINT_ON = cb.checked;
-  localStorage.setItem('correctHintOn', CORRECT_HINT_ON ? '1' : '0');
   debouncePushConfig();
 }
 
@@ -7133,27 +7107,25 @@ function onPhraseChange(key, val) {
 }
 
 function onQpDelayChange(v) {
-  QUIZ_PROMPT_DELAY = parseFloat(v) * 1000;
+  // ENTRY_READ_DELAY is const; UI slider kept for display only
   document.getElementById('dbg-qpdelay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  localStorage.setItem('quizPromptDelay', v);
-  debouncePushConfig();
 }
 function onOhDelayChange(v) {
-  OPT_HINT_DELAY = parseFloat(v) * 1000;
+  OPT_READ_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-ohdelay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  localStorage.setItem('optHintDelay', v);
+  localStorage.setItem('optReadDelay', v);
   debouncePushConfig();
 }
 function onDelayChange(v) {
-  SPEAK_DELAY = parseFloat(v) * 1000;
+  ANS_READ_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  localStorage.setItem('delay', v);
+  localStorage.setItem('ansReadDelay', v);
   debouncePushConfig();
 }
 function onBrowseDelayChange(v) {
-  BROWSE_SPEAK_DELAY = parseFloat(v) * 1000;
+  ANS_READ_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-browse-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  localStorage.setItem('browseDelay', v);
+  localStorage.setItem('ansReadDelay', v);
   debouncePushConfig();
 }
 
@@ -7218,32 +7190,39 @@ function onBdurChange(v) {
   debouncePushConfig();
 }
 
-function loadSettings() {
-  // read item name hint
-  const rh = localStorage.getItem('readHint');
-  if (rh !== null) READ_HINT = rh === '1';
+function migrateVoiceSettings() {
+  // 旧 toggle=0 → 清空对应文案（内容即开关，无文案=不播）
+  if (localStorage.getItem('quizPromptOn') === '0') localStorage.removeItem('phraseSelect');
+  if (localStorage.getItem('optHintOn')    === '0') localStorage.removeItem('phraseOptHint');
+  if (localStorage.getItem('wrongHintOn')  === '0') localStorage.removeItem('phraseWrong');
+  if (localStorage.getItem('correctHintOn')=== '0') localStorage.removeItem('phraseCorrect');
+  // 旧延迟 key 迁移
+  const oldDelay = localStorage.getItem('delay');
+  if (oldDelay && !localStorage.getItem('ansReadDelay')) {
+    localStorage.setItem('ansReadDelay', oldDelay);
+  }
+  const oldOptDelay = localStorage.getItem('optHintDelay');
+  if (oldOptDelay && !localStorage.getItem('optReadDelay')) {
+    localStorage.setItem('optReadDelay', oldOptDelay);
+  }
+  // 清理废弃 key
+  ['quizPromptOn','optHintOn','wrongHintOn','correctHintOn','readHint',
+   'quizPromptDelay','optHintDelay','delay','browseDelay'].forEach(k => localStorage.removeItem(k));
+}
 
+function loadSettings() {
+  migrateVoiceSettings();
   // quiz prompt
-  const quizPromptOn = localStorage.getItem('quizPromptOn');
-  if (quizPromptOn !== null) QUIZ_PROMPT_ON = quizPromptOn === '1';
-  const qpDelay = localStorage.getItem('quizPromptDelay');
-  if (qpDelay) QUIZ_PROMPT_DELAY = parseFloat(qpDelay) * 1000;
   const ps = localStorage.getItem('phraseSelect');
   if (ps) PHRASE_SELECT = ps;
   else PHRASE_SELECT = t('quiz_select_hint');
 
   // option hint
-  const optHintOn = localStorage.getItem('optHintOn');
-  if (optHintOn !== null) OPT_HINT_ON = optHintOn === '1';
-  const ohDelay = localStorage.getItem('optHintDelay');
-  if (ohDelay) OPT_HINT_DELAY = parseFloat(ohDelay) * 1000;
   const phraseOptHint = localStorage.getItem('phraseOptHint');
   if (phraseOptHint) PHRASE_OPT_HINT = phraseOptHint;
   if (!PHRASE_OPT_HINT) PHRASE_OPT_HINT = t('default_opt_hint');
 
   // wrong hint
-  const wrongHintOn = localStorage.getItem('wrongHintOn');
-  if (wrongHintOn !== null) WRONG_HINT_ON = wrongHintOn === '1';
   const pw = localStorage.getItem('phraseWrong');
   if (pw) PHRASE_WRONG = pw;
   if (!PHRASE_WRONG) PHRASE_WRONG = t('default_wrong');
@@ -7267,11 +7246,16 @@ function loadSettings() {
   const ttsVoiceName = localStorage.getItem('ttsVoiceName');
   if (ttsVoiceName !== null) TTS_VOICE_NAME = ttsVoiceName;
 
-  // answer speech delay
-  const delay = localStorage.getItem('delay');
-  if (delay) SPEAK_DELAY = parseFloat(delay) * 1000;
-  const browseDelay = localStorage.getItem('browseDelay');
-  if (browseDelay) BROWSE_SPEAK_DELAY = parseFloat(browseDelay) * 1000;
+  // 全局语音参数
+  const voiceMuted = localStorage.getItem('voiceMuted');
+  if (voiceMuted !== null) VOICE_MUTED = voiceMuted === '1';
+  const ansReadDelay = localStorage.getItem('ansReadDelay');
+  if (ansReadDelay) ANS_READ_DELAY = parseFloat(ansReadDelay) * 1000;
+  const optReadDelay = localStorage.getItem('optReadDelay');
+  if (optReadDelay) OPT_READ_DELAY = parseFloat(optReadDelay) * 1000;
+  // 语音辅助
+  const voiceAssistEnabled = localStorage.getItem('voiceAssistEnabled');
+  if (voiceAssistEnabled !== null) VOICE_ASSIST_ENABLED = voiceAssistEnabled === '1';
 
   // option count / countdown / touch guard
   const oc = localStorage.getItem('optCount');
@@ -7342,13 +7326,13 @@ function loadSettings() {
 
     // delay slider sync
     const qpdEl = document.getElementById('dbg-qpdelay');
-    if (qpdEl && qpDelay) { qpdEl.value = qpDelay; document.getElementById('dbg-qpdelay-val').textContent = `${parseFloat(qpDelay).toFixed(1)}s`; }
+    if (qpdEl) { qpdEl.value = (ENTRY_READ_DELAY / 1000).toFixed(1); document.getElementById('dbg-qpdelay-val').textContent = `${(ENTRY_READ_DELAY / 1000).toFixed(1)}s`; }
     const ohdEl = document.getElementById('dbg-ohdelay');
-    if (ohdEl && ohDelay) { ohdEl.value = ohDelay; document.getElementById('dbg-ohdelay-val').textContent = `${parseFloat(ohDelay).toFixed(1)}s`; }
+    if (ohdEl) { ohdEl.value = (OPT_READ_DELAY / 1000).toFixed(1); document.getElementById('dbg-ohdelay-val').textContent = `${(OPT_READ_DELAY / 1000).toFixed(1)}s`; }
     const dlEl = document.getElementById('dbg-delay');
-    if (dlEl && delay) { dlEl.value = delay; document.getElementById('dbg-delay-val').textContent = `${parseFloat(delay).toFixed(1)}s`; }
+    if (dlEl) { dlEl.value = (ANS_READ_DELAY / 1000).toFixed(1); document.getElementById('dbg-delay-val').textContent = `${(ANS_READ_DELAY / 1000).toFixed(1)}s`; }
     const bdlEl = document.getElementById('dbg-browse-delay');
-    if (bdlEl && browseDelay) { bdlEl.value = browseDelay; document.getElementById('dbg-browse-delay-val').textContent = `${parseFloat(browseDelay).toFixed(1)}s`; }
+    if (bdlEl) { bdlEl.value = (ANS_READ_DELAY / 1000).toFixed(1); document.getElementById('dbg-browse-delay-val').textContent = `${(ANS_READ_DELAY / 1000).toFixed(1)}s`; }
     const ndurEl = document.getElementById('dbg-ndur');
     if (ndurEl && ndur) { ndurEl.value = ndur; document.getElementById('dbg-ndur-val').textContent = ndur === '0' ? t('common_manual') : `${ndur}s`; }
     const bdurEl = document.getElementById('dbg-bdur');

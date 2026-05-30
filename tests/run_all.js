@@ -17,6 +17,7 @@ const UNIT_SUITES = [
   'yihai_v4.8_test.js',
   'yihai_v4.9_test.js',
   'yihai_v5.0_i18n_test.js',
+  'yihai_v5.2_voice_test.js',
 ];
 
 const COL_W = 24;
