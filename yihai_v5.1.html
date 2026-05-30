@@ -6312,6 +6312,23 @@ function pickVoice(lang) {
       || (voices.length ? voices[0] : null);
 }
 
+async function playVoiceSlot(slotName, ttsText, ttsLang) {
+  if (VOICE_MUTED) return;
+  try {
+    const slot = await loadVoiceSlot(slotName);
+    if (slot && slot.audioBlob) {
+      const url = URL.createObjectURL(slot.audioBlob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      await audio.play();
+      return;
+    }
+  } catch (e) {
+    // IDB read failure — fall through to TTS
+  }
+  if (ttsText) speak(ttsText, 0, null, ttsLang || null);
+}
+
 function speak(text, delay = 0, onend = null, lang = null) {
   const go = () => {
     if (!voices.length) loadVoices();
