@@ -7206,7 +7206,7 @@ function migrateVoiceSettings() {
     localStorage.setItem('optReadDelay', oldOptDelay);
   }
   // 清理废弃 key
-  ['quizPromptOn','optHintOn','wrongHintOn','correctHintOn','readHint',
+  ['quizPromptOn','optHintOn','wrongHintOn','readHint',
    'quizPromptDelay','optHintDelay','delay','browseDelay'].forEach(k => localStorage.removeItem(k));
 }
 

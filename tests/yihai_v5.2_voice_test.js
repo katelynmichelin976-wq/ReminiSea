@@ -19,7 +19,7 @@ function migrateVoiceSettings(ls) {
   if (oldDelay && !ls.getItem('ansReadDelay')) ls.setItem('ansReadDelay', oldDelay);
   const oldOptDelay = ls.getItem('optHintDelay');
   if (oldOptDelay && !ls.getItem('optReadDelay')) ls.setItem('optReadDelay', oldOptDelay);
-  ['quizPromptOn','optHintOn','wrongHintOn','correctHintOn','readHint',
+  ['quizPromptOn','optHintOn','wrongHintOn','readHint',
    'quizPromptDelay','optHintDelay','delay','browseDelay'].forEach(k => ls.removeItem(k));
 }
 
