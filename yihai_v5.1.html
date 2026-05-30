@@ -1377,6 +1377,79 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 .about-title { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
 .about-sub { font-size: 14px; color: var(--text3); margin-bottom: 24px; }
 .about-desc { font-size: 15px; line-height: 1.7; color: var(--text2); text-align: left; }
+
+/* ── 录制覆层 ── */
+.rec-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  background: rgba(0,0,0,0.55);
+  animation: recOverlayIn 0.25s ease;
+}
+.rec-overlay.hidden { display: none; }
+@keyframes recOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+.rec-overlay-bg { position: absolute; inset: 0; }
+.rec-sheet {
+  position: relative; z-index: 1;
+  background: var(--surf);
+  border-radius: 24px 24px 0 0;
+  padding: 14px 20px calc(env(safe-area-inset-bottom, 0px) + 28px);
+  display: flex; flex-direction: column; gap: 12px;
+  animation: recSheetUp 0.28s cubic-bezier(.32,1.2,.5,1);
+}
+@keyframes recSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.rec-handle {
+  width: 36px; height: 4px; background: var(--bd2);
+  border-radius: 2px; margin: 0 auto 4px;
+}
+.rec-slot-name {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  text-align: center;
+}
+.rec-script-box {
+  background: var(--ocean-lt); border-radius: 12px; padding: 10px 14px;
+}
+.rec-script-lbl { font-size: 10px; color: var(--text3); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; }
+.rec-script-txt { font-size: 13px; color: var(--ocean); line-height: 1.6; }
+.rec-state { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rec-state.hidden { display: none; }
+.rec-mic-btn {
+  width: 76px; height: 76px; border-radius: 50%;
+  background: var(--ocean); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--surf);
+  box-shadow: 0 6px 20px var(--ocean-lt);
+  transition: transform 0.1s;
+}
+.rec-mic-btn:active { transform: scale(0.93); }
+.rec-mic-btn--recording {
+  background: #ef4444;
+  animation: recPulse 1.2s ease-in-out infinite;
+  box-shadow: 0 6px 20px rgba(239,68,68,0.35);
+}
+@keyframes recPulse {
+  0%,100% { box-shadow: 0 6px 20px rgba(239,68,68,0.35); transform: scale(1); }
+  50%      { box-shadow: 0 8px 32px rgba(239,68,68,0.5); transform: scale(1.04); }
+}
+.rec-play-btn {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: var(--surf2); border: 1.5px solid var(--bd2);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--ocean);
+}
+.rec-rerecord-btn {
+  font-size: 12px; color: var(--text3); background: none; border: none;
+  cursor: pointer; text-decoration: underline; padding: 4px;
+}
+.rec-hint { font-size: 12px; color: var(--text3); text-align: center; }
+.rec-hint--recording { color: #ef4444; font-weight: 600; }
+.rec-actions { display: flex; gap: 10px; margin-top: 4px; }
+.rec-cancel-btn, .rec-save-btn {
+  flex: 1; padding: 12px; border-radius: 14px;
+  font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+}
+.rec-cancel-btn { background: var(--surf2); color: var(--text2); }
+.rec-save-btn { background: var(--ocean); color: var(--surf); box-shadow: 0 4px 12px var(--ocean-lt); }
+.rec-save-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 </style>
 </head>
 <body>
@@ -5584,6 +5657,12 @@ const I18N = {
     common_version_title: 'Tap 5 times to open diagnostic panel',
     import_url_coming: 'Download from URL coming soon.',
     card_predict_days: 'In {interval}d ({date})',
+    voice_rec_script_label: 'Reference Script',
+    voice_rec_tap_to_start: 'Tap to record (max 30s)',
+    voice_rec_tap_preview: 'Tap to preview',
+    voice_rec_rerecord: 'Re-record',
+    voice_rec_permission_error: 'Cannot access microphone. Check permissions.',
+    voice_rec_save_error: 'Save failed. Please try again.',
   },
   'zh-CN': {
     app_title: '忆海拾光',
@@ -5821,6 +5900,12 @@ const I18N = {
     common_version_title: '点击5次打开诊断面板',
     import_url_coming: '从链接下载功能即将上线。',
     card_predict_days: '{interval}天后（{date}）',
+    voice_rec_script_label: '参考脚本',
+    voice_rec_tap_to_start: '点击开始录制（最长 30s）',
+    voice_rec_tap_preview: '点击试听',
+    voice_rec_rerecord: '重录',
+    voice_rec_permission_error: '无法访问麦克风，请检查权限',
+    voice_rec_save_error: '保存失败，请重试',
   },
   'es': {
     app_title: 'Memory Glimmers',
@@ -6058,6 +6143,12 @@ const I18N = {
     common_version_title: 'Toque 5 veces para abrir el panel de diagnóstico',
     import_url_coming: 'Descarga por URL disponible pronto.',
     card_predict_days: 'En {interval}d ({date})',
+    voice_rec_script_label: 'Guión de referencia',
+    voice_rec_tap_to_start: 'Toca para grabar (máx 30s)',
+    voice_rec_tap_preview: 'Toca para escuchar',
+    voice_rec_rerecord: 'Volver a grabar',
+    voice_rec_permission_error: 'No se puede acceder al micrófono.',
+    voice_rec_save_error: 'Error al guardar. Inténtalo de nuevo.',
   },
 };
 
@@ -7175,6 +7266,118 @@ function onAnsReadDelayChange(val) {
 function openVoiceAssist() {
   // Stub — full implementation in Task 8 (screen-voice-assist)
   console.log('openVoiceAssist: not yet implemented');
+}
+
+// ── 录制覆层状态机 ──────────────────────────────────────────────────
+let _recSlotName      = '';
+let _recMediaRecorder = null;
+let _recChunks        = [];
+let _recBlob          = null;
+let _recMimeType      = '';
+let _recDuration      = 0;
+let _recTimerInterval = null;
+let _recStartTime     = 0;
+const REC_MAX_SEC     = 30;
+
+function openRecordingOverlay(slotName, defaultScript) {
+  _recSlotName = slotName;
+  _recBlob = null;
+  document.getElementById('rec-slot-label').textContent =
+    t('voice_slot_' + slotName) || slotName;
+  const scriptEl = document.getElementById('rec-script-txt');
+  scriptEl.textContent = defaultScript || '';
+  document.getElementById('rec-script-box').style.display = defaultScript ? '' : 'none';
+  _showRecState('idle');
+  document.getElementById('rec-save-btn').disabled = true;
+  document.getElementById('recording-overlay').classList.remove('hidden');
+}
+
+function closeRecordingOverlay() {
+  _stopRecordingCleanup();
+  document.getElementById('recording-overlay').classList.add('hidden');
+  _recSlotName = '';
+}
+
+function _showRecState(state) {
+  ['idle', 'recording', 'playback'].forEach(s => {
+    document.getElementById('rec-state-' + s).classList.toggle('hidden', s !== state);
+  });
+}
+
+async function toggleRecording() {
+  if (_recMediaRecorder && _recMediaRecorder.state === 'recording') {
+    _recMediaRecorder.stop();
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus' : 'audio/mp4';
+    _recMimeType = mimeType;
+    _recChunks = [];
+    _recMediaRecorder = new MediaRecorder(stream, { mimeType });
+    _recMediaRecorder.ondataavailable = e => { if (e.data.size > 0) _recChunks.push(e.data); };
+    _recMediaRecorder.onstop = _onRecordingStopped;
+    _recStartTime = Date.now();
+    _recMediaRecorder.start(100);
+    _showRecState('recording');
+    _recTimerInterval = setInterval(() => {
+      const sec = Math.floor((Date.now() - _recStartTime) / 1000);
+      document.getElementById('rec-timer-text').textContent = sec + 's';
+      if (sec >= REC_MAX_SEC) _recMediaRecorder.stop();
+    }, 500);
+  } catch (err) {
+    alert(t('voice_rec_permission_error') || '无法访问麦克风，请检查权限');
+  }
+}
+
+function _onRecordingStopped() {
+  _stopRecordingCleanup();
+  _recDuration = (Date.now() - _recStartTime) / 1000;
+  _recBlob = new Blob(_recChunks, { type: _recMimeType });
+  _showRecState('playback');
+  document.getElementById('rec-duration-text').textContent =
+    _recDuration.toFixed(1) + 's · ' + (t('voice_rec_tap_preview') || '点击试听');
+  document.getElementById('rec-save-btn').disabled = false;
+}
+
+function _stopRecordingCleanup() {
+  clearInterval(_recTimerInterval);
+  _recTimerInterval = null;
+  if (_recMediaRecorder) {
+    if (_recMediaRecorder.stream) {
+      _recMediaRecorder.stream.getTracks().forEach(track => track.stop());
+    }
+    _recMediaRecorder = null;
+  }
+}
+
+function playRecordedPreview() {
+  if (!_recBlob) return;
+  const url = URL.createObjectURL(_recBlob);
+  const audio = new Audio(url);
+  audio.onended = () => URL.revokeObjectURL(url);
+  audio.play();
+}
+
+function resetRecording() {
+  _recBlob = null;
+  _showRecState('idle');
+  document.getElementById('rec-save-btn').disabled = true;
+}
+
+async function saveVoiceRecording() {
+  if (!_recBlob || !_recSlotName) return;
+  try {
+    await saveVoiceSlot(_recSlotName, _recBlob, _recMimeType, _recDuration);
+    closeRecordingOverlay();
+    const vaScreen = document.getElementById('screen-voice-assist');
+    if (vaScreen && vaScreen.classList.contains('active')) {
+      renderVoiceSlots();
+    }
+  } catch (e) {
+    alert(t('voice_rec_save_error') || '保存失败，请重试');
+  }
 }
 
 // populate voice dropdown (Chinese first, others appended)
@@ -8743,5 +8946,44 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.4/dist/umd/supabase.min.js" integrity="sha384-4eCDoMN/7A46qQ5Tj0rZ/D2VEolFGNIINDTLAcWZcvhkRSsvTfqNfaBMlRRoGEZ5" crossorigin="anonymous" defer></script>
+<!-- ── 录制覆层 ── -->
+<div id="recording-overlay" class="rec-overlay hidden" aria-modal="true" role="dialog">
+  <div class="rec-overlay-bg" onclick="closeRecordingOverlay()"></div>
+  <div class="rec-sheet">
+    <div class="rec-handle"></div>
+    <div class="rec-slot-name" id="rec-slot-label"></div>
+    <div class="rec-script-box" id="rec-script-box">
+      <div class="rec-script-lbl" data-i18n="voice_rec_script_label">参考脚本</div>
+      <div class="rec-script-txt" id="rec-script-txt"></div>
+    </div>
+    <!-- idle state -->
+    <div class="rec-state" id="rec-state-idle">
+      <button class="rec-mic-btn" onclick="toggleRecording()">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <div class="rec-hint" data-i18n="voice_rec_tap_to_start">点击开始录制（最长 30s）</div>
+    </div>
+    <!-- recording state -->
+    <div class="rec-state hidden" id="rec-state-recording">
+      <button class="rec-mic-btn rec-mic-btn--recording" onclick="toggleRecording()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+      <div class="rec-hint rec-hint--recording" id="rec-timer-text">0s</div>
+    </div>
+    <!-- playback state -->
+    <div class="rec-state hidden" id="rec-state-playback">
+      <button class="rec-play-btn" onclick="playRecordedPreview()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      </button>
+      <div class="rec-hint" id="rec-duration-text"></div>
+      <button class="rec-rerecord-btn" onclick="resetRecording()" data-i18n="voice_rec_rerecord">重录</button>
+    </div>
+    <!-- actions -->
+    <div class="rec-actions">
+      <button class="rec-cancel-btn" onclick="closeRecordingOverlay()" data-i18n="common_cancel">取消</button>
+      <button class="rec-save-btn" id="rec-save-btn" onclick="saveVoiceRecording()" disabled data-i18n="common_save">保存</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

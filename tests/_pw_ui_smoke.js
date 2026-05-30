@@ -194,6 +194,15 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     await run(page, () => document.getElementById('settings-overlay').classList.remove('open'));
     await wait(page, 200);
 
+    // ── Task 6: 录制覆层存在性检查 ──
+    const recOverlay = await page.$('#recording-overlay');
+    pass('录制覆层元素应存在 (#recording-overlay)', !!recOverlay);
+    const recOverlayVisible = await page.evaluate(() => {
+      const el = document.getElementById('recording-overlay');
+      return el && !el.classList.contains('hidden');
+    });
+    pass('录制覆层初始应为隐藏', recOverlayVisible === false);
+
   } finally {
     const { passed, failed } = getCounts();
     section('结果');
