@@ -1904,7 +1904,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 <!-- ── 语音辅助页 ── -->
 <div id="screen-voice-assist" class="screen">
   <div class="theme-topbar">
-    <button class="back-btn" onclick="showScreen('screen-mine')" aria-label="返回">
+    <button class="back-btn" onclick="closeRecordingOverlay(); showScreen('screen-mine')" aria-label="返回" data-i18n-aria="common_back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="theme-topbar-title" data-i18n="voice_assist_page_title">语音辅助</span>
@@ -2971,7 +2971,6 @@ async function cloudPushConfig() {
     // collect local UI params
     const localUi = {
       confettiOn:         localStorage.getItem('confettiOn'),
-      correctHintOn:      localStorage.getItem('correctHintOn'),
       phraseSelect:       localStorage.getItem('phraseSelect'),
       phraseWrong:        localStorage.getItem('phraseWrong'),
       phraseOptHint:      localStorage.getItem('phraseOptHint'),
@@ -6696,6 +6695,7 @@ async function playVoiceSlot(slotName, ttsText, ttsLang) {
       const url = URL.createObjectURL(slot.audioBlob);
       const audio = new Audio(url);
       audio.onended = () => URL.revokeObjectURL(url);
+      audio.onerror = () => URL.revokeObjectURL(url);
       await audio.play();
       return;
     }
@@ -7676,17 +7676,18 @@ async function renderVoiceSlots() {
 
 function onSlotRowTap(slot) {
   if (slot.functional) {
-    const phraseKey = 'phrase_' + slot.name;
-    const current = localStorage.getItem(phraseKey) || t(slot.defaultKey) || '';
-    const newVal = window.prompt(
-      (t(slot.labelKey) || slot.name) + '\n' + (t('voice_edit_script_hint') || '编辑文案（留空=不播报）'),
-      current
+    const current = localStorage.getItem('phrase_' + slot.name) || t(slot.defaultKey) || '';
+    showTextEditOverlay(
+      slot.name,
+      t(slot.labelKey) || slot.name,
+      current,
+      (newVal) => {
+        localStorage.setItem('phrase_' + slot.name, newVal);
+        if (slot.name === 'quiz_prompt') PHRASE_SELECT = newVal || t('quiz_select_hint') || '';
+        if (slot.name === 'opt_hint') { PHRASE_OPT_HINT = newVal; localStorage.setItem('phraseOptHint', newVal); }
+        renderVoiceSlots();
+      }
     );
-    if (newVal !== null) {
-      localStorage.setItem(phraseKey, newVal);
-      if (slot.name === 'quiz_prompt') PHRASE_SELECT = newVal || t('quiz_select_hint') || '';
-      renderVoiceSlots();
-    }
     return;
   }
   const defaultScript = t(slot.defaultKey) || '';
@@ -7759,6 +7760,31 @@ function closeRecordingOverlay() {
   _recSlotName = '';
 }
 
+// ── 功能槽文案编辑覆层 ──────────────────────────────────────────────
+let _teSlotName = '';
+let _teSaveCallback = null;
+
+function showTextEditOverlay(slotName, labelText, initialText, onSave) {
+  _teSlotName = slotName;
+  _teSaveCallback = onSave;
+  document.getElementById('te-slot-name').textContent = labelText;
+  document.getElementById('te-input').value = initialText;
+  document.getElementById('text-edit-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('te-input').focus(), 100);
+}
+
+function closeTextEditOverlay() {
+  document.getElementById('text-edit-overlay').classList.add('hidden');
+  _teSlotName = '';
+  _teSaveCallback = null;
+}
+
+function saveTextEdit() {
+  const val = document.getElementById('te-input').value.trim();
+  if (_teSaveCallback) _teSaveCallback(val);
+  closeTextEditOverlay();
+}
+
 function _showRecState(state) {
   ['idle', 'recording', 'playback'].forEach(s => {
     document.getElementById('rec-state-' + s).classList.toggle('hidden', s !== state);
@@ -7788,7 +7814,7 @@ async function toggleRecording() {
       if (sec >= REC_MAX_SEC) _recMediaRecorder.stop();
     }, 500);
   } catch (err) {
-    alert(t('voice_rec_permission_error') || '无法访问麦克风，请检查权限');
+    showToastMsg(t('voice_rec_permission_error') || '无法访问麦克风，请检查权限');
   }
 }
 
@@ -7837,7 +7863,7 @@ async function saveVoiceRecording() {
       renderVoiceSlots();
     }
   } catch (e) {
-    alert(t('voice_rec_save_error') || '保存失败，请重试');
+    showToastMsg(t('voice_rec_save_error') || '保存失败，请重试');
   }
 }
 
@@ -9443,6 +9469,21 @@ document.addEventListener('contextmenu', e => e.preventDefault());
     <div class="rec-actions">
       <button class="rec-cancel-btn" onclick="closeRecordingOverlay()" data-i18n="common_cancel">取消</button>
       <button class="rec-save-btn" id="rec-save-btn" onclick="saveVoiceRecording()" disabled data-i18n="common_save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 功能槽文案编辑覆层 ── -->
+<div id="text-edit-overlay" class="rec-overlay hidden" aria-modal="true" role="dialog">
+  <div class="rec-overlay-bg" onclick="closeTextEditOverlay()"></div>
+  <div class="rec-sheet">
+    <div class="rec-handle"></div>
+    <div class="rec-slot-name" id="te-slot-name"></div>
+    <textarea id="te-input" style="-webkit-user-select:text;user-select:text;width:100%;padding:10px;border-radius:10px;border:1px solid var(--bd);font-size:14px;min-height:80px;background:var(--surf2);color:var(--text);resize:none;"></textarea>
+    <div style="font-size:11px;color:var(--text3);" data-i18n="voice_edit_script_hint">编辑文案（留空=不播报）</div>
+    <div class="rec-actions">
+      <button class="rec-cancel-btn" onclick="closeTextEditOverlay()" data-i18n="common_cancel">取消</button>
+      <button class="rec-save-btn" onclick="saveTextEdit()" data-i18n="common_save">保存</button>
     </div>
   </div>
 </div>
