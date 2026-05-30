@@ -2017,14 +2017,6 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
               <div class="stoggle-thumb"></div>
             </label>
           </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl" data-i18n="settings_correct_hint">回答正确提示</span>
-            <label class="stoggle">
-              <input type="checkbox" id="correct-hint-toggle" checked onchange="">
-              <div class="stoggle-track"></div>
-              <div class="stoggle-thumb"></div>
-            </label>
-          </div>
           <div class="sheet-row sheet-row-col">
             <span class="sheet-row-lbl" data-i18n="settings_correct_phrase">回答正确文案</span>
             <input type="text" id="phrase-correct" class="phrase-input" value="回答正确" oninput="onPhraseChange('correct',this.value)">
@@ -7318,10 +7310,6 @@ function loadSettings() {
   });
 
   window.addEventListener('load', () => {
-    // toggle sync
-    const htEl = document.getElementById('hint-toggle');
-    if (htEl) htEl.checked = READ_HINT;
-
     // phrase sync
     const ps2 = document.getElementById('phrase-select');
     if (ps2) ps2.value = PHRASE_SELECT;
