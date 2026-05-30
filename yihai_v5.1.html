@@ -1450,6 +1450,76 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 .rec-cancel-btn { background: var(--surf2); color: var(--text2); }
 .rec-save-btn { background: var(--ocean); color: var(--surf); box-shadow: 0 4px 12px var(--ocean-lt); }
 .rec-save-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+/* ── 语音辅助页 ── */
+#screen-voice-assist { display: flex; flex-direction: column; }
+.va-scroll {
+  flex: 1; overflow-y: auto; padding: 10px 0 40px;
+}
+.va-param-block {
+  margin: 0 12px 8px;
+  background: var(--surf);
+  border-radius: 16px;
+  border: 1px solid var(--bd);
+  overflow: hidden;
+  box-shadow: var(--sh);
+}
+.va-enable-row {
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  background: var(--ocean-lt);
+}
+.va-enable-text { flex: 1; }
+.va-enable-title { font-size: 15px; font-weight: 700; color: var(--ocean); }
+.va-enable-sub   { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.va-param-row {
+  padding: 9px 16px;
+  display: flex; align-items: center; gap: 8px;
+  border-top: 1px solid var(--bd);
+}
+.va-param-label { flex: 1; font-size: 13px; color: var(--text2); }
+.va-param-val { font-size: 13px; color: var(--ocean); font-weight: 700; min-width: 36px; text-align: right; }
+
+.va-group { margin: 0 12px 8px; }
+.va-group-head {
+  background: var(--surf); border: 1px solid var(--bd);
+  border-radius: 14px; padding: 11px 14px;
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; box-shadow: var(--sh);
+  transition: background 0.12s;
+}
+.va-group-head:active { background: var(--surf2); }
+.va-group-head > span[data-i18n] { flex: 1; font-size: 13px; font-weight: 700; color: var(--text); }
+.va-group-head > svg:first-child { color: var(--ocean); flex-shrink: 0; }
+.va-group-count {
+  font-size: 10px; color: var(--text3);
+  background: var(--ocean-bg); padding: 2px 8px; border-radius: 10px;
+}
+.va-group-count.has-rec { background: #dcfce7; color: #16a34a; }
+.va-chevron { color: var(--text3); transition: transform 0.2s; flex-shrink: 0; }
+.va-chevron.open { transform: rotate(180deg); }
+.va-group-head.open { border-radius: 14px 14px 0 0; }
+.va-group-body {
+  background: var(--surf); border: 1px solid var(--bd);
+  border-top: none; border-radius: 0 0 14px 14px;
+  overflow: hidden; display: none;
+}
+.va-group-body.open { display: block; }
+.va-slot-row {
+  padding: 11px 14px; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--bd); cursor: pointer;
+  transition: background 0.1s;
+}
+.va-slot-row:last-child { border-bottom: none; }
+.va-slot-row:active { background: var(--surf2); }
+.va-slot-name { flex: 1; font-size: 13px; color: var(--text); font-weight: 500; }
+.va-slot-status {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+}
+.va-ss-ok   { background: #dcfce7; color: #16a34a; }
+.va-ss-no   { background: var(--surf2); color: var(--text3); }
+.va-ss-func { background: var(--ocean-bg); color: var(--ocean); }
+.va-slot-arr { color: var(--text3); display: flex; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -1829,6 +1899,75 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       </div>
     </div>
   </div>
+</div>
+
+<!-- ── 语音辅助页 ── -->
+<div id="screen-voice-assist" class="screen">
+  <div class="theme-topbar">
+    <button class="back-btn" onclick="showScreen('screen-mine')" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="theme-topbar-title" data-i18n="voice_assist_page_title">语音辅助</span>
+    <div style="width:38px"></div>
+  </div>
+
+  <div class="va-scroll">
+    <!-- 参数块 -->
+    <div class="va-param-block">
+      <div class="va-enable-row">
+        <div class="va-enable-text">
+          <div class="va-enable-title" data-i18n="voice_assist_enable">语音辅助</div>
+          <div class="va-enable-sub" data-i18n="voice_assist_enable_sub">开启后语音节点生效</div>
+        </div>
+        <label class="stoggle">
+          <input type="checkbox" id="va-enable-toggle" onchange="onVoiceAssistToggle(this)">
+          <span class="stoggle-track"></span>
+        </label>
+      </div>
+      <div class="va-param-row">
+        <div class="va-param-label">
+          <span data-i18n="voice_opt_read_delay">选项朗读延迟</span>
+        </div>
+        <input type="range" min="0.5" max="10" step="0.5" value="5"
+               id="opt-read-delay" oninput="onOptReadDelayChange(this.value)">
+        <span class="va-param-val" id="opt-read-delay-val">5s</span>
+      </div>
+    </div>
+
+    <!-- 固定节点组 -->
+    <div class="va-group" id="va-group-fixed">
+      <div class="va-group-head" onclick="toggleVaGroup('fixed')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span data-i18n="voice_group_fixed">固定节点</span>
+        <span class="va-group-count" id="va-count-fixed"></span>
+        <svg class="va-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="va-group-body" id="va-body-fixed"></div>
+    </div>
+
+    <!-- 情绪触发组 -->
+    <div class="va-group" id="va-group-emotion">
+      <div class="va-group-head" onclick="toggleVaGroup('emotion')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span data-i18n="voice_group_emotion">情绪触发</span>
+        <span class="va-group-count" id="va-count-emotion"></span>
+        <svg class="va-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="va-group-body" id="va-body-emotion"></div>
+    </div>
+
+    <!-- 功能提示组 -->
+    <div class="va-group" id="va-group-functional">
+      <div class="va-group-head" onclick="toggleVaGroup('functional')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span data-i18n="voice_group_functional">功能提示</span>
+        <span class="va-group-count" id="va-count-functional"></span>
+        <svg class="va-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="va-group-body" id="va-body-functional"></div>
+    </div>
+
+  </div><!-- /va-scroll -->
 </div>
 
 <!-- ══════════════ about ══════════════ -->
@@ -5663,6 +5802,13 @@ const I18N = {
     voice_rec_rerecord: 'Re-record',
     voice_rec_permission_error: 'Cannot access microphone. Check permissions.',
     voice_rec_save_error: 'Save failed. Please try again.',
+    voice_assist_page_title: 'Voice Assistance',
+    voice_assist_enable: 'Voice Assistance',
+    voice_assist_enable_sub: 'Voice triggers activate when enabled',
+    voice_opt_read_delay: 'Option Read Delay',
+    voice_group_fixed: 'Fixed Triggers',
+    voice_group_emotion: 'Emotion Triggers',
+    voice_group_functional: 'Functional Hints',
   },
   'zh-CN': {
     app_title: '忆海拾光',
@@ -5906,6 +6052,13 @@ const I18N = {
     voice_rec_rerecord: '重录',
     voice_rec_permission_error: '无法访问麦克风，请检查权限',
     voice_rec_save_error: '保存失败，请重试',
+    voice_assist_page_title: '语音辅助',
+    voice_assist_enable: '语音辅助',
+    voice_assist_enable_sub: '开启后语音节点生效',
+    voice_opt_read_delay: '选项朗读延迟',
+    voice_group_fixed: '固定节点',
+    voice_group_emotion: '情绪触发',
+    voice_group_functional: '功能提示',
   },
   'es': {
     app_title: 'Memory Glimmers',
@@ -6149,6 +6302,13 @@ const I18N = {
     voice_rec_rerecord: 'Volver a grabar',
     voice_rec_permission_error: 'No se puede acceder al micrófono.',
     voice_rec_save_error: 'Error al guardar. Inténtalo de nuevo.',
+    voice_assist_page_title: 'Asistencia de voz',
+    voice_assist_enable: 'Asistencia de voz',
+    voice_assist_enable_sub: 'Los puntos de voz se activan al habilitar',
+    voice_opt_read_delay: 'Retraso de lectura de opciones',
+    voice_group_fixed: 'Nodos fijos',
+    voice_group_emotion: 'Disparadores de emoción',
+    voice_group_functional: 'Indicaciones funcionales',
   },
 };
 

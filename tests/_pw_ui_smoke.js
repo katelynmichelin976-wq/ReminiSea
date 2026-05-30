@@ -203,6 +203,25 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     });
     pass('录制覆层初始应为隐藏', recOverlayVisible === false);
 
+    // ── Task 7: 语音辅助页 ──
+    // Note: openVoiceAssist() is still a stub, so navigate directly via showScreen
+    await page.evaluate(() => { if (typeof showScreen === 'function') showScreen('screen-voice-assist'); });
+    await page.waitForTimeout(300);
+    // Screen should exist
+    const vaScreen = await page.$('#screen-voice-assist');
+    assert.ok(vaScreen, '语音辅助页元素应存在 (#screen-voice-assist)');
+    // Title should exist
+    const vaTitle = await page.$('[data-i18n="voice_assist_page_title"]');
+    assert.ok(vaTitle, '语音辅助页标题元素应存在');
+    // Three accordion groups should exist
+    assert.ok(await page.$('[data-i18n="voice_group_fixed"]'), '固定节点分组标题应存在');
+    assert.ok(await page.$('[data-i18n="voice_group_emotion"]'), '情绪触发分组标题应存在');
+    assert.ok(await page.$('[data-i18n="voice_group_functional"]'), '功能提示分组标题应存在');
+    // Enable toggle should exist
+    assert.ok(await page.$('#va-enable-toggle'), '启用开关应存在');
+    // Navigate back
+    await page.evaluate(() => { if (typeof showScreen === 'function') showScreen('screen-home'); });
+
   } finally {
     const { passed, failed } = getCounts();
     section('结果');
