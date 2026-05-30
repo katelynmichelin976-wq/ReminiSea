@@ -171,6 +171,29 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     await run(page, () => document.getElementById('settings-overlay').classList.remove('open'));
     await wait(page, 200);
 
+    // ════ PHASE 9: 语音设置 Tab 新结构 ════
+    section('PHASE 9: 语音设置 Tab 新结构');
+    await run(page, () => openSettingsWithSrs());
+    await wait(page, 300);
+    // Click the voice tab (tab index 1)
+    const voiceTabs = await page.$$('.sheet-tab');
+    if (voiceTabs[1]) await voiceTabs[1].click();
+    await wait(page, 200);
+    // 全局静音开关应存在
+    const muteToggle = await page.$('#voice-muted-toggle');
+    pass('全局静音开关应存在 (#voice-muted-toggle)', !!muteToggle);
+    // 答案朗读延迟行应存在
+    const ansDelay = await page.$('#ans-read-delay-row');
+    pass('答案朗读延迟行应存在 (#ans-read-delay-row)', !!ansDelay);
+    // 语音辅助入口应存在
+    const vaEntry = await page.$('#voice-assist-entry');
+    pass('语音辅助入口行应存在 (#voice-assist-entry)', !!vaEntry);
+    // 旧 toggle 行不应存在
+    const oldToggle = await page.$('#quiz-prompt-toggle');
+    pass('旧答题提示 toggle 行不应存在', oldToggle === null);
+    await run(page, () => document.getElementById('settings-overlay').classList.remove('open'));
+    await wait(page, 200);
+
   } finally {
     const { passed, failed } = getCounts();
     section('结果');

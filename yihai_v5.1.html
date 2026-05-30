@@ -2058,84 +2058,19 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       <!-- Tab 1: speech -->
       <div class="sheet-panel" id="tab-1">
 
+        <!-- 全局静音 -->
         <div class="sheet-section">
-          <div class="sheet-section-lbl" data-i18n="settings_section_quiz_prompt">答题提示</div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl" data-i18n="settings_quiz_prompt">答题提示</span>
+          <div class="sheet-row" id="voice-muted-row">
+            <span class="sheet-row-lbl" data-i18n="voice_global_mute">全局静音</span>
             <label class="stoggle">
-              <input type="checkbox" id="quiz-prompt-toggle" checked onchange="">
-              <div class="stoggle-track"></div>
-              <div class="stoggle-thumb"></div>
+              <input type="checkbox" id="voice-muted-toggle" onchange="onVoiceMutedChange(this)">
+              <span class="stoggle-track"></span>
             </label>
-          </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl" data-i18n="settings_quiz_prompt_delay">答题提示延迟</span>
-            <input type="range" min="0.5" max="10" value="2" step="0.5" id="dbg-qpdelay" oninput="onQpDelayChange(this.value)">
-            <span class="sheet-row-val" id="dbg-qpdelay-val">2s</span>
-          </div>
-          <div class="sheet-row sheet-row-col">
-            <span class="sheet-row-lbl" data-i18n="settings_quiz_prompt_phrase">答题提示文案</span>
-            <input type="text" id="phrase-select" class="phrase-input" value="请选择答案" oninput="onPhraseChange('select',this.value)">
-          </div>
-        </div>
-
-        <div class="sheet-section">
-          <div class="sheet-section-lbl" data-i18n="settings_section_opt_hint">选项提示</div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl" data-i18n="settings_opt_hint">选项提示</span>
-            <label class="stoggle">
-              <input type="checkbox" id="opt-hint-toggle" checked onchange="">
-              <div class="stoggle-track"></div>
-              <div class="stoggle-thumb"></div>
-            </label>
-          </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl" data-i18n="settings_opt_hint_delay">选项提示延迟</span>
-            <input type="range" min="0.5" max="10" value="5" step="0.5" id="dbg-ohdelay" oninput="onOhDelayChange(this.value)">
-            <span class="sheet-row-val" id="dbg-ohdelay-val">5s</span>
-          </div>
-          <div class="sheet-row sheet-row-col">
-            <span class="sheet-row-lbl" data-i18n="settings_opt_hint_phrase_label">选项提示文案（{A}{B}{C}替换为选项，. 为停顿100ms）</span>
-            <input type="text" id="phrase-opt-hint" class="phrase-input" value="请在{A}.{B}.{C}中选择一个" oninput="onPhraseChange('optHint',this.value)">
-          </div>
-        </div>
-
-        <div class="sheet-section">
-          <div class="sheet-section-lbl" data-i18n="settings_section_wrong_hint">答错提示</div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl" data-i18n="settings_wrong_hint">答错提示</span>
-            <label class="stoggle">
-              <input type="checkbox" id="wrong-hint-toggle" checked onchange="">
-              <div class="stoggle-track"></div>
-              <div class="stoggle-thumb"></div>
-            </label>
-          </div>
-          <div class="sheet-row sheet-row-col">
-            <span class="sheet-row-lbl" data-i18n="settings_wrong_phrase">答错提示文案</span>
-            <input type="text" id="phrase-wrong" class="phrase-input" value="不要着急，再试一次" oninput="onPhraseChange('wrong',this.value)">
           </div>
         </div>
 
         <div class="sheet-section">
           <div class="sheet-section-lbl" data-i18n="settings_section_answer">答案播报</div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl" data-i18n="settings_read_hint">朗读物品提示</span>
-            <label class="stoggle">
-              <input type="checkbox" id="hint-toggle" checked onchange="">
-              <div class="stoggle-track"></div>
-              <div class="stoggle-thumb"></div>
-            </label>
-          </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl" data-i18n="settings_answer_delay">练习播报延迟</span>
-            <input type="range" min="0.5" max="3" value="1.2" step="0.1" id="dbg-delay" oninput="onDelayChange(this.value)">
-            <span class="sheet-row-val" id="dbg-delay-val">1.2s</span>
-          </div>
-          <div class="sheet-row">
-            <span class="sheet-row-lbl" data-i18n="settings_browse_answer_delay">浏览播报延迟</span>
-            <input type="range" min="0.5" max="3" value="1.2" step="0.1" id="dbg-browse-delay" oninput="onBrowseDelayChange(this.value)">
-            <span class="sheet-row-val" id="dbg-browse-delay-val">1.2s</span>
-          </div>
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_tts_rate">语速</span>
             <input type="range" min="0.5" max="2" value="0.85" step="0.05" id="tts-rate" oninput="onTtsRateChange(this.value)">
@@ -2154,6 +2089,25 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
                      outline:none;max-width:200px;">
               <option value="" data-i18n="settings_tts_voice_auto">自动（中文优先）</option>
             </select>
+          </div>
+        </div>
+
+        <!-- 答案朗读延迟 -->
+        <div class="sheet-section">
+          <div class="sheet-row" id="ans-read-delay-row">
+            <span class="sheet-row-lbl" data-i18n="voice_ans_read_delay">答案朗读延迟</span>
+            <input type="range" min="0.3" max="5" step="0.1" value="1.2" id="ans-read-delay"
+                   oninput="onAnsReadDelayChange(this.value)">
+            <span class="sheet-row-val" id="ans-read-delay-val">1.2s</span>
+          </div>
+        </div>
+
+        <!-- 语音辅助入口 -->
+        <div class="sheet-section">
+          <div class="sheet-row" id="voice-assist-entry" onclick="openVoiceAssist()" style="cursor:pointer;">
+            <span class="sheet-row-lbl" data-i18n="voice_assist_nav">语音辅助</span>
+            <span class="sheet-row-val" id="voice-assist-status" style="font-size:12px;color:var(--text3);">—</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
 
@@ -5479,6 +5433,7 @@ const I18N = {
     settings_section_wrong_hint: 'Wrong Answer Hint', settings_wrong_hint: 'Wrong Answer Hint', settings_wrong_phrase: 'Wrong Answer Phrase',
     settings_section_answer: 'Answer Announcement', settings_read_hint: 'Read Item Name', settings_answer_delay: 'Quiz Speak Delay', settings_browse_answer_delay: 'Browse Speak Delay',
     settings_tts_rate: 'Speech Rate', settings_tts_pitch: 'Pitch', settings_tts_voice: 'Voice', settings_tts_voice_auto: 'Auto (Chinese preferred)',
+    voice_global_mute: 'Mute All', voice_ans_read_delay: 'Answer Read Delay', voice_assist_nav: 'Voice Assistance',
     settings_section_preset: 'Preset', settings_srs_reset_default: 'Reset to Anki Defaults',
     settings_section_new_cards: 'New Cards', settings_learning_steps: 'Learning Steps (min, comma separated)', settings_graduating_interval: 'Graduating Interval (days)', settings_easy_interval: 'Easy Interval (days)',
     settings_section_relearn: 'Relearning', settings_relearning_steps: 'Relearning Steps (min, comma separated)',
@@ -5715,6 +5670,7 @@ const I18N = {
     settings_section_wrong_hint: '答错提示', settings_wrong_hint: '答错提示', settings_wrong_phrase: '答错提示文案',
     settings_section_answer: '答案播报', settings_read_hint: '朗读物品提示', settings_answer_delay: '练习播报延迟', settings_browse_answer_delay: '浏览播报延迟',
     settings_tts_rate: '语速', settings_tts_pitch: '音调', settings_tts_voice: '音色', settings_tts_voice_auto: '自动（中文优先）',
+    voice_global_mute: '全局静音', voice_ans_read_delay: '答案朗读延迟', voice_assist_nav: '语音辅助',
     settings_section_preset: '预设', settings_srs_reset_default: '恢复 Anki 默认值',
     settings_section_new_cards: '新卡学习', settings_learning_steps: '学习步长（分钟，逗号分隔）', settings_graduating_interval: '毕业间隔（天）', settings_easy_interval: '简单间隔（天）',
     settings_section_relearn: '遗忘重学', settings_relearning_steps: '重学步长（分钟，逗号分隔）',
@@ -5951,6 +5907,7 @@ const I18N = {
     settings_section_wrong_hint: 'Aviso de error', settings_wrong_hint: 'Aviso de error', settings_wrong_phrase: 'Frase de error',
     settings_section_answer: 'Anuncio de respuesta', settings_read_hint: 'Leer nombre', settings_answer_delay: 'Retardo de locucion', settings_browse_answer_delay: 'Retardo de exploracion',
     settings_tts_rate: 'Velocidad', settings_tts_pitch: 'Tono', settings_tts_voice: 'Voz', settings_tts_voice_auto: 'Auto (chino preferido)',
+    voice_global_mute: 'Silenciar todo', voice_ans_read_delay: 'Retardo de lectura', voice_assist_nav: 'Asistencia de voz',
     settings_section_preset: 'Preajuste', settings_srs_reset_default: 'Restaurar valores Anki',
     settings_section_new_cards: 'Nuevas tarjetas', settings_learning_steps: 'Pasos de aprendizaje (min, coma)', settings_graduating_interval: 'Intervalo de graduacion (dias)', settings_easy_interval: 'Intervalo facil (dias)',
     settings_section_relearn: 'Reaprendizaje', settings_relearning_steps: 'Pasos de reaprendizaje (min, coma)',
@@ -7210,6 +7167,24 @@ function onTtsVoiceChange(name) {
   debouncePushConfig();
 }
 
+function onVoiceMutedChange(cb) {
+  VOICE_MUTED = cb.checked;
+  localStorage.setItem('voiceMuted', VOICE_MUTED ? '1' : '0');
+  debouncePushConfig();
+}
+
+function onAnsReadDelayChange(val) {
+  ANS_READ_DELAY = parseFloat(val) * 1000;
+  localStorage.setItem('ansReadDelay', val);
+  document.getElementById('ans-read-delay-val').textContent = parseFloat(val).toFixed(1) + 's';
+  debouncePushConfig();
+}
+
+function openVoiceAssist() {
+  // Stub — full implementation in Task 8 (screen-voice-assist)
+  console.log('openVoiceAssist: not yet implemented');
+}
+
 // populate voice dropdown (Chinese first, others appended)
 function populateVoiceList() {
   const sel = document.getElementById('tts-voice');
@@ -7370,6 +7345,17 @@ function loadSettings() {
     if (pitchEl) { pitchEl.value = TTS_PITCH; document.getElementById('tts-pitch-val').textContent = TTS_PITCH.toFixed(1); }
     // voice list populated after voice list loads
     populateVoiceList();
+
+    // voice mute / ans read delay sync
+    const voiceMutedEl = document.getElementById('voice-muted-toggle');
+    if (voiceMutedEl) voiceMutedEl.checked = VOICE_MUTED;
+    const ansDelayEl = document.getElementById('ans-read-delay');
+    if (ansDelayEl) {
+      const v = ANS_READ_DELAY / 1000;
+      ansDelayEl.value = v;
+      const valEl = document.getElementById('ans-read-delay-val');
+      if (valEl) valEl.textContent = v.toFixed(1) + 's';
+    }
 
     // option count
     const ocEl = document.getElementById('opt-count');
