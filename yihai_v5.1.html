@@ -4559,6 +4559,27 @@ let VOICE_MUTED      = false; // 全局静音
 // ── 语音辅助参数 ──
 let VOICE_ASSIST_ENABLED = false; // 语音辅助开关
 
+// ── 语音槽位注册表 ──────────────────────────────────────────────────
+const VOICE_SLOTS = {
+  fixed: [
+    { name: 'session_start',  labelKey: 'voice_slot_session_start',  defaultKey: 'voice_default_session_start' },
+    { name: 'session_finish', labelKey: 'voice_slot_session_finish', defaultKey: 'voice_default_session_finish' },
+    { name: 'idle_home',      labelKey: 'voice_slot_idle_home',      defaultKey: 'voice_default_idle_home' },
+    { name: 'idle_browse',    labelKey: 'voice_slot_idle_browse',    defaultKey: 'voice_default_idle_browse' },
+  ],
+  emotion: [
+    { name: 'wrong_hint',     labelKey: 'voice_slot_wrong_hint',     defaultKey: 'voice_default_wrong_hint' },
+    { name: 'correct_hint',   labelKey: 'voice_slot_correct_hint',   defaultKey: 'voice_default_correct_hint' },
+    { name: 'streak_correct', labelKey: 'voice_slot_streak_correct', defaultKey: 'voice_default_streak_correct' },
+    { name: 'idle_quiz',      labelKey: 'voice_slot_idle_quiz',      defaultKey: 'voice_default_idle_quiz' },
+    { name: 'each_day_start', labelKey: 'voice_slot_each_day_start', defaultKey: 'voice_default_each_day_start' },
+  ],
+  functional: [
+    { name: 'quiz_prompt', labelKey: 'voice_slot_quiz_prompt', defaultKey: 'voice_default_quiz_prompt', functional: true },
+    { name: 'opt_hint',    labelKey: 'voice_slot_opt_hint',    defaultKey: 'voice_default_opt_hint',    functional: true },
+  ],
+};
+
 // quiz prompt
 let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // quiz prompt text (i18n default English, overridden by loadPhrases)
 
@@ -5809,6 +5830,35 @@ const I18N = {
     voice_group_fixed: 'Fixed Triggers',
     voice_group_emotion: 'Emotion Triggers',
     voice_group_functional: 'Functional Hints',
+    voice_count_recorded: 'recorded',
+    voice_count_tts_only: 'TTS only',
+    voice_status_tts: 'TTS · set',
+    voice_status_unrecorded: 'not recorded',
+    voice_assist_on: 'On',
+    voice_assist_off: 'Off',
+    voice_edit_script_hint: 'Edit script (leave blank = silent)',
+    voice_slot_session_start: 'Session start',
+    voice_slot_session_finish: 'Session finish',
+    voice_slot_idle_home: 'Home idle',
+    voice_slot_idle_browse: 'Browse idle',
+    voice_slot_wrong_hint: 'Wrong answer',
+    voice_slot_correct_hint: 'Correct answer',
+    voice_slot_streak_correct: 'Streak praise',
+    voice_slot_idle_quiz: 'Quiz idle',
+    voice_slot_each_day_start: 'Daily first',
+    voice_slot_quiz_prompt: 'Quiz prompt',
+    voice_slot_opt_hint: 'Read options',
+    voice_default_session_start: "Let's go, you can do it",
+    voice_default_session_finish: 'Great job, practice done for today',
+    voice_default_idle_home: 'Tap a deck to start practicing',
+    voice_default_idle_browse: 'Swipe left or right to see more photos',
+    voice_default_wrong_hint: "Don't worry, try again",
+    voice_default_correct_hint: 'Wonderful',
+    voice_default_streak_correct: 'Amazing, you got several in a row',
+    voice_default_idle_quiz: 'Look at the photo and choose your answer',
+    voice_default_each_day_start: "Let's practice today too",
+    voice_default_quiz_prompt: 'Please choose an answer',
+    voice_default_opt_hint: 'Please choose an answer',
   },
   'zh-CN': {
     app_title: '忆海拾光',
@@ -6059,6 +6109,35 @@ const I18N = {
     voice_group_fixed: '固定节点',
     voice_group_emotion: '情绪触发',
     voice_group_functional: '功能提示',
+    voice_count_recorded: '已录制',
+    voice_count_tts_only: '仅文案',
+    voice_status_tts: 'TTS · 已配置',
+    voice_status_unrecorded: '未录制',
+    voice_assist_on: '已开启',
+    voice_assist_off: '未开启',
+    voice_edit_script_hint: '编辑文案（留空=不播报）',
+    voice_slot_session_start: '开始练习',
+    voice_slot_session_finish: '完成庆祝',
+    voice_slot_idle_home: '首页引导',
+    voice_slot_idle_browse: '浏览引导',
+    voice_slot_wrong_hint: '答错安慰',
+    voice_slot_correct_hint: '答对鼓励',
+    voice_slot_streak_correct: '连对表扬',
+    voice_slot_idle_quiz: '练习引导',
+    voice_slot_each_day_start: '每日首练',
+    voice_slot_quiz_prompt: '答题提示',
+    voice_slot_opt_hint: '读出选项',
+    voice_default_session_start: '加油，你可以的',
+    voice_default_session_finish: '太棒了，今天练习完成了',
+    voice_default_idle_home: '点一下牌组，开始今天的练习',
+    voice_default_idle_browse: '左右滑动，可以看更多照片',
+    voice_default_wrong_hint: '不要着急，再试一次',
+    voice_default_correct_hint: '太棒了',
+    voice_default_streak_correct: '真厉害，连续答对了',
+    voice_default_idle_quiz: '看看图片，选择你觉得对的答案',
+    voice_default_each_day_start: '今天也来练习吧',
+    voice_default_quiz_prompt: '请选择答案',
+    voice_default_opt_hint: '请选择答案',
   },
   'es': {
     app_title: 'Memory Glimmers',
@@ -6309,6 +6388,35 @@ const I18N = {
     voice_group_fixed: 'Nodos fijos',
     voice_group_emotion: 'Disparadores de emoción',
     voice_group_functional: 'Indicaciones funcionales',
+    voice_count_recorded: 'grabadas',
+    voice_count_tts_only: 'Solo TTS',
+    voice_status_tts: 'TTS · conf.',
+    voice_status_unrecorded: 'sin grabar',
+    voice_assist_on: 'Activada',
+    voice_assist_off: 'Desactivada',
+    voice_edit_script_hint: 'Editar guión (vacío = silencio)',
+    voice_slot_session_start: 'Inicio de sesión',
+    voice_slot_session_finish: 'Fin de sesión',
+    voice_slot_idle_home: 'Inicio inactivo',
+    voice_slot_idle_browse: 'Exploración inactiva',
+    voice_slot_wrong_hint: 'Respuesta incorrecta',
+    voice_slot_correct_hint: 'Respuesta correcta',
+    voice_slot_streak_correct: 'Racha correcta',
+    voice_slot_idle_quiz: 'Práctica inactiva',
+    voice_slot_each_day_start: 'Primer ejercicio diario',
+    voice_slot_quiz_prompt: 'Indicación de práctica',
+    voice_slot_opt_hint: 'Leer opciones',
+    voice_default_session_start: 'Vamos, tú puedes',
+    voice_default_session_finish: 'Muy bien, práctica de hoy completada',
+    voice_default_idle_home: 'Toca un mazo para empezar a practicar',
+    voice_default_idle_browse: 'Desliza para ver más fotos',
+    voice_default_wrong_hint: 'No te preocupes, inténtalo de nuevo',
+    voice_default_correct_hint: 'Maravilloso',
+    voice_default_streak_correct: 'Increíble, varias respuestas seguidas correctas',
+    voice_default_idle_quiz: 'Mira la foto y elige tu respuesta',
+    voice_default_each_day_start: 'Practiquemos hoy también',
+    voice_default_quiz_prompt: 'Por favor elige una respuesta',
+    voice_default_opt_hint: 'Por favor elige una respuesta',
   },
 };
 
@@ -7424,8 +7532,119 @@ function onAnsReadDelayChange(val) {
 }
 
 function openVoiceAssist() {
-  // Stub — full implementation in Task 8 (screen-voice-assist)
-  console.log('openVoiceAssist: not yet implemented');
+  closeSettings();
+  showScreen('screen-voice-assist');
+  document.getElementById('va-enable-toggle').checked = VOICE_ASSIST_ENABLED;
+  const optVal = OPT_READ_DELAY / 1000;
+  document.getElementById('opt-read-delay').value = optVal;
+  document.getElementById('opt-read-delay-val').textContent = optVal.toFixed(1) + 's';
+  renderVoiceSlots();
+  updateVoiceAssistStatus();
+}
+
+async function renderVoiceSlots() {
+  const all = await loadAllVoiceSlots();
+  const recorded = new Map(all.map(s => [s.slotName, s]));
+
+  Object.entries(VOICE_SLOTS).forEach(([group, slots]) => {
+    const body = document.getElementById('va-body-' + group);
+    if (!body) return;
+    body.innerHTML = '';
+    let recCount = 0;
+
+    slots.forEach(slot => {
+      const slotData = recorded.get(slot.name);
+      const isRecorded = !!slotData && !slot.functional;
+      if (isRecorded) recCount++;
+
+      const row = document.createElement('div');
+      row.className = 'va-slot-row';
+      row.onclick = () => onSlotRowTap(slot);
+
+      const statusClass = slot.functional ? 'va-ss-func'
+                        : isRecorded     ? 'va-ss-ok'
+                        :                  'va-ss-no';
+      const statusText  = slot.functional
+                        ? (t('voice_status_tts') || 'TTS')
+                        : isRecorded
+                        ? '✓ ' + slotData.duration.toFixed(1) + 's'
+                        : (t('voice_status_unrecorded') || '未录制');
+
+      row.innerHTML =
+        '<span class="va-slot-name">' + (t(slot.labelKey) || slot.name) + '</span>' +
+        '<span class="va-slot-status ' + statusClass + '">' + statusText + '</span>' +
+        '<span class="va-slot-arr">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+        '</span>';
+      body.appendChild(row);
+    });
+
+    const countEl = document.getElementById('va-count-' + group);
+    if (countEl) {
+      if (group === 'functional') {
+        countEl.textContent = t('voice_count_tts_only') || '仅文案';
+        countEl.classList.remove('has-rec');
+      } else {
+        countEl.textContent = recCount + ' / ' + slots.length + ' ' + (t('voice_count_recorded') || '已录制');
+        countEl.classList.toggle('has-rec', recCount > 0);
+      }
+    }
+  });
+}
+
+function onSlotRowTap(slot) {
+  if (slot.functional) {
+    const phraseKey = 'phrase_' + slot.name;
+    const current = localStorage.getItem(phraseKey) || t(slot.defaultKey) || '';
+    const newVal = window.prompt(
+      (t(slot.labelKey) || slot.name) + '\n' + (t('voice_edit_script_hint') || '编辑文案（留空=不播报）'),
+      current
+    );
+    if (newVal !== null) {
+      localStorage.setItem(phraseKey, newVal);
+      if (slot.name === 'quiz_prompt') PHRASE_SELECT = newVal || t('quiz_select_hint') || '';
+      renderVoiceSlots();
+    }
+    return;
+  }
+  const defaultScript = t(slot.defaultKey) || '';
+  openRecordingOverlay(slot.name, defaultScript);
+}
+
+function toggleVaGroup(group) {
+  const body    = document.getElementById('va-body-' + group);
+  const head    = document.querySelector('#va-group-' + group + ' .va-group-head');
+  const chevron = head && head.querySelector('.va-chevron');
+  const isOpen  = body && body.classList.contains('open');
+  if (body)    body.classList.toggle('open', !isOpen);
+  if (head)    head.classList.toggle('open', !isOpen);
+  if (chevron) chevron.classList.toggle('open', !isOpen);
+}
+
+function onVoiceAssistToggle(cb) {
+  VOICE_ASSIST_ENABLED = cb.checked;
+  localStorage.setItem('voiceAssistEnabled', VOICE_ASSIST_ENABLED ? '1' : '0');
+  updateVoiceAssistStatus();
+  debouncePushConfig();
+}
+
+function onOptReadDelayChange(val) {
+  OPT_READ_DELAY = parseFloat(val) * 1000;
+  localStorage.setItem('optReadDelay', val);
+  document.getElementById('opt-read-delay-val').textContent = parseFloat(val).toFixed(1) + 's';
+  debouncePushConfig();
+}
+
+async function updateVoiceAssistStatus() {
+  const el = document.getElementById('voice-assist-status');
+  if (!el) return;
+  const all = await loadAllVoiceSlots();
+  const allNonFunc = [...VOICE_SLOTS.fixed, ...VOICE_SLOTS.emotion];
+  const rec = all.filter(s => allNonFunc.some(g => g.name === s.slotName)).length;
+  const total = allNonFunc.length;
+  el.textContent = VOICE_ASSIST_ENABLED
+    ? (rec > 0 ? rec + '/' + total + ' ' + (t('voice_count_recorded') || '已录制') : (t('voice_assist_on') || '已开启'))
+    : (t('voice_assist_off') || '未开启');
 }
 
 // ── 录制覆层状态机 ──────────────────────────────────────────────────
