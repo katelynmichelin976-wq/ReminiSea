@@ -17,7 +17,7 @@
 (function () {
   if (window._yhDiag) { window._yhDiag.toggle(); return; }
 
-  const DB_NAME = 'yihai_srs', DB_VER = 6;
+  const DB_NAME = 'yihai_srs', DB_VER = 7;
   const TABS = ['📊 状态', '📋 事件', '⚠️ 日志', '🃏 卡片', '⚙️ 设置'];
 
   // ── 面板骨架 ──────────────────────────────────────────────
