@@ -1914,14 +1914,12 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="va-scroll">
     <!-- 参数块 -->
     <div class="va-param-block">
-      <div class="va-enable-row">
-        <div class="va-enable-text">
-          <div class="va-enable-title" data-i18n="voice_assist_enable">语音辅助</div>
-          <div class="va-enable-sub" data-i18n="voice_assist_enable_sub">开启后语音节点生效</div>
-        </div>
+      <div class="sheet-row">
+        <span class="sheet-row-lbl" data-i18n="voice_assist_enable">语音辅助</span>
         <label class="stoggle">
           <input type="checkbox" id="va-enable-toggle" onchange="onVoiceAssistToggle(this)">
-          <span class="stoggle-track"></span>
+          <div class="stoggle-track"></div>
+          <div class="stoggle-thumb"></div>
         </label>
       </div>
       <div class="va-param-row">
@@ -2268,7 +2266,8 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
             <span class="sheet-row-lbl" data-i18n="voice_global_mute">全局静音</span>
             <label class="stoggle">
               <input type="checkbox" id="voice-muted-toggle" onchange="onVoiceMutedChange(this)">
-              <span class="stoggle-track"></span>
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
             </label>
           </div>
         </div>
@@ -4591,8 +4590,8 @@ const VOICE_SLOTS = {
     { name: 'each_day_start', labelKey: 'voice_slot_each_day_start', defaultKey: 'voice_default_each_day_start' },
   ],
   functional: [
-    { name: 'quiz_prompt', labelKey: 'voice_slot_quiz_prompt', defaultKey: 'voice_default_quiz_prompt', functional: true },
-    { name: 'opt_hint',    labelKey: 'voice_slot_opt_hint',    defaultKey: 'voice_default_opt_hint',    functional: true },
+    { name: 'quiz_prompt', labelKey: 'voice_slot_quiz_prompt', functional: true },
+    { name: 'opt_hint',    labelKey: 'voice_slot_opt_hint',    functional: true },
   ],
 };
 
@@ -5925,9 +5924,7 @@ const I18N = {
     voice_default_streak_correct: 'Amazing, you got several in a row',
     voice_default_idle_quiz: 'Look at the photo and choose your answer',
     voice_default_each_day_start: "Let's practice today too",
-    voice_default_quiz_prompt: 'Pick an answer \u{1F446}',
     voice_quiz_prompt_recognize: 'Do you recognize this person?',
-    voice_default_opt_hint: 'Choose from {A}.{B}.{C}',
   },
   'zh-CN': {
     app_title: '忆海拾光',
@@ -6205,9 +6202,7 @@ const I18N = {
     voice_default_streak_correct: '真厉害，连续答对了',
     voice_default_idle_quiz: '看看图片，选择你觉得对的答案',
     voice_default_each_day_start: '今天也来练习吧',
-    voice_default_quiz_prompt: '请看图片',
     voice_quiz_prompt_recognize: '认识这个人吗',
-    voice_default_opt_hint: '请在{A}.{B}.{C}中选择一个',
   },
   'es': {
     app_title: 'Memory Glimmers',
@@ -6485,9 +6480,7 @@ const I18N = {
     voice_default_streak_correct: 'Increíble, varias respuestas seguidas correctas',
     voice_default_idle_quiz: 'Mira la foto y elige tu respuesta',
     voice_default_each_day_start: 'Practiquemos hoy también',
-    voice_default_quiz_prompt: 'Elige una respuesta \u{1F446}',
     voice_quiz_prompt_recognize: '¿Reconoces a esta persona?',
-    voice_default_opt_hint: 'Elige entre {A}.{B}.{C}',
   },
 };
 
@@ -7676,7 +7669,9 @@ async function renderVoiceSlots() {
 
 function onSlotRowTap(slot) {
   if (slot.functional) {
-    const current = localStorage.getItem('phrase_' + slot.name) || t(slot.defaultKey) || '';
+    const current = slot.name === 'quiz_prompt'
+      ? (localStorage.getItem('phrase_quiz_prompt') || PHRASE_SELECT)
+      : (localStorage.getItem('phrase_opt_hint')   || PHRASE_OPT_HINT);
     showTextEditOverlay(
       slot.name,
       t(slot.labelKey) || slot.name,
