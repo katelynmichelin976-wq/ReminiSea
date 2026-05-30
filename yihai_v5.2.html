@@ -5925,9 +5925,9 @@ const I18N = {
     voice_default_streak_correct: 'Amazing, you got several in a row',
     voice_default_idle_quiz: 'Look at the photo and choose your answer',
     voice_default_each_day_start: "Let's practice today too",
-    voice_default_quiz_prompt: 'Please choose an answer',
+    voice_default_quiz_prompt: 'Pick an answer \u{1F446}',
     voice_quiz_prompt_recognize: 'Do you recognize this person?',
-    voice_default_opt_hint: 'Please choose an answer',
+    voice_default_opt_hint: 'Choose from {A}.{B}.{C}',
   },
   'zh-CN': {
     app_title: '忆海拾光',
@@ -6205,9 +6205,9 @@ const I18N = {
     voice_default_streak_correct: '真厉害，连续答对了',
     voice_default_idle_quiz: '看看图片，选择你觉得对的答案',
     voice_default_each_day_start: '今天也来练习吧',
-    voice_default_quiz_prompt: '请选择答案',
+    voice_default_quiz_prompt: '先选一个答案 👆',
     voice_quiz_prompt_recognize: '认识这个人吗',
-    voice_default_opt_hint: '请选择答案',
+    voice_default_opt_hint: '请在{A}.{B}.{C}中选择一个',
   },
   'es': {
     app_title: 'Memory Glimmers',
@@ -6485,9 +6485,9 @@ const I18N = {
     voice_default_streak_correct: 'Increíble, varias respuestas seguidas correctas',
     voice_default_idle_quiz: 'Mira la foto y elige tu respuesta',
     voice_default_each_day_start: 'Practiquemos hoy también',
-    voice_default_quiz_prompt: 'Por favor elige una respuesta',
+    voice_default_quiz_prompt: 'Elige una respuesta \u{1F446}',
     voice_quiz_prompt_recognize: '¿Reconoces a esta persona?',
-    voice_default_opt_hint: 'Por favor elige una respuesta',
+    voice_default_opt_hint: 'Elige entre {A}.{B}.{C}',
   },
 };
 
@@ -7924,6 +7924,15 @@ function migrateVoiceSettings() {
   const oldOptDelay = localStorage.getItem('optHintDelay');
   if (oldOptDelay && !localStorage.getItem('optReadDelay')) {
     localStorage.setItem('optReadDelay', oldOptDelay);
+  }
+  // v5.2: 旧文案 key 迁移到 voice-assist 展示 key（避免升级后显示 i18n 默认值）
+  const _oldQP = localStorage.getItem('phraseSelect');
+  if (_oldQP && !localStorage.getItem('phrase_quiz_prompt')) {
+    localStorage.setItem('phrase_quiz_prompt', _oldQP);
+  }
+  const _oldOH = localStorage.getItem('phraseOptHint');
+  if (_oldOH && !localStorage.getItem('phrase_opt_hint')) {
+    localStorage.setItem('phrase_opt_hint', _oldOH);
   }
   // 清理废弃 key
   ['quizPromptOn','optHintOn','wrongHintOn','readHint',
