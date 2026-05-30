@@ -4402,15 +4402,12 @@ let VOICE_MUTED      = false; // 全局静音
 let VOICE_ASSIST_ENABLED = false; // 语音辅助开关
 
 // quiz prompt
-let QUIZ_PROMPT_ON   = true;    // quiz prompt toggle
 let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // quiz prompt text (i18n default English, overridden by loadPhrases)
 
 // option hint
-let OPT_HINT_ON      = true;    // option hint toggle
 let PHRASE_OPT_HINT  = ''; // populated by initPhrases() after t() is ready
 
 // wrong hint
-let WRONG_HINT_ON    = true;    // wrong hint toggle
 let PHRASE_WRONG     = ''; // populated by initPhrases() after t() is ready
 
 // read item name hint
@@ -4430,7 +4427,6 @@ let BROWSE_ANSWER_DELAY = 3000;  // ms
 
 // correct answer feedback
 let CONFETTI_ON       = true;   // confetti animation toggle
-let CORRECT_HINT_ON   = true;   // correct answer speech toggle
 let PHRASE_CORRECT    = ''; // populated by initPhrases() after t() is ready
 
 // speech timers for card prompts
@@ -5355,12 +5351,12 @@ function startCardPrompts(pickedOpts, optLang) {
   // Phase 1: quiz prompt
   tQuizPromptTimer = setTimeout(() => {
     tQuizPromptTimer = null;
-    if (QUIZ_PROMPT_ON) speak(PHRASE_SELECT);
+    playVoiceSlot('quiz_prompt', PHRASE_SELECT, getLocale());
     // Phase 2: option hint (waits additional OPT_READ_DELAY after quiz prompt)
     tOptHintTimer = setTimeout(() => {
       tOptHintTimer = null;
-      if (OPT_HINT_ON && pickedOpts && pickedOpts.length) {
-        speakOptHint(pickedOpts, optLang);
+      if (pickedOpts && pickedOpts.length) {
+        if (!VOICE_MUTED) speakOptHint(pickedOpts, optLang);
       }
     }, OPT_READ_DELAY);
   }, ENTRY_READ_DELAY);
@@ -6645,7 +6641,7 @@ function onSel(e, idx, btn) {
     // ── correct ──────────────────────────────────────────────
     tone('ok');
     if (CONFETTI_ON) setTimeout(spawnConfetti, 100);
-    if (CORRECT_HINT_ON) setTimeout(() => speakDirect(PHRASE_CORRECT, null, getLocale()), 300);
+    setTimeout(() => playVoiceSlot('correct_hint', PHRASE_CORRECT, getLocale()), 300);
 
     // T1 rating mapping: 1st correct→Good, 2nd correct (after 1st wrong)→Hard
     if (currentMode !== 'browse' && q._srsState) {
@@ -6678,7 +6674,7 @@ function onSel(e, idx, btn) {
         btn.style.transform = 'scale(.9)';
         setTimeout(() => btn.remove(), 300);
       });
-      if (WRONG_HINT_ON) speak(PHRASE_WRONG);
+      playVoiceSlot('wrong_hint', PHRASE_WRONG, getLocale());
     } else {
       // 2nd wrong → Again
       if (currentMode !== 'browse' && q._srsState) {
@@ -7299,8 +7295,6 @@ function loadSettings() {
   if (browseAnsDelay) BROWSE_ANSWER_DELAY = parseFloat(browseAnsDelay) * 1000;
   const confettiOn = localStorage.getItem('confettiOn');
   if (confettiOn !== null) CONFETTI_ON = confettiOn === '1';
-  const correctHintOn = localStorage.getItem('correctHintOn');
-  if (correctHintOn !== null) CORRECT_HINT_ON = correctHintOn === '1';
   const phraseCorrect = localStorage.getItem('phraseCorrect');
   if (phraseCorrect) PHRASE_CORRECT = phraseCorrect;
   if (!PHRASE_CORRECT) PHRASE_CORRECT = t('default_correct');
@@ -7352,12 +7346,6 @@ function loadSettings() {
     // toggle sync
     const htEl = document.getElementById('hint-toggle');
     if (htEl) htEl.checked = READ_HINT;
-    const qptEl = document.getElementById('quiz-prompt-toggle');
-    if (qptEl) qptEl.checked = QUIZ_PROMPT_ON;
-    const ohtEl = document.getElementById('opt-hint-toggle');
-    if (ohtEl) ohtEl.checked = OPT_HINT_ON;
-    const whtEl = document.getElementById('wrong-hint-toggle');
-    if (whtEl) whtEl.checked = WRONG_HINT_ON;
 
     // phrase sync
     const ps2 = document.getElementById('phrase-select');
@@ -7372,8 +7360,6 @@ function loadSettings() {
     if (badEl && browseAnsDelay) { badEl.value = browseAnsDelay; document.getElementById('dbg-browse-ans-delay-val').textContent = `${parseFloat(browseAnsDelay).toFixed(1)}s`; }
     const cfEl = document.getElementById('confetti-toggle');
     if (cfEl) cfEl.checked = CONFETTI_ON;
-    const chEl = document.getElementById('correct-hint-toggle');
-    if (chEl) chEl.checked = CORRECT_HINT_ON;
     const pcEl = document.getElementById('phrase-correct');
     if (pcEl) pcEl.value = PHRASE_CORRECT;
 
