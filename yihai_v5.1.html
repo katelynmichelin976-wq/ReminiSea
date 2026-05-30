@@ -1559,7 +1559,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 
   <!-- Tab Bar (home active) -->
   <div class="home-tabbar">
-    <button class="tab-item active" onclick="showScreen('screen-home')">
+    <button class="tab-item active" onclick="showScreen('screen-home'); startIdleHomeTimer()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
       <span data-i18n="nav_home">首 页</span>
     </button>
@@ -1807,7 +1807,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
   <!-- Tab Bar (mine active) -->
   <div class="home-tabbar">
-    <button class="tab-item" onclick="showScreen('screen-home')">
+    <button class="tab-item" onclick="showScreen('screen-home'); startIdleHomeTimer()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
       <span data-i18n="nav_home">首 页</span>
     </button>
@@ -4559,6 +4559,21 @@ let VOICE_MUTED      = false; // 全局静音
 // ── 语音辅助参数 ──
 let VOICE_ASSIST_ENABLED = false; // 语音辅助开关
 
+// ── 语音辅助连对计数 ──
+let _correctStreak = 0;
+
+// ── 空闲语音定时器 ──
+let _idleHomeTimer   = null;
+let _idleQuizTimer   = null;
+let _idleBrowseTimer = null;
+const IDLE_HOME_SEC   = 8;
+const IDLE_QUIZ_SEC   = 15;
+const IDLE_BROWSE_SEC = 10;
+const IDLE_COOLDOWN   = 60000;
+let _idleHomeCooldownUntil   = 0;
+let _idleQuizCooldownUntil   = 0;
+let _idleBrowseCooldownUntil = 0;
+
 // ── 语音槽位注册表 ──────────────────────────────────────────────────
 const VOICE_SLOTS = {
   fixed: [
@@ -4745,6 +4760,7 @@ function _renderBrowseCard() {
 
   const sid = sessionId;
   setTimeout(() => { if (sid === sessionId) playAnswer(q, () => {}); }, 500);
+  startIdleBrowseTimer();
 }
 
 function browseNav(dir) {
@@ -5155,6 +5171,7 @@ function _launch(mode) {
   sessionId++;
   currentMode = mode;
   qIdx = 0;
+  _correctStreak = 0;
   document.getElementById('nxt-lbl').textContent = mode === 'browse' ? t('browse_next') : t('quiz_next');
 
   if (mode === 'browse') {
@@ -5183,6 +5200,15 @@ function _launch(mode) {
       requestWakeLock();
       render();
       _launchBusy = false;
+      if (VOICE_ASSIST_ENABLED) {
+        setTimeout(() => playVoiceSlot('session_start', t('voice_default_session_start'), getLocale()), 500);
+      }
+      const _todayKey = new Date().toDateString();
+      const _lastPracticeDay = localStorage.getItem('lastPracticeDay');
+      if (VOICE_ASSIST_ENABLED && _lastPracticeDay !== _todayKey) {
+        localStorage.setItem('lastPracticeDay', _todayKey);
+        setTimeout(() => playVoiceSlot('each_day_start', t('voice_default_each_day_start'), getLocale()), 1200);
+      }
     }).catch(err => {
       console.error('[srs] buildSessionQueue 构造失败，回退到完成界面', err?.name, err?.message, err);
       _launchBusy = false;
@@ -5500,11 +5526,49 @@ function goHome() {
     updateDeckStats();
     _launchBusy = false;
     showScreen('screen-home');
+    startIdleHomeTimer();
   });
 }
 
 
+function startIdleHomeTimer() {
+  clearTimeout(_idleHomeTimer);
+  if (!VOICE_ASSIST_ENABLED) return;
+  _idleHomeTimer = setTimeout(() => {
+    if (Date.now() < _idleHomeCooldownUntil) return;
+    _idleHomeCooldownUntil = Date.now() + IDLE_COOLDOWN;
+    playVoiceSlot('idle_home', t('voice_default_idle_home'), getLocale());
+  }, IDLE_HOME_SEC * 1000);
+}
+
+function startIdleQuizTimer() {
+  clearTimeout(_idleQuizTimer);
+  if (!VOICE_ASSIST_ENABLED) return;
+  _idleQuizTimer = setTimeout(() => {
+    if (Date.now() < _idleQuizCooldownUntil) return;
+    _idleQuizCooldownUntil = Date.now() + IDLE_COOLDOWN;
+    playVoiceSlot('idle_quiz', t('voice_default_idle_quiz'), getLocale());
+  }, IDLE_QUIZ_SEC * 1000);
+}
+
+function startIdleBrowseTimer() {
+  clearTimeout(_idleBrowseTimer);
+  if (!VOICE_ASSIST_ENABLED) return;
+  _idleBrowseTimer = setTimeout(() => {
+    if (Date.now() < _idleBrowseCooldownUntil) return;
+    _idleBrowseCooldownUntil = Date.now() + IDLE_COOLDOWN;
+    playVoiceSlot('idle_browse', t('voice_default_idle_browse'), getLocale());
+  }, IDLE_BROWSE_SEC * 1000);
+}
+
+function clearIdleTimers() {
+  clearTimeout(_idleHomeTimer);
+  clearTimeout(_idleQuizTimer);
+  clearTimeout(_idleBrowseTimer);
+}
+
 function showScreen(id) {
+  clearIdleTimers();
   document.querySelectorAll('.screen').forEach(s => {
     s.classList.remove('active', 'exit-left');
     if (s.id !== id) s.classList.add('exit-left');
@@ -6874,6 +6938,7 @@ function render() {
   // pass actual option text for option hint speech
   const pickedTexts = picked.map(({ name }) => name);
   const optLang = q.nameLang || resolveFieldLang(q.name); startCardPrompts(pickedTexts, optLang);
+  startIdleQuizTimer();
 }
 
 function revealBrowse(q) {
@@ -6949,6 +7014,11 @@ function onSel(e, idx, btn) {
     // ── correct ──────────────────────────────────────────────
     tone('ok');
     if (CONFETTI_ON) setTimeout(spawnConfetti, 100);
+    _correctStreak++;
+    if (VOICE_ASSIST_ENABLED && _correctStreak === 3) {
+      _correctStreak = 999; // prevent re-trigger in this session
+      setTimeout(() => playVoiceSlot('streak_correct', t('voice_default_streak_correct'), getLocale()), 400);
+    }
     setTimeout(() => playVoiceSlot('correct_hint', PHRASE_CORRECT, getLocale()), 300);
 
     // T1 rating mapping: 1st correct→Good, 2nd correct (after 1st wrong)→Hard
@@ -6965,6 +7035,7 @@ function onSel(e, idx, btn) {
   } else {
     // ── wrong ────────────────────────────────────────────────
     wrongCount++;
+    _correctStreak = 0;
     if (wrongCount === 1) {
       // record the wrongly selected card id (for TrialLog distractor_chosen)
       if (currentMode !== 'browse' && q._srsState) {
@@ -7277,6 +7348,9 @@ async function showFinish() {
     </div>`;
 
   showScreen('screen-finish');
+  if (VOICE_ASSIST_ENABLED) {
+    setTimeout(() => playVoiceSlot('session_finish', t('voice_default_session_finish'), getLocale()), 800);
+  }
 
   // batch upload after practice completes
   if (_syncEnabled && currentDeck) {
