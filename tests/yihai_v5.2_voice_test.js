@@ -75,5 +75,24 @@ function check(desc, actual, expected) {
   check('已有 ansReadDelay 不应被覆盖', ls.getItem('ansReadDelay'), '2.0');
 }
 
+// Test 5: voice i18n keys exist in HTML file
+{
+  const fs = require('fs');
+  const html = fs.readFileSync('yihai_v5.1.html', 'utf-8');
+  const requiredKeys = [
+    'voice_global_mute', 'voice_ans_read_delay', 'voice_assist_nav',
+    'voice_assist_page_title', 'voice_group_fixed', 'voice_group_emotion',
+    'voice_group_functional', 'voice_slot_session_start', 'voice_slot_wrong_hint',
+    'voice_slot_quiz_prompt', 'voice_rec_tap_to_start', 'voice_rec_rerecord',
+    'voice_count_recorded', 'voice_status_tts', 'voice_status_unrecorded',
+    'voice_default_session_start', 'voice_default_wrong_hint',
+    'voice_quiz_prompt_recognize',
+  ];
+  const missingKeys = requiredKeys.filter(key =>
+    !html.includes("'" + key + "'") && !html.includes('"' + key + '"')
+  );
+  check('所有 voice i18n key 均存在于 HTML', missingKeys, []);
+}
+
 console.log(`\n通过 ${passed} / 失败 ${failed}`);
 if (failed > 0) process.exit(1);

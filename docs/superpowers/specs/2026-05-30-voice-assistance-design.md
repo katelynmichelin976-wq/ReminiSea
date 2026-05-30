@@ -77,27 +77,43 @@ playVoiceSlot(slotName, ttsText, ttsLang?)
 
 ---
 
-## 四、语音辅助页 UI
+## 四、语音设置结构
 
-### 4.1 入口
+### 4.0 设置分层
 
-设置 Sheet → 语音 Tab → 「语音辅助 ›」跳转进入独立页面。
+```
+设置 Sheet → 语音 Tab
+  ├── 全局静音                    ← 新增，静默所有 TTS + 家人录音
+  ├── 语速 / 音调 / 音色          ← 全局 TTS，影响 app 内所有语音
+  ├── 答案朗读延迟                ← 全局，浏览 + 练习共用（默认 1.2s）
+  └── 语音辅助 ›                  ← 跳转子页
+        ├── 启用开关
+        ├── 选项朗读延迟           ← 仅辅助模式（引导用户观察选项）
+        └── 固定节点 / 情绪触发 / 功能提示
+```
 
-### 4.2 全局参数区（7 个）
+### 4.1 全局语音设置（语音 Tab 内）
+
+| 中文 | English | Español | 类型 | 默认值 | i18n key |
+|------|---------|---------|------|--------|----------|
+| 全局静音 | Mute All | Silenciar todo | 开关 | 关 | `voice_global_mute` |
+| 语速 | Speech Rate | Velocidad | 滑块 0.5–2 | 0.85 | `settings_tts_rate`（复用） |
+| 音调 | Pitch | Tono | 滑块 0.5–2 | 1.0 | `settings_tts_pitch`（复用） |
+| 音色 | Voice | Voz | 下拉 | 自动 | `settings_tts_voice`（复用） |
+| 答案朗读延迟 | Answer Read Delay | Retardo de lectura de respuesta | 滑块 0.5–5s | 1.2s | `voice_ans_read_delay` |
+
+`全局静音` 开启时，`playVoiceSlot` 和所有 `speak()` 调用均直接返回，不播报任何声音。
+
+### 4.2 语音辅助页参数区（2 项）
 
 | 中文 | English | Español | 类型 | 默认值 | i18n key |
 |------|---------|---------|------|--------|----------|
 | 启用语音辅助 | Voice Assistance | Asistencia de voz | 开关 | 关 | `voice_assist_enable` |
-| 语速 | Speech Rate | Velocidad | 滑块 0.5–2 | 0.85 | `settings_tts_rate`（复用） |
-| 音调 | Pitch | Tono | 滑块 0.5–2 | 1.0 | `settings_tts_pitch`（复用） |
-| 音色 | Voice | Voz | 下拉 | 自动 | `settings_tts_voice`（复用） |
-| 进题朗读延迟 | Entry Read Delay | Retardo de lectura inicial | 滑块 0.5–5s | 1.5s | `voice_entry_read_delay` |
 | 选项朗读延迟 | Option Read Delay | Retardo de lectura de opciones | 滑块 0.5–10s | 5s | `voice_opt_read_delay` |
-| 答案朗读延迟 | Answer Read Delay | Retardo de lectura de respuesta | 滑块 0.5–5s | 1.2s | `voice_ans_read_delay` |
 
-三个朗读延迟在 UI 中按时序顺序排列：进题 → 选项 → 答案。
+`进题朗读延迟` 固定为 1500ms，不开放 UI 设置。
 
-### 4.3 槽位列表区
+### 4.3 语音辅助页槽位列表区
 
 槽位按分组展示：固定节点 / 情绪触发 / 辅助引导 / 提示反馈。
 
@@ -144,12 +160,14 @@ playVoiceSlot(slotName, ttsText, ttsLang?)
 
 ### 5.2 localStorage 新增键
 
-| 键名 | 含义 | 默认值 |
-|------|------|--------|
-| `voiceAssistEnabled` | 语音辅助总开关 | `'0'` |
-| `entryReadDelay` | 进题朗读延迟（ms） | `1500` |
-| `optReadDelay` | 选项朗读延迟（ms） | `5000` |
-| `ansReadDelay` | 答案朗读延迟（ms） | `1200` |
+| 键名 | 含义 | 默认值 | 作用域 |
+|------|------|--------|--------|
+| `voiceMuted` | 全局静音 | `'0'` | 全局 |
+| `ansReadDelay` | 答案朗读延迟（ms） | `1200` | 全局 |
+| `voiceAssistEnabled` | 语音辅助开关 | `'0'` | 语音辅助页 |
+| `optReadDelay` | 选项朗读延迟（ms） | `5000` | 语音辅助页 |
+
+`进题朗读延迟` 固定常量 `ENTRY_READ_DELAY = 1500`，不写 localStorage。
 
 ---
 
@@ -193,9 +211,9 @@ ALTER TABLE cards_pool ADD COLUMN ext jsonb NOT NULL DEFAULT '{}'::jsonb;
 
 | 旧变量 | 新变量 | 处理 |
 |--------|--------|------|
-| `QUIZ_PROMPT_DELAY` | `ENTRY_READ_DELAY` | 重命名，开放 UI |
-| `OPT_HINT_DELAY` | `OPT_READ_DELAY` | 重命名，开放 UI |
-| `SPEAK_DELAY` | `ANS_READ_DELAY` | 重命名，开放 UI |
+| `QUIZ_PROMPT_DELAY` | `ENTRY_READ_DELAY` | 重命名，固定 1500ms，不开放 UI |
+| `OPT_HINT_DELAY` | `OPT_READ_DELAY` | 重命名，语音辅助页可配置 |
+| `SPEAK_DELAY` | `ANS_READ_DELAY` | 重命名，全局语音设置可配置 |
 | `BROWSE_SPEAK_DELAY` | `ANS_READ_DELAY`（合并） | 与 SPEAK_DELAY 统一 |
 | `QUIZ_PROMPT_ON` | —— | 删除布尔变量 |
 | `OPT_HINT_ON` | —— | 删除 |
@@ -209,8 +227,8 @@ ALTER TABLE cards_pool ADD COLUMN ext jsonb NOT NULL DEFAULT '{}'::jsonb;
 |--------|--------|----------|
 | `settings_quiz_prompt_delay` | `voice_entry_read_delay` | 重命名 |
 | `settings_opt_hint_delay` | `voice_opt_read_delay` | 重命名 |
-| `settings_answer_delay` | —— | 删除 |
-| `settings_browse_answer_delay` | —— | 删除（移入通用设置已有项） |
+| `settings_answer_delay` | `voice_ans_read_delay` | 重命名，移至全局语音设置 |
+| `settings_browse_answer_delay` | —— | 删除（与 ans_read_delay 合并） |
 | `settings_read_hint` | —— | 删除（toggle 移除） |
 | `settings_quiz_prompt`（toggle label） | —— | 删除 toggle 行 |
 | `settings_opt_hint`（toggle label） | —— | 删除 toggle 行 |
