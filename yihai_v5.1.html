@@ -2446,11 +2446,12 @@ function minsToTs(mins) {
 
 // ── IndexedDB: yihai_srs (v5: user_id multi-user isolation) ──────
 const SRS_DB_NAME    = 'yihai_srs';
-const SRS_DB_VER     = 6;
+const SRS_DB_VER     = 7;
 const CS_STORE       = 'card_states';
 const TRIAL_STORE    = 'trials';
 const EVT_STORE      = 'app_events';
 const LOG_STORE      = 'yh_logs';
+const VOICE_SLOT_STORE = 'voiceSlots';
 
 let _srsDb = null;
 let _srsDbPromise = null;
@@ -3094,6 +3095,11 @@ function openSrsDb() {
         }
         console.log('[idb] upgraded yihai_srs v5→v6: yh_logs store created');
       }
+      if (oldVer < 7) {
+        if (!db.objectStoreNames.contains(VOICE_SLOT_STORE)) {
+          db.createObjectStore(VOICE_SLOT_STORE, { keyPath: 'slotName' });
+        }
+      }
     };
     req.onsuccess = e => { _srsDb = e.target.result; _srsDbPromise = null; res(_srsDb); };
     req.onerror   = e => { _srsDbPromise = null; rej(e.target.error); };
@@ -3451,6 +3457,50 @@ async function saveCardStateLocal(state) {
     tx.objectStore(CS_STORE).put(state);
     tx.oncomplete = res;
     tx.onerror    = e => rej(e.target.error);
+  });
+}
+
+async function saveVoiceSlot(slotName, audioBlob, mimeType, duration) {
+  const db = await openSrsDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(VOICE_SLOT_STORE, 'readwrite');
+    tx.objectStore(VOICE_SLOT_STORE).put({
+      slotName, audioBlob, mimeType,
+      duration: Math.round(duration * 10) / 10,
+      recordedAt: Date.now()
+    });
+    tx.oncomplete = () => res();
+    tx.onerror = e => rej(e.target.error);
+  });
+}
+
+async function loadVoiceSlot(slotName) {
+  const db = await openSrsDb();
+  return new Promise((res, rej) => {
+    const req = db.transaction(VOICE_SLOT_STORE, 'readonly')
+                  .objectStore(VOICE_SLOT_STORE).get(slotName);
+    req.onsuccess = e => res(e.target.result || null);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+async function deleteVoiceSlot(slotName) {
+  const db = await openSrsDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(VOICE_SLOT_STORE, 'readwrite');
+    tx.objectStore(VOICE_SLOT_STORE).delete(slotName);
+    tx.oncomplete = () => res();
+    tx.onerror = e => rej(e.target.error);
+  });
+}
+
+async function loadAllVoiceSlots() {
+  const db = await openSrsDb();
+  return new Promise((res, rej) => {
+    const req = db.transaction(VOICE_SLOT_STORE, 'readonly')
+                  .objectStore(VOICE_SLOT_STORE).getAll();
+    req.onsuccess = e => res(e.target.result || []);
+    req.onerror   = e => rej(e.target.error);
   });
 }
 
