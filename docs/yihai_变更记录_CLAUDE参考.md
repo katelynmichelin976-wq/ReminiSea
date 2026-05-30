@@ -2,6 +2,13 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.2.1 Key Changes
+
+- **`_deviceId` 赋值修复**: `init()` 中 `getOrCreateDeviceId()` 仅调用未赋值，`_deviceId` 始终为 `undefined`，导致 TrialLog 上传时 `device_id` 字段为空。改为 `_deviceId = getOrCreateDeviceId()`。
+- **`yh_diag` DB_VER 修复**: 诊断面板 `openDiagPanel()` 中硬编码 `DB_VER=6`，v5.2.0 升至 v7 后无法打开 IDB，改为读 `DB_VER` 常量（=7）。
+- **voice-assist 整理（3处）**: 设置页 Voice Tab 布局、voice-assist 页面文案、录音覆层交互文案。
+- **`quiz_select_hint` 三语言统一**: zh-CN 改为「请看图片」（原「点击图片」语义模糊），en 改为 "Look at the picture"，es 改为 "Mira la imagen"，三语言语义对齐。
+
 ## v5.2.0 Key Changes
 
 - **语音辅助系统（Voice Assistance）**: 完整语音引导框架，针对老人/儿童等不熟悉移动设备的用户，以家属录音为主要陪伴方式、TTS 为兜底。

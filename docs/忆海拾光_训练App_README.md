@@ -129,6 +129,16 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.2.1 — 2026-05-30
+
+**修复**
+- `_deviceId` 启动时未赋值（`getOrCreateDeviceId()` 调用改为赋值）
+- 诊断面板 `yh_diag` DB_VER 未同步 v7（v5.2.0 IDB 升版后诊断面板无法打开数据库）
+- voice-assist 文案和界面三处整理
+- `quiz_select_hint` 三语言语义统一（zh-CN 改为「请看图片」，en/es 同步「看图片」语义）
+
+---
+
 ### v5.2.0 — 2026-05-30
 
 **新功能：语音辅助系统**

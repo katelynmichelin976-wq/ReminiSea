@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.2.html` | 主训练 App（v5.2.0，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.2.html` | 主训练 App（v5.2.1，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -53,7 +53,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.2.0**（`yihai_v5.2.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.2.1**（`yihai_v5.2.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.2.1：** 修复 `_deviceId` 未赋值、诊断面板 DB_VER 未同步 v7、voice-assist 文案整理、quiz_select_hint 三语言统一
 
 **v5.2.0：** 语音辅助系统 — 家属录音+TTS 双轨、11 个语音槽（固定节点/情绪触发/功能提示）、IDB voiceSlots store（DB v7）、screen-voice-assist 管理界面、idle 计时器、连对连击鼓励、card_type/ext 字段扩展
 
