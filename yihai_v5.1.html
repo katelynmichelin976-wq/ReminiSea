@@ -2020,7 +2020,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_correct_hint">回答正确提示</span>
             <label class="stoggle">
-              <input type="checkbox" id="correct-hint-toggle" checked onchange="toggleCorrectHint(this)">
+              <input type="checkbox" id="correct-hint-toggle" checked onchange="">
               <div class="stoggle-track"></div>
               <div class="stoggle-thumb"></div>
             </label>
@@ -2063,7 +2063,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_quiz_prompt">答题提示</span>
             <label class="stoggle">
-              <input type="checkbox" id="quiz-prompt-toggle" checked onchange="toggleQuizPrompt(this)">
+              <input type="checkbox" id="quiz-prompt-toggle" checked onchange="">
               <div class="stoggle-track"></div>
               <div class="stoggle-thumb"></div>
             </label>
@@ -2084,7 +2084,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_opt_hint">选项提示</span>
             <label class="stoggle">
-              <input type="checkbox" id="opt-hint-toggle" checked onchange="toggleOptHint(this)">
+              <input type="checkbox" id="opt-hint-toggle" checked onchange="">
               <div class="stoggle-track"></div>
               <div class="stoggle-thumb"></div>
             </label>
@@ -2105,7 +2105,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_wrong_hint">答错提示</span>
             <label class="stoggle">
-              <input type="checkbox" id="wrong-hint-toggle" checked onchange="toggleWrongHint(this)">
+              <input type="checkbox" id="wrong-hint-toggle" checked onchange="">
               <div class="stoggle-track"></div>
               <div class="stoggle-thumb"></div>
             </label>
@@ -2121,7 +2121,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_read_hint">朗读物品提示</span>
             <label class="stoggle">
-              <input type="checkbox" id="hint-toggle" checked onchange="toggleReadHint(this)">
+              <input type="checkbox" id="hint-toggle" checked onchange="">
               <div class="stoggle-track"></div>
               <div class="stoggle-thumb"></div>
             </label>
@@ -5306,7 +5306,7 @@ function startCardPrompts(pickedOpts, optLang) {
   tQuizPromptTimer = setTimeout(() => {
     tQuizPromptTimer = null;
     if (QUIZ_PROMPT_ON) speak(PHRASE_SELECT);
-    // Phase 2: option hint (waits additional OPT_HINT_DELAY after quiz prompt)
+    // Phase 2: option hint (waits additional OPT_READ_DELAY after quiz prompt)
     tOptHintTimer = setTimeout(() => {
       tOptHintTimer = null;
       if (OPT_HINT_ON && pickedOpts && pickedOpts.length) {
