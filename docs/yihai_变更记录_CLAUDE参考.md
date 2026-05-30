@@ -2,6 +2,34 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.2.0 Key Changes
+
+- **语音辅助系统（Voice Assistance）**: 完整语音引导框架，针对老人/儿童等不熟悉移动设备的用户，以家属录音为主要陪伴方式、TTS 为兜底。
+- **playVoiceSlot(slotName, ttsText, ttsLang)**: 统一语音入口。IDB 录音优先 → TTS 兜底 → `VOICE_MUTED=true` 时静默。URL 对象在 `onended`/`onerror` 后 `revokeObjectURL` 防内存泄漏。
+- **VOICE_SLOTS 注册表（11 个槽）**:
+  - `fixed`（4）: `session_start`、`session_finish`、`idle_home`、`idle_browse`
+  - `emotion`（5）: `wrong_hint`、`correct_hint`、`streak_correct`、`idle_quiz`、`each_day_start`
+  - `functional`（2，无录音，仅编辑文本）: `quiz_prompt`、`opt_hint`
+- **IDB yihai_srs 升版 v6→v7**: 新增 `voiceSlots` store（keyPath: `slotName`，字段: `audioBlob/mimeType/recordedAt`）。CRUD: `saveVoiceSlot`/`loadVoiceSlot`/`deleteVoiceSlot`/`loadAllVoiceSlots`。
+- **录制覆层（#recording-overlay）**: 三态状态机（idle/recording/playback）。MediaRecorder mimeType webm→mp4 降级兼容 iOS。`REC_MAX_SEC=30`。麦克风在 `stopRecording()`/`closeRecordingOverlay()` 时释放（`MediaStream.getTracks().forEach(t => t.stop())`）。
+- **功能槽文本编辑（#text-edit-overlay）**: 替代 iOS PWA 禁用的 `window.prompt()`，自定义 textarea overlay + `showTextEditOverlay()`/`closeTextEditOverlay()`/`saveTextEdit()`。`onSlotRowTap()` 对 functional 槽调用此 overlay，保存时同时写 `phrase_opt_hint`（localStorage）+ `phraseOptHint`（旧 key）+ 更新内存变量 `PHRASE_OPT_HINT`。
+- **screen-voice-assist**: 全屏管理界面，顶栏 + 启用总开关 + 延迟滑块 + 三组折叠面板（手风琴）。「我的」→「语音辅助」入口。
+- **设置 Voice Tab 变更**: 移除 5 个旧 toggle（`answerReadOn`/`correctHintOn`/`wrongHintOn`/`idleHintOn`/`sessionHintOn`），改为：全局静音开关（`#voice-muted-toggle`）+ 答案朗读延迟行（`#ans-read-delay-row`）+ 语音辅助入口（`#voice-assist-entry`）。
+- **localStorage 迁移（migrateVoiceSettings）**: 旧 5 个 boolean 键（`answerReadOn`/`correctHintOn`/`wrongHintOn`/`idleHintOn`/`sessionHintOn`）迁移到 content-as-toggle 模型。`toggle=1` 时将旧文本值迁移到新键，`toggle=0` 时清空新键（视为删除录音）。`correctHintOn` 保留在 localStorage（不进清理数组），供现有 `CORRECT_HINT_ON` 变量读取直到完全废弃。
+- **触发点**:
+  - `_launch()`: `session_start`（500ms delay），`each_day_start`（1200ms，按 `lastPracticeDay` localStorage key 每日首次守卫）
+  - `showFinish()`: `session_finish`（800ms）
+  - `onSel()` 答对分支: `streak_correct`（`_correctStreak===3` 时触发，然后设为 999 防重复，答错/新 session 重置）
+  - `goHome()` + tab bar 按钮: `startIdleHomeTimer()`（8s，60s 冷却）
+  - `render()` 末尾: `startIdleQuizTimer()`（15s，60s 冷却）
+  - `_renderBrowseCard()` 末尾: `startIdleBrowseTimer()`（10s，60s 冷却）
+  - `showScreen()` 顶部: `clearIdleTimers()`
+- **quiz_prompt 分支**: `startCardPrompts()` 中，`card_type==='recognize'` 时读 `phrase_quiz_prompt_recognize` 键（默认「认识这个人吗」），否则读标准 `phrase_quiz_prompt`。
+- **card_type/ext 扩展**: `restoreDecks()` 中补全 `card.cardType = card.cardType || card.card_type || 'choice'`; `card.ext = card.ext || {}`。Supabase `cards_pool` 新增 `card_type TEXT NOT NULL DEFAULT 'choice'`、`ext JSONB NOT NULL DEFAULT '{}'`（MCP 已执行）。
+- **alert/confirm 替换**: `toggleRecording()`/`saveVoiceRecording()` 中的 `alert()` 改为 `showToastMsg()`。回退按钮 onclick 补 `closeRecordingOverlay()` 防止麦克风泄漏。
+- **i18n**: 新增 18 个 voice 相关 key（`voice_slot_*`/`voice_default_*`/`settings_voice_assist`/`settings_va_entry` 等），三语言（zh-CN/en/es）。
+- **单元测试**: `tests/yihai_v5.2_voice_test.js`（8 assertions，迁移逻辑 + i18n key 存在性）。Playwright `_pw_ui_smoke.js` 新增 6 个断言（Phase 9），合计 47 个。
+
 ## v5.1.6 Key Changes
 
 - **术语统一**: 首页 `home_album_section` i18n key 的值从「我的相册 / My Albums / Mis Álbumes」改为「我的牌组 / My Decks / Mis Mazos」。HTML fallback 文本同步更新。CSS class（`album-section-lbl`）及代码内部标识符（`deck`/`DECKS`）不变。决策：「牌组+卡片」= Deck+Card，与 Anki 中文版术语对齐。

@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.1.html` | 主训练 App（v5.1.6，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.2.html` | 主训练 App（v5.2.0，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -25,8 +25,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v4.8_test.js` | v4.8 工具函数测试（46 cases） |
 | `tests/yihai_v4.9_test.js` | v4.9 配置合并测试（48 cases） |
 | `tests/yihai_v5.0_i18n_test.js` | i18n 纯函数单测（27 cases） |
+| `tests/yihai_v5.2_voice_test.js` | 语音辅助迁移逻辑单测（8 cases） |
 | `tests/run_all.js` | 单元测试统一入口（6 套件，312 断言） |
-| `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器，41 断言，无需登录） |
+| `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音，47 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/曲线，14 断言，无需登录） |
 | `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登，26 断言） |
 | `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备，11 断言） |
@@ -52,7 +53,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.1.8**（`yihai_v5.1.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.2.0**（`yihai_v5.2.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.2.0：** 语音辅助系统 — 家属录音+TTS 双轨、11 个语音槽（固定节点/情绪触发/功能提示）、IDB voiceSlots store（DB v7）、screen-voice-assist 管理界面、idle 计时器、连对连击鼓励、card_type/ext 字段扩展
 
 **v5.1.8：** 修复语言选择页宽度、勾选抖动；移除设置深色模式开关（统一用主题）；设置 sheet 加关闭按钮
 
@@ -66,12 +69,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **v5.1.3：** `updateMineProfile`/`renderAccount` 增加 `_syncEnabled` 门禁，session 恢复失败时不误显在线 UI
 
-**导航结构（v5.1.x）：**
+**导航结构（v5.2.x）：**
 - `screen-home`：首页（默认），底部 `.home-tabbar`
 - `screen-mine`：我的，底部 `.home-tabbar`
 - `screen-quiz`：练习/浏览（无 Tab Bar）
 - `screen-stats`：统计（无 Tab Bar，`closeStats()` 回 `_statsOrigin`）
 - `screen-finish`：完成（无 Tab Bar）
+- `screen-voice-assist`：语音辅助管理（全屏，11 个语音槽录制/编辑）
 - Settings：底部 Sheet overlay
 
 ## Environment
@@ -105,7 +109,7 @@ $env:TEST_PASSWORD="xxx"; node tests/_pw_cross_device.js
 - **跨设备/同步改动** → 加跑 `_pw_cross_device.js`
 - **全量回归** → 仅用户明确要求时跑全部 4 个 Playwright 文件
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, voice 8（run_all.js 合计 312）；Playwright ui_smoke 41 / srs_e2e 14 / cloud_sync 26 / cross_device 11。
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, voice 8（run_all.js 合计 312）；Playwright ui_smoke 47 / srs_e2e 14 / cloud_sync 26 / cross_device 11。
 
 ## SRS Architecture
 
