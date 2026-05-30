@@ -4386,6 +4386,8 @@ async function restoreDecks() {
       for (const c of raw) {
         try {
           const card = { ...c, img: '', audioUrl: '', details: [] };
+          card.cardType = card.cardType || card.card_type || 'choice';
+          card.ext = card.ext || {};
           // migrate: old format imgUrl/audUrl → _imgUrl/_audUrl
           if (!card._imgUrl && c.imgUrl) card._imgUrl = c.imgUrl;
           if (!card._audUrl && c.audUrl) card._audUrl = c.audUrl;
@@ -5589,16 +5591,19 @@ function stopAllPromptTimers() {
 }
 
 // start speech prompt sequence after entering a card
-function startCardPrompts(pickedOpts, optLang) {
+function startCardPrompts(pickedOpts, optLang, cardType) {
   clearPromptTimers();
   // Phase 1: quiz prompt
   tQuizPromptTimer = setTimeout(() => {
     tQuizPromptTimer = null;
-    playVoiceSlot('quiz_prompt', PHRASE_SELECT, getLocale());
+    const _qpText = (cardType === 'recognize')
+      ? (localStorage.getItem('phrase_quiz_prompt_recognize') || t('voice_quiz_prompt_recognize') || '认识这个人吗')
+      : (localStorage.getItem('phrase_quiz_prompt') || PHRASE_SELECT);
+    playVoiceSlot('quiz_prompt', _qpText, getLocale());
     // Phase 2: option hint (waits additional OPT_READ_DELAY after quiz prompt)
     tOptHintTimer = setTimeout(() => {
       tOptHintTimer = null;
-      if (pickedOpts && pickedOpts.length) {
+      if (pickedOpts && pickedOpts.length && (cardType !== 'recognize')) {
         if (!VOICE_MUTED) speakOptHint(pickedOpts, optLang);
       }
     }, OPT_READ_DELAY);
@@ -5922,6 +5927,7 @@ const I18N = {
     voice_default_idle_quiz: 'Look at the photo and choose your answer',
     voice_default_each_day_start: "Let's practice today too",
     voice_default_quiz_prompt: 'Please choose an answer',
+    voice_quiz_prompt_recognize: 'Do you recognize this person?',
     voice_default_opt_hint: 'Please choose an answer',
   },
   'zh-CN': {
@@ -6201,6 +6207,7 @@ const I18N = {
     voice_default_idle_quiz: '看看图片，选择你觉得对的答案',
     voice_default_each_day_start: '今天也来练习吧',
     voice_default_quiz_prompt: '请选择答案',
+    voice_quiz_prompt_recognize: '认识这个人吗',
     voice_default_opt_hint: '请选择答案',
   },
   'es': {
@@ -6480,6 +6487,7 @@ const I18N = {
     voice_default_idle_quiz: 'Mira la foto y elige tu respuesta',
     voice_default_each_day_start: 'Practiquemos hoy también',
     voice_default_quiz_prompt: 'Por favor elige una respuesta',
+    voice_quiz_prompt_recognize: '¿Reconoces a esta persona?',
     voice_default_opt_hint: 'Por favor elige una respuesta',
   },
 };
@@ -6937,7 +6945,7 @@ function render() {
   stopAllPromptTimers();
   // pass actual option text for option hint speech
   const pickedTexts = picked.map(({ name }) => name);
-  const optLang = q.nameLang || resolveFieldLang(q.name); startCardPrompts(pickedTexts, optLang);
+  const optLang = q.nameLang || resolveFieldLang(q.name); startCardPrompts(pickedTexts, optLang, q.cardType);
   startIdleQuizTimer();
 }
 

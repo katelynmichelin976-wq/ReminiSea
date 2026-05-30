@@ -265,3 +265,7 @@ alter table device_registry enable row level security;
 
 create policy "individual_access" on device_registry
   for all using (auth.uid() = user_id);
+
+-- voice assistance: card type extensibility (added v5.2)
+ALTER TABLE cards_pool ADD COLUMN IF NOT EXISTS card_type text NOT NULL DEFAULT 'choice';
+ALTER TABLE cards_pool ADD COLUMN IF NOT EXISTS ext jsonb NOT NULL DEFAULT '{}'::jsonb;
