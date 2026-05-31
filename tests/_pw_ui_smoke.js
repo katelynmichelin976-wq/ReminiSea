@@ -5,7 +5,7 @@
  *
  * 覆盖：导航骨架、账户屏三态 DOM、设置入口、i18n 切换、核心函数存在性、语言选择器
  * 无需登录，无需 Supabase
- * 41 断言
+ * 58 断言
  */
 const { chromium } = require('playwright');
 const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
@@ -228,6 +228,25 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
       return ok;
     });
     pass('openSrsDb() 首次调用返回 Promise（非 undefined）', openSrsDbIsPromise);
+
+    // ════ PHASE 11: zh-Hant 繁體中文支援 ════
+    section('PHASE 11: zh-Hant 繁體中文支援');
+    pass('[data-lang="zh-Hant"] 存在', await run(page, () =>
+      !!document.querySelector('[data-lang="zh-Hant"]')
+    ));
+    pass('screen-lang 無 .lang-flag 元素', await run(page, () =>
+      document.querySelectorAll('#screen-lang .lang-flag').length === 0
+    ));
+    await run(page, () => setLocale('zh-Hant'));
+    await wait(page, 300);
+    pass('setLocale(zh-Hant) → settings-lang-val 顯示「繁體中文」', (await run(page, () =>
+      document.getElementById('settings-lang-val')?.textContent?.trim() || ''
+    )).includes('繁體中文'));
+    pass('zh-Hant → 首頁 Tab 顯示含「頁」的文字', (await run(page, () =>
+      document.querySelector('#screen-home .tab-item:not(.action) span')?.textContent?.trim() || ''
+    )).includes('頁'));
+    await run(page, () => setLocale('zh-CN'));
+    await wait(page, 200);
 
   } finally {
     const { passed, failed } = getCounts();
