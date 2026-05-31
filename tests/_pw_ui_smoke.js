@@ -248,6 +248,22 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     await run(page, () => setLocale('zh-CN'));
     await wait(page, 200);
 
+    // ════ PHASE 12: 日本語（ja）サポート ════
+    section('PHASE 12: 日本語（ja）サポート');
+    pass('[data-lang="ja"] 存在', await run(page, () =>
+      !!document.querySelector('[data-lang="ja"]')
+    ));
+    await run(page, () => setLocale('ja'));
+    await wait(page, 300);
+    pass('setLocale(ja) → settings-lang-val が「日本語」を表示', (await run(page, () =>
+      document.getElementById('settings-lang-val')?.textContent?.trim() || ''
+    )).includes('日本語'));
+    pass('ja → ホーム Tab が日本語テキストを表示', (await run(page, () =>
+      document.querySelector('#screen-home .tab-item:not(.action) span')?.textContent?.trim() || ''
+    )).includes('ホーム'));
+    await run(page, () => setLocale('zh-CN'));
+    await wait(page, 200);
+
   } finally {
     const { passed, failed } = getCounts();
     section('结果');
