@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.4.3 Key Changes
+
+- **utt.lang 对齐 voice.lang**: `speak()` 和 `speakDirect()` 中，原先 `utt.lang = useLang`（内容语种，可能为 `zh-Hant` 等非真实 speech locale），找到 voice 后只设 `utt.voice = v` 而未修正 `utt.lang`。浏览器遇到 `utt.lang='zh-Hant'` 无法匹配任何真实语音，会忽略显式 voice 回退到系统默认（普通话）。修复：`if (v) { utt.voice = v; utt.lang = v.lang; }` 使 utterance 语种严格对齐所选声音的真实 lang。同时移除已无必要的 `[speakDirect] lang mismatch` console.log。
+
 ## v5.4.2 Key Changes
 
 - **pickVoice 语种前缀匹配**: 原条件 `(!lang || lang.startsWith('zh'))` 改为 `namedPrefix === wantPrefix`（`namedPrefix = named.lang.split('-')[0]`，`wantPrefix = (lang||'zh-CN').split('-')[0]`）。所选声音只在语种前缀与内容语种前缀相同时使用，否则落入自动选择逻辑。修复场景：①英文界面下中文声音被跳过导致英文提示音无变化；②用户选了英文声音希望控制英文提示语音；③所有非中文内容的声音选择行为。
