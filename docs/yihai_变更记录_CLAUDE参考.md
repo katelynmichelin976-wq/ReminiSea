@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.4.7 Key Changes
+
+- **回滚 TTS 修复代码至 v5.4.0 状态**: 还原 `pickVoice`（条件改回 `!lang || lang === 'zh-CN'`）、`speak`（去掉 `utt.lang = v.lang`，改回 `if (v) utt.voice = v`）、`speakDirect`（同上，恢复 lang mismatch log）、`onTtsVoiceChange`（去掉 TTS_VOICE_LANG 保存）、`cloudPushConfig localUi`（恢复 ttsVoiceName，去掉 ttsVoiceLang）、`cloudPullConfig`（去掉 ttsVoiceName skip 逻辑）、`loadSettings`（去掉 ttsVoiceLang 读取）。v5.4.1–v5.4.6 TTS 修复均非根因，等待用户提供复现路径后重新定位。
+
 ## v5.4.6 Key Changes
 
 - **ttsVoiceName 不再云同步**: `cloudPushConfig` `localUi` 中移除 `ttsVoiceName` key（声音名称是设备特定的，iOS 叫"善逸"、Chrome 叫"Google 粤語（香港）"，不能跨设备共享）。`cloudPullConfig` apply UI params 循环中加 `if (k === 'ttsVoiceName') return` 跳过云端值。`ttsVoiceLang`（如 "zh-HK"）继续云同步，作为语种偏好：未选音色的设备通过 `pickVoice` 的 `TTS_VOICE_LANG` fallback 路径自动选最近声音。根因：PC 推云端 "Google 粤語（香港）"，iPhone pull 后覆盖本机选择的善逸，再 TTS 时找不到 PC 声音名，回退逻辑选了 zh-TW 普通话。
