@@ -3108,6 +3108,12 @@ async function runSync(opts) {
   }
   logAppEvent('sync_started', { deck_key: options.deckKey, mode: options.modal ? 'modal' : 'bg', decks: !!options.decks, events: !!options.events }, options.deckKey);
   var syncStats = { trials: 0, events: 0, states_merged: 0, config: 0, decks: 0 };
+  var _syncWatchdogId = setTimeout(function() {
+    log.warn('sync', 'runSync watchdog: 30s timeout');
+    _syncInFlight = false;
+    if (options.modal && modalEl) modalEl.style.display = 'none';
+    showCloudToast(t('sync_failed'), true);
+  }, 30000);
   try {
     // 1. upload TrialLog (incremental)
     updateProg(t('sync_upload_trials'), 10);
@@ -3203,6 +3209,7 @@ async function runSync(opts) {
     console.warn('[sync] runSync error:', e.message);
     if (options.showToast) showCloudToast(t('sync_failed'), true);
   } finally {
+    clearTimeout(_syncWatchdogId);
     _syncInFlight = false;
   }
   if (options.deckKey) updateDeckStats();
@@ -5295,8 +5302,9 @@ async function doAccountLogin() {
     const cp = document.getElementById('cloud-password');
     if (ce) ce.value = email;
     if (cp) cp.value = pwd;
-    _sb = _createSupabaseClient();
-    const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
+    if (!_sb) _sb = _createSupabaseClient();
+    const loginTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error(t('sync_offline'))), 15000));
+    const { data, error } = await Promise.race([_sb.auth.signInWithPassword({ email, password: pwd }), loginTimeout]);
     if (error) throw error;
     _syncEnabled      = true;
     _cloudUserEmail = data.user.email;
