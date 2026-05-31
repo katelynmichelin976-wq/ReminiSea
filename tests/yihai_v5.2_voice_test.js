@@ -126,11 +126,11 @@ function check(desc, actual, expected) {
   check('onSlotRowTap 保存回调应调用 debouncePushConfig',
     tapBody.includes('debouncePushConfig'), true);
 
-  // Test 10: cloudPushConfig 应包含 phraseOptHint（统一 camelCase）
+  // Test 10: cloudPushConfig 应包含 phraseOptHint（统一 camelCase），并主动清理废弃 snake_case key
   check('cloudPushConfig localUi 应包含 phraseOptHint',
     pushBody.includes('phraseOptHint'), true);
-  check('cloudPushConfig localUi 不应含 snake_case key phrase_opt_hint',
-    pushBody.includes('phrase_opt_hint'), false);
+  check('cloudPushConfig mergedUi 应主动 delete 废弃 snake_case key',
+    pushBody.includes("delete mergedUi[k]") && pushBody.includes("'phrase_opt_hint'"), true);
 
   // Test 11: loadSettings 应从 phraseOptHint 读取选项提示，不含 snake_case
   check('loadSettings 应读取 phraseOptHint 作为选项提示',

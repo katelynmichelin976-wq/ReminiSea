@@ -3057,6 +3057,7 @@ async function cloudPushConfig() {
     const cloudCfg = cloud.data?.config_json;
     const mergedSrs = { ...(cloudCfg?.srs || {}), ...localSrs };
     const mergedUi  = { ...(cloudCfg?.ui  || {}), ...localUi  };
+    ['phrase_quiz_prompt','phrase_quiz_prompt_recognize','phrase_opt_hint','phraseSelect'].forEach(k => delete mergedUi[k]);
 
     const { error } = await _sb.from('sync_config').upsert({
       user_id: _cloudUserId,
