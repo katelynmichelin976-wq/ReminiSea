@@ -7213,6 +7213,11 @@ function pickVoice(lang) {
   }
   const want = lang || 'zh-CN';
   const prefix = want.split('-')[0];
+  if ((!lang || lang === 'zh-CN') && getLocale() === 'zh-Hant') {
+    return voices.find(v => v.lang === 'zh-TW')
+        || voices.find(v => v.lang === 'zh-CN')
+        || (voices.length ? voices[0] : null);
+  }
   return voices.find(v => v.lang === want)
       || voices.find(v => v.lang && v.lang.split('-')[0] === prefix)
       || voices.find(v => v.lang === 'zh-CN')
