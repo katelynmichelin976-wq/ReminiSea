@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.4.5</title>
+<title data-i18n="app_title">忆海拾光 v5.4.6</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -1549,7 +1549,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.5</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.6</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2683,7 +2683,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.4.5';
+const APP_VERSION = '5.4.6';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -3036,7 +3036,6 @@ async function cloudPushConfig() {
       phraseCorrect:      localStorage.getItem('phraseCorrect'),
       ttsRate:            localStorage.getItem('ttsRate'),
       ttsPitch:           localStorage.getItem('ttsPitch'),
-      ttsVoiceName:       localStorage.getItem('ttsVoiceName'),
       ttsVoiceLang:       localStorage.getItem('ttsVoiceLang'),
       voiceMuted:         localStorage.getItem('voiceMuted'),
       ansReadDelay:       localStorage.getItem('ansReadDelay'),
@@ -3106,9 +3105,10 @@ async function cloudPullConfig() {
       });
     }
 
-    // apply UI params
+    // apply UI params (ttsVoiceName is device-specific, skip cloud value)
     if (cfg.ui) {
       Object.entries(cfg.ui).forEach(([k, v]) => {
+        if (k === 'ttsVoiceName') return;
         localStorage.setItem(k, String(v));
         applied++;
       });

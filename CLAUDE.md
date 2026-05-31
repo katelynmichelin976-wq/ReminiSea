@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.4.html` | 主训练 App（v5.4.5，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.4.html` | 主训练 App（v5.4.6，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.4.5**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.4.6**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.4.6：** 修复声音设置被云同步覆盖 — `ttsVoiceName` 改为设备本地，不参与云同步；`cloudPullConfig` 跳过 `ttsVoiceName`；`ttsVoiceLang` 继续云同步作为跨设备语种偏好
 
 **v5.4.5：** 修复跨设备声音选择失效 — 新增 `TTS_VOICE_LANG` 记录所选声音的 lang（如 zh-HK），PC 选粤语同步到 iPhone 后按 lang 找本机同语种声音（善逸），移除诊断日志
 
