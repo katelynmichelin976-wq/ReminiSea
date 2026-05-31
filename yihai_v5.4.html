@@ -7512,7 +7512,7 @@ function pickVoice(lang) {
     const named = voices.find(v => v.name === TTS_VOICE_NAME);
     if (named) return named;
   }
-  const want = lang || 'zh-CN';
+  const want = lang || (getLocale().startsWith('ja') ? 'ja-JP' : 'zh-CN');
   const prefix = want.split('-')[0];
   if ((!lang || lang.startsWith('zh')) && getLocale() === 'zh-Hant') {
     return voices.find(v => v.lang === 'zh-TW')
