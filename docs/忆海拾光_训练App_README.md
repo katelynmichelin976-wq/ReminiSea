@@ -129,6 +129,15 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.4.8 — 2026-06-01
+
+**Bug 修復：繁體中文界面下粵語 TTS 提示音仍為普通話**
+- 根因：`pickVoice` 兩處條件 `lang === 'zh-CN'` 未覆蓋 `zh-Hant`，提示詞以 `lang='zh-Hant'` 呼叫時既不走已選聲音、也不走 zh-Hant 自動選 zh-TW 邏輯，直接前綴匹配拿到普通話
+- 修復：兩處改為 `lang.startsWith('zh')`，覆蓋所有中文變體
+- 附：`speak`/`speakDirect` 找到聲音後 `utt.lang = v.lang`，確保瀏覽器以真實 speech locale（zh-HK 等）識別聲音，不被 `zh-Hant` 這個非標準 speech locale 干擾
+
+---
+
 ### v5.4.7 — 2026-06-01
 
 **回滾：TTS 音色修復代碼全部還原至 v5.4.0 狀態**

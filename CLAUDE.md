@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.4.html` | 主训练 App（v5.4.7，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.4.html` | 主训练 App（v5.4.8，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.4.7**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.4.8**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.4.8：** 修复繁體中文界面粵語 TTS 提示音仍為普通話 — `pickVoice` 兩處 `lang === 'zh-CN'` 改為 `lang.startsWith('zh')`；`speak`/`speakDirect` 找到 voice 後 `utt.lang = v.lang` 對齊真實 speech locale
 
 **v5.4.7：** 回滚 v5.4.1–v5.4.6 全部 TTS 音色修复代码，恢复 v5.4.0 原始状态，等待定位真正根因
 

@@ -2,6 +2,11 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.4.8 Key Changes
+
+- **pickVoice 中文变体覆盖**: 两处 `!lang || lang === 'zh-CN'` 改为 `!lang || lang.startsWith('zh')`。第一处：已选声音（`TTS_VOICE_NAME`）的命中条件；第二处：zh-Hant 界面下自动选 zh-TW 声音的条件。根因：`playVoiceSlot` 传 `getLocale()='zh-Hant'` 为 ttsLang，`speak(text, 0, null, 'zh-Hant')` → `pickVoice('zh-Hant')` 时两个条件均不命中（`'zh-Hant' !== 'zh-CN'`），前缀匹配 `zh` 拿到第一个 zh-CN 普通话声音。选项以 `lang='zh-CN'` 调用故命中正确。
+- **speak/speakDirect utt.lang 对齐**: 找到 voice 后 `utt.lang = v.lang`（如 `zh-HK`）替代原始 `useLang`（可能为 `zh-Hant`）。`zh-Hant` 是 script subtag，非标准 speech locale，浏览器遇到不识别的 utt.lang 可能忽略显式 voice 回退默认声音。
+
 ## v5.4.7 Key Changes
 
 - **回滚 TTS 修复代码至 v5.4.0 状态**: 还原 `pickVoice`（条件改回 `!lang || lang === 'zh-CN'`）、`speak`（去掉 `utt.lang = v.lang`，改回 `if (v) utt.voice = v`）、`speakDirect`（同上，恢复 lang mismatch log）、`onTtsVoiceChange`（去掉 TTS_VOICE_LANG 保存）、`cloudPushConfig localUi`（恢复 ttsVoiceName，去掉 ttsVoiceLang）、`cloudPullConfig`（去掉 ttsVoiceName skip 逻辑）、`loadSettings`（去掉 ttsVoiceLang 读取）。v5.4.1–v5.4.6 TTS 修复均非根因，等待用户提供复现路径后重新定位。
