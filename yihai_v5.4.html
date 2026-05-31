@@ -7210,13 +7210,13 @@ function warmupSpeech() {
 
 function pickVoice(lang) {
   if (!voices.length) loadVoices();
-  if (TTS_VOICE_NAME && (!lang || lang === 'zh-CN')) {
+  if (TTS_VOICE_NAME && (!lang || lang.startsWith('zh'))) {
     const named = voices.find(v => v.name === TTS_VOICE_NAME);
     if (named) return named;
   }
   const want = lang || 'zh-CN';
   const prefix = want.split('-')[0];
-  if ((!lang || lang === 'zh-CN') && getLocale() === 'zh-Hant') {
+  if ((!lang || lang.startsWith('zh')) && getLocale() === 'zh-Hant') {
     return voices.find(v => v.lang === 'zh-TW')
         || voices.find(v => v.lang === 'zh-CN')
         || (voices.length ? voices[0] : null);
