@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.3.1</title>
+<title data-i18n="app_title">忆海拾光 v5.3.2</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -1549,7 +1549,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.3.1</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.3.2</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2679,7 +2679,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.3.1';
+const APP_VERSION = '5.3.2';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -2746,6 +2746,7 @@ function restoreSession() {
   logAppEvent('session_restore_start', { SDK: 'supabase-js' });
   _sessionRestoring = true;
   return Promise.resolve().then(function() {
+    if (_sb) { try { _sb.auth.stopAutoRefresh(); } catch(e) {} }
     _sb = _createSupabaseClient();
 
     var sbKey = 'sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token';
@@ -3027,7 +3028,7 @@ async function cloudPushConfig() {
     const localUi = {
       confettiOn:         localStorage.getItem('confettiOn'),
       phraseWrong:        localStorage.getItem('phraseWrong'),
-      phraseOptHint:      localStorage.getItem('phraseOptHint'),
+      phrase_opt_hint:    localStorage.getItem('phrase_opt_hint'),
       phraseCorrect:      localStorage.getItem('phraseCorrect'),
       ttsRate:            localStorage.getItem('ttsRate'),
       ttsPitch:           localStorage.getItem('ttsPitch'),
@@ -6773,7 +6774,7 @@ function setLocale(loc) {
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
   // reset voice prompts to current locale defaults on language switch
-  ['phrase_quiz_prompt','phraseOptHint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
+  ['phrase_quiz_prompt','phrase_opt_hint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
   PHRASE_SELECT   = t('quiz_select_hint');
   PHRASE_OPT_HINT = t('default_opt_hint');
   PHRASE_WRONG    = t('default_wrong');
@@ -7800,7 +7801,7 @@ function toggleConfetti(cb) {
 function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
   if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || t('default_wrong');    localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
-  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
+  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phrase_opt_hint', PHRASE_OPT_HINT); }
   if (key === 'correct') { PHRASE_CORRECT  = val || t('default_correct');              localStorage.setItem('phraseCorrect', PHRASE_CORRECT); }
   debouncePushConfig();
 }
@@ -7932,7 +7933,7 @@ function onSlotRowTap(slot) {
       (newVal) => {
         localStorage.setItem('phrase_' + slot.name, newVal);
         if (slot.name === 'quiz_prompt') PHRASE_SELECT = newVal || t('quiz_select_hint') || '';
-        if (slot.name === 'opt_hint') { PHRASE_OPT_HINT = newVal; localStorage.setItem('phraseOptHint', newVal); }
+        if (slot.name === 'opt_hint') PHRASE_OPT_HINT = newVal;
         renderVoiceSlots();
         debouncePushConfig();
       }
@@ -8161,7 +8162,6 @@ function onBdurChange(v) {
 
 function migrateVoiceSettings() {
   // 旧 toggle=0 → 清空对应文案
-  if (localStorage.getItem('optHintOn')    === '0') localStorage.removeItem('phraseOptHint');
   if (localStorage.getItem('wrongHintOn')  === '0') localStorage.removeItem('phraseWrong');
   if (localStorage.getItem('correctHintOn')=== '0') localStorage.removeItem('phraseCorrect');
   // 旧延迟 key 迁移
@@ -8173,15 +8173,10 @@ function migrateVoiceSettings() {
   if (oldOptDelay && !localStorage.getItem('optReadDelay')) {
     localStorage.setItem('optReadDelay', oldOptDelay);
   }
-  // phraseOptHint → phrase_opt_hint
-  const _oldOH = localStorage.getItem('phraseOptHint');
-  if (_oldOH && !localStorage.getItem('phrase_opt_hint')) {
-    localStorage.setItem('phrase_opt_hint', _oldOH);
-  }
   // 清理废弃 key
   ['quizPromptOn','optHintOn','wrongHintOn','readHint',
    'quizPromptDelay','optHintDelay','delay','browseDelay',
-   'phraseSelect'].forEach(k => localStorage.removeItem(k));
+   'phraseSelect','phraseOptHint'].forEach(k => localStorage.removeItem(k));
 }
 
 function loadSettings() {
@@ -8192,7 +8187,7 @@ function loadSettings() {
   else PHRASE_SELECT = t('quiz_select_hint');
 
   // option hint
-  const phraseOptHint = localStorage.getItem('phraseOptHint');
+  const phraseOptHint = localStorage.getItem('phrase_opt_hint');
   if (phraseOptHint) PHRASE_OPT_HINT = phraseOptHint;
   if (!PHRASE_OPT_HINT) PHRASE_OPT_HINT = t('default_opt_hint');
 

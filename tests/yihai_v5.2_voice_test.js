@@ -125,6 +125,18 @@ function check(desc, actual, expected) {
   const tapBody  = html.slice(tapStart, tapEnd);
   check('onSlotRowTap 保存回调应调用 debouncePushConfig',
     tapBody.includes('debouncePushConfig'), true);
+
+  // Test 10: cloudPushConfig 应包含 phrase_opt_hint（不再用旧 key phraseOptHint）
+  check('cloudPushConfig localUi 应包含 phrase_opt_hint',
+    pushBody.includes('phrase_opt_hint'), true);
+  check('cloudPushConfig localUi 不应包含旧 key phraseOptHint',
+    pushBody.includes("'phraseOptHint'"), false);
+
+  // Test 11: loadSettings 应从 phrase_opt_hint 读取选项提示，不再依赖 phraseOptHint
+  check('loadSettings 应读取 phrase_opt_hint 作为选项提示',
+    lsBody.includes("'phrase_opt_hint'"), true);
+  check('loadSettings 不应再依赖旧 key phraseOptHint',
+    lsBody.includes("'phraseOptHint'"), false);
 }
 
 console.log(`\n通过 ${passed} / 失败 ${failed}`);

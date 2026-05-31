@@ -3027,7 +3027,7 @@ async function cloudPushConfig() {
     const localUi = {
       confettiOn:         localStorage.getItem('confettiOn'),
       phraseWrong:        localStorage.getItem('phraseWrong'),
-      phraseOptHint:      localStorage.getItem('phraseOptHint'),
+      phrase_opt_hint:    localStorage.getItem('phrase_opt_hint'),
       phraseCorrect:      localStorage.getItem('phraseCorrect'),
       ttsRate:            localStorage.getItem('ttsRate'),
       ttsPitch:           localStorage.getItem('ttsPitch'),
@@ -6773,7 +6773,7 @@ function setLocale(loc) {
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
   // reset voice prompts to current locale defaults on language switch
-  ['phrase_quiz_prompt','phraseOptHint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
+  ['phrase_quiz_prompt','phrase_opt_hint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
   PHRASE_SELECT   = t('quiz_select_hint');
   PHRASE_OPT_HINT = t('default_opt_hint');
   PHRASE_WRONG    = t('default_wrong');
@@ -7800,7 +7800,7 @@ function toggleConfetti(cb) {
 function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
   if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || t('default_wrong');    localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
-  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
+  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phrase_opt_hint', PHRASE_OPT_HINT); }
   if (key === 'correct') { PHRASE_CORRECT  = val || t('default_correct');              localStorage.setItem('phraseCorrect', PHRASE_CORRECT); }
   debouncePushConfig();
 }
@@ -7932,7 +7932,7 @@ function onSlotRowTap(slot) {
       (newVal) => {
         localStorage.setItem('phrase_' + slot.name, newVal);
         if (slot.name === 'quiz_prompt') PHRASE_SELECT = newVal || t('quiz_select_hint') || '';
-        if (slot.name === 'opt_hint') { PHRASE_OPT_HINT = newVal; localStorage.setItem('phraseOptHint', newVal); }
+        if (slot.name === 'opt_hint') PHRASE_OPT_HINT = newVal;
         renderVoiceSlots();
         debouncePushConfig();
       }
@@ -8161,7 +8161,7 @@ function onBdurChange(v) {
 
 function migrateVoiceSettings() {
   // 旧 toggle=0 → 清空对应文案
-  if (localStorage.getItem('optHintOn')    === '0') localStorage.removeItem('phraseOptHint');
+  if (localStorage.getItem('optHintOn')    === '0') localStorage.removeItem('phrase_opt_hint');
   if (localStorage.getItem('wrongHintOn')  === '0') localStorage.removeItem('phraseWrong');
   if (localStorage.getItem('correctHintOn')=== '0') localStorage.removeItem('phraseCorrect');
   // 旧延迟 key 迁移
@@ -8181,7 +8181,7 @@ function migrateVoiceSettings() {
   // 清理废弃 key
   ['quizPromptOn','optHintOn','wrongHintOn','readHint',
    'quizPromptDelay','optHintDelay','delay','browseDelay',
-   'phraseSelect'].forEach(k => localStorage.removeItem(k));
+   'phraseSelect','phraseOptHint'].forEach(k => localStorage.removeItem(k));
 }
 
 function loadSettings() {
@@ -8192,7 +8192,7 @@ function loadSettings() {
   else PHRASE_SELECT = t('quiz_select_hint');
 
   // option hint
-  const phraseOptHint = localStorage.getItem('phraseOptHint');
+  const phraseOptHint = localStorage.getItem('phrase_opt_hint');
   if (phraseOptHint) PHRASE_OPT_HINT = phraseOptHint;
   if (!PHRASE_OPT_HINT) PHRASE_OPT_HINT = t('default_opt_hint');
 
