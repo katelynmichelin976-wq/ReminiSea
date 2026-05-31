@@ -7212,11 +7212,10 @@ function pickVoice(lang) {
   if (!voices.length) loadVoices();
   if (TTS_VOICE_NAME) {
     const named = voices.find(v => v.name === TTS_VOICE_NAME);
-    if (named) {
-      const namedPrefix = named.lang.split('-')[0];
-      const wantPrefix = (lang || 'zh-CN').split('-')[0];
-      if (namedPrefix === wantPrefix) return named;
-    }
+    const namedPrefix = named ? named.lang.split('-')[0] : null;
+    const wantPrefix = (lang || 'zh-CN').split('-')[0];
+    console.log('[pickVoice] name='+TTS_VOICE_NAME+' found='+!!named+' namedLang='+(named&&named.lang)+' namedPfx='+namedPrefix+' wantLang='+lang+' wantPfx='+wantPrefix+' match='+(namedPrefix===wantPrefix));
+    if (named && namedPrefix === wantPrefix) return named;
   }
   const want = lang || 'zh-CN';
   const prefix = want.split('-')[0];
