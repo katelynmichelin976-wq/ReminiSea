@@ -145,7 +145,8 @@ function _extractI18NKeys(html, locale) {
   }
   const block = html.slice(startIdx + startMarker.length, i - 1);
   const allMatches = [];
-  const keyRe = /\b([a-zA-Z_]\w*):\s*'/g;
+  // Match keys at line-start or after comma — avoids false positives inside string values
+  const keyRe = /(?:^|[,])\s*([a-zA-Z_]\w*)\s*:/mg;
   let m2;
   while ((m2 = keyRe.exec(block)) !== null) {
     allMatches.push(m2[1]);
