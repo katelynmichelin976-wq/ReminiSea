@@ -144,7 +144,13 @@ function _extractI18NKeys(html, locale) {
     i++;
   }
   const block = html.slice(startIdx + startMarker.length, i - 1);
-  return (block.match(/^\s+(\w+):/mg) || []).map(m => m.trim().replace(':', ''));
+  const allMatches = [];
+  const keyRe = /\b([a-zA-Z_]\w*):\s*'/g;
+  let m2;
+  while ((m2 = keyRe.exec(block)) !== null) {
+    allMatches.push(m2[1]);
+  }
+  return allMatches;
 }
 const _enKeys = _extractI18NKeys(_html, 'en');
 const _jaKeys = _extractI18NKeys(_html, 'ja');
