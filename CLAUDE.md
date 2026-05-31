@@ -29,7 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/run_all.js` | 单元测试统一入口（6 套件，312 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音/openSrsDb，54 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/曲线，14 断言，无需登录） |
-| `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登/双客户端防护，28 断言） |
+| `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登/双客户端防护/feedback E2E，32 断言） |
 | `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备，11 断言） |
 | `tests/_pw_session_restore.js` | 会话恢复流程（SDK失败/无backup/token失效/backup损坏/pathD/登录超时，13 断言，无需登录） |
 | `tests/_pw_sync_guard.js` | runSync 30s watchdog（REST挂起/IDB blocked 时 modal 自动关闭+toast，7 断言，无需登录） |
@@ -116,7 +116,7 @@ $env:TEST_PASSWORD="xxx"; node tests/_pw_cross_device.js
 - **跨设备/同步改动** → 加跑 `_pw_cross_device.js`
 - **全量回归** → 仅用户明确要求时跑全部 4 个 Playwright 文件
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, voice 8（run_all.js 合计 312）；Playwright ui_smoke 54 / srs_e2e 14 / cloud_sync 28 / cross_device 11 / session_restore 13 / sync_guard 7 / feedback 11。
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, voice 8（run_all.js 合计 312）；Playwright ui_smoke 54 / srs_e2e 14 / cloud_sync 32 / cross_device 11 / session_restore 13 / sync_guard 7 / feedback 11。
 
 ## SRS Architecture
 

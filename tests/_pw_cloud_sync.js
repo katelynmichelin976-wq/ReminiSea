@@ -6,6 +6,7 @@
  *
  * 覆盖：登录 → decks 表下载 → 练习同步 → session restore → user_id 隔离
  *        → 登出数据保留 → 重新登录 → if(!_sb) 双客户端防护
+ *        → 意见反馈 E2E（登录态真实写库，31 断言）
  */
 const { chromium } = require('playwright');
 const helper = require('./_playwright_helper');
@@ -284,6 +285,44 @@ async function waitSyncDone(page) {
       );
       pass('二次登录后 _sb 实例未被替换（if (!_sb) 防护生效）', markerPreserved);
     }
+
+    // ════ PHASE 11: 意见反馈 E2E（登录态真实写库）════
+    section('PHASE 11: 意见反馈 E2E — 已登录，真实写入 feedback 表');
+    await run(page, () => setLocale('zh-CN'));
+    await wait(page, 200);
+
+    // 直接调用 submitFeedback，验证主通道（Supabase INSERT）成功
+    const fbDesc = 'Playwright E2E 自动测试 ' + Date.now();
+    const fbResult = await run(page, async (desc) => {
+      try { return await submitFeedback(desc); } catch(e) { return 'error:' + e.message; }
+    }, fbDesc);
+    pass('submitFeedback 已登录 → 主通道 success', fbResult === 'success');
+
+    // 成功路径不写 pending，localStorage 应无暂存
+    pass('success 路径无 yihai_pending_feedback 暂存', await run(page, () =>
+      !localStorage.getItem('yihai_pending_feedback')
+    ));
+
+    // UI 路径：开 sheet → 填文字 → await handleFeedbackSend() → 验证按钮成功文字
+    await run(page, () => showScreen('screen-mine'));
+    await wait(page, 300);
+    await run(page, () => openFeedbackSheet());
+    await wait(page, 300);
+    pass('feedback sheet 已打开', await run(page, () => {
+      const el = document.getElementById('feedback-overlay');
+      return el && el.style.display !== 'none';
+    }));
+    await run(page, () => {
+      const ta = document.getElementById('feedback-textarea');
+      if (ta) { ta.value = 'UI路径 E2E 测试'; ta.dispatchEvent(new Event('input')); }
+    });
+    await wait(page, 200);
+    // 直接 await handleFeedbackSend()，确保 Supabase 请求完成后立即读按钮文字
+    const uiSendResult = await run(page, async () => {
+      try { await handleFeedbackSend(); } catch(e) { return 'ERROR:' + e.message; }
+      return document.getElementById('feedback-send-btn')?.textContent || '';
+    });
+    pass('UI 点击发送 → 按钮显示「✓ 已发送」', uiSendResult.includes('已发送'));
 
   } finally {
     const { passed, failed } = getCounts();
