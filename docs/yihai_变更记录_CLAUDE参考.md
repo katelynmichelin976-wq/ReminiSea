@@ -2,6 +2,15 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.4.0 Key Changes
+
+- **繁體中文 locale（zh-Hant）**: `SUPPORTED_LOCALES` 新增 `'zh-Hant'`；`I18N['zh-Hant']` 363 個 key（與 zh-CN 完整對齊）；`const names` 加入 `'zh-Hant': '繁體中文'`。
+- **detectLocale 繁體映射修復**: 在精確匹配後、前綴匹配前插入 `traditionalVariants = ['zh-tw','zh-hk','zh-mo','zh-hant']` 顯式映射至 `zh-Hant`，防止 `zh-TW` 因前綴 `zh` 與 `zh-CN` 相同而被誤匹配。
+- **screen-lang UI**: 移除所有 `.lang-flag` 元素（包含既有 zh-CN/en/es 三行）；新增 `[data-lang="zh-Hant"]` 行（lang-name: 中文（繁體），lang-name-sub: Chinese Traditional）。
+- **pickVoice TTS**: 當 `getLocale() === 'zh-Hant'` 且卡片 lang 為 `zh-CN` 時，優先查找 `lang === 'zh-TW'` voice，找不到才退回 `zh-CN` voice；使用者手動設定 `TTS_VOICE_NAME` 時仍優先。
+- **單元測試**: `yihai_v5.0_i18n_test.js` 新增 4 case（zh-TW/zh-HK/zh-Hant→zh-Hant，zh-CN 前綴迴歸），共 31 case；`SUPPORTED_LOCALES` 與 `detectLocale` 同步更新。
+- **Playwright smoke**: PHASE 11 新增 4 個斷言（data-lang 存在、無 lang-flag、settings-lang-val 顯示「繁體中文」、首頁 Tab 含「頁」），共 58 個斷言。
+
 ## v5.3.3 Key Changes
 
 - **cloudPushConfig 废弃 key 清理**: merge 后显式 `delete mergedUi[k]`，清除 `phrase_quiz_prompt` / `phrase_quiz_prompt_recognize` / `phrase_opt_hint` / `phraseSelect`，防止旧 snake_case key 通过 `{ ...cloudCfg.ui, ...localUi }` spread 永久留存云端。
