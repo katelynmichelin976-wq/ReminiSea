@@ -269,3 +269,18 @@ create policy "individual_access" on device_registry
 -- voice assistance: card type extensibility (added v5.2)
 ALTER TABLE cards_pool ADD COLUMN IF NOT EXISTS card_type text NOT NULL DEFAULT 'choice';
 ALTER TABLE cards_pool ADD COLUMN IF NOT EXISTS ext jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+-- ── feedback 表（意见反馈，anon 可写，无读权限）────────────────────
+CREATE TABLE IF NOT EXISTS feedback (
+  id            uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at    timestamptz DEFAULT now(),
+  app_version   text        NOT NULL,
+  feedback_type text        NOT NULL DEFAULT 'general',
+  user_desc     text        NOT NULL,
+  device_id     text,
+  locale        text,
+  device_info   jsonb,
+  diagnostics   jsonb
+);
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anon_insert" ON feedback FOR INSERT TO anon WITH CHECK (true);
