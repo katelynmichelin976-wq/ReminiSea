@@ -5,7 +5,7 @@
  *
  * 覆盖：函数存在性、入口菜单项、sheet 开/关、空提交校验
  * 无需登录，无需 Supabase
- * 10 断言
+ * 11 断言
  */
 const { chromium } = require('playwright');
 const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
