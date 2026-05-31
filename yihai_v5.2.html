@@ -1357,7 +1357,6 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   -webkit-tap-highlight-color: transparent;
 }
 .lang-row:first-child { border-top: none; }
-.lang-flag { font-size: 24px; line-height: 1; flex-shrink: 0; }
 .lang-info { flex: 1; }
 .lang-name { font-size: 15px; color: var(--text); font-weight: 500; }
 .lang-name-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
@@ -1928,15 +1927,20 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="lang-scroll">
     <div class="lang-list">
       <div class="lang-row" data-lang="zh-CN" onclick="selectLang('zh-CN')">
-        <span class="lang-flag">🇨🇳</span>
         <div class="lang-info">
           <div class="lang-name">中文（简体）</div>
           <div class="lang-name-sub">Chinese Simplified</div>
         </div>
         <span class="lang-check">✓</span>
       </div>
+      <div class="lang-row" data-lang="zh-Hant" onclick="selectLang('zh-Hant')">
+        <div class="lang-info">
+          <div class="lang-name">中文（繁體）</div>
+          <div class="lang-name-sub">Chinese Traditional</div>
+        </div>
+        <span class="lang-check">✓</span>
+      </div>
       <div class="lang-row" data-lang="en" onclick="selectLang('en')">
-        <span class="lang-flag">🇺🇸</span>
         <div class="lang-info">
           <div class="lang-name">English</div>
           <div class="lang-name-sub">英语</div>
@@ -1944,7 +1948,6 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <span class="lang-check">✓</span>
       </div>
       <div class="lang-row" data-lang="es" onclick="selectLang('es')">
-        <span class="lang-flag">🇪🇸</span>
         <div class="lang-info">
           <div class="lang-name">Español</div>
           <div class="lang-name-sub">西班牙语</div>
@@ -7077,7 +7080,7 @@ let _pendingLocale = null;
 function _updateSettingsLangVal() {
   const el = document.getElementById('settings-lang-val');
   if (!el) return;
-  const names = { 'zh-CN': '中文', 'en': 'English', 'es': 'Español' };
+  const names = { 'zh-CN': '中文', 'zh-Hant': '繁體中文', 'en': 'English', 'es': 'Español' };
   el.textContent = names[getLocale()] || getLocale();
 }
 
