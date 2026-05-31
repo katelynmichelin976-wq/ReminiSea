@@ -7210,9 +7210,13 @@ function warmupSpeech() {
 
 function pickVoice(lang) {
   if (!voices.length) loadVoices();
-  if (TTS_VOICE_NAME && (!lang || lang.startsWith('zh'))) {
+  if (TTS_VOICE_NAME) {
     const named = voices.find(v => v.name === TTS_VOICE_NAME);
-    if (named) return named;
+    if (named) {
+      const namedPrefix = named.lang.split('-')[0];
+      const wantPrefix = (lang || 'zh-CN').split('-')[0];
+      if (namedPrefix === wantPrefix) return named;
+    }
   }
   const want = lang || 'zh-CN';
   const prefix = want.split('-')[0];
