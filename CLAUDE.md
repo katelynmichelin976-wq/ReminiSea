@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.4.html` | 主训练 App（v5.4.0，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.4.html` | 主训练 App（v5.4.4，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.4.3**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.4.4**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.4.4：** 诊断日志 — `pickVoice()` 新增无条件 `[pickVoice]` console.log，定位声音选择失效时 `TTS_VOICE_NAME` 实际值
 
 **v5.4.3：** 修复 zh-Hant 下浏览器忽略显式 voice — `utt.lang` 改为取所选 voice 的 `lang` 字段（而非界面语言），确保 TTS utterance 语种与所选声音对齐
 

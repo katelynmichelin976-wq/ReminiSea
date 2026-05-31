@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.4.4 Key Changes
+
+- **[pickVoice] 诊断日志**: `pickVoice()` 函数顶部加无条件 `console.log('[pickVoice] TTS_VOICE_NAME=... lang=... voices=...')`，用于确认 TTS 触发时 `TTS_VOICE_NAME` 的实际值，定位声音选择失效根因。
+
 ## v5.4.3 Key Changes
 
 - **utt.lang 对齐 voice.lang**: `speak()` 和 `speakDirect()` 中，原先 `utt.lang = useLang`（内容语种，可能为 `zh-Hant` 等非真实 speech locale），找到 voice 后只设 `utt.voice = v` 而未修正 `utt.lang`。浏览器遇到 `utt.lang='zh-Hant'` 无法匹配任何真实语音，会忽略显式 voice 回退到系统默认（普通话）。修复：`if (v) { utt.voice = v; utt.lang = v.lang; }` 使 utterance 语种严格对齐所选声音的真实 lang。同时移除已无必要的 `[speakDirect] lang mismatch` console.log。
