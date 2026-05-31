@@ -2,6 +2,19 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.3.0 Key Changes
+
+- **意见反馈模块（Feedback Module）**: 用户可在「我的」页面发起反馈，无需登录。
+- **入口与 UI**: `screen-mine` 新增 `mine-group`（`.mine-menu-item`），点击打开 `#feedback-overlay` 底部 sheet。sheet 含 `#feedback-textarea`（maxlength=200，必填，空提交红框 `#ef4444`，输入清框）、字数计数 `#feedback-count`（>=180 蓝色预警）、发送按钮 `#feedback-send-btn`（成功绿色，1.5s 后关闭）、脚注。
+- **`collectDiagnostics()`**: 收集 `app_version / collected_at / idb_version / sync_enabled / has_session_backup / last_sync_ts / deck_count / logs / log_source / events`。IDB 读取用 `Promise.race + 2s timeout` 防挂死；JWT 和邮箱不采集（只采集 `!!localStorage.getItem('yihai_session_backup')`）。
+- **`submitFeedback(userDesc)`**: 调 `collectDiagnostics()`；用 `FB_SUPABASE_URL/KEY`（测试期复用主项目）创建独立 client；`Promise.race + 5s timeout` 投递到 `feedback` 表；失败降级 `clipboard.writeText` + `localStorage.setItem('yihai_pending_feedback')`；返回 `'success'|'clipboard'`。
+- **`formatFeedbackText(payload)`**: 剪贴板兜底格式：【忆海拾光 意见反馈】+ 版本/设备/时间/描述/最近错误日志（最多 3 条）。
+- **`runSync` 补传**: `purgeOldLogs()` 前检查 `yihai_pending_feedback`；`_syncEnabled` 为 true 时用独立 client 补传，成功清除 key，失败 `log.warn` 静默。
+- **Supabase feedback 表**: `CREATE TABLE IF NOT EXISTS feedback (id uuid PK, created_at, app_version NOT NULL, feedback_type DEFAULT 'general', user_desc NOT NULL, device_id, locale, device_info jsonb, diagnostics jsonb)`；RLS `anon_insert` FOR INSERT TO anon WITH CHECK (true)，无 SELECT policy。
+- **常量**: `FB_SUPABASE_URL = SUPABASE_URL`（测试期复用）、`FB_SUPABASE_ANON_KEY = SUPABASE_ANON_KEY`、`FEEDBACK_EMAIL = 'zyhacl@gmail.com'`。
+- **i18n**: zh/en/es 各 9 个 feedback key（`mine_menu_feedback / mine_menu_feedback_sub / feedback_sheet_title / feedback_placeholder / feedback_send_btn / feedback_sending / feedback_sent_ok / feedback_footnote / feedback_toast_fail`）。
+- **测试**: `tests/_pw_feedback.js`（11 assertions）：函数存在性 5 + 菜单项 1 + sheet 开关 2 + 空提交红框 1 + 输入清框 1 + 关闭隐藏 1。
+
 ## v5.2.0 Key Changes
 
 - **语音辅助系统（Voice Assistance）**: 完整语音引导框架，针对老人/儿童等不熟悉移动设备的用户，以家属录音为主要陪伴方式、TTS 为兜底。

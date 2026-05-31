@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.2.html` | 主训练 App（v5.2.0，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.3.html` | 主训练 App（v5.3.0，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -56,7 +56,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.2.2**（`yihai_v5.2.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.3.0**（`yihai_v5.3.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.3.0：** 意见反馈模块 — `意见反馈` 入口（screen-mine）、底部 sheet（textarea 必填 200 字/字数计数/空提交红框校验）、`collectDiagnostics()`（IDB 2s 超时读取日志/事件，不采集 JWT/邮箱）、`submitFeedback()`（Supabase 5s 超时 + 剪贴板降级 + localStorage 暂存）、`runSync` 补传、zh/en/es 三语言、Supabase feedback 表（anon INSERT only RLS）
 
 **v5.2.0 bug fixes：** 会话恢复 UI 卡死修复 — 新增 `_sessionRestoring` 标志替代 backup-proxy 逻辑（修复缺陷1/2/3/5）；`openSrsDb` onblocked 8s 超时防挂死 + 修复 `return _srsDbPromise` 缺失；`doAccountLogin` 15s 超时；`if (!_sb)` 双客户端防护；`runSync` catch 块 modal 失败时显示 toast
 

@@ -129,6 +129,18 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.3.0 — 2026-05-31
+
+**新功能：意见反馈模块**
+- 「我的」页面新增「意见反馈」入口菜单项
+- 底部弹层 sheet：textarea 必填（200 字上限）、字数计数、空提交红框校验
+- 自动收集诊断信息：App 版本、IDB 日志（最近 30 条 warn/error）、运行时状态（不含账号/JWT）
+- 主通道：POST 到独立 Supabase feedback 表（anon INSERT only），5s 超时
+- 降级：剪贴板复制 + localStorage 暂存（`yihai_pending_feedback`），下次同步时补传
+- zh/en/es 三语言完整支持
+
+---
+
 ### v5.2.2 — 2026-05-31
 
 **Bug 修复：会话恢复 / 同步稳定性**
