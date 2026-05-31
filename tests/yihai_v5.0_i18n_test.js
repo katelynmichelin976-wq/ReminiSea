@@ -3,7 +3,7 @@
 // 从 yihai_v4.11.html 抽取纯函数逻辑
 // ═══════════════════════════════════════════════
 
-const SUPPORTED_LOCALES = ['en', 'zh-CN', 'zh-Hant', 'es'];
+const SUPPORTED_LOCALES = ['en', 'zh-CN', 'zh-Hant', 'es', 'ja'];
 const FALLBACK_LOCALE = 'en';
 
 function detectLocale(navLang, supported, fallback) {
@@ -123,6 +123,37 @@ check('旧字符串中文，牌组zh→{苹果,zh-CN}', normalizeField('苹果',
 check('旧字符串中文名在es牌组→lang自动zh-CN', normalizeField('苹果', 'es'), { text: '苹果', lang: 'zh-CN' });
 check('新格式带lang原样保留', normalizeField({ text: 'manzana', lang: 'es' }, 'zh-CN'), { text: 'manzana', lang: 'es' });
 check('新格式缺lang→自动推断', normalizeField({ text: 'apple' }, 'es'), { text: 'apple', lang: 'es' });
+
+section('SUITE 6 — ja locale 検出・辞書完整性');
+check('detectLocale ja→ja', detectLocale('ja', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'ja');
+check('detectLocale ja-JP→ja', detectLocale('ja-JP', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'ja');
+check('detectLocale zh-CN 回帰不変', detectLocale('zh-CN', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'zh-CN');
+
+// I18N['ja'] 辞書完整性チェック（HTML ファイルから読み込み）
+const _fs = require('fs');
+const _path = require('path');
+const _html = _fs.readFileSync(_path.join(__dirname, '../yihai_v5.4.html'), 'utf8');
+function _extractI18NKeys(html, locale) {
+  const startMarker = `'${locale}': {`;
+  const startIdx = html.indexOf(startMarker);
+  if (startIdx === -1) return [];
+  let depth = 1, i = startIdx + startMarker.length;
+  while (i < html.length && depth > 0) {
+    if (html[i] === '{') depth++;
+    if (html[i] === '}') depth--;
+    i++;
+  }
+  const block = html.slice(startIdx + startMarker.length, i - 1);
+  return (block.match(/^\s+(\w+):/mg) || []).map(m => m.trim().replace(':', ''));
+}
+const _enKeys = _extractI18NKeys(_html, 'en');
+const _jaKeys = _extractI18NKeys(_html, 'ja');
+const _missing = _enKeys.filter(k => !_jaKeys.includes(k));
+if (_missing.length > 0) {
+  console.log('  不足キー:', _missing.join(', '));
+}
+check('ja 辞書: en の全キーが存在する', _missing.length, 0);
+check('ja 辞書: キー数が en と一致する', _jaKeys.length, _enKeys.length);
 
 console.log(`\n通过 ${passed} / 失败 ${failed}`);
 if (failed > 0) process.exit(1);
