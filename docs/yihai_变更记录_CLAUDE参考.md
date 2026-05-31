@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.4.5 Key Changes
+
+- **TTS_VOICE_LANG 跨设备声音回退**: 新增全局 `TTS_VOICE_LANG`（对应 localStorage `ttsVoiceLang`，加入 `cloudPushConfig` UI 字段）。`onTtsVoiceChange` 选声音时同步保存所选声音的 `v.lang`（如 `zh-HK`）。`pickVoice` 在 `TTS_VOICE_NAME` 按名找不到声音时（跨设备，本机无同名声音），以 `TTS_VOICE_LANG` 按语种前缀匹配本机声音。修复场景：PC 选「Google 粤語（香港）」（zh-HK），iPhone 无此名声音，现在能正确找到 iOS 粤语声音（如「善逸」）。移除 v5.4.4 临时 `[pickVoice]` 诊断日志。
+
 ## v5.4.4 Key Changes
 
 - **[pickVoice] 诊断日志**: `pickVoice()` 函数顶部加无条件 `console.log('[pickVoice] TTS_VOICE_NAME=... lang=... voices=...')`，用于确认 TTS 触发时 `TTS_VOICE_NAME` 的实际值，定位声音选择失效根因。
