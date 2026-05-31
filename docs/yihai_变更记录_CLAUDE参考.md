@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.3.3 Key Changes
+
+- **cloudPushConfig 废弃 key 清理**: merge 后显式 `delete mergedUi[k]`，清除 `phrase_quiz_prompt` / `phrase_quiz_prompt_recognize` / `phrase_opt_hint` / `phraseSelect`，防止旧 snake_case key 通过 `{ ...cloudCfg.ui, ...localUi }` spread 永久留存云端。
+
 ## v5.3.2 Key Changes
 
 - **语音文案 key 统一 camelCase**: `phraseQuizPrompt` / `phraseQuizPromptRecognize` / `phraseOptHint` 替代 v5.2 引入的 snake_case key（`phrase_quiz_prompt` / `phrase_quiz_prompt_recognize` / `phrase_opt_hint`）。cloudPushConfig / loadSettings / onSlotRowTap / onPhraseChange / setLocale / migrateVoiceSettings 全部对齐，删除废弃 key 迁移代码。
