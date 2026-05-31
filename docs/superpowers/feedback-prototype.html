@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>忆海拾光 — 反馈模块原型</title>
+<style>
+  :root {
+    --ocean:    #0ea5e9;
+    --ocean-dk: #0284c7;
+    --ocean-bg: #f0f9ff;
+    --ocean-lt: rgba(14,165,233,0.12);
+    --bg:       #f0f9ff;
+    --surf:     #ffffff;
+    --surf2:    #e0f2fe;
+    --text:     #0c2340;
+    --text2:    #4a7fa5;
+    --text3:    #93c5d9;
+    --bd:       rgba(14,165,233,0.15);
+    --bd2:      rgba(14,165,233,0.28);
+    --z-sheet:  100;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #d0e8f5;
+    font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 24px;
+    min-height: 100vh;
+  }
+
+  /* ── Phone frame ── */
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .phone-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #5a7a90;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .phone {
+    width: 375px;
+    height: 720px;
+    background: var(--bg);
+    border-radius: 44px;
+    box-shadow:
+      0 0 0 10px #1a2e3e,
+      0 0 0 12px #2a4060,
+      0 24px 80px rgba(0,0,0,0.35);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Status bar ── */
+  .status-bar {
+    height: 44px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px 0 28px;
+    flex-shrink: 0;
+  }
+  .status-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+  }
+  .status-icons svg { display: block; }
+
+  /* ── Screen ── */
+  .screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    padding: 8px 16px 14px;
+    background: var(--bg);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .topbar-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: .02em;
+  }
+
+  /* ── Scroll area ── */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 80px;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* ── Account section ── */
+  .account-hero {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 16px 14px;
+  }
+  .account-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--ocean-lt);
+    border: 2px solid var(--bd2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ocean);
+    flex-shrink: 0;
+  }
+  .account-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .account-email {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+  .account-sync-btn {
+    margin-left: auto;
+    padding: 7px 14px;
+    background: var(--ocean-lt);
+    border: 1px solid var(--bd2);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ocean);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  /* ── Menu group ── */
+  .mine-group {
+    margin: 0 16px 10px;
+    background: var(--surf);
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--bd);
+  }
+  .mine-group-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: 12px 16px 6px;
+  }
+  .mine-menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: none;
+    border: none;
+    border-bottom: 0.5px solid var(--bd);
+    cursor: pointer;
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .12s;
+  }
+  .mine-menu-item:last-child { border-bottom: none; }
+  .mine-menu-item:active { background: var(--ocean-lt); }
+  .mine-menu-icon {
+    width: 22px; height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--ocean);
+  }
+  .mine-menu-label {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .mine-menu-sub {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 1px;
+  }
+  .mine-menu-chevron {
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+  .mine-menu-badge {
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-right: 4px;
+  }
+
+  /* highlight the feedback row */
+  .mine-menu-item.feedback-row .mine-menu-icon { color: var(--ocean); }
+  .mine-menu-item.feedback-row .mine-menu-label { color: var(--text); }
+
+  /* ── Tab bar ── */
+  .home-tabbar {
+    height: 56px;
+    display: flex;
+    border-top: 0.5px solid var(--bd);
+    background: rgba(240,249,255,0.92);
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    color: var(--text3);
+    font-size: 10px;
+    font-weight: 600;
+    font-family: inherit;
+  }
+  .tab-item.active { color: var(--ocean); }
+  .tab-item svg { display: block; }
+
+  /* ──────────────────────────────────────────────
+     SCREEN 2 — Bottom sheet
+  ────────────────────────────────────────────── */
+  .phone-2 .screen { position: relative; }
+
+  /* dimmed backdrop */
+  .sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(12,35,64,0.35);
+    z-index: calc(var(--z-sheet) - 1);
+    border-radius: 0;
+  }
+
+  /* sheet itself */
+  .feedback-sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: var(--z-sheet);
+    background: var(--surf);
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 90%;
+    box-shadow: 0 -4px 32px rgba(14,165,233,0.12);
+    animation: sheetUp .28s cubic-bezier(0.32,0.72,0,1);
+  }
+  @keyframes sheetUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  /* handle row */
+  .sheet-handle-row {
+    position: relative;
+    padding-top: 10px;
+    padding-bottom: 4px;
+    flex-shrink: 0;
+  }
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--bd2);
+    border-radius: 2px;
+    margin: 0 auto;
+  }
+  .sheet-close-btn {
+    position: absolute;
+    right: 14px;
+    top: 8px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bd2);
+    color: var(--text2);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* sheet header */
+  .sheet-header {
+    padding: 10px 16px 12px;
+    flex-shrink: 0;
+  }
+  .sheet-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .sheet-subtitle {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 3px;
+  }
+
+  /* sheet body (scrollable) */
+  .sheet-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 24px;
+  }
+  .sheet-body::-webkit-scrollbar { display: none; }
+
+  /* type selector pills */
+  .type-pills {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .type-pill {
+    flex: 1;
+    padding: 8px 4px;
+    border-radius: 22px;
+    border: 1.5px solid var(--bd2);
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    cursor: pointer;
+    text-align: center;
+    font-family: inherit;
+    transition: all .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .type-pill.active {
+    background: var(--ocean);
+    border-color: var(--ocean);
+    color: #fff;
+  }
+
+  /* textarea */
+  .fb-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--bd2);
+    border-radius: 12px;
+    background: var(--surf);
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text);
+    resize: none;
+    outline: none;
+    line-height: 1.55;
+    transition: border-color .15s;
+    margin-bottom: 16px;
+  }
+  .fb-textarea:focus {
+    border-color: var(--ocean);
+  }
+  .fb-textarea::placeholder {
+    color: var(--text3);
+  }
+
+  /* collapsible diag section */
+  .diag-section {
+    background: var(--ocean-bg);
+    border: 1px solid var(--bd);
+    border-radius: 10px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .diag-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .diag-toggle-label {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+  .diag-toggle-arrow {
+    font-size: 11px;
+    color: var(--text3);
+    transition: transform .2s;
+  }
+  .diag-toggle-arrow.open { transform: rotate(180deg); }
+  .diag-content {
+    display: none;
+    padding: 0 14px 12px;
+    border-top: 0.5px solid var(--bd);
+  }
+  .diag-content.open { display: block; }
+  .diag-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 0.5px solid var(--bd);
+    font-size: 12px;
+  }
+  .diag-row:last-child { border-bottom: none; }
+  .diag-row-key {
+    color: var(--text3);
+    font-weight: 500;
+  }
+  .diag-row-val {
+    color: var(--text2);
+    font-weight: 600;
+    text-align: right;
+    max-width: 55%;
+    word-break: break-all;
+  }
+
+  /* send button */
+  .send-btn {
+    width: 100%;
+    height: 46px;
+    border-radius: 12px;
+    border: none;
+    background: var(--ocean);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: background .15s;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: .02em;
+  }
+  .send-btn:active { background: var(--ocean-dk); }
+
+  /* footnote */
+  .sheet-footnote {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: center;
+    line-height: 1.5;
+    padding: 0 8px;
+  }
+  .sheet-footnote svg {
+    display: inline;
+    vertical-align: -2px;
+    margin-right: 3px;
+  }
+
+  /* ── Responsive layout ── */
+  @media (max-width: 860px) {
+    body {
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ SCREEN 1: Account screen ══════════════ -->
+<div class="phone-wrap">
+  <div class="phone-label">Screen 1 — 我的（账号页）</div>
+  <div class="phone">
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+          <rect x="0" y="3" width="3" height="9" rx="1" opacity=".4"/>
+          <rect x="4.5" y="2" width="3" height="10" rx="1" opacity=".6"/>
+          <rect x="9" y="0" width="3" height="12" rx="1"/>
+          <rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 6.5C5.5 2 10.5 0 12 0s6.5 2 11 6.5"/>
+          <path d="M4 10c2.2-2.5 5-4 8-4s5.8 1.5 8 4"/>
+          <path d="M7.5 13.5c1.2-1.5 2.8-2.5 4.5-2.5s3.3 1 4.5 2.5"/>
+          <circle cx="12" cy="17" r="1.5" fill="currentColor"/>
+        </svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+          <rect x="0" y="1" width="21" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <rect x="1.5" y="2.5" width="15" height="7" rx="1.5"/>
+          <path d="M22.5 4.5 C23.5 4.5 24.5 5.2 24.5 6 C24.5 6.8 23.5 7.5 22.5 7.5 L22.5 4.5Z" fill="currentColor" opacity=".5"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Screen -->
+    <div class="screen">
+      <div class="topbar">
+        <span class="topbar-title">我 的</span>
+      </div>
+
+      <div class="scroll">
+        <!-- Account hero -->
+        <div class="account-hero">
+          <div class="account-avatar">妈</div>
+          <div>
+            <div class="account-name">已登录</div>
+            <div class="account-email">c***@263.net</div>
+          </div>
+          <button class="account-sync-btn">同 步</button>
+        </div>
+
+        <!-- Group 1: 牌组 -->
+        <div style="padding: 0 0 4px;">
+          <div class="mine-group-label" style="padding-left:20px">我的牌组</div>
+        </div>
+        <div class="mine-group">
+          <button class="mine-menu-item">
+            <div class="mine-menu-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div class="mine-menu-label">家庭相册</div>
+            <span style="font-size:12px;color:var(--text3);margin-right:6px">128 张</span>
+            <span class="mine-menu-chevron">›</span>
+          </button>
+          <button class="mine-menu-item">
+            <div class="mine-menu-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <div class="mine-menu-label" style="color:var(--text3)">导入新牌组</div>
+            <span class="mine-menu-chevron">›</span>
+          </button>
+        </div>
+
+        <!-- Group 2: 设置与支持 -->
+        <div style="padding: 0 0 4px;">
+          <div class="mine-group-label" style="padding-left:20px">设置与支持</div>
+        </div>
+        <div class="mine-group">
+          <button class="mine-menu-item">
+            <div class="mine-menu-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+            <div class="mine-menu-label">设 置</div>
+            <span class="mine-menu-chevron">›</span>
+          </button>
+          <!-- FEEDBACK ENTRY ROW — highlighted -->
+          <button class="mine-menu-item feedback-row" onclick="void(0)" style="background:var(--ocean-lt)">
+            <div class="mine-menu-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="mine-menu-label">意见反馈</div>
+              <div class="mine-menu-sub">遇到问题或有功能建议</div>
+            </div>
+            <span class="mine-menu-chevron" style="color:var(--ocean)">›</span>
+          </button>
+        </div>
+
+        <!-- Version footer -->
+        <div style="text-align:center;padding:16px 0 24px;font-size:11px;color:var(--text3)">
+          忆海拾光 v5.2.0
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="home-tabbar">
+        <button class="tab-item">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
+          <span>首 页</span>
+        </button>
+        <button class="tab-item">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>开始练习</span>
+        </button>
+        <button class="tab-item active">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
+          <span>我 的</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SCREEN 2: Feedback sheet ══════════════ -->
+<div class="phone-wrap">
+  <div class="phone-label">Screen 2 — 反馈底部弹层</div>
+  <div class="phone phone-2">
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+          <rect x="0" y="3" width="3" height="9" rx="1" opacity=".4"/>
+          <rect x="4.5" y="2" width="3" height="10" rx="1" opacity=".6"/>
+          <rect x="9" y="0" width="3" height="12" rx="1"/>
+          <rect x="13.5" y="1" width="2.5" height="10" rx="1" opacity=".3"/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 6.5C5.5 2 10.5 0 12 0s6.5 2 11 6.5"/>
+          <path d="M4 10c2.2-2.5 5-4 8-4s5.8 1.5 8 4"/>
+          <path d="M7.5 13.5c1.2-1.5 2.8-2.5 4.5-2.5s3.3 1 4.5 2.5"/>
+          <circle cx="12" cy="17" r="1.5" fill="currentColor"/>
+        </svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+          <rect x="0" y="1" width="21" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <rect x="1.5" y="2.5" width="15" height="7" rx="1.5"/>
+          <path d="M22.5 4.5 C23.5 4.5 24.5 5.2 24.5 6 C24.5 6.8 23.5 7.5 22.5 7.5 L22.5 4.5Z" fill="currentColor" opacity=".5"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="screen" style="position:relative">
+      <!-- Blurred background (same as screen 1 content) -->
+      <div style="padding:8px 16px 14px;background:var(--bg)">
+        <span style="font-size:22px;font-weight:700;color:var(--text)">我 的</span>
+      </div>
+      <div style="padding:18px 16px 0;display:flex;align-items:center;gap:14px;opacity:.4">
+        <div class="account-avatar">妈</div>
+        <div>
+          <div class="account-name">已登录</div>
+          <div class="account-email">c***@263.net</div>
+        </div>
+      </div>
+
+      <!-- Backdrop -->
+      <div class="sheet-backdrop"></div>
+
+      <!-- Feedback sheet -->
+      <div class="feedback-sheet">
+        <!-- Handle -->
+        <div class="sheet-handle-row">
+          <div class="sheet-handle"></div>
+          <button class="sheet-close-btn">×</button>
+        </div>
+
+        <!-- Header -->
+        <div class="sheet-header">
+          <div class="sheet-title">意见反馈</div>
+        </div>
+
+        <!-- Body -->
+        <div class="sheet-body">
+
+          <!-- Textarea -->
+          <div style="position:relative;margin-bottom:16px">
+            <textarea
+              id="fb-text"
+              class="fb-textarea"
+              rows="5"
+              maxlength="200"
+              oninput="updateCount(this); this.style.borderColor = ''"
+              placeholder="请填写问题描述以便我们提供更好的帮助"
+              style="margin-bottom:0;padding-bottom:28px"
+            ></textarea>
+            <span id="char-count" style="position:absolute;bottom:10px;right:12px;font-size:11px;color:var(--text3);pointer-events:none">0 / 200</span>
+          </div>
+
+          <!-- Send button -->
+          <button class="send-btn" onclick="handleSend(this)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            发 送
+          </button>
+
+          <!-- Footnote -->
+          <div class="sheet-footnote">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            附带 App 版本、设备型号与错误日志，不含账号信息
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleDiag(btn) {
+    const content = document.getElementById('diag-content');
+    const arrow = document.getElementById('diag-arrow');
+    const open = content.classList.toggle('open');
+    arrow.classList.toggle('open', open);
+  }
+
+  function handleSend(btn) {
+    const ta = document.getElementById('fb-text');
+    if (!ta || !ta.value.trim()) {
+      ta.style.borderColor = '#ef4444';
+      ta.focus();
+      return;
+    }
+    ta.style.borderColor = '';
+    btn.textContent = '发送中…';
+    btn.disabled = true;
+    btn.style.opacity = '.7';
+    setTimeout(() => {
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 已发送，感谢反馈！';
+      btn.style.background = '#22c55e';
+      btn.style.opacity = '1';
+    }, 1200);
+  }
+
+  function updateCount(el) {
+    const counter = document.getElementById('char-count');
+    if (!counter) return;
+    const len = el.value.length;
+    counter.textContent = len + ' / 200';
+    counter.style.color = len >= 180 ? 'var(--ocean)' : 'var(--text3)';
+    el.style.color = 'var(--text)';
+  }
+
+</script>
+</body>
+</html>
