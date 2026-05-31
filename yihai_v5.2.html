@@ -649,6 +649,23 @@ body {
 .sin {opacity:0;transform:translateX(22px)}
 
 /* ════════════════════════════════
+   FEEDBACK SHEET
+   ════════════════════════════════ */
+.feedback-overlay {
+  position:fixed; inset:0; z-index:var(--z-sheet);
+  background:rgba(0,0,0,0.38);
+}
+.feedback-sheet {
+  position:absolute; bottom:0; left:50%;
+  transform:translateX(-50%);
+  width:100%; max-width:var(--mw);
+  background:var(--surf); border-radius:20px 20px 0 0;
+  max-height:90vh; overflow-y:auto;
+  box-shadow:0 -4px 32px rgba(14,165,233,0.12);
+  padding-bottom:calc(16px + var(--safe-bottom));
+}
+
+/* ════════════════════════════════
    SETTINGS DRAWER — Tab layout
    ════════════════════════════════ */
 .settings-overlay {
@@ -1792,6 +1809,17 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
+    <!-- feedback -->
+    <div class="mine-group">
+      <button class="mine-menu-item" onclick="openFeedbackSheet()">
+        <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div>
+          <div data-i18n="mine_menu_feedback">意见反馈</div>
+          <div style="font-size:12px;color:var(--text3)" data-i18n="mine_menu_feedback_sub">遇到问题或有功能建议</div>
+        </div>
+        <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
     <!-- mode switch -->
     <div class="mine-mode-row">
       <div class="mine-mode-lbl">
@@ -1821,6 +1849,32 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
       <span data-i18n="nav_mine">我 的</span>
     </button>
+  </div>
+</div>
+
+<!-- ══════════════ FEEDBACK SHEET ══════════════ -->
+<div class="feedback-overlay" id="feedback-overlay" style="display:none">
+  <div class="feedback-sheet" id="feedback-sheet">
+    <div class="sheet-handle-row">
+      <div class="sheet-handle"></div>
+      <button class="sheet-close-btn" onclick="closeFeedbackSheet()" data-i18n-aria="common_close">×</button>
+    </div>
+    <div style="padding:10px 16px 14px;font-size:18px;font-weight:700;color:var(--text)" data-i18n="feedback_sheet_title">意见反馈</div>
+    <div style="padding:0 16px 24px">
+      <div style="position:relative;margin-bottom:16px">
+        <textarea id="feedback-textarea" maxlength="200" rows="5"
+          placeholder="请填写问题描述以便我们提供更好的帮助"
+          data-i18n-placeholder="feedback_placeholder"
+          oninput="onFeedbackInput(this)"
+          style="width:100%;padding:12px 14px 28px;border:1.5px solid var(--bd2);border-radius:12px;background:var(--surf);font-size:15px;font-family:inherit;color:var(--text);resize:none;outline:none;line-height:1.55;box-sizing:border-box;transition:border-color .15s"
+        ></textarea>
+        <span id="feedback-count" style="position:absolute;bottom:10px;right:12px;font-size:11px;color:var(--text3);pointer-events:none">0 / 200</span>
+      </div>
+      <button id="feedback-send-btn" onclick="handleFeedbackSend()"
+        style="width:100%;height:46px;border-radius:12px;border:none;background:var(--ocean);color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:10px;letter-spacing:.02em;-webkit-tap-highlight-color:transparent"
+        data-i18n="feedback_send_btn">发 送</button>
+      <div style="font-size:11px;color:var(--text3);text-align:center;line-height:1.5" data-i18n="feedback_footnote">附带 App 版本、设备型号与错误日志，不含账号信息</div>
+    </div>
   </div>
 </div>
 
@@ -3188,6 +3242,16 @@ async function runSync(opts) {
     }
     syncStats.decks = newDecks + syncedDecks;
     // cleanup & mark
+    // retry pending feedback (written during offline/degraded state)
+    var _pfb = localStorage.getItem('yihai_pending_feedback');
+    if (_pfb && _syncEnabled) {
+      try {
+        var _pfbPayload = JSON.parse(_pfb);
+        var _pfbClient  = supabase.createClient(FB_SUPABASE_URL, FB_SUPABASE_ANON_KEY);
+        var _pfbRes     = await _pfbClient.from('feedback').insert(_pfbPayload);
+        if (!_pfbRes.error) localStorage.removeItem('yihai_pending_feedback');
+      } catch(e) { log.warn('feedback', 'pending retry failed', e.message); }
+    }
     purgeOldLogs();
     localStorage.setItem('yihai_global_sync_ts', String(Date.now()));
     logAppEvent('sync_done', { deck_key: options.deckKey, stats: syncStats }, options.deckKey);
@@ -5658,6 +5722,154 @@ function detectLocale(navLang, supported, fallback) {
   return fallback;
 }
 
+// ── 反馈模块常量（正式上线前替换为独立项目 URL/Key）──────────────
+const FB_SUPABASE_URL      = SUPABASE_URL;
+const FB_SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+const FEEDBACK_EMAIL       = 'zyhacl@gmail.com';
+
+// ── 收集诊断数据（IDB 2s 超时兜底）─────────────────────────────
+async function collectDiagnostics() {
+  var base = {
+    app_version:        APP_VERSION,
+    collected_at:       Date.now(),
+    idb_version:        SRS_DB_VER,
+    sync_enabled:       _syncEnabled,
+    has_session_backup: !!localStorage.getItem('yihai_session_backup'),
+    last_sync_ts:       Number(localStorage.getItem('yihai_global_sync_ts')) || null,
+    deck_count:         (typeof DECKS_META !== 'undefined' ? DECKS_META.length : null),
+    logs:               null,
+    log_source:         null,
+    events:             null,
+  };
+  try {
+    var db = await Promise.race([
+      openSrsDb(),
+      new Promise(function(_, rej) { setTimeout(function() { rej(new Error('idb timeout')); }, 2000); })
+    ]);
+    var logs = await new Promise(function(res, rej) {
+      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
+      r.onsuccess = function(e) { res(e.target.result || []); };
+      r.onerror   = function(e) { rej(e.target.error); };
+    });
+    base.logs = logs
+      .filter(function(l) { return l.level === 'warn' || l.level === 'error'; })
+      .slice(-30)
+      .map(function(l) { return { level: l.level, module: l.module, msg: l.msg, ts: l.timestamp }; });
+    base.log_source = 'idb';
+    var evts = await new Promise(function(res, rej) {
+      var r = db.transaction(EVT_STORE, 'readonly').objectStore(EVT_STORE).getAll();
+      r.onsuccess = function(e) { res(e.target.result || []); };
+      r.onerror   = function(e) { rej(e.target.error); };
+    });
+    base.events = evts.slice(-10).map(function(e) { return { type: e.event_type, payload: e.payload, ts: e.timestamp }; });
+  } catch(e) { /* IDB 不可用，logs/events 保持 null */ }
+  return base;
+}
+
+// ── 格式化剪贴板兜底文本 ────────────────────────────────────────
+function formatFeedbackText(payload) {
+  var di   = payload.device_info || {};
+  var d    = payload.diagnostics  || {};
+  var time = new Date(d.collected_at || Date.now()).toLocaleString('zh-CN', { hour12: false });
+  var ua   = di.ua || '';
+  var device = (ua.match(/\(([^)]+)\)/) || ['', ''])[1] || ua || '未知';
+  var lines = [
+    '【忆海拾光 意见反馈】',
+    '版本：' + payload.app_version + '  设备：' + device,
+    '时间：' + time,
+    '-----------',
+    payload.user_desc,
+    '-----------',
+  ];
+  if (d.logs && d.logs.length) {
+    lines.push('最近错误：');
+    d.logs.slice(-3).forEach(function(l) {
+      lines.push('  [' + l.module + '] ' + l.msg + ' (' + new Date(l.ts).toLocaleTimeString('zh-CN') + ')');
+    });
+  } else {
+    lines.push('错误日志：（无）');
+  }
+  return lines.join('\n');
+}
+
+// ── 提交反馈（主通道 Supabase 5s 超时，失败降级剪贴板）──────────
+async function submitFeedback(userDesc) {
+  var diagnostics = await collectDiagnostics();
+  var payload = {
+    app_version: APP_VERSION,
+    user_desc:   userDesc,
+    device_id:   _deviceId,
+    locale:      (typeof getLocale === 'function' ? getLocale() : 'zh'),
+    device_info: (typeof getDeviceInfo === 'function' ? getDeviceInfo() : {}),
+    diagnostics: diagnostics,
+  };
+  try {
+    var fbClient = supabase.createClient(FB_SUPABASE_URL, FB_SUPABASE_ANON_KEY);
+    var result = await Promise.race([
+      fbClient.from('feedback').insert(payload),
+      new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 5000); })
+    ]);
+    if (!result.error) return 'success';
+  } catch(e) {}
+  var text = formatFeedbackText(payload);
+  try { await navigator.clipboard.writeText(text); } catch(e) {}
+  localStorage.setItem('yihai_pending_feedback', JSON.stringify(payload));
+  return 'clipboard';
+}
+
+// ── 反馈 sheet UI ────────────────────────────────────────────────
+function openFeedbackSheet() {
+  var overlay = document.getElementById('feedback-overlay');
+  var ta      = document.getElementById('feedback-textarea');
+  var btn     = document.getElementById('feedback-send-btn');
+  var cnt     = document.getElementById('feedback-count');
+  if (!overlay) return;
+  if (ta)  { ta.value = ''; ta.style.borderColor = ''; }
+  if (btn) { btn.textContent = t('feedback_send_btn'); btn.disabled = false; btn.style.background = 'var(--ocean)'; btn.style.opacity = '1'; }
+  if (cnt) cnt.textContent = '0 / 200';
+  overlay.style.display = '';
+  overlay.onclick = function(e) { if (e.target === overlay) closeFeedbackSheet(); };
+}
+
+function closeFeedbackSheet() {
+  var overlay = document.getElementById('feedback-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function onFeedbackInput(ta) {
+  var cnt = document.getElementById('feedback-count');
+  var len = ta.value.length;
+  if (cnt) {
+    cnt.textContent = len + ' / 200';
+    cnt.style.color = len >= 180 ? 'var(--ocean)' : 'var(--text3)';
+  }
+  ta.style.borderColor = '';
+}
+
+async function handleFeedbackSend() {
+  var ta  = document.getElementById('feedback-textarea');
+  var btn = document.getElementById('feedback-send-btn');
+  if (!ta || !ta.value.trim()) {
+    if (ta) ta.style.borderColor = '#ef4444';
+    return;
+  }
+  btn.textContent = t('feedback_sending');
+  btn.disabled = true;
+  btn.style.opacity = '.7';
+  var result = await submitFeedback(ta.value.trim());
+  if (result === 'success') {
+    btn.textContent = t('feedback_sent_ok');
+    btn.style.background = '#22c55e';
+    btn.style.opacity = '1';
+    setTimeout(function() { closeFeedbackSheet(); }, 1500);
+  } else {
+    btn.textContent = t('feedback_send_btn');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    showToastMsg(t('feedback_toast_fail') + FEEDBACK_EMAIL);
+  }
+}
+
 const I18N = {
   'en': {
     // App meta
@@ -5696,6 +5908,15 @@ const I18N = {
     mine_menu_settings: 'Settings',
     mine_menu_theme: 'Theme',
     mine_menu_about: 'About',
+    mine_menu_feedback: 'Feedback',
+    mine_menu_feedback_sub: 'Report issues or suggest features',
+    feedback_sheet_title: 'Feedback',
+    feedback_placeholder: 'Please describe the issue to help us improve',
+    feedback_send_btn: 'Send',
+    feedback_sending: 'Sending…',
+    feedback_sent_ok: '✓ Sent, thank you!',
+    feedback_footnote: 'Includes app version, device model, and error logs. No account data.',
+    feedback_toast_fail: 'Send failed. Content copied — paste to ',
     mine_menu_import: 'Import File',
     mine_mode_title: 'Advanced Mode',
     mine_mode_sub: 'Enable to manage decks and create cards',
@@ -5974,6 +6195,15 @@ const I18N = {
     mine_menu_settings: '设置',
     mine_menu_theme: '主题',
     mine_menu_about: '关于',
+    mine_menu_feedback: '意见反馈',
+    mine_menu_feedback_sub: '遇到问题或有功能建议',
+    feedback_sheet_title: '意见反馈',
+    feedback_placeholder: '请填写问题描述以便我们提供更好的帮助',
+    feedback_send_btn: '发 送',
+    feedback_sending: '发送中…',
+    feedback_sent_ok: '✓ 已发送，感谢反馈！',
+    feedback_footnote: '附带 App 版本、设备型号与错误日志，不含账号信息',
+    feedback_toast_fail: '发送失败，内容已复制，请粘贴发到 ',
     mine_menu_import: '导入文件',
     mine_mode_title: '高级模式',
     mine_mode_sub: '开启后可管理牌组与制卡',
@@ -6252,6 +6482,15 @@ const I18N = {
     mine_menu_settings: 'Ajustes',
     mine_menu_theme: 'Tema',
     mine_menu_about: 'Acerca de',
+    mine_menu_feedback: 'Comentarios',
+    mine_menu_feedback_sub: 'Reportar problemas o sugerir funciones',
+    feedback_sheet_title: 'Comentarios',
+    feedback_placeholder: 'Por favor describe el problema para ayudarnos a mejorar',
+    feedback_send_btn: 'Enviar',
+    feedback_sending: 'Enviando…',
+    feedback_sent_ok: '✓ Enviado, ¡gracias!',
+    feedback_footnote: 'Incluye versión, dispositivo y registros. Sin datos de cuenta.',
+    feedback_toast_fail: 'Error al enviar. Copiado — pegar a ',
     mine_menu_import: 'Importar archivo',
     mine_mode_title: 'Modo Cuidador',
     mine_mode_sub: 'Activar para gestionar mazos y crear tarjetas',
