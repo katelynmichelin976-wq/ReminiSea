@@ -7519,9 +7519,14 @@ function pickVoice(lang) {
         || voices.find(v => v.lang === 'zh-CN')
         || (voices.length ? voices[0] : null);
   }
+  if ((!lang || lang.startsWith('ja')) && getLocale() === 'ja') {
+    return voices.find(v => v.lang === 'ja-JP')
+        || voices.find(v => v.lang && v.lang.startsWith('ja'))
+        || (voices.length ? voices[0] : null);
+  }
   return voices.find(v => v.lang === want)
       || voices.find(v => v.lang && v.lang.split('-')[0] === prefix)
-      || voices.find(v => v.lang === 'zh-CN')
+      || (prefix === 'zh' ? voices.find(v => v.lang === 'zh-CN') : null)
       || (voices.length ? voices[0] : null);
 }
 
