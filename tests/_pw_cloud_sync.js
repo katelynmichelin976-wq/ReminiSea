@@ -5,7 +5,7 @@
  * 运行：$env:TEST_PASSWORD="xxx"; node tests/_pw_cloud_sync.js
  *
  * 覆盖：登录 → decks 表下载 → 练习同步 → session restore → user_id 隔离
- *        → 登出数据保留 → 重新登录
+ *        → 登出数据保留 → 重新登录 → if(!_sb) 双客户端防护
  */
 const { chromium } = require('playwright');
 const helper = require('./_playwright_helper');
@@ -253,6 +253,37 @@ async function waitSyncDone(page) {
     const secondCount = await run(page, () => document.querySelectorAll('.deck-card').length);
     pass('重新登录后有云牌组', secondCount > 0);
     pass('重新登录牌组数 ≥ 首次', secondCount >= firstDeckCount);
+
+    // ════ PHASE 10: if (!_sb) 双客户端防护回归 ════
+    section('PHASE 10: if (!_sb) 防护 — 二次登录不替换已有 _sb 实例');
+    // 此时已登录，_sb 应存在
+    const sbExists = await run(page, () => typeof _sb !== 'undefined' && _sb !== null);
+    pass('前置条件：_sb 实例已存在', sbExists);
+
+    if (sbExists) {
+      // 给当前 _sb 客户端打标记
+      await run(page, () => { _sb.__testMarker = 'original'; });
+
+      // 导航到账号页，填表再次触发 doAccountLogin()
+      await run(page, () => { showScreen('screen-account'); });
+      await wait(page, 500);
+      await run(page, ({ em, pw }) => {
+        const e = document.getElementById('account-email');
+        const p = document.getElementById('account-password');
+        if (e) e.value = em;
+        if (p) p.value = pw;
+        const b = document.getElementById('account-login-btn');
+        if (b) b.click();
+      }, { em: TEST_EMAIL, pw: TEST_PASSWORD });
+      // 等登录完成（signInWithPassword + onAuthStateChange）
+      await wait(page, 8000);
+
+      // _sb 引用的标记应仍然存在（未被重新创建）
+      const markerPreserved = await run(page, () =>
+        typeof _sb !== 'undefined' && _sb !== null && _sb.__testMarker === 'original'
+      );
+      pass('二次登录后 _sb 实例未被替换（if (!_sb) 防护生效）', markerPreserved);
+    }
 
   } finally {
     const { passed, failed } = getCounts();

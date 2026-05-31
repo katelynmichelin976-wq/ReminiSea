@@ -207,20 +207,27 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     // Note: openVoiceAssist() is still a stub, so navigate directly via showScreen
     await page.evaluate(() => { if (typeof showScreen === 'function') showScreen('screen-voice-assist'); });
     await page.waitForTimeout(300);
-    // Screen should exist
-    const vaScreen = await page.$('#screen-voice-assist');
-    assert.ok(vaScreen, '语音辅助页元素应存在 (#screen-voice-assist)');
-    // Title should exist
-    const vaTitle = await page.$('[data-i18n="voice_assist_page_title"]');
-    assert.ok(vaTitle, '语音辅助页标题元素应存在');
-    // Three accordion groups should exist
-    assert.ok(await page.$('[data-i18n="voice_group_fixed"]'), '固定节点分组标题应存在');
-    assert.ok(await page.$('[data-i18n="voice_group_emotion"]'), '情绪触发分组标题应存在');
-    assert.ok(await page.$('[data-i18n="voice_group_functional"]'), '功能提示分组标题应存在');
-    // Enable toggle should exist
-    assert.ok(await page.$('#va-enable-toggle'), '启用开关应存在');
+    pass('语音辅助页元素应存在 (#screen-voice-assist)', !!(await page.$('#screen-voice-assist')));
+    pass('语音辅助页标题元素应存在', !!(await page.$('[data-i18n="voice_assist_page_title"]')));
+    pass('固定节点分组标题应存在', !!(await page.$('[data-i18n="voice_group_fixed"]')));
+    pass('情绪触发分组标题应存在', !!(await page.$('[data-i18n="voice_group_emotion"]')));
+    pass('功能提示分组标题应存在', !!(await page.$('[data-i18n="voice_group_functional"]')));
+    pass('启用开关应存在 (#va-enable-toggle)', !!(await page.$('#va-enable-toggle')));
     // Navigate back
     await page.evaluate(() => { if (typeof showScreen === 'function') showScreen('screen-home'); });
+
+    // ── openSrsDb() 返回 Promise 回归（修复 return _srsDbPromise 缺失）──
+    section('PHASE 10: openSrsDb() 首次调用返回 Promise');
+    const openSrsDbIsPromise = await run(page, async () => {
+      _srsDb = null;
+      _srsDbPromise = null;
+      const result = openSrsDb();
+      const ok = result instanceof Promise;
+      // 等待 DB 实际打开，避免悬空 pending promise 干扰后续测试
+      try { await result; } catch (_e) { /* ignore */ }
+      return ok;
+    });
+    pass('openSrsDb() 首次调用返回 Promise（非 undefined）', openSrsDbIsPromise);
 
   } finally {
     const { passed, failed } = getCounts();

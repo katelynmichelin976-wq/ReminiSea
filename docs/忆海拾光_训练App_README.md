@@ -129,6 +129,17 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.2.1 — 2026-05-31
+
+**Bug 修复：会话恢复 / 同步稳定性**
+- 修复账号页卡在「正在恢复登录」：新增 `_sessionRestoring` 标志替代 backup 存在与否代理逻辑（影响 SDK CDN 不可达、backup 损坏、getSession 异常等场景）
+- 修复 `openSrsDb` IDB blocked 导致同步永久挂死：新增 `onblocked` 8s 超时，补全 `return _srsDbPromise`
+- 修复登录按钮网络死挂后永久 disabled：`signInWithPassword` 加 15s 超时
+- 修复二次登录替换已有 `_sb` 实例的双客户端问题
+- 修复 modal 同步失败（含 IDB blocked）时用户无任何提示
+
+---
+
 ### v5.2.0 — 2026-05-30
 
 **新功能：语音辅助系统**

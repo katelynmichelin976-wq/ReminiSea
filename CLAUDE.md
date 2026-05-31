@@ -27,10 +27,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v5.0_i18n_test.js` | i18n 纯函数单测（27 cases） |
 | `tests/yihai_v5.2_voice_test.js` | 语音辅助迁移逻辑单测（8 cases） |
 | `tests/run_all.js` | 单元测试统一入口（6 套件，312 断言） |
-| `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音，47 断言，无需登录） |
+| `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音/openSrsDb，54 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/曲线，14 断言，无需登录） |
-| `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登，26 断言） |
+| `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登/双客户端防护，28 断言） |
 | `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备，11 断言） |
+| `tests/_pw_session_restore.js` | 会话恢复流程（SDK失败/无backup/token失效/backup损坏/pathD/登录超时，13 断言，无需登录） |
+| `tests/_pw_sync_guard.js` | runSync 30s watchdog（REST挂起/IDB blocked 时 modal 自动关闭+toast，7 断言，无需登录） |
 | `tests/_playwright_helper.js` | Playwright 公共工具（cloudLogin/cloudLogout/navigateTo 等） |
 
 ### 文档
@@ -53,7 +55,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.2.0**（`yihai_v5.2.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.2.1**（`yihai_v5.2.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.2.0 bug fixes：** 会话恢复 UI 卡死修复 — 新增 `_sessionRestoring` 标志替代 backup-proxy 逻辑（修复缺陷1/2/3/5）；`openSrsDb` onblocked 8s 超时防挂死 + 修复 `return _srsDbPromise` 缺失；`doAccountLogin` 15s 超时；`if (!_sb)` 双客户端防护；`runSync` catch 块 modal 失败时显示 toast
 
 **v5.2.0：** 语音辅助系统 — 家属录音+TTS 双轨、11 个语音槽（固定节点/情绪触发/功能提示）、IDB voiceSlots store（DB v7）、screen-voice-assist 管理界面、idle 计时器、连对连击鼓励、card_type/ext 字段扩展
 
@@ -109,7 +113,7 @@ $env:TEST_PASSWORD="xxx"; node tests/_pw_cross_device.js
 - **跨设备/同步改动** → 加跑 `_pw_cross_device.js`
 - **全量回归** → 仅用户明确要求时跑全部 4 个 Playwright 文件
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, voice 8（run_all.js 合计 312）；Playwright ui_smoke 47 / srs_e2e 14 / cloud_sync 26 / cross_device 11。
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 27, voice 8（run_all.js 合计 312）；Playwright ui_smoke 54 / srs_e2e 14 / cloud_sync 28 / cross_device 11 / session_restore 13 / sync_guard 7。
 
 ## SRS Architecture
 

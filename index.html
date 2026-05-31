@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.2.0</title>
+<title data-i18n="app_title">忆海拾光 v5.2.1</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -1532,7 +1532,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.2.0</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.2.1</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2625,7 +2625,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.2.0';
+const APP_VERSION = '5.2.1';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -2647,6 +2647,7 @@ const MEDIA_CDN_BASE = '';
 
 let _sb = null;
 let _syncEnabled = false;
+let _sessionRestoring = false;
 let _deviceId = null;
 let _lastOrphans = [];    // media cleanup: cache last orphan scan keys
 let _cloudUserEmail = '';
@@ -2689,6 +2690,7 @@ function _createSupabaseClient() {
 // single getSession() call with 7s timeout — any failure → offline (keep credentials, retry on online)
 function restoreSession() {
   logAppEvent('session_restore_start', { SDK: 'supabase-js' });
+  _sessionRestoring = true;
   return Promise.resolve().then(function() {
     _sb = _createSupabaseClient();
 
@@ -2717,7 +2719,6 @@ function restoreSession() {
         localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
         localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
         logAppEvent('session_restore_ok', { uid: _cloudUserId });
-        updateCloudTabUI();
         checkPersonalDeckUpdates().catch(() => {});
         return;
       }
@@ -2726,7 +2727,6 @@ function restoreSession() {
       _cloudUserEmail = parsed.user.email;
       _cloudUserId    = parsed.user.id || '';
       logAppEvent('session_restore_offline', { reason: timedOut ? 'timeout' : (error && error.message) || 'no_session' });
-      updateCloudTabUI();
 
       window.removeEventListener('online', _onOnlineRetry);
       window.addEventListener('online', _onOnlineRetry);
@@ -2734,6 +2734,8 @@ function restoreSession() {
   }).catch(function(e) {
     logAppEvent('session_restore_error', { errMsg: e.message });
     _syncEnabled = false;
+  }).finally(function() {
+    _sessionRestoring = false;
     updateCloudTabUI();
   });
 }
@@ -3108,6 +3110,12 @@ async function runSync(opts) {
   }
   logAppEvent('sync_started', { deck_key: options.deckKey, mode: options.modal ? 'modal' : 'bg', decks: !!options.decks, events: !!options.events }, options.deckKey);
   var syncStats = { trials: 0, events: 0, states_merged: 0, config: 0, decks: 0 };
+  var _syncWatchdogId = setTimeout(function() {
+    log.warn('sync', 'runSync watchdog: 30s timeout');
+    _syncInFlight = false;
+    if (options.modal && modalEl) modalEl.style.display = 'none';
+    showCloudToast(t('sync_failed'), true);
+  }, 30000);
   try {
     // 1. upload TrialLog (incremental)
     updateProg(t('sync_upload_trials'), 10);
@@ -3201,8 +3209,9 @@ async function runSync(opts) {
   } catch(e) {
     if (options.modal && modalEl) modalEl.style.display = 'none';
     console.warn('[sync] runSync error:', e.message);
-    if (options.showToast) showCloudToast(t('sync_failed'), true);
+    if (options.showToast || options.modal) showCloudToast(t('sync_failed'), true);
   } finally {
+    clearTimeout(_syncWatchdogId);
     _syncInFlight = false;
   }
   if (options.deckKey) updateDeckStats();
@@ -3259,7 +3268,12 @@ function openSrsDb() {
     };
     req.onsuccess = e => { _srsDb = e.target.result; _srsDbPromise = null; res(_srsDb); };
     req.onerror   = e => { _srsDbPromise = null; rej(e.target.error); };
+    req.onblocked = () => {
+      console.warn('[idb] open blocked — another tab may be open with an older version');
+      setTimeout(() => { _srsDbPromise = null; rej(new Error('IDB blocked: please close other tabs and refresh')); }, 8000);
+    };
   });
+  return _srsDbPromise;
 }
 
 async function migrateV5IfNeeded() {
@@ -5254,7 +5268,7 @@ function renderAccount() {
   resEl.style.display = 'none';
   inEl.style.display  = 'none';
 
-  if (!_cloudUserEmail && localStorage.getItem('yihai_session_backup')) {
+  if (_sessionRestoring) {
     resEl.style.display = '';
     return;
   }
@@ -5295,8 +5309,9 @@ async function doAccountLogin() {
     const cp = document.getElementById('cloud-password');
     if (ce) ce.value = email;
     if (cp) cp.value = pwd;
-    _sb = _createSupabaseClient();
-    const { data, error } = await _sb.auth.signInWithPassword({ email, password: pwd });
+    if (!_sb) _sb = _createSupabaseClient();
+    const loginTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error(t('sync_offline'))), 15000));
+    const { data, error } = await Promise.race([_sb.auth.signInWithPassword({ email, password: pwd }), loginTimeout]);
     if (error) throw error;
     _syncEnabled      = true;
     _cloudUserEmail = data.user.email;
