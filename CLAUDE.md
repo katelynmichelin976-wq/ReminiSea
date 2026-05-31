@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.4.1**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.4.2**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.4.2：** 修复 `pickVoice` 所选声音未按语种前缀匹配 — 改为 `namedPrefix === wantPrefix`，所选声音只在语种前缀匹配时生效，否则降级自动；覆盖英文/西文界面下中文声音不生效、及英文声音可控制英文提示等场景
 
 **v5.4.1：** 修复繁體中文介面下粤语 TTS 失效 — `pickVoice` 条件由 `lang === 'zh-CN'` 改为 `lang.startsWith('zh')`，覆盖 zh-Hant/zh-TW/zh-HK 等所有中文变体
 

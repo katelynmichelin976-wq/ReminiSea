@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.4.2 Key Changes
+
+- **pickVoice 语种前缀匹配**: 原条件 `(!lang || lang.startsWith('zh'))` 改为 `namedPrefix === wantPrefix`（`namedPrefix = named.lang.split('-')[0]`，`wantPrefix = (lang||'zh-CN').split('-')[0]`）。所选声音只在语种前缀与内容语种前缀相同时使用，否则落入自动选择逻辑。修复场景：①英文界面下中文声音被跳过导致英文提示音无变化；②用户选了英文声音希望控制英文提示语音；③所有非中文内容的声音选择行为。
+
 ## v5.4.1 Key Changes
 
 - **pickVoice TTS_VOICE_NAME 条件扩展**: `(!lang || lang === 'zh-CN')` → `(!lang || lang.startsWith('zh'))`，两处：TTS_VOICE_NAME 已选语音判断 + zh-Hant 自动偏好 zh-TW voice 判断。修复原因：`playVoiceSlot` 传 `getLocale()` 作为 `ttsLang`，当 UI locale 为 `zh-Hant` 时，`speak()` 以 `lang='zh-Hant'` 调用 `pickVoice`，原条件不命中，已选粵語声音被跳过，前缀匹配 `zh` 返回第一个 zh-CN 声音（普通话）。
