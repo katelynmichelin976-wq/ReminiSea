@@ -94,5 +94,38 @@ function check(desc, actual, expected) {
   check('所有 voice i18n key 均存在于 HTML', missingKeys, []);
 }
 
+// ── v5.2 语音参数云同步完整性检查 ─────────────────────────────────────
+{
+  const fs = require('fs');
+  const html = fs.readFileSync('yihai_v5.2.html', 'utf-8');
+
+  // Test 6: cloudPushConfig 应包含 phrase_quiz_prompt
+  const pushStart = html.indexOf('async function cloudPushConfig()');
+  const pushEnd   = html.indexOf('\nasync function cloudPullConfig()');
+  const pushBody  = html.slice(pushStart, pushEnd);
+  check('cloudPushConfig localUi 应包含 phrase_quiz_prompt',
+    pushBody.includes('phrase_quiz_prompt'), true);
+
+  // Test 7: cloudPushConfig 应包含 phrase_quiz_prompt_recognize
+  check('cloudPushConfig localUi 应包含 phrase_quiz_prompt_recognize',
+    pushBody.includes('phrase_quiz_prompt_recognize'), true);
+
+  // Test 8: loadSettings 应从 phrase_quiz_prompt 读取答题提示，不再依赖 phraseSelect
+  const lsStart = html.indexOf('\nfunction loadSettings()');
+  const lsEnd   = html.indexOf('\nloadSettings()');
+  const lsBody  = html.slice(lsStart, lsEnd);
+  check('loadSettings 应读取 phrase_quiz_prompt 作为答题提示文案',
+    lsBody.includes("'phrase_quiz_prompt'"), true);
+  check('loadSettings 不应再依赖 phraseSelect',
+    lsBody.includes("'phraseSelect'"), false);
+
+  // Test 9: onSlotRowTap 保存回调应调用 debouncePushConfig 触发云推送
+  const tapStart = html.indexOf('\nfunction onSlotRowTap(slot)');
+  const tapEnd   = html.indexOf('\nfunction toggleVaGroup(');
+  const tapBody  = html.slice(tapStart, tapEnd);
+  check('onSlotRowTap 保存回调应调用 debouncePushConfig',
+    tapBody.includes('debouncePushConfig'), true);
+}
+
 console.log(`\n通过 ${passed} / 失败 ${failed}`);
 if (failed > 0) process.exit(1);
