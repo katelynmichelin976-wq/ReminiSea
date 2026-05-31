@@ -2,6 +2,11 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.4.9 Key Changes
+
+- **pickVoice 已选声音无语言限制**: `if (TTS_VOICE_NAME && (!lang || lang.startsWith('zh')))` → `if (TTS_VOICE_NAME)`。只要用户选了声音且设备能找到，任何 lang 参数均使用该声音。原限制使得非中文内容（lang='en' 等）忽略用户选择，逻辑不一致。
+- **zh-Hant 自动选声音链补充 yue-HK**: `voices.find(v => v.lang === 'zh-TW') || voices.find(v => v.lang === 'zh-HK') || voices.find(v => v.lang === 'yue-HK' || v.lang.startsWith('yue')) || voices.find(v => v.lang === 'zh-CN')`。iOS 上粤语声音（如善逸）的 `v.lang = 'yue-HK'`，原链只查 zh-TW/zh-CN 找不到，现在可以自动匹配。
+
 ## v5.4.8 Key Changes
 
 - **pickVoice 中文变体覆盖**: 两处 `!lang || lang === 'zh-CN'` 改为 `!lang || lang.startsWith('zh')`。第一处：已选声音（`TTS_VOICE_NAME`）的命中条件；第二处：zh-Hant 界面下自动选 zh-TW 声音的条件。根因：`playVoiceSlot` 传 `getLocale()='zh-Hant'` 为 ttsLang，`speak(text, 0, null, 'zh-Hant')` → `pickVoice('zh-Hant')` 时两个条件均不命中（`'zh-Hant' !== 'zh-CN'`），前缀匹配 `zh` 拿到第一个 zh-CN 普通话声音。选项以 `lang='zh-CN'` 调用故命中正确。
