@@ -56,7 +56,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.4.0**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.4.1**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.4.1：** 修复繁體中文介面下粤语 TTS 失效 — `pickVoice` 条件由 `lang === 'zh-CN'` 改为 `lang.startsWith('zh')`，覆盖 zh-Hant/zh-TW/zh-HK 等所有中文变体
 
 **v5.4.0：** 繁體中文（zh-Hant）支援 — 新增 `zh-Hant` locale（363 個 key），`detectLocale` 繁體變體顯式映射（zh-TW/zh-HK/zh-MO），語言選擇頁新增「中文（繁體）」行並移除所有語言旗幟 emoji，`pickVoice` 優先選取 zh-TW voice，i18n 單元測試新增 4 個 case（共 31 個）
 

@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.4.1 Key Changes
+
+- **pickVoice TTS_VOICE_NAME 条件扩展**: `(!lang || lang === 'zh-CN')` → `(!lang || lang.startsWith('zh'))`，两处：TTS_VOICE_NAME 已选语音判断 + zh-Hant 自动偏好 zh-TW voice 判断。修复原因：`playVoiceSlot` 传 `getLocale()` 作为 `ttsLang`，当 UI locale 为 `zh-Hant` 时，`speak()` 以 `lang='zh-Hant'` 调用 `pickVoice`，原条件不命中，已选粵語声音被跳过，前缀匹配 `zh` 返回第一个 zh-CN 声音（普通话）。
+
 ## v5.4.0 Key Changes
 
 - **繁體中文 locale（zh-Hant）**: `SUPPORTED_LOCALES` 新增 `'zh-Hant'`；`I18N['zh-Hant']` 363 個 key（與 zh-CN 完整對齊）；`const names` 加入 `'zh-Hant': '繁體中文'`。
