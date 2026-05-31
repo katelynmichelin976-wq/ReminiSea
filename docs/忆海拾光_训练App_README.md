@@ -129,7 +129,7 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
-### v5.2.1 — 2026-05-31
+### v5.2.2 — 2026-05-31
 
 **Bug 修复：会话恢复 / 同步稳定性**
 - 修复账号页卡在「正在恢复登录」：新增 `_sessionRestoring` 标志替代 backup 存在与否代理逻辑（影响 SDK CDN 不可达、backup 损坏、getSession 异常等场景）

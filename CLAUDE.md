@@ -55,7 +55,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.2.1**（`yihai_v5.2.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.2.2**（`yihai_v5.2.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 **v5.2.0 bug fixes：** 会话恢复 UI 卡死修复 — 新增 `_sessionRestoring` 标志替代 backup-proxy 逻辑（修复缺陷1/2/3/5）；`openSrsDb` onblocked 8s 超时防挂死 + 修复 `return _srsDbPromise` 缺失；`doAccountLogin` 15s 超时；`if (!_sb)` 双客户端防护；`runSync` catch 块 modal 失败时显示 toast
 
