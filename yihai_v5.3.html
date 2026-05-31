@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.3.0</title>
+<title data-i18n="app_title">忆海拾光 v5.3.1</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -1549,7 +1549,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.3.0</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.3.1</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2679,7 +2679,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.3.0';
+const APP_VERSION = '5.3.1';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -3026,7 +3026,6 @@ async function cloudPushConfig() {
     // collect local UI params
     const localUi = {
       confettiOn:         localStorage.getItem('confettiOn'),
-      phraseSelect:       localStorage.getItem('phraseSelect'),
       phraseWrong:        localStorage.getItem('phraseWrong'),
       phraseOptHint:      localStorage.getItem('phraseOptHint'),
       phraseCorrect:      localStorage.getItem('phraseCorrect'),
@@ -3043,6 +3042,8 @@ async function cloudPushConfig() {
       ndur:               localStorage.getItem('ndur'),
       bdur:               localStorage.getItem('bdur'),
       theme:              localStorage.getItem('theme'),
+      phrase_quiz_prompt:           localStorage.getItem('phrase_quiz_prompt'),
+      phrase_quiz_prompt_recognize: localStorage.getItem('phrase_quiz_prompt_recognize'),
     };
     ['fs-opt','fs-ans','fs-hint','fs-btn','ls-opt','ls-ans','ls-hint','ls-btn'].forEach(k => {
       const v = localStorage.getItem(k);
@@ -6772,13 +6773,12 @@ function setLocale(loc) {
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
   // reset voice prompts to current locale defaults on language switch
-  ['phraseSelect','phraseOptHint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
+  ['phrase_quiz_prompt','phraseOptHint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
   PHRASE_SELECT   = t('quiz_select_hint');
   PHRASE_OPT_HINT = t('default_opt_hint');
   PHRASE_WRONG    = t('default_wrong');
   PHRASE_CORRECT  = t('default_correct');
   const phraseInputs = [
-    ['phrase-select',    PHRASE_SELECT],
     ['phrase-opt-hint',  PHRASE_OPT_HINT],
     ['phrase-wrong',     PHRASE_WRONG],
     ['phrase-correct',   PHRASE_CORRECT],
@@ -7799,7 +7799,6 @@ function toggleConfetti(cb) {
 
 function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
-  if (key === 'select')  { PHRASE_SELECT   = normalize(val) || t('quiz_select_hint');   localStorage.setItem('phraseSelect',  PHRASE_SELECT); }
   if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || t('default_wrong');    localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
   if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
   if (key === 'correct') { PHRASE_CORRECT  = val || t('default_correct');              localStorage.setItem('phraseCorrect', PHRASE_CORRECT); }
@@ -7935,6 +7934,7 @@ function onSlotRowTap(slot) {
         if (slot.name === 'quiz_prompt') PHRASE_SELECT = newVal || t('quiz_select_hint') || '';
         if (slot.name === 'opt_hint') { PHRASE_OPT_HINT = newVal; localStorage.setItem('phraseOptHint', newVal); }
         renderVoiceSlots();
+        debouncePushConfig();
       }
     );
     return;
@@ -8160,8 +8160,7 @@ function onBdurChange(v) {
 }
 
 function migrateVoiceSettings() {
-  // 旧 toggle=0 → 清空对应文案（内容即开关，无文案=不播）
-  if (localStorage.getItem('quizPromptOn') === '0') localStorage.removeItem('phraseSelect');
+  // 旧 toggle=0 → 清空对应文案
   if (localStorage.getItem('optHintOn')    === '0') localStorage.removeItem('phraseOptHint');
   if (localStorage.getItem('wrongHintOn')  === '0') localStorage.removeItem('phraseWrong');
   if (localStorage.getItem('correctHintOn')=== '0') localStorage.removeItem('phraseCorrect');
@@ -8174,24 +8173,21 @@ function migrateVoiceSettings() {
   if (oldOptDelay && !localStorage.getItem('optReadDelay')) {
     localStorage.setItem('optReadDelay', oldOptDelay);
   }
-  // v5.2: 旧文案 key 迁移到 voice-assist 展示 key（避免升级后显示 i18n 默认值）
-  const _oldQP = localStorage.getItem('phraseSelect');
-  if (_oldQP && !localStorage.getItem('phrase_quiz_prompt')) {
-    localStorage.setItem('phrase_quiz_prompt', _oldQP);
-  }
+  // phraseOptHint → phrase_opt_hint
   const _oldOH = localStorage.getItem('phraseOptHint');
   if (_oldOH && !localStorage.getItem('phrase_opt_hint')) {
     localStorage.setItem('phrase_opt_hint', _oldOH);
   }
   // 清理废弃 key
   ['quizPromptOn','optHintOn','wrongHintOn','readHint',
-   'quizPromptDelay','optHintDelay','delay','browseDelay'].forEach(k => localStorage.removeItem(k));
+   'quizPromptDelay','optHintDelay','delay','browseDelay',
+   'phraseSelect'].forEach(k => localStorage.removeItem(k));
 }
 
 function loadSettings() {
   migrateVoiceSettings();
   // quiz prompt
-  const ps = localStorage.getItem('phraseSelect');
+  const ps = localStorage.getItem('phrase_quiz_prompt');
   if (ps) PHRASE_SELECT = ps;
   else PHRASE_SELECT = t('quiz_select_hint');
 
@@ -8259,8 +8255,6 @@ function loadSettings() {
 
   window.addEventListener('load', () => {
     // phrase sync
-    const ps2 = document.getElementById('phrase-select');
-    if (ps2) ps2.value = PHRASE_SELECT;
     const pw2 = document.getElementById('phrase-wrong');
     if (pw2) pw2.value = PHRASE_WRONG;
     const pohEl = document.getElementById('phrase-opt-hint');

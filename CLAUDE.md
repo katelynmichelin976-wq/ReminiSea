@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.3.html` | 主训练 App（v5.3.0，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.3.html` | 主训练 App（v5.3.1，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -25,8 +25,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v4.8_test.js` | v4.8 工具函数测试（46 cases） |
 | `tests/yihai_v4.9_test.js` | v4.9 配置合并测试（48 cases） |
 | `tests/yihai_v5.0_i18n_test.js` | i18n 纯函数单测（27 cases） |
-| `tests/yihai_v5.2_voice_test.js` | 语音辅助迁移逻辑单测（8 cases） |
-| `tests/run_all.js` | 单元测试统一入口（6 套件，312 断言） |
+| `tests/yihai_v5.2_voice_test.js` | 语音辅助迁移逻辑单测（13 cases） |
+| `tests/run_all.js` | 单元测试统一入口（6 套件，317 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音/openSrsDb，54 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/曲线，14 断言，无需登录） |
 | `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登/双客户端防护/feedback E2E，32 断言） |
@@ -56,7 +56,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.3.0**（`yihai_v5.3.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.3.1**（`yihai_v5.3.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.3.1：** 修复语音答题提示云同步 — `phrase_quiz_prompt` 统一为唯一 key（替代废弃 `phraseSelect`），补入 `cloudPushConfig` 推送列表，`onSlotRowTap` 保存后触发 `debouncePushConfig`，清理迁移兼容代码
 
 **v5.3.0：** 意见反馈模块 — `意见反馈` 入口（screen-mine）、底部 sheet（textarea 必填 200 字/字数计数/空提交红框校验）、`collectDiagnostics()`（IDB 2s 超时读取日志/事件，不采集 JWT/邮箱）、`submitFeedback()`（Supabase 5s 超时 + 剪贴板降级 + localStorage 暂存）、`runSync` 补传、zh/en/es 三语言、Supabase feedback 表（anon INSERT only RLS）
 

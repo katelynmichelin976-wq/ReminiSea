@@ -97,7 +97,7 @@ function check(desc, actual, expected) {
 // ── v5.2 语音参数云同步完整性检查 ─────────────────────────────────────
 {
   const fs = require('fs');
-  const html = fs.readFileSync('yihai_v5.2.html', 'utf-8');
+  const html = fs.readFileSync('yihai_v5.3.html', 'utf-8');
 
   // Test 6: cloudPushConfig 应包含 phrase_quiz_prompt
   const pushStart = html.indexOf('async function cloudPushConfig()');
