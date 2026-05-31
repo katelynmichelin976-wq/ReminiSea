@@ -34,6 +34,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_pw_session_restore.js` | 会话恢复流程（SDK失败/无backup/token失效/backup损坏/pathD/登录超时，13 断言，无需登录） |
 | `tests/_pw_sync_guard.js` | runSync 30s watchdog（REST挂起/IDB blocked 时 modal 自动关闭+toast，7 断言，无需登录） |
 | `tests/_pw_feedback.js` | 意见反馈模块（函数存在性/sheet 开关/表单校验，11 断言，无需登录） |
+| `tests/_pw_config_sync.js` | 语音辅助参数云同步（push→pull 一致性/废弃 key 清理/跨设备传播，~23 断言，需登录） |
 | `tests/_playwright_helper.js` | Playwright 公共工具（cloudLogin/cloudLogout/navigateTo 等） |
 
 ### 文档
@@ -123,6 +124,7 @@ $env:TEST_PASSWORD="xxx"; node tests/_pw_cross_device.js
 - **Bug 修复** → `node tests/run_all.js`
 - **发布** → 单元测试 + `_pw_ui_smoke.js` + `_pw_srs_e2e.js`
 - **云端/登录改动** → 加跑 `_pw_cloud_sync.js`
+- **语音参数/config 同步改动** → 加跑 `_pw_config_sync.js`
 - **跨设备/同步改动** → 加跑 `_pw_cross_device.js`
 - **全量回归** → 仅用户明确要求时跑全部 4 个 Playwright 文件
 
