@@ -41,7 +41,7 @@ check('前缀匹配 es-MX→es', detectLocale('es-MX', SUPPORTED_LOCALES, FALLBA
 check('前缀匹配 en-US→en', detectLocale('en-US', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'en');
 check('不支持的 fr→回退 en', detectLocale('fr-FR', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'en');
 check('空值→回退 en', detectLocale('', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'en');
-// 繁體變體映射（預期失敗，因為 SUPPORTED_LOCALES 尚未含 zh-Hant）
+// 繁體變體應映射至 zh-Hant
 check('zh-TW→zh-Hant', detectLocale('zh-TW', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'zh-Hant');
 check('zh-HK→zh-Hant', detectLocale('zh-HK', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'zh-Hant');
 check('zh-Hant→zh-Hant', detectLocale('zh-Hant', SUPPORTED_LOCALES, FALLBACK_LOCALE), 'zh-Hant');
