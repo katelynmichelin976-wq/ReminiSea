@@ -58,7 +58,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **当前版本：v5.3.2**（`yihai_v5.3.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
-**v5.3.2：** 修复 `phrase_opt_hint` 云同步（替代废弃 `phraseOptHint`），补入 `cloudPushConfig` 推送列表；修复多实例 `autoRefreshToken` 竞态（`restoreSession` 创建新客户端前调用 `stopAutoRefresh` 防止旧实例旋转令牌后新实例用失效令牌报 `refresh_token_not_found`）
+**v5.3.2：** 语音文案 key 统一 camelCase — `phraseQuizPrompt`/`phraseQuizPromptRecognize`/`phraseOptHint` 替代 v5.2 引入的 snake_case key，云同步/读写/重置路径全部对齐，删除废弃 key 迁移代码；修复多实例 `autoRefreshToken` 竞态（`restoreSession` 创建新客户端前调用 `stopAutoRefresh` 防止旧实例旋转令牌后新实例用失效令牌报 `refresh_token_not_found`）
 
 **v5.3.1：** 修复语音答题提示云同步 — `phrase_quiz_prompt` 统一为唯一 key（替代废弃 `phraseSelect`），补入 `cloudPushConfig` 推送列表，`onSlotRowTap` 保存后触发 `debouncePushConfig`，清理迁移兼容代码
 

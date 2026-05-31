@@ -3027,7 +3027,7 @@ async function cloudPushConfig() {
     const localUi = {
       confettiOn:         localStorage.getItem('confettiOn'),
       phraseWrong:        localStorage.getItem('phraseWrong'),
-      phrase_opt_hint:    localStorage.getItem('phrase_opt_hint'),
+      phraseOptHint:      localStorage.getItem('phraseOptHint'),
       phraseCorrect:      localStorage.getItem('phraseCorrect'),
       ttsRate:            localStorage.getItem('ttsRate'),
       ttsPitch:           localStorage.getItem('ttsPitch'),
@@ -3042,8 +3042,8 @@ async function cloudPushConfig() {
       ndur:               localStorage.getItem('ndur'),
       bdur:               localStorage.getItem('bdur'),
       theme:              localStorage.getItem('theme'),
-      phrase_quiz_prompt:           localStorage.getItem('phrase_quiz_prompt'),
-      phrase_quiz_prompt_recognize: localStorage.getItem('phrase_quiz_prompt_recognize'),
+      phraseQuizPrompt:             localStorage.getItem('phraseQuizPrompt'),
+      phraseQuizPromptRecognize:    localStorage.getItem('phraseQuizPromptRecognize'),
     };
     ['fs-opt','fs-ans','fs-hint','fs-btn','ls-opt','ls-ans','ls-hint','ls-btn'].forEach(k => {
       const v = localStorage.getItem(k);
@@ -5675,8 +5675,8 @@ function startCardPrompts(pickedOpts, optLang, cardType) {
   tQuizPromptTimer = setTimeout(() => {
     tQuizPromptTimer = null;
     const _qpText = (cardType === 'recognize')
-      ? (localStorage.getItem('phrase_quiz_prompt_recognize') || t('voice_quiz_prompt_recognize') || '认识这个人吗')
-      : (localStorage.getItem('phrase_quiz_prompt') || PHRASE_SELECT);
+      ? (localStorage.getItem('phraseQuizPromptRecognize') || t('voice_quiz_prompt_recognize') || '认识这个人吗')
+      : (localStorage.getItem('phraseQuizPrompt') || PHRASE_SELECT);
     playVoiceSlot('quiz_prompt', _qpText, getLocale());
     // Phase 2: option hint (waits additional OPT_READ_DELAY after quiz prompt)
     tOptHintTimer = setTimeout(() => {
@@ -6773,7 +6773,7 @@ function setLocale(loc) {
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
   // reset voice prompts to current locale defaults on language switch
-  ['phrase_quiz_prompt','phrase_opt_hint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
+  ['phraseQuizPrompt','phraseOptHint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
   PHRASE_SELECT   = t('quiz_select_hint');
   PHRASE_OPT_HINT = t('default_opt_hint');
   PHRASE_WRONG    = t('default_wrong');
@@ -7800,7 +7800,7 @@ function toggleConfetti(cb) {
 function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
   if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || t('default_wrong');    localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
-  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phrase_opt_hint', PHRASE_OPT_HINT); }
+  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
   if (key === 'correct') { PHRASE_CORRECT  = val || t('default_correct');              localStorage.setItem('phraseCorrect', PHRASE_CORRECT); }
   debouncePushConfig();
 }
@@ -7923,16 +7923,15 @@ async function renderVoiceSlots() {
 function onSlotRowTap(slot) {
   if (slot.functional) {
     const current = slot.name === 'quiz_prompt'
-      ? (localStorage.getItem('phrase_quiz_prompt') || PHRASE_SELECT)
-      : (localStorage.getItem('phrase_opt_hint')   || PHRASE_OPT_HINT);
+      ? (localStorage.getItem('phraseQuizPrompt') || PHRASE_SELECT)
+      : (localStorage.getItem('phraseOptHint')    || PHRASE_OPT_HINT);
     showTextEditOverlay(
       slot.name,
       t(slot.labelKey) || slot.name,
       current,
       (newVal) => {
-        localStorage.setItem('phrase_' + slot.name, newVal);
-        if (slot.name === 'quiz_prompt') PHRASE_SELECT = newVal || t('quiz_select_hint') || '';
-        if (slot.name === 'opt_hint') PHRASE_OPT_HINT = newVal;
+        if (slot.name === 'quiz_prompt') { PHRASE_SELECT = newVal || t('quiz_select_hint') || ''; localStorage.setItem('phraseQuizPrompt', newVal); }
+        if (slot.name === 'opt_hint') { PHRASE_OPT_HINT = newVal; localStorage.setItem('phraseOptHint', newVal); }
         renderVoiceSlots();
         debouncePushConfig();
       }
@@ -8161,7 +8160,7 @@ function onBdurChange(v) {
 
 function migrateVoiceSettings() {
   // 旧 toggle=0 → 清空对应文案
-  if (localStorage.getItem('optHintOn')    === '0') localStorage.removeItem('phrase_opt_hint');
+  if (localStorage.getItem('optHintOn')    === '0') localStorage.removeItem('phraseOptHint');
   if (localStorage.getItem('wrongHintOn')  === '0') localStorage.removeItem('phraseWrong');
   if (localStorage.getItem('correctHintOn')=== '0') localStorage.removeItem('phraseCorrect');
   // 旧延迟 key 迁移
@@ -8173,26 +8172,21 @@ function migrateVoiceSettings() {
   if (oldOptDelay && !localStorage.getItem('optReadDelay')) {
     localStorage.setItem('optReadDelay', oldOptDelay);
   }
-  // phraseOptHint → phrase_opt_hint
-  const _oldOH = localStorage.getItem('phraseOptHint');
-  if (_oldOH && !localStorage.getItem('phrase_opt_hint')) {
-    localStorage.setItem('phrase_opt_hint', _oldOH);
-  }
   // 清理废弃 key
   ['quizPromptOn','optHintOn','wrongHintOn','readHint',
    'quizPromptDelay','optHintDelay','delay','browseDelay',
-   'phraseSelect','phraseOptHint'].forEach(k => localStorage.removeItem(k));
+   'phraseSelect'].forEach(k => localStorage.removeItem(k));
 }
 
 function loadSettings() {
   migrateVoiceSettings();
   // quiz prompt
-  const ps = localStorage.getItem('phrase_quiz_prompt');
+  const ps = localStorage.getItem('phraseQuizPrompt');
   if (ps) PHRASE_SELECT = ps;
   else PHRASE_SELECT = t('quiz_select_hint');
 
   // option hint
-  const phraseOptHint = localStorage.getItem('phrase_opt_hint');
+  const phraseOptHint = localStorage.getItem('phraseOptHint');
   if (phraseOptHint) PHRASE_OPT_HINT = phraseOptHint;
   if (!PHRASE_OPT_HINT) PHRASE_OPT_HINT = t('default_opt_hint');
 

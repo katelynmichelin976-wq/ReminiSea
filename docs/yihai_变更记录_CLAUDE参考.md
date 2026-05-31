@@ -2,6 +2,11 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.3.2 Key Changes
+
+- **语音文案 key 统一 camelCase**: `phraseQuizPrompt` / `phraseQuizPromptRecognize` / `phraseOptHint` 替代 v5.2 引入的 snake_case key（`phrase_quiz_prompt` / `phrase_quiz_prompt_recognize` / `phrase_opt_hint`）。cloudPushConfig / loadSettings / onSlotRowTap / onPhraseChange / setLocale / migrateVoiceSettings 全部对齐，删除废弃 key 迁移代码。
+- **多实例 autoRefreshToken 竞态修复**: `restoreSession` 创建新客户端前调用 `stopAutoRefresh`，防止旧实例旋转令牌后新实例用失效令牌报 `refresh_token_not_found`。
+
 ## v5.3.0 Key Changes
 
 - **意见反馈模块（Feedback Module）**: 用户可在「我的」页面发起反馈，无需登录。
