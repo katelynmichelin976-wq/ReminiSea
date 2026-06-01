@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.4.html` | 主训练 App（v5.4.11，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.4.html` | 主训练 App（v5.4.12，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.4.11**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.4.12**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.4.12：** 修复 v5.4.11 TTS 角色拆分误伤 — `speak()` 加 `autoOnly` 参数（默认 false），只有 `playVoiceSlot`（提示词）传 `true`；`speakSequence`（卡片 details）保持 false 用已选声音；日文界面+中文声音时 details 不再用日语自动声音朗读
 
 **v5.4.11：** TTS 角色拆分 — `speak()`（提示词/语音辅助）始终用界面语言自动选声音，忽略 Voice 设置；`speakDirect()`（读答案/读选项）优先用 Voice 设置已选声音；`speakOptHint` UI 文字部分自动声音、卡片选项部分已选声音。支持「英文界面+中文声音」「繁体界面+英文声音」「日文界面+粤语声音」等混用场景
 
