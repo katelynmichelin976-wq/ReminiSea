@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.4.html` | 主训练 App（v5.4.17，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.4.html` | 主训练 App（v5.4.20，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.4.17**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.4.20**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.4.20：** UI 整合与性能优化 — ①`syncAppEvents` 批量上传（10条/批，`upsert+ignoreDuplicates`，174条从29分钟降至秒级）②修复「我的」Tab 切换时 profile card 残留「点击登录」（`showScreen` 补 `updateMineProfile`）③语音辅助页：宽度对齐、取消折叠、固定节点并入情绪触发（答错/答对/连对/完成）、浏览引导移至功能提示末位 ④「我的」页高级模式加⚡图标、间距对齐 ⑤界面语言从设置内移至「我的」顶层菜单（地球图标），语言页标题/顺序调整（EN→繁→简→日→ES）
 
 **v5.4.17：** 修复日文界面选项朗读中日混播 — ①`・`加入暂停正则（停顿而非朗读）②`startIdleQuizTimer` TTS播放中re-schedule延迟触发 ③`stopAllPromptTimers`清除`_idleQuizTimer`防止答题后idle播放；移除诊断日志
 

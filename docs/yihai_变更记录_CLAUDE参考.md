@@ -2,6 +2,14 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.4.20 Key Changes
+
+- **syncAppEvents 批量上传**: 新增 `uploadAppEventBatch(events)` 用 `upsert({ onConflict: 'event_id', ignoreDuplicates: true })` 一次最多上传 10 条；两个顺序循环（业务事件 + 诊断日志）改为按 `EVT_BATCH=10` 分批调用。修复 zyhaff@gmail.com 账号 174 条积压事件顺序上传导致 runSync 触发 30s watchdog 的问题。
+- **修复「我的」Tab 切换残留「点击登录」**: `showScreen('screen-mine')` 只做 CSS 切换，`mine-profile-name` 有 `data-i18n` 属性被 `applyI18n` 重置为「点击登录」但 `updateMineProfile` 未被调用。首页 Tab Bar 的「我的」按钮 onclick 补 `updateMineProfile()`。
+- **语音辅助页 UI 整合**: ①宽度对齐（`va-scroll` 加 `max-width: var(--mw)`，边距 12px→16px）②取消折叠（`va-group-body` 始终显示，去掉 chevron/onclick/cursor）③固定节点组并入情绪触发组，顺序：答错安慰→答对鼓励→连对表扬→完成庆祝 ④浏览引导从 fixed 移至 functional 末位，保留录音能力（无 `functional:true`）⑤`updateVoiceAssistStatus` 的 `allNonFunc` 去掉已删除的 `VOICE_SLOTS.fixed`。
+- **「我的」页高级模式**: ⚡ Zap 图标（`mine-menu-icon`）+ 顶部间距从 4px→10px（与其他区块对齐）+ `padding: 14px 16px` + `gap: 12px` + `mine-mode-lbl` 加 `flex:1`。
+- **界面语言从设置内移至「我的」顶层**: 设置 sheet 删除「显示」区块（含「界面语言」行）；「我的」第二组新增「语言」按钮（地球图标，`onclick="openLangPicker()"`，`mine_menu_lang` i18n key，5 locale 均添加）；`openLangPicker` 去掉 `closeSettings()` 调用；语言选择页标题改用 `mine_menu_lang`（随界面语言动态）；语言列表顺序改为 EN→中文繁體→中文简体→日本語→Español。
+
 ## v5.4.9 Key Changes
 
 - **pickVoice 已选声音无语言限制**: `if (TTS_VOICE_NAME && (!lang || lang.startsWith('zh')))` → `if (TTS_VOICE_NAME)`。只要用户选了声音且设备能找到，任何 lang 参数均使用该声音。原限制使得非中文内容（lang='en' 等）忽略用户选择，逻辑不一致。

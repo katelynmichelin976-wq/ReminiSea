@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.4.16</title>
+<title data-i18n="app_title">忆海拾光 v5.4.20</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -1331,12 +1331,12 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 
 /* ═══ mode toggle switch (mine screen) ═══ */
 .mine-mode-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 20px; margin: 4px 16px 10px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; margin: 10px 16px 0;
   background: var(--surf); border-radius: var(--rsm);
   border: 1px solid var(--bd);
 }
-.mine-mode-lbl { display: flex; flex-direction: column; gap: 2px; }
+.mine-mode-lbl { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .mine-mode-title { font-size: 15px; font-weight: 600; color: var(--text); }
 .mine-mode-sub { font-size: 12px; color: var(--text3); }
 
@@ -1426,7 +1426,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   background: var(--ocean-lt); border-radius: 12px; padding: 10px 14px;
 }
 .rec-script-lbl { font-size: 10px; color: var(--text3); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; }
-.rec-script-txt { font-size: 13px; color: var(--ocean); line-height: 1.6; }
+.rec-script-txt { font-size: 13px; color: var(--text); line-height: 1.6; width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--bd); background: var(--surf2); resize: none; min-height: 56px; -webkit-user-select: text; user-select: text; }
 .rec-state { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .rec-state.hidden { display: none; }
 .rec-mic-btn {
@@ -1472,9 +1472,10 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 #screen-voice-assist { display: flex; flex-direction: column; }
 .va-scroll {
   flex: 1; overflow-y: auto; padding: 10px 0 40px;
+  width: 100%; max-width: var(--mw); margin: 0 auto;
 }
 .va-param-block {
-  margin: 0 12px 8px;
+  margin: 0 16px 10px;
   background: var(--surf);
   border-radius: 16px;
   border: 1px solid var(--bd);
@@ -1497,15 +1498,13 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 .va-param-label { flex: 1; font-size: 13px; color: var(--text2); }
 .va-param-val { font-size: 13px; color: var(--ocean); font-weight: 700; min-width: 36px; text-align: right; }
 
-.va-group { margin: 0 12px 8px; }
+.va-group { margin: 0 16px 10px; }
 .va-group-head {
   background: var(--surf); border: 1px solid var(--bd);
-  border-radius: 14px; padding: 11px 14px;
+  border-radius: 14px 14px 0 0; padding: 11px 14px;
   display: flex; align-items: center; gap: 8px;
-  cursor: pointer; box-shadow: var(--sh);
-  transition: background 0.12s;
+  box-shadow: var(--sh);
 }
-.va-group-head:active { background: var(--surf2); }
 .va-group-head > span[data-i18n] { flex: 1; font-size: 13px; font-weight: 700; color: var(--text); }
 .va-group-head > svg:first-child { color: var(--ocean); flex-shrink: 0; }
 .va-group-count {
@@ -1513,15 +1512,11 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   background: var(--ocean-bg); padding: 2px 8px; border-radius: 10px;
 }
 .va-group-count.has-rec { background: #dcfce7; color: #16a34a; }
-.va-chevron { color: var(--text3); transition: transform 0.2s; flex-shrink: 0; }
-.va-chevron.open { transform: rotate(180deg); }
-.va-group-head.open { border-radius: 14px 14px 0 0; }
 .va-group-body {
   background: var(--surf); border: 1px solid var(--bd);
   border-top: none; border-radius: 0 0 14px 14px;
-  overflow: hidden; display: none;
+  overflow: hidden;
 }
-.va-group-body.open { display: block; }
 .va-slot-row {
   padding: 11px 14px; display: flex; align-items: center; gap: 8px;
   border-bottom: 1px solid var(--bd); cursor: pointer;
@@ -1549,7 +1544,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.16</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.20</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -1576,7 +1571,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 
   <!-- Tab Bar (home active) -->
   <div class="home-tabbar">
-    <button class="tab-item active" onclick="showScreen('screen-home'); startIdleHomeTimer()">
+    <button class="tab-item active" onclick="showScreen('screen-home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
       <span data-i18n="nav_home">首 页</span>
     </button>
@@ -1586,7 +1581,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       </div>
       <span data-i18n="nav_start_practice">开始练习</span>
     </button>
-    <button class="tab-item" onclick="showScreen('screen-mine')">
+    <button class="tab-item" onclick="showScreen('screen-mine'); updateMineProfile()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
       <span data-i18n="nav_mine">我 的</span>
     </button>
@@ -1803,6 +1798,11 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <span data-i18n="mine_menu_theme">主题</span>
         <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
+      <button class="mine-menu-item" onclick="openLangPicker()">
+        <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+        <span data-i18n="mine_menu_lang">语言</span>
+        <svg class="mine-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
       <button class="mine-menu-item" onclick="showAbout()">
         <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01" stroke-width="2.5"/></svg></div>
         <span data-i18n="mine_menu_about">关于</span>
@@ -1822,6 +1822,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
     </div>
     <!-- mode switch -->
     <div class="mine-mode-row">
+      <div class="mine-menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
       <div class="mine-mode-lbl">
         <div class="mine-mode-title" id="mine-mode-title" data-i18n="mine_mode_title">高级模式</div>
         <div class="mine-mode-sub" id="mine-mode-sub" data-i18n="mine_mode_sub">开启后可管理牌组与制卡</div>
@@ -1835,7 +1836,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
   <!-- Tab Bar (mine active) -->
   <div class="home-tabbar">
-    <button class="tab-item" onclick="showScreen('screen-home'); startIdleHomeTimer()">
+    <button class="tab-item" onclick="showScreen('screen-home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
       <span data-i18n="nav_home">首 页</span>
     </button>
@@ -1922,15 +1923,15 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
     <button class="back-btn" onclick="cancelLang()" aria-label="返回" data-i18n-aria="common_back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <span class="theme-topbar-title" data-i18n="settings_lang">界面语言</span>
+    <span class="theme-topbar-title" data-i18n="mine_menu_lang">语言</span>
     <button class="lang-confirm-btn" onclick="confirmLang()" data-i18n="common_confirm">确定</button>
   </div>
   <div class="lang-scroll">
     <div class="lang-list">
-      <div class="lang-row" data-lang="zh-CN" onclick="selectLang('zh-CN')">
+      <div class="lang-row" data-lang="en" onclick="selectLang('en')">
         <div class="lang-info">
-          <div class="lang-name">中文（简体）</div>
-          <div class="lang-name-sub">Chinese Simplified</div>
+          <div class="lang-name">English</div>
+          <div class="lang-name-sub">英语</div>
         </div>
         <span class="lang-check">✓</span>
       </div>
@@ -1941,17 +1942,10 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         </div>
         <span class="lang-check">✓</span>
       </div>
-      <div class="lang-row" data-lang="en" onclick="selectLang('en')">
+      <div class="lang-row" data-lang="zh-CN" onclick="selectLang('zh-CN')">
         <div class="lang-info">
-          <div class="lang-name">English</div>
-          <div class="lang-name-sub">英语</div>
-        </div>
-        <span class="lang-check">✓</span>
-      </div>
-      <div class="lang-row" data-lang="es" onclick="selectLang('es')">
-        <div class="lang-info">
-          <div class="lang-name">Español</div>
-          <div class="lang-name-sub">西班牙语</div>
+          <div class="lang-name">中文（简体）</div>
+          <div class="lang-name-sub">Chinese Simplified</div>
         </div>
         <span class="lang-check">✓</span>
       </div>
@@ -1959,6 +1953,13 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="lang-info">
           <div class="lang-name">日本語</div>
           <div class="lang-name-sub">Japanese</div>
+        </div>
+        <span class="lang-check">✓</span>
+      </div>
+      <div class="lang-row" data-lang="es" onclick="selectLang('es')">
+        <div class="lang-info">
+          <div class="lang-name">Español</div>
+          <div class="lang-name-sub">西班牙语</div>
         </div>
         <span class="lang-check">✓</span>
       </div>
@@ -1997,35 +1998,22 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       </div>
     </div>
 
-    <!-- 固定节点组 -->
-    <div class="va-group" id="va-group-fixed">
-      <div class="va-group-head" onclick="toggleVaGroup('fixed')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span data-i18n="voice_group_fixed">固定节点</span>
-        <span class="va-group-count" id="va-count-fixed"></span>
-        <svg class="va-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="va-group-body" id="va-body-fixed"></div>
-    </div>
-
     <!-- 情绪触发组 -->
     <div class="va-group" id="va-group-emotion">
-      <div class="va-group-head" onclick="toggleVaGroup('emotion')">
+      <div class="va-group-head">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         <span data-i18n="voice_group_emotion">情绪触发</span>
         <span class="va-group-count" id="va-count-emotion"></span>
-        <svg class="va-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="va-group-body" id="va-body-emotion"></div>
     </div>
 
     <!-- 功能提示组 -->
     <div class="va-group" id="va-group-functional">
-      <div class="va-group-head" onclick="toggleVaGroup('functional')">
+      <div class="va-group-head">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span data-i18n="voice_group_functional">功能提示</span>
         <span class="va-group-count" id="va-count-functional"></span>
-        <svg class="va-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="va-group-body" id="va-body-functional"></div>
     </div>
@@ -2242,16 +2230,6 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
           </div>
         </div>
         <div class="sheet-section">
-          <div class="sheet-section-lbl" data-i18n="settings_section_display">显示</div>
-          <div class="sheet-row" onclick="openLangPicker()" style="cursor:pointer">
-            <span class="sheet-row-lbl" data-i18n="settings_lang">界面语言</span>
-            <div style="display:flex;align-items:center;gap:4px">
-              <span id="settings-lang-val" style="color:var(--text3);font-size:13px"></span>
-              <span style="color:var(--text3);font-size:13px">›</span>
-            </div>
-          </div>
-        </div>
-        <div class="sheet-section">
           <div class="sheet-section-lbl" data-i18n="settings_section_options">选项</div>
           <div class="sheet-row">
             <span class="sheet-row-lbl" data-i18n="settings_opt_count">选项数量</span>
@@ -2291,10 +2269,6 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
               <div class="stoggle-track"></div>
               <div class="stoggle-thumb"></div>
             </label>
-          </div>
-          <div class="sheet-row sheet-row-col">
-            <span class="sheet-row-lbl" data-i18n="settings_correct_phrase">回答正确文案</span>
-            <input type="text" id="phrase-correct" class="phrase-input" value="回答正确" oninput="onPhraseChange('correct',this.value)">
           </div>
         </div>
         <div class="sheet-section">
@@ -2690,7 +2664,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.4.16';
+const APP_VERSION = '5.4.20';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -3040,7 +3014,6 @@ async function cloudPushConfig() {
       confettiOn:         localStorage.getItem('confettiOn'),
       phraseWrong:        localStorage.getItem('phraseWrong'),
       phraseOptHint:      localStorage.getItem('phraseOptHint'),
-      phraseCorrect:      localStorage.getItem('phraseCorrect'),
       ttsRate:            localStorage.getItem('ttsRate'),
       ttsPitch:           localStorage.getItem('ttsPitch'),
       ttsVoiceName:       localStorage.getItem('ttsVoiceName'),
@@ -3174,7 +3147,7 @@ async function runSync(opts) {
     if (textEl) textEl.textContent = t('sync_connecting');
     if (barEl) barEl.style.width = '0%';
     if (pctEl) pctEl.textContent = '0%';
-    if (options.voice) { try { speechSynthesis.cancel(); speak(options.title); } catch(e) {} }
+    if (options.voice && VOICE_ASSIST_ENABLED) { try { speechSynthesis.cancel(); speak(options.title); } catch(e) {} }
   }
   logAppEvent('sync_started', { deck_key: options.deckKey, mode: options.modal ? 'modal' : 'bg', decks: !!options.decks, events: !!options.events }, options.deckKey);
   var syncStats = { trials: 0, events: 0, states_merged: 0, config: 0, decks: 0 };
@@ -3533,6 +3506,20 @@ async function uploadAppEvent(event) {
   } catch(e) { log.warn('sync', 'uploadAppEvent exception', e.message); return false; }
 }
 
+async function uploadAppEventBatch(events) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return false;
+  try {
+    var payloads = events.map(function(e) {
+      return { event_id: e.event_id, user_id: _cloudUserId, event_type: e.event_type, deck_key: e.deck_key, payload: e.payload, device_id: e.device_id, timestamp: e.timestamp };
+    });
+    // ignoreDuplicates: true → ON CONFLICT DO NOTHING, treats existing rows as success
+    var _a = await _sb.from('app_events').upsert(payloads, { onConflict: 'event_id', ignoreDuplicates: true });
+    if (!_a.error) return true;
+    log.warn('sync', 'uploadAppEventBatch error', _a.error);
+    return false;
+  } catch(e) { log.warn('sync', 'uploadAppEventBatch exception', e.message); return false; }
+}
+
 
 // batch retry AppEvents (including warn/error diagnostic logs)
 async function syncAppEvents() {
@@ -3547,11 +3534,13 @@ async function syncAppEvents() {
   });
   var pending = evtAll.filter(function(e) { return !e.synced_at; });
 
-  // upload business events, collect success IDs
+  // upload business events in batches of 10
   var syncedIds = [];
-  for (var i = 0; i < pending.length; i++) {
-    var ok = await uploadAppEvent(pending[i]);
-    if (ok) syncedIds.push(pending[i].event_id);
+  var EVT_BATCH = 10;
+  for (var i = 0; i < pending.length; i += EVT_BATCH) {
+    var batch = pending.slice(i, i + EVT_BATCH);
+    var ok = await uploadAppEventBatch(batch);
+    if (ok) batch.forEach(function(e) { syncedIds.push(e.event_id); });
   }
 
   // batch write synced_at in single transaction (fix markEventSynced omission)
@@ -3578,18 +3567,20 @@ async function syncAppEvents() {
     });
     var pendingLogs = logAll.filter(function(l) { return !l.synced_at && (l.level === 'warn' || l.level === 'error'); });
     var syncedLogIds = [];
-    for (var j = 0; j < pendingLogs.length; j++) {
-      var l = pendingLogs[j];
-      var syntheticEvt = {
-        event_id:   'log_' + (l.log_id || Date.now()) + '_' + Math.random().toString(36).slice(2, 5),
-        event_type: 'log:' + l.level,
-        deck_key:   '',
-        payload:    { module: l.module, msg: l.msg, data: l.data },
-        device_id:  _deviceId || '',
-        timestamp:  l.timestamp
-      };
-      var ok2 = await uploadAppEvent(syntheticEvt);
-      if (ok2) syncedLogIds.push(l.log_id);
+    for (var j = 0; j < pendingLogs.length; j += EVT_BATCH) {
+      var logSlice = pendingLogs.slice(j, j + EVT_BATCH);
+      var syntheticEvts = logSlice.map(function(l) {
+        return {
+          event_id:   'log_' + (l.log_id || Date.now()) + '_' + Math.random().toString(36).slice(2, 5),
+          event_type: 'log:' + l.level,
+          deck_key:   '',
+          payload:    { module: l.module, msg: l.msg, data: l.data },
+          device_id:  _deviceId || '',
+          timestamp:  l.timestamp
+        };
+      });
+      var ok2 = await uploadAppEventBatch(syntheticEvts);
+      if (ok2) logSlice.forEach(function(l) { syncedLogIds.push(l.log_id); });
     }
     if (syncedLogIds.length > 0) {
       var now2 = Date.now();
@@ -4655,36 +4646,24 @@ let VOICE_ASSIST_ENABLED = false; // 语音辅助开关
 let _correctStreak = 0;
 
 // ── 空闲语音定时器 ──
-let _idleHomeTimer   = null;
-let _idleQuizTimer   = null;
 let _ttsPromptActive = false;  // true while startCardPrompts sequence (quiz_prompt + speakOptHint) is running
 let _idleBrowseTimer = null;
-const IDLE_HOME_SEC   = 8;
-const IDLE_QUIZ_SEC   = 15;
 const IDLE_BROWSE_SEC = 10;
 const IDLE_COOLDOWN   = 60000;
-let _idleHomeCooldownUntil   = 0;
-let _idleQuizCooldownUntil   = 0;
 let _idleBrowseCooldownUntil = 0;
 
 // ── 语音槽位注册表 ──────────────────────────────────────────────────
 const VOICE_SLOTS = {
-  fixed: [
-    { name: 'session_start',  labelKey: 'voice_slot_session_start',  defaultKey: 'voice_default_session_start' },
-    { name: 'session_finish', labelKey: 'voice_slot_session_finish', defaultKey: 'voice_default_session_finish' },
-    { name: 'idle_home',      labelKey: 'voice_slot_idle_home',      defaultKey: 'voice_default_idle_home' },
-    { name: 'idle_browse',    labelKey: 'voice_slot_idle_browse',    defaultKey: 'voice_default_idle_browse' },
-  ],
   emotion: [
     { name: 'wrong_hint',     labelKey: 'voice_slot_wrong_hint',     defaultKey: 'voice_default_wrong_hint' },
     { name: 'correct_hint',   labelKey: 'voice_slot_correct_hint',   defaultKey: 'voice_default_correct_hint' },
     { name: 'streak_correct', labelKey: 'voice_slot_streak_correct', defaultKey: 'voice_default_streak_correct' },
-    { name: 'idle_quiz',      labelKey: 'voice_slot_idle_quiz',      defaultKey: 'voice_default_idle_quiz' },
-    { name: 'each_day_start', labelKey: 'voice_slot_each_day_start', defaultKey: 'voice_default_each_day_start' },
+    { name: 'session_finish', labelKey: 'voice_slot_session_finish', defaultKey: 'voice_default_session_finish' },
   ],
   functional: [
     { name: 'quiz_prompt', labelKey: 'voice_slot_quiz_prompt', functional: true },
     { name: 'opt_hint',    labelKey: 'voice_slot_opt_hint',    functional: true },
+    { name: 'idle_browse', labelKey: 'voice_slot_idle_browse', defaultKey: 'voice_default_idle_browse' },
   ],
 };
 
@@ -4714,7 +4693,6 @@ let BROWSE_ANSWER_DELAY = 3000;  // ms
 
 // correct answer feedback
 let CONFETTI_ON       = true;   // confetti animation toggle
-let PHRASE_CORRECT    = ''; // populated by initPhrases() after t() is ready
 
 // speech timers for card prompts
 let tQuizPromptTimer = null;
@@ -5293,15 +5271,6 @@ function _launch(mode) {
       requestWakeLock();
       render();
       _launchBusy = false;
-      if (VOICE_ASSIST_ENABLED) {
-        setTimeout(() => playVoiceSlot('session_start', t('voice_default_session_start'), getLocale()), 500);
-      }
-      const _todayKey = new Date().toDateString();
-      const _lastPracticeDay = localStorage.getItem('lastPracticeDay');
-      if (VOICE_ASSIST_ENABLED && _lastPracticeDay !== _todayKey) {
-        localStorage.setItem('lastPracticeDay', _todayKey);
-        setTimeout(() => playVoiceSlot('each_day_start', t('voice_default_each_day_start'), getLocale()), 1200);
-      }
     }).catch(err => {
       console.error('[srs] buildSessionQueue 构造失败，回退到完成界面', err?.name, err?.message, err);
       _launchBusy = false;
@@ -5620,31 +5589,9 @@ function goHome() {
     updateDeckStats();
     _launchBusy = false;
     showScreen('screen-home');
-    startIdleHomeTimer();
   });
 }
 
-
-function startIdleHomeTimer() {
-  clearTimeout(_idleHomeTimer);
-  if (!VOICE_ASSIST_ENABLED) return;
-  _idleHomeTimer = setTimeout(() => {
-    if (Date.now() < _idleHomeCooldownUntil) return;
-    _idleHomeCooldownUntil = Date.now() + IDLE_COOLDOWN;
-    playVoiceSlot('idle_home', t('voice_default_idle_home'), getLocale());
-  }, IDLE_HOME_SEC * 1000);
-}
-
-function startIdleQuizTimer() {
-  clearTimeout(_idleQuizTimer);
-  if (!VOICE_ASSIST_ENABLED) return;
-  _idleQuizTimer = setTimeout(function fire() {
-    if (_ttsPromptActive) { _idleQuizTimer = setTimeout(fire, 2000); return; }
-    if (Date.now() < _idleQuizCooldownUntil) return;
-    _idleQuizCooldownUntil = Date.now() + IDLE_COOLDOWN;
-    playVoiceSlot('idle_quiz', t('voice_default_idle_quiz'), getLocale());
-  }, IDLE_QUIZ_SEC * 1000);
-}
 
 function startIdleBrowseTimer() {
   clearTimeout(_idleBrowseTimer);
@@ -5657,8 +5604,6 @@ function startIdleBrowseTimer() {
 }
 
 function clearIdleTimers() {
-  clearTimeout(_idleHomeTimer);
-  clearTimeout(_idleQuizTimer);
   clearTimeout(_idleBrowseTimer);
 }
 
@@ -5681,7 +5626,6 @@ function clearPromptTimers() {
 }
 function stopAllPromptTimers() {
   clearPromptTimers();
-  clearTimeout(_idleQuizTimer);
   speechSynthesis.cancel();
 }
 
@@ -5717,6 +5661,7 @@ function getAC() {
   return ac;
 }
 function tone(t) {
+  if (VOICE_MUTED) return;
   const a = getAC(), now = a.currentTime;
   const n = (f,st,d,v,w) => {
     const o=a.createOscillator(),g=a.createGain();
@@ -5930,7 +5875,7 @@ const I18N = {
     mine_logged_in_sub: 'Logged in, auto-syncing',
     mine_menu_stats: 'Statistics',
     mine_menu_settings: 'Settings',
-    mine_menu_theme: 'Theme',
+    mine_menu_theme: 'Theme', mine_menu_lang: 'Language',
     mine_menu_about: 'About',
     mine_menu_feedback: 'Feedback',
     mine_menu_feedback_sub: 'Report issues or suggest features',
@@ -5977,7 +5922,7 @@ const I18N = {
     settings_section_display: 'Display', settings_lang: 'Language',
     settings_section_options: 'Options', settings_opt_count: 'Answer Options', settings_touch_delay: 'Touch Delay',
     settings_section_rhythm: 'Rhythm', settings_quiz_countdown: 'Quiz Countdown', settings_browse_countdown: 'Browse Countdown', settings_browse_ans_delay: 'Browse Answer Delay',
-    settings_section_feedback: 'Feedback', settings_confetti: 'Confetti', settings_correct_hint: 'Correct Answer Hint', settings_correct_phrase: 'Correct Phrase',
+    settings_section_feedback: 'Feedback', settings_confetti: 'Confetti',
     settings_section_mode: 'Practice Mode', settings_mode_normal: 'Normal', settings_mode_normal_desc: 'Fixed 20 cards, gets easier', settings_mode_hard: 'Hard', settings_mode_hard_desc: 'SRS rhythm, up to 30 cards', settings_mode_survival: 'Survival', settings_mode_survival_desc: 'Clear all backlog',
     settings_section_storage: 'Storage', settings_storage_desc: 'Scan and remove orphaned media files not referenced by any card.', settings_check_media: '\u{1F9F9} Check Media',
     settings_section_quiz_prompt: 'Quiz Prompt', settings_quiz_prompt: 'Quiz Prompt', settings_quiz_prompt_delay: 'Prompt Delay', settings_quiz_prompt_phrase: 'Prompt Phrase',
@@ -6164,26 +6109,18 @@ const I18N = {
     voice_assist_on: 'On',
     voice_assist_off: 'Off',
     voice_edit_script_hint: 'Edit script (leave blank = silent)',
-    voice_slot_session_start: 'Session start',
     voice_slot_session_finish: 'Session finish',
-    voice_slot_idle_home: 'Home idle',
     voice_slot_idle_browse: 'Browse idle',
     voice_slot_wrong_hint: 'Wrong answer',
     voice_slot_correct_hint: 'Correct answer',
     voice_slot_streak_correct: 'Streak praise',
-    voice_slot_idle_quiz: 'Quiz idle',
-    voice_slot_each_day_start: 'Daily first',
     voice_slot_quiz_prompt: 'Quiz prompt',
     voice_slot_opt_hint: 'Read options',
-    voice_default_session_start: "Let's go, you can do it",
     voice_default_session_finish: 'Great job, practice done for today',
-    voice_default_idle_home: 'Tap a deck to start practicing',
     voice_default_idle_browse: 'Swipe left or right to see more photos',
     voice_default_wrong_hint: "Don't worry, try again",
     voice_default_correct_hint: 'Wonderful',
     voice_default_streak_correct: 'Amazing, you got several in a row',
-    voice_default_idle_quiz: 'Look at the photo and choose your answer',
-    voice_default_each_day_start: "Let's practice today too",
     voice_quiz_prompt_recognize: 'Do you recognize this person?',
   },
   'zh-CN': {
@@ -6217,7 +6154,7 @@ const I18N = {
     mine_logged_in_sub: '已登录，数据自动同步',
     mine_menu_stats: '统计',
     mine_menu_settings: '设置',
-    mine_menu_theme: '主题',
+    mine_menu_theme: '主题', mine_menu_lang: '语言',
     mine_menu_about: '关于',
     mine_menu_feedback: '意见反馈',
     mine_menu_feedback_sub: '遇到问题或有功能建议',
@@ -6264,7 +6201,7 @@ const I18N = {
     settings_section_display: '显示', settings_lang: '界面语言',
     settings_section_options: '选项', settings_opt_count: '选项数量', settings_touch_delay: '防误触延迟',
     settings_section_rhythm: '节奏', settings_quiz_countdown: '练习倒计时', settings_browse_countdown: '浏览倒计时', settings_browse_ans_delay: '浏览答案显示延迟',
-    settings_section_feedback: '答对反馈', settings_confetti: '撒花动画', settings_correct_hint: '回答正确提示', settings_correct_phrase: '回答正确文案',
+    settings_section_feedback: '答对反馈', settings_confetti: '撒花动画',
     settings_section_mode: '练习模式', settings_mode_normal: '普通', settings_mode_normal_desc: '固定20张，越做越顺', settings_mode_hard: '困难', settings_mode_hard_desc: 'SRS节律，最多30张', settings_mode_survival: '生存', settings_mode_survival_desc: '清空所有积压',
     settings_section_storage: '存储维护', settings_storage_desc: '检查并清理未被任何卡片引用的孤立媒体文件，释放存储空间。', settings_check_media: '🧹 检查媒体文件',
     settings_section_quiz_prompt: '答题提示', settings_quiz_prompt: '答题提示', settings_quiz_prompt_delay: '答题提示延迟', settings_quiz_prompt_phrase: '答题提示文案',
@@ -6451,26 +6388,18 @@ const I18N = {
     voice_assist_on: '已开启',
     voice_assist_off: '未开启',
     voice_edit_script_hint: '编辑文案（留空=不播报）',
-    voice_slot_session_start: '开始练习',
     voice_slot_session_finish: '完成庆祝',
-    voice_slot_idle_home: '首页引导',
     voice_slot_idle_browse: '浏览引导',
     voice_slot_wrong_hint: '答错安慰',
     voice_slot_correct_hint: '答对鼓励',
     voice_slot_streak_correct: '连对表扬',
-    voice_slot_idle_quiz: '练习引导',
-    voice_slot_each_day_start: '每日首练',
     voice_slot_quiz_prompt: '答题提示',
     voice_slot_opt_hint: '读出选项',
-    voice_default_session_start: '加油，你可以的',
     voice_default_session_finish: '太棒了，今天练习完成了',
-    voice_default_idle_home: '点一下牌组，开始今天的练习',
     voice_default_idle_browse: '左右滑动，可以看更多照片',
     voice_default_wrong_hint: '不要着急，再试一次',
     voice_default_correct_hint: '太棒了',
     voice_default_streak_correct: '真厉害，连续答对了',
-    voice_default_idle_quiz: '看看图片，选择你觉得对的答案',
-    voice_default_each_day_start: '今天也来练习吧',
     voice_quiz_prompt_recognize: '认识这个人吗',
   },
   'zh-Hant': {
@@ -6504,7 +6433,7 @@ const I18N = {
     mine_logged_in_sub: '已登入，資料自動同步',
     mine_menu_stats: '統計',
     mine_menu_settings: '設定',
-    mine_menu_theme: '主題',
+    mine_menu_theme: '主題', mine_menu_lang: '語言',
     mine_menu_about: '關於',
     mine_menu_feedback: '意見反饋',
     mine_menu_feedback_sub: '遇到問題或有功能建議',
@@ -6551,7 +6480,7 @@ const I18N = {
     settings_section_display: '顯示', settings_lang: '介面語言',
     settings_section_options: '選項', settings_opt_count: '選項數量', settings_touch_delay: '防誤觸延遲',
     settings_section_rhythm: '節奏', settings_quiz_countdown: '練習倒計時', settings_browse_countdown: '瀏覽倒計時', settings_browse_ans_delay: '瀏覽答案顯示延遲',
-    settings_section_feedback: '答對反饋', settings_confetti: '撒花動畫', settings_correct_hint: '回答正確提示', settings_correct_phrase: '回答正確文案',
+    settings_section_feedback: '答對反饋', settings_confetti: '撒花動畫',
     settings_section_mode: '練習模式', settings_mode_normal: '普通', settings_mode_normal_desc: '固定20張，越做越順', settings_mode_hard: '困難', settings_mode_hard_desc: 'SRS節律，最多30張', settings_mode_survival: '生存', settings_mode_survival_desc: '清空所有積壓',
     settings_section_storage: '儲存維護', settings_storage_desc: '檢查並清理未被任何卡片引用的孤立媒體檔案，釋放儲存空間。', settings_check_media: '🧹 檢查媒體檔案',
     settings_section_quiz_prompt: '答題提示', settings_quiz_prompt: '答題提示', settings_quiz_prompt_delay: '答題提示延遲', settings_quiz_prompt_phrase: '答題提示文案',
@@ -6730,26 +6659,18 @@ const I18N = {
     voice_assist_on: '已開啟',
     voice_assist_off: '未開啟',
     voice_edit_script_hint: '編輯文案（留空=不播報）',
-    voice_slot_session_start: '開始練習',
     voice_slot_session_finish: '完成慶祝',
-    voice_slot_idle_home: '首頁引導',
     voice_slot_idle_browse: '瀏覽引導',
     voice_slot_wrong_hint: '答錯安慰',
     voice_slot_correct_hint: '答對鼓勵',
     voice_slot_streak_correct: '連對表揚',
-    voice_slot_idle_quiz: '練習引導',
-    voice_slot_each_day_start: '每日首練',
     voice_slot_quiz_prompt: '答題提示',
     voice_slot_opt_hint: '讀出選項',
-    voice_default_session_start: '加油，你可以的',
     voice_default_session_finish: '太棒了，今天練習完成了',
-    voice_default_idle_home: '點一下牌組，開始今天的練習',
     voice_default_idle_browse: '左右滑動，可以看更多照片',
     voice_default_wrong_hint: '不要著急，再試一次',
     voice_default_correct_hint: '太棒了',
     voice_default_streak_correct: '真厲害，連續答對了',
-    voice_default_idle_quiz: '看看圖片，選擇你覺得對的答案',
-    voice_default_each_day_start: '今天也來練習吧',
     voice_quiz_prompt_recognize: '認識這個人嗎',
   },
   'es': {
@@ -6783,7 +6704,7 @@ const I18N = {
     mine_logged_in_sub: 'Sesion iniciada, sincronizando',
     mine_menu_stats: 'Estadisticas',
     mine_menu_settings: 'Ajustes',
-    mine_menu_theme: 'Tema',
+    mine_menu_theme: 'Tema', mine_menu_lang: 'Idioma',
     mine_menu_about: 'Acerca de',
     mine_menu_feedback: 'Comentarios',
     mine_menu_feedback_sub: 'Reportar problemas o sugerir funciones',
@@ -6830,7 +6751,7 @@ const I18N = {
     settings_section_display: 'Pantalla', settings_lang: 'Idioma',
     settings_section_options: 'Opciones', settings_opt_count: 'Numero de opciones', settings_touch_delay: 'Retardo tactil',
     settings_section_rhythm: 'Ritmo', settings_quiz_countdown: 'Cuenta regresiva', settings_browse_countdown: 'Cuenta de exploracion', settings_browse_ans_delay: 'Retardo de respuesta',
-    settings_section_feedback: 'Feedback', settings_confetti: 'Confeti', settings_correct_hint: 'Aviso de acierto', settings_correct_phrase: 'Frase de acierto',
+    settings_section_feedback: 'Feedback', settings_confetti: 'Confeti',
     settings_section_mode: 'Modo de practica', settings_mode_normal: 'Normal', settings_mode_normal_desc: '20 tarjetas fijas, se vuelve mas facil', settings_mode_hard: 'Dificil', settings_mode_hard_desc: 'Ritmo SRS, hasta 30 tarjetas', settings_mode_survival: 'Supervivencia', settings_mode_survival_desc: 'Limpiar todo el backlog',
     settings_section_storage: 'Almacenamiento', settings_storage_desc: 'Escanear y eliminar archivos huerfanos no referenciados.', settings_check_media: '\u{1F9F9} Verificar medios',
     settings_section_quiz_prompt: 'Aviso de pregunta', settings_quiz_prompt: 'Aviso de pregunta', settings_quiz_prompt_delay: 'Retardo de aviso', settings_quiz_prompt_phrase: 'Frase de aviso',
@@ -7017,26 +6938,18 @@ const I18N = {
     voice_assist_on: 'Activada',
     voice_assist_off: 'Desactivada',
     voice_edit_script_hint: 'Editar guión (vacío = silencio)',
-    voice_slot_session_start: 'Inicio de sesión',
     voice_slot_session_finish: 'Fin de sesión',
-    voice_slot_idle_home: 'Inicio inactivo',
     voice_slot_idle_browse: 'Exploración inactiva',
     voice_slot_wrong_hint: 'Respuesta incorrecta',
     voice_slot_correct_hint: 'Respuesta correcta',
     voice_slot_streak_correct: 'Racha correcta',
-    voice_slot_idle_quiz: 'Práctica inactiva',
-    voice_slot_each_day_start: 'Primer ejercicio diario',
     voice_slot_quiz_prompt: 'Indicación de práctica',
     voice_slot_opt_hint: 'Leer opciones',
-    voice_default_session_start: 'Vamos, tú puedes',
     voice_default_session_finish: 'Muy bien, práctica de hoy completada',
-    voice_default_idle_home: 'Toca un mazo para empezar a practicar',
     voice_default_idle_browse: 'Desliza para ver más fotos',
     voice_default_wrong_hint: 'No te preocupes, inténtalo de nuevo',
     voice_default_correct_hint: 'Maravilloso',
     voice_default_streak_correct: 'Increíble, varias respuestas seguidas correctas',
-    voice_default_idle_quiz: 'Mira la foto y elige tu respuesta',
-    voice_default_each_day_start: 'Practiquemos hoy también',
     voice_quiz_prompt_recognize: '¿Reconoces a esta persona?',
   },
   'ja': {
@@ -7074,7 +6987,7 @@ const I18N = {
     mine_logged_in_sub: 'ログイン中・自動同期中',
     mine_menu_stats: '統計',
     mine_menu_settings: '設定',
-    mine_menu_theme: 'テーマ',
+    mine_menu_theme: 'テーマ', mine_menu_lang: '言語',
     mine_menu_about: 'アプリについて',
     mine_menu_feedback: 'フィードバック',
     mine_menu_feedback_sub: '問題の報告や機能の提案',
@@ -7121,7 +7034,7 @@ const I18N = {
     settings_section_display: '表示', settings_lang: '言語',
     settings_section_options: 'オプション', settings_opt_count: '回答の選択肢数', settings_touch_delay: 'タッチ遅延',
     settings_section_rhythm: 'リズム', settings_quiz_countdown: 'クイズカウントダウン', settings_browse_countdown: 'ブラウズカウントダウン', settings_browse_ans_delay: 'ブラウズ回答遅延',
-    settings_section_feedback: 'フィードバック', settings_confetti: '紙吹雪', settings_correct_hint: '正解ヒント', settings_correct_phrase: '正解フレーズ',
+    settings_section_feedback: 'フィードバック', settings_confetti: '紙吹雪',
     settings_section_mode: '練習モード', settings_mode_normal: '通常', settings_mode_normal_desc: '固定20枚、徐々に易しくなる', settings_mode_hard: 'ハード', settings_mode_hard_desc: 'SRSリズム、最大30枚', settings_mode_survival: 'サバイバル', settings_mode_survival_desc: '積み残しをすべてクリア',
     settings_section_storage: 'ストレージ', settings_storage_desc: 'カードから参照されていない孤立メディアファイルをスキャンして削除します。', settings_check_media: '\u{1F9F9} メディアを確認',
     settings_section_quiz_prompt: 'クイズプロンプト', settings_quiz_prompt: 'クイズプロンプト', settings_quiz_prompt_delay: 'プロンプト遅延', settings_quiz_prompt_phrase: 'プロンプトフレーズ',
@@ -7308,26 +7221,18 @@ const I18N = {
     voice_assist_on: 'オン',
     voice_assist_off: 'オフ',
     voice_edit_script_hint: 'スクリプトを編集（空欄=無音）',
-    voice_slot_session_start: 'セッション開始',
     voice_slot_session_finish: 'セッション終了',
-    voice_slot_idle_home: 'ホーム待機',
     voice_slot_idle_browse: 'ブラウズ待機',
     voice_slot_wrong_hint: '不正解',
     voice_slot_correct_hint: '正解',
     voice_slot_streak_correct: '連続正解称賛',
-    voice_slot_idle_quiz: 'クイズ待機',
-    voice_slot_each_day_start: '毎日最初',
     voice_slot_quiz_prompt: 'クイズプロンプト',
     voice_slot_opt_hint: '選択肢読み上げ',
-    voice_default_session_start: 'さあ、頑張ろう！',
     voice_default_session_finish: 'よくできました、今日の練習は終わりです',
-    voice_default_idle_home: 'デッキをタップして練習を始めましょう',
     voice_default_idle_browse: '左右にスワイプしてもっと写真を見てみましょう',
     voice_default_wrong_hint: '大丈夫、もう一度チャレンジしてみましょう',
     voice_default_correct_hint: 'すばらしい',
     voice_default_streak_correct: 'すごい、何問も連続正解しています',
-    voice_default_idle_quiz: '写真を見て答えを選んでください',
-    voice_default_each_day_start: '今日も練習しましょう',
     voice_quiz_prompt_recognize: 'この方を知っていますか？',
   },
 };
@@ -7366,20 +7271,10 @@ function setLocale(loc) {
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
   // reset voice prompts to current locale defaults on language switch
-  ['phraseQuizPrompt','phraseOptHint','phraseWrong','phraseCorrect'].forEach(k => localStorage.removeItem(k));
+  ['phraseQuizPrompt','phraseOptHint','phraseWrong'].forEach(k => localStorage.removeItem(k));
   PHRASE_SELECT   = t('quiz_select_hint');
   PHRASE_OPT_HINT = t('default_opt_hint');
   PHRASE_WRONG    = t('default_wrong');
-  PHRASE_CORRECT  = t('default_correct');
-  const phraseInputs = [
-    ['phrase-opt-hint',  PHRASE_OPT_HINT],
-    ['phrase-wrong',     PHRASE_WRONG],
-    ['phrase-correct',   PHRASE_CORRECT],
-  ];
-  phraseInputs.forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (el) el.value = val;
-  });
   if (typeof _updateSettingsLangVal === 'function') _updateSettingsLangVal();
 }
 
@@ -7394,7 +7289,6 @@ function _updateSettingsLangVal() {
 }
 
 function openLangPicker() {
-  closeSettings();
   _pendingLocale = getLocale();
   document.querySelectorAll('.lang-row').forEach(r => {
     r.classList.toggle('selected', r.dataset.lang === _pendingLocale);
@@ -7547,6 +7441,8 @@ function pickVoice(lang, autoOnly = false) {
 
 async function playVoiceSlot(slotName, ttsText, ttsLang) {
   if (VOICE_MUTED) return;
+  const customTts = localStorage.getItem('phraseSlot_' + slotName);
+  const effectiveTts = customTts !== null ? customTts : ttsText;
   try {
     const slot = await loadVoiceSlot(slotName);
     if (slot && slot.audioBlob) {
@@ -7561,11 +7457,12 @@ async function playVoiceSlot(slotName, ttsText, ttsLang) {
   } catch (e) {
     // IDB read failure — fall through to TTS
   }
-  console.info(`[TTS][playVoiceSlot] slot=${slotName} → TTS text="${ttsText}" lang=${ttsLang}`);
-  if (ttsText) speak(ttsText, 0, null, ttsLang || null);
+  console.info(`[TTS][playVoiceSlot] slot=${slotName} → TTS text="${effectiveTts}" lang=${ttsLang}`);
+  if (effectiveTts) speak(effectiveTts, 0, null, ttsLang || null);
 }
 
 function speak(text, delay = 0, onend = null, lang = null) {
+  if (VOICE_MUTED) { if (onend) onend(); return; }
   const go = () => {
     if (!voices.length) loadVoices();
     const utt = new SpeechSynthesisUtterance(text);
@@ -7586,6 +7483,7 @@ function speak(text, delay = 0, onend = null, lang = null) {
 
 // play answer speech: prefer recording, fallback TTS
 function playAnswer(q, onend) {
+  if (VOICE_MUTED) { if (onend) onend(); return; }
   const lang = q.nameLang || 'zh-CN';
   console.info(`[TTS][playAnswer] name="${q.name}" nameLang=${q.nameLang} lang=${lang} audioUrl=${!!q.audioUrl}`);
   if (q.audioUrl) {
@@ -7601,6 +7499,7 @@ function playAnswer(q, onend) {
 
 // speak without cancel, avoid interrupting just-restored engine
 function speakDirect(text, onend, lang = null, autoOnly = false) {
+  if (VOICE_MUTED) { if (onend) onend(); return; }
   if (!voices.length) loadVoices();
   const utt = new SpeechSynthesisUtterance(text);
   const useLang = lang || 'zh-CN';
@@ -7811,7 +7710,6 @@ function render() {
   // pass actual option text for option hint speech
   const pickedTexts = picked.map(({ name }) => name);
   const optLang = q.nameLang || resolveFieldLang(q.name); startCardPrompts(pickedTexts, optLang, q.cardType);
-  startIdleQuizTimer();
 }
 
 function revealBrowse(q) {
@@ -7892,7 +7790,9 @@ function onSel(e, idx, btn) {
       _correctStreak = 999; // prevent re-trigger in this session
       setTimeout(() => playVoiceSlot('streak_correct', t('voice_default_streak_correct'), getLocale()), 400);
     }
-    setTimeout(() => playVoiceSlot('correct_hint', PHRASE_CORRECT, getLocale()), 300);
+    if (VOICE_ASSIST_ENABLED) {
+      setTimeout(() => playVoiceSlot('correct_hint', t('voice_default_correct_hint'), getLocale()), 300);
+    }
 
     // T1 rating mapping: 1st correct→Good, 2nd correct (after 1st wrong)→Hard
     if (currentMode !== 'browse' && q._srsState) {
@@ -8419,7 +8319,6 @@ function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
   if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || t('default_wrong');    localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
   if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
-  if (key === 'correct') { PHRASE_CORRECT  = val || t('default_correct');              localStorage.setItem('phraseCorrect', PHRASE_CORRECT); }
   debouncePushConfig();
 }
 
@@ -8527,11 +8426,12 @@ async function renderVoiceSlots() {
 
     const countEl = document.getElementById('va-count-' + group);
     if (countEl) {
-      if (group === 'functional') {
+      const recSlots = slots.filter(s => !s.functional);
+      if (recSlots.length === 0) {
         countEl.textContent = t('voice_count_tts_only') || '仅文案';
         countEl.classList.remove('has-rec');
       } else {
-        countEl.textContent = recCount + ' / ' + slots.length + ' ' + (t('voice_count_recorded') || '已录制');
+        countEl.textContent = recCount + ' / ' + recSlots.length + ' ' + (t('voice_count_recorded') || '已录制');
         countEl.classList.toggle('has-rec', recCount > 0);
       }
     }
@@ -8588,7 +8488,7 @@ async function updateVoiceAssistStatus() {
   const el = document.getElementById('voice-assist-status');
   if (!el) return;
   const all = await loadAllVoiceSlots();
-  const allNonFunc = [...VOICE_SLOTS.fixed, ...VOICE_SLOTS.emotion];
+  const allNonFunc = [...VOICE_SLOTS.emotion, ...VOICE_SLOTS.functional.filter(s => !s.functional)];
   const rec = all.filter(s => allNonFunc.some(g => g.name === s.slotName)).length;
   const total = allNonFunc.length;
   el.textContent = VOICE_ASSIST_ENABLED
@@ -8613,11 +8513,15 @@ function openRecordingOverlay(slotName, defaultScript) {
   document.getElementById('rec-slot-label').textContent =
     t('voice_slot_' + slotName) || slotName;
   const scriptEl = document.getElementById('rec-script-txt');
-  scriptEl.textContent = defaultScript || '';
-  document.getElementById('rec-script-box').style.display = defaultScript ? '' : 'none';
+  const stored = localStorage.getItem('phraseSlot_' + slotName);
+  scriptEl.value = stored !== null ? stored : (defaultScript || '');
   _showRecState('idle');
   document.getElementById('rec-save-btn').disabled = true;
   document.getElementById('recording-overlay').classList.remove('hidden');
+}
+
+function onRecScriptChange() {
+  document.getElementById('rec-save-btn').disabled = false;
 }
 
 function closeRecordingOverlay() {
@@ -8720,14 +8624,16 @@ function resetRecording() {
 }
 
 async function saveVoiceRecording() {
-  if (!_recBlob || !_recSlotName) return;
+  if (!_recSlotName) return;
   try {
-    await saveVoiceSlot(_recSlotName, _recBlob, _recMimeType, _recDuration);
+    const scriptEl = document.getElementById('rec-script-txt');
+    const scriptText = scriptEl ? scriptEl.value.trim() : '';
+    if (scriptText) localStorage.setItem('phraseSlot_' + _recSlotName, scriptText);
+    else localStorage.removeItem('phraseSlot_' + _recSlotName);
+    if (_recBlob) await saveVoiceSlot(_recSlotName, _recBlob, _recMimeType, _recDuration);
     closeRecordingOverlay();
     const vaScreen = document.getElementById('screen-voice-assist');
-    if (vaScreen && vaScreen.classList.contains('active')) {
-      renderVoiceSlots();
-    }
+    if (vaScreen && vaScreen.classList.contains('active')) renderVoiceSlots();
   } catch (e) {
     showToastMsg(t('voice_rec_save_error') || '保存失败，请重试');
   }
@@ -8779,7 +8685,6 @@ function onBdurChange(v) {
 function migrateVoiceSettings() {
   // 旧 toggle=0 → 清空对应文案
   if (localStorage.getItem('wrongHintOn')  === '0') localStorage.removeItem('phraseWrong');
-  if (localStorage.getItem('correctHintOn')=== '0') localStorage.removeItem('phraseCorrect');
   // 旧延迟 key 迁移
   const oldDelay = localStorage.getItem('delay');
   if (oldDelay && !localStorage.getItem('ansReadDelay')) {
@@ -8795,32 +8700,27 @@ function migrateVoiceSettings() {
    'phraseSelect'].forEach(k => localStorage.removeItem(k));
 }
 
+// load phrase from localStorage, but reset if it matches any locale's default
+// (prevents cross-device/locale pollution via cloud sync)
+function loadPhraseOrDefault(storageKey, i18nKey) {
+  const stored = localStorage.getItem(storageKey);
+  if (!stored) return t(i18nKey);
+  const allDefaults = SUPPORTED_LOCALES.map(loc => (I18N[loc] || {})[i18nKey]).filter(Boolean);
+  if (allDefaults.includes(stored)) { localStorage.removeItem(storageKey); return t(i18nKey); }
+  return stored;
+}
+
 function loadSettings() {
   migrateVoiceSettings();
-  // quiz prompt
-  const ps = localStorage.getItem('phraseQuizPrompt');
-  if (ps) PHRASE_SELECT = ps;
-  else PHRASE_SELECT = t('quiz_select_hint');
-
-  // option hint
-  const phraseOptHint = localStorage.getItem('phraseOptHint');
-  if (phraseOptHint) PHRASE_OPT_HINT = phraseOptHint;
-  if (!PHRASE_OPT_HINT) PHRASE_OPT_HINT = t('default_opt_hint');
-
-  // wrong hint
-  const pw = localStorage.getItem('phraseWrong');
-  if (pw) PHRASE_WRONG = pw;
-  if (!PHRASE_WRONG) PHRASE_WRONG = t('default_wrong');
+  PHRASE_SELECT   = loadPhraseOrDefault('phraseQuizPrompt', 'quiz_select_hint');
+  PHRASE_OPT_HINT = loadPhraseOrDefault('phraseOptHint',    'default_opt_hint');
+  PHRASE_WRONG    = loadPhraseOrDefault('phraseWrong',      'default_wrong');
 
   // browse answer delay / correct feedback
   const browseAnsDelay = localStorage.getItem('browseAnsDelay');
   if (browseAnsDelay) BROWSE_ANSWER_DELAY = parseFloat(browseAnsDelay) * 1000;
   const confettiOn = localStorage.getItem('confettiOn');
   if (confettiOn !== null) CONFETTI_ON = confettiOn === '1';
-  const phraseCorrect = localStorage.getItem('phraseCorrect');
-  if (phraseCorrect) PHRASE_CORRECT = phraseCorrect;
-  if (!PHRASE_CORRECT) PHRASE_CORRECT = t('default_correct');
-
   // TTS voice params
   const ttsRate = localStorage.getItem('ttsRate');
   if (ttsRate) TTS_RATE = parseFloat(ttsRate);
@@ -8865,19 +8765,11 @@ function loadSettings() {
   });
 
   window.addEventListener('load', () => {
-    // phrase sync
-    const pw2 = document.getElementById('phrase-wrong');
-    if (pw2) pw2.value = PHRASE_WRONG;
-    const pohEl = document.getElementById('phrase-opt-hint');
-    if (pohEl) pohEl.value = PHRASE_OPT_HINT;
-
     // browse answer delay / correct feedback
     const badEl = document.getElementById('dbg-browse-ans-delay');
     if (badEl && browseAnsDelay) { badEl.value = browseAnsDelay; document.getElementById('dbg-browse-ans-delay-val').textContent = `${parseFloat(browseAnsDelay).toFixed(1)}s`; }
     const cfEl = document.getElementById('confetti-toggle');
     if (cfEl) cfEl.checked = CONFETTI_ON;
-    const pcEl = document.getElementById('phrase-correct');
-    if (pcEl) pcEl.value = PHRASE_CORRECT;
 
     // TTS param sync
     const rateEl = document.getElementById('tts-rate');
@@ -10303,8 +10195,8 @@ document.addEventListener('contextmenu', e => e.preventDefault());
     <div class="rec-handle"></div>
     <div class="rec-slot-name" id="rec-slot-label"></div>
     <div class="rec-script-box" id="rec-script-box">
-      <div class="rec-script-lbl" data-i18n="voice_rec_script_label">参考脚本</div>
-      <div class="rec-script-txt" id="rec-script-txt"></div>
+      <div class="rec-script-lbl" data-i18n="voice_edit_script_hint">编辑文案（留空=不播报）</div>
+      <textarea id="rec-script-txt" class="rec-script-txt" oninput="onRecScriptChange()"></textarea>
     </div>
     <!-- idle state -->
     <div class="rec-state" id="rec-state-idle">
