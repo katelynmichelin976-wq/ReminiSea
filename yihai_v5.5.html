@@ -3269,14 +3269,14 @@ async function runSync(opts) {
     if (options.decks) {
       updateProg(t('sync_decks_prog'), 80);
       var serverDecks, sd, meta;
-      var dd = await _sb.from('decks').select('id,name').eq('deck_type','preset');
+      var dd = await _sb.from('decks').select('id,name,name_lang').eq('deck_type','preset');
       if (dd.data) {
         serverDecks = dd.data;
         for (sd of serverDecks) {
           try {
             meta = DECKS_META.find(function(m) { return m.name === sd.name; });
-            if (meta) { await syncDeckFromCloud(sd.id, sd.name, null, true); syncedDecks++; }
-            else { await downloadDeckFromCloud(sd.id, sd.name, null, true); newDecks++; }
+            if (meta) { await syncDeckFromCloud(sd.id, sd.name, null, true, sd.name_lang); syncedDecks++; }
+            else { await downloadDeckFromCloud(sd.id, sd.name, null, true, sd.name_lang); newDecks++; }
           } catch(e) { console.warn('[sync] skip deck:', sd.name, e.message); }
         }
         for (sd of serverDecks) {
@@ -9059,7 +9059,7 @@ async function parallelMapLimit(arr, limit, fn) {
   await Promise.all(workers);
 }
 
-async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
+async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
   if (!_syncEnabled || !_sb) { showCloudToast(t('sync_offline'), true); return; }
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('common_downloading'); }
 
@@ -9110,8 +9110,8 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 4. write to memory + persist
     DECKS[key] = deckCards;
     const existing = DECKS_META.findIndex(m => m.key === key);
-    if (existing >= 0) DECKS_META[existing] = { key, name: deckName, deck_type: 'preset' };
-    else DECKS_META.push({ key, name: deckName, deck_type: 'preset' });
+    if (existing >= 0) DECKS_META[existing] = { key, name: deckName, deck_type: 'preset', nameLang: nameLang || 'zh-CN' };
+    else DECKS_META.push({ key, name: deckName, deck_type: 'preset', nameLang: nameLang || 'zh-CN' });
     saveDeckIndex();
     saveDeckCards(key, deckCards);
 
@@ -9131,7 +9131,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
   }
 }
 
-async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
+async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
   if (!_syncEnabled || !_sb) { showCloudToast(t('sync_offline'), true); return; }
   const existing = DECKS_META.find(m => m.name === deckName);
   if (!existing) { showCloudToast(t('sync_no_local_deck'), true); return; }
@@ -9280,8 +9280,11 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     currentDeck = localKey;
     // mark as cloud deck
     const metaIdx = DECKS_META.findIndex(m => m.key === localKey);
-    if (metaIdx >= 0 && !DECKS_META[metaIdx].deck_type)
-      DECKS_META[metaIdx].deck_type = 'preset';
+    if (metaIdx >= 0) {
+      if (!DECKS_META[metaIdx].deck_type) DECKS_META[metaIdx].deck_type = 'preset';
+      if (nameLang) DECKS_META[metaIdx].nameLang = nameLang;
+      saveDeckIndex();
+    }
     renderDeckList();
     // noToast=true means called from within runSync, which calls updateDeckStats() after state sync
     if (!noToast) updateDeckStats();
@@ -9314,7 +9317,8 @@ async function uploadDeckToCloud(key) {
       user_id: _cloudUserId,
       name: meta.name,
       deck_type: 'personal',
-      card_count: cards.length
+      card_count: cards.length,
+      name_lang: meta.nameLang || 'zh-CN'
     }, { onConflict: 'id', ignoreDuplicates: false });
     await _sb.from('deck_cards').delete().eq('deck_id', key);
     if (cards.length > 0) {
@@ -9335,7 +9339,7 @@ async function checkPersonalDeckUpdates() {
   if (!_syncEnabled || !_sb || !_cloudUserId) return;
   try {
     const { data: remoteDecks, error } = await _sb.from('decks')
-      .select('id,name,updated_at')
+      .select('id,name,updated_at,name_lang')
       .eq('user_id', _cloudUserId)
       .eq('deck_type', 'personal');
     if (error || !remoteDecks) return;
@@ -9344,7 +9348,7 @@ async function checkPersonalDeckUpdates() {
       if (rd.updated_at > lastSync) {
         const existingMeta = DECKS_META.find(m => m.key === rd.id);
         const deckName = (existingMeta && existingMeta.name) || rd.name;
-        await downloadPersonalDeckFromCloud(rd.id, deckName);
+        await downloadPersonalDeckFromCloud(rd.id, deckName, rd.name_lang);
       }
     }
   } catch(e) {
@@ -9352,7 +9356,7 @@ async function checkPersonalDeckUpdates() {
   }
 }
 
-async function downloadPersonalDeckFromCloud(deckId, deckName) {
+async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
   if (!_syncEnabled || !_sb) return;
   try {
     const { data: cards, error } = await _sb.from('deck_cards')
@@ -9382,8 +9386,8 @@ async function downloadPersonalDeckFromCloud(deckId, deckName) {
     localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
     DECKS[deckId] = deckCards;
     const existingIdx = DECKS_META.findIndex(m => m.key === deckId);
-    if (existingIdx >= 0) DECKS_META[existingIdx] = { key: deckId, name: deckName, deck_type: 'personal' };
-    else DECKS_META.push({ key: deckId, name: deckName, deck_type: 'personal' });
+    if (existingIdx >= 0) DECKS_META[existingIdx] = { key: deckId, name: deckName, deck_type: 'personal', nameLang: nameLang || 'zh-CN' };
+    else DECKS_META.push({ key: deckId, name: deckName, deck_type: 'personal', nameLang: nameLang || 'zh-CN' });
     saveDeckIndex();
     saveDeckCards(deckId, deckCards);
     renderDeckList();
