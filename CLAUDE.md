@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.4.html` | 主训练 App（v5.5.0，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.5.html` | 主训练 App（v5.5.0，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -57,7 +57,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.5.0**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.5.0**（`yihai_v5.5.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 **v5.5.0：** 练习模式重设计 + 翻转卡 + 导入导出 loading 提示 — ①删除困难/生存模式，新增「普通」（完整 SRS，due_ts 升序）和「轻松」（全牌组，答错不降级，20 张，首尾熟悉卡）；②flip card renderer（翻转卡，自评 SRS）；③`CARD_RENDERERS` 分派架构；④localStorage key 全面 camelCase；⑤importYhspack/deleteDeck/exportDeck 加 loading toast（`showLoadingToast`）；⑥修复 `processAnswer` review 分支 `daysLate` TDZ 名称冲突（SRS 写入静默失败）；⑦修复 normal 模式遗留 `applyCurve` 排序，改为 Anki 到期顺序
 
@@ -214,8 +214,8 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 71, voice 17（run_all.j
 
 1. 所有测试通过（run_all.js + _pw_ui_smoke + _pw_srs_e2e）
 2. 文档同步：`CLAUDE.md` 版本号 + `docs/忆海拾光_训练App_README.md` + `docs/yihai_变更记录_CLAUDE参考.md`
-3. 修改 `yihai_v5.1.html` 中 **3 处**版本号：`<title>`、`.home-version`、`APP_VERSION`
-4. 复制 `yihai_v5.1.html` → `index.html`
+3. 修改 `yihai_v5.5.html` 中 **3 处**版本号：`<title>`、`.home-version`、`APP_VERSION`
+4. 复制 `yihai_v5.5.html` → `index.html`
 5. 所有改动放入 `release: v5.x.x` commit
 6. `git tag v5.x.x`
 7. `git push; git push --tags`
