@@ -4649,7 +4649,8 @@ async function importYhspack(file) {
       const c = deck.cards[i];
       if (!c.name) continue;
       const nf = normalizeField(c.name, deckLang);
-      const card = { id: c.id || String(i), name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: [] };
+      const card = { id: c.id || String(i), name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: [],
+                     cardType: c.cardType || c.card_type || 'choice', ext: c.ext || {} };
 
       // image (derive MIME from extension, supports PNG/WebP/GIF)
       if (c.image) {
