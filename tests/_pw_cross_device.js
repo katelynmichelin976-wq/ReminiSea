@@ -139,7 +139,7 @@ let tStart;
 
     const dpA = await run(pageA, () => {
       try {
-        const dp = JSON.parse(localStorage.getItem('yihai_daily_progress') || '{}');
+        const dp = JSON.parse(localStorage.getItem('yihaiDailyProgress') || '{}');
         return {
           n: dp.daily_new_today || 0,
           r: dp.reviewed_today || 0
@@ -195,7 +195,7 @@ let tStart;
 
     const dpB = await run(pageB, () => {
       try {
-        const dp = JSON.parse(localStorage.getItem('yihai_daily_progress') || '{}');
+        const dp = JSON.parse(localStorage.getItem('yihaiDailyProgress') || '{}');
         return dp.reviewed_today || 0;
       } catch (e) { return 0; }
     });

@@ -159,17 +159,11 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     pass('cancelLang → locale 未变（仍 zh-CN）', await run(page, () => getLocale() === 'zh-CN'));
 
     // 设置行显示当前语言
-    await run(page, () => openSettingsWithSrs());
-    await wait(page, 300);
-    pass('settings 中有「界面语言」入口行', await run(page, () =>
-      !!document.getElementById('settings-lang-val')
+    // 界面语言已从设置移至「我的」顶层菜单（v5.4.20）
+    pass('mine 菜单有「语言」入口', await run(page, () =>
+      !!document.querySelector('#screen-mine .mine-menu-item[onclick="openLangPicker()"]')
     ));
-    pass('settings-lang-val 显示「中文」', await run(page, () => {
-      const el = document.getElementById('settings-lang-val');
-      return el && el.textContent.trim() === '中文';
-    }));
-    await run(page, () => document.getElementById('settings-overlay').classList.remove('open'));
-    await wait(page, 200);
+    pass('locale 已设为 zh-CN', await run(page, () => getLocale() === 'zh-CN'));
 
     // ════ PHASE 9: 语音设置 Tab 新结构 ════
     section('PHASE 9: 语音设置 Tab 新结构');
@@ -209,8 +203,7 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     await page.waitForTimeout(300);
     pass('语音辅助页元素应存在 (#screen-voice-assist)', !!(await page.$('#screen-voice-assist')));
     pass('语音辅助页标题元素应存在', !!(await page.$('[data-i18n="voice_assist_page_title"]')));
-    pass('固定节点分组标题应存在', !!(await page.$('[data-i18n="voice_group_fixed"]')));
-    pass('情绪触发分组标题应存在', !!(await page.$('[data-i18n="voice_group_emotion"]')));
+    pass('情绪触发分组标题应存在（固定节点已并入）', !!(await page.$('[data-i18n="voice_group_emotion"]')));
     pass('功能提示分组标题应存在', !!(await page.$('[data-i18n="voice_group_functional"]')));
     pass('启用开关应存在 (#va-enable-toggle)', !!(await page.$('#va-enable-toggle')));
     // Navigate back
@@ -239,9 +232,7 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     ));
     await run(page, () => setLocale('zh-Hant'));
     await wait(page, 300);
-    pass('setLocale(zh-Hant) → settings-lang-val 顯示「繁體中文」', (await run(page, () =>
-      document.getElementById('settings-lang-val')?.textContent?.trim() || ''
-    )).includes('繁體中文'));
+    pass('setLocale(zh-Hant) → getLocale() 返回 zh-Hant', await run(page, () => getLocale() === 'zh-Hant'));
     pass('zh-Hant → 首頁 Tab 顯示含「頁」的文字', (await run(page, () =>
       document.querySelector('#screen-home .tab-item:not(.action) span')?.textContent?.trim() || ''
     )).includes('頁'));
@@ -255,13 +246,22 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     ));
     await run(page, () => setLocale('ja'));
     await wait(page, 300);
-    pass('setLocale(ja) → settings-lang-val が「日本語」を表示', (await run(page, () =>
-      document.getElementById('settings-lang-val')?.textContent?.trim() || ''
-    )).includes('日本語'));
+    pass('setLocale(ja) → getLocale() 返回 ja', await run(page, () => getLocale() === 'ja'));
     pass('ja → ホーム Tab が日本語テキストを表示', (await run(page, () =>
       document.querySelector('#screen-home .tab-item:not(.action) span')?.textContent?.trim() || ''
     )).includes('ホーム'));
     await run(page, () => setLocale('zh-CN'));
+    await wait(page, 200);
+
+    // ════ PHASE 13: 练习模式 UI（普通 + 轻松，无困难/生存）════
+    section('PHASE 13: 练习模式 UI');
+    await run(page, () => openSettingsWithSrs());
+    await wait(page, 300);
+    pass('mode-check-normal 存在', !!(await page.$('#mode-check-normal')));
+    pass('mode-check-easy 存在',   !!(await page.$('#mode-check-easy')));
+    pass('mode-check-hard 已删除',     (await page.$('#mode-check-hard'))     === null);
+    pass('mode-check-survival 已删除', (await page.$('#mode-check-survival')) === null);
+    await run(page, () => document.getElementById('settings-overlay').classList.remove('open'));
     await wait(page, 200);
 
   } finally {

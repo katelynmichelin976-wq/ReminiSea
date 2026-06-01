@@ -2,6 +2,12 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## dev/cleanup-and-features（未发布，#310）
+
+- **processAnswer lateDays TDZ 修复**: `processAnswer` review 分支原代码 `const daysLate = daysLate(state.due_date, today)` — 变量名与外层函数 `daysLate(dueDate, todayStr)`（line ~2639）同名，`const` 声明产生 TDZ（Temporal Dead Zone），调用点即抛 ReferenceError。该错误被 `_lastSrsWrite` 链末尾的 `.catch(e => console.warn(...))` 静默吞掉，导致所有 review 阶段答题完全不写入 CardState/TrialLog。修复：将局部变量重命名为 `lateDays`，3 处引用同步更新（`const lateDays =`、`lateDays / 2`、`lateDays`）。这是 snake_case→camelCase 批量重命名时引入的名称冲突。
+- **buildSessionQueue normal 模式移除 applyCurve**: 练习模式重设计计划明确 normal 模式 `finalQueue = queue`（直接返回，Anki 到期顺序，不重排）。但实现时 else 分支遗留 `finalQueue = applyCurve(queue)`（原 survival 逻辑）。现改为 `finalQueue = queue`，与 i18n 描述「完整SRS，按到期顺序」对齐。`applyCurve` 函数保留定义（easy 模式未使用，暂不删除）。
+- **测试更新**: `_pw_srs_e2e.js` — PHASE5 从测「hard 模式刷新后恢复」（已删除的模式）改为测「easy 模式刷新后恢复」；PHASE6 从测「U 形曲线（first/last ef > mid）」改为测「due_ts 升序（Anki 顺序）」；清除所有诊断日志（`page.on('console',...)`/spy patch/dayAnswerLog/sessionInfo/dayInfo/allTrialKeys）。`_pw_ui_smoke.js` — 对齐 v5.4.20 UI 变更：`#settings-lang-val` 已移除（语言入口在 mine 菜单），改为检查 mine 菜单语言按钮存在性及 `getLocale()` 返回值；`[data-i18n="voice_group_fixed"]` 已从 DOM 删除（固定节点并入情绪触发），断言改为验证情绪触发分组存在。共 64 断言（+6）。
+
 ## v5.4.20 Key Changes
 
 - **syncAppEvents 批量上传**: 新增 `uploadAppEventBatch(events)` 用 `upsert({ onConflict: 'event_id', ignoreDuplicates: true })` 一次最多上传 10 条；两个顺序循环（业务事件 + 诊断日志）改为按 `EVT_BATCH=10` 分批调用。修复 zyhaff@gmail.com 账号 174 条积压事件顺序上传导致 runSync 触发 30s watchdog 的问题。

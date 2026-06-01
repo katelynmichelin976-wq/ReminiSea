@@ -26,9 +26,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v4.9_test.js` | v4.9 配置合并测试（48 cases） |
 | `tests/yihai_v5.0_i18n_test.js` | i18n 纯函数单测（31 cases） |
 | `tests/yihai_v5.2_voice_test.js` | 语音辅助迁移逻辑单测（17 cases） |
-| `tests/run_all.js` | 单元测试统一入口（6 套件，325 断言） |
-| `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音/openSrsDb，58 断言，无需登录） |
-| `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/曲线，14 断言，无需登录） |
+| `tests/run_all.js` | 单元测试统一入口（6 套件，360 断言） |
+| `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音/openSrsDb/练习模式，64 断言，无需登录） |
+| `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/队列顺序，14 断言，无需登录） |
 | `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登/双客户端防护/feedback E2E，32 断言） |
 | `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备，11 断言） |
 | `tests/_pw_session_restore.js` | 会话恢复流程（SDK失败/无backup/token失效/backup损坏/pathD/登录超时，13 断言，无需登录） |
@@ -58,6 +58,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Recent Changes
 
 **当前版本：v5.4.20**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**dev/cleanup-and-features（未发布）：**
+- 修复 `processAnswer` review 分支 TDZ 名称冲突：`const daysLate = daysLate(...)` 中变量名与函数名重名，触发 ReferenceError，导致所有 review 阶段答题静默失败（CardState/TrialLog 不写入）。改为 `const lateDays = daysLate(...)`，3 处引用同步更新。
+- 修复 `buildSessionQueue` normal 模式仍调用 `applyCurve`：计划要求 `finalQueue = queue`（Anki 到期顺序），实现遗留了旧 survival 逻辑的 `applyCurve(queue)`。现改为直接返回 queue，与 i18n 描述「按到期顺序」一致。
+- 测试同步：`_pw_srs_e2e` PHASE5 改测 easy 模式持久化、PHASE6 改测 due_ts 升序顺序；`_pw_ui_smoke` 对齐 v5.4.20 UI（语言入口移至 mine 菜单、固定节点并入情绪触发，64 断言）。
+- 代码清理：删除 `_pw_srs_e2e` 所有诊断日志（console 监听/spy patch/dayInfo/allTrialKeys 等）。
 
 **v5.4.20：** UI 整合与性能优化 — ①`syncAppEvents` 批量上传（10条/批，`upsert+ignoreDuplicates`，174条从29分钟降至秒级）②修复「我的」Tab 切换时 profile card 残留「点击登录」（`showScreen` 补 `updateMineProfile`）③语音辅助页：宽度对齐、取消折叠、固定节点并入情绪触发（答错/答对/连对/完成）、浏览引导移至功能提示末位 ④「我的」页高级模式加⚡图标、间距对齐 ⑤界面语言从设置内移至「我的」顶层菜单（地球图标），语言页标题/顺序调整（EN→繁→简→日→ES）
 
@@ -150,7 +156,7 @@ $env:TEST_PASSWORD="xxx"; node tests/_pw_cross_device.js
 - **跨设备/同步改动** → 加跑 `_pw_cross_device.js`
 - **全量回归** → 仅用户明确要求时跑全部 4 个 Playwright 文件
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 31, voice 17（run_all.js 合计 325）；Playwright ui_smoke 58 / srs_e2e 14 / cloud_sync 32 / cross_device 11 / session_restore 13 / sync_guard 7 / feedback 11。
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 71, voice 17（run_all.js 合计 365）；Playwright ui_smoke 64 / srs_e2e 14 / cloud_sync 32 / cross_device 11 / session_restore 13 / sync_guard 7 / feedback 11。
 
 ## SRS Architecture
 
@@ -163,11 +169,9 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 31, voice 17（run_all.j
 
 **Learning hard 延迟：** 第一步 `(steps[0]+steps[1])/2`；仅一步时 `steps[0]×1.5`；第二步起不变。
 
-**游戏难度模式（`SRS_CONFIG.session_mode`）：**
-- `normal`：20 张，hard≤5 张，其余 easy/new
-- `hard`：≤30 张 + `applyCurve()`（U 形曲线：首尾易中间难）
-- `survival`：全量积压 + curve
-- `difficultyScore(s)` — ef 反转 + lapses 归一 + learning/relearning +0.5 bonus
+**练习模式（`SRS_CONFIG.session_mode`）：**
+- `normal`：完整 SRS 模式 — 全量到期积压，按 `due_ts` 升序出牌（Anki 默认顺序，无重排）
+- `easy`：轻松陪伴模式 — 全牌组出 `easy_session_size`（默认 20）张，[热身 3 熟悉] + [3:1 熟/不熟穿插] + [收尾 2 熟悉]；答错强制写 Hard 不降级；每张只出一次（session 内不重入队列）
 
 **参数命名规则：** 所有 SRS 参数对齐 Anki 命名，不加后缀。
 
@@ -194,6 +198,8 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 31, voice 17（run_all.j
 1. **Simplicity first** — 最少代码解决问题。不添加未要求的功能，不为单次使用创建抽象。
 2. **Surgical changes** — 只改必须改的。不"改进"相邻代码，匹配现有风格。只清理自己改动造成的孤儿引用。
 3. **Goal-driven** — "修 bug" → 先写复现测试；"加功能" → 先定义验收标准。
+4. **No comments** — 不写注释。变量/函数命名足够清晰时，注释是噪音。唯一例外：隐藏约束或反直觉的 workaround，一行以内。
+5. **camelCase only** — 所有变量、函数、localStorage key 一律 camelCase。不用 snake_case、kebab-case（HTML id/class 除外）。
 
 ## Workflow Rules
 

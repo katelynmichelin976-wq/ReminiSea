@@ -299,8 +299,8 @@ async function waitSyncDone(page) {
     pass('submitFeedback 已登录 → 主通道 success', fbResult === 'success');
 
     // 成功路径不写 pending，localStorage 应无暂存
-    pass('success 路径无 yihai_pending_feedback 暂存', await run(page, () =>
-      !localStorage.getItem('yihai_pending_feedback')
+    pass('success 路径无 yihaiPendingFeedback 暂存', await run(page, () =>
+      !localStorage.getItem('yihaiPendingFeedback')
     ));
 
     // UI 路径：开 sheet → 填文字 → await handleFeedbackSend() → 验证按钮成功文字

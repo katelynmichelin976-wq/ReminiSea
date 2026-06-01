@@ -61,7 +61,7 @@ async function getAccountState(page) {
 
     // 在 JS 执行前写入 localStorage，模拟「曾经登录过」的用户
     await ctx1.addInitScript((backup) => {
-      localStorage.setItem('yihai_session_backup', backup);
+      localStorage.setItem('yihaiSessionBackup', backup);
     }, FAKE_BACKUP);
 
     const page1 = await ctx1.newPage();
@@ -114,7 +114,7 @@ async function getAccountState(page) {
     const state2 = await getAccountState(page2);
     pass('无 backup 时显示登录表单', state2 === 'account-state-logged-out');
 
-    const noBackup = await page2.evaluate(() => !localStorage.getItem('yihai_session_backup'));
+    const noBackup = await page2.evaluate(() => !localStorage.getItem('yihaiSessionBackup'));
     pass('确认 localStorage 无 backup', noBackup);
 
     await ctx2.close();
@@ -127,7 +127,7 @@ async function getAccountState(page) {
     const ctx3 = await browser.newContext({ viewport: { width: 390, height: 844 } });
 
     await ctx3.addInitScript((backup) => {
-      localStorage.setItem('yihai_session_backup', backup);
+      localStorage.setItem('yihaiSessionBackup', backup);
     }, FAKE_BACKUP);
 
     const page3 = await ctx3.newPage();
@@ -168,7 +168,7 @@ async function getAccountState(page) {
 
     // 写入无法 JSON.parse 的 backup（触发 path A：return 不更新 UI）
     await ctx4.addInitScript(() => {
-      localStorage.setItem('yihai_session_backup', 'corrupted{{{json');
+      localStorage.setItem('yihaiSessionBackup', 'corrupted{{{json');
     });
 
     const page4 = await ctx4.newPage();
@@ -186,7 +186,7 @@ async function getAccountState(page) {
     const state4 = await getAccountState(page4);
 
     // 验证辅助信息
-    const backupRaw = await page4.evaluate(() => localStorage.getItem('yihai_session_backup'));
+    const backupRaw = await page4.evaluate(() => localStorage.getItem('yihaiSessionBackup'));
     pass('backup 字符串仍存在（非 null）', !!backupRaw);
 
     const cloudEmail4 = await page4.evaluate(() => typeof _cloudUserEmail !== 'undefined' ? _cloudUserEmail : '');
@@ -219,7 +219,7 @@ async function getAccountState(page) {
     //   - _syncEnabled = false（path D 设置）
     //   - 调用 updateCloudTabUI（path D 会调，但 renderAccount 仍会卡住）
     await page5.evaluate((backup) => {
-      localStorage.setItem('yihai_session_backup', backup);
+      localStorage.setItem('yihaiSessionBackup', backup);
       _cloudUserEmail = '';
       _syncEnabled    = false;
       if (typeof updateCloudTabUI === 'function') updateCloudTabUI();
