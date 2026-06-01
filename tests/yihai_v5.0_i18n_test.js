@@ -173,6 +173,8 @@ section('SUITE 7 — 练习模式 i18n key 迁移检查');
   // 新 easy mode key 应存在
   check(`${locale}: settings_mode_easy 存在`,      keys.includes('settings_mode_easy'), true);
   check(`${locale}: settings_mode_easy_desc 存在`, keys.includes('settings_mode_easy_desc'), true);
+  // 翻转卡 key 应存在
+  check(`${locale}: flip_reveal_btn 存在`, keys.includes('flip_reveal_btn'), true);
 });
 
 console.log(`\n通过 ${passed} / 失败 ${failed}`);
