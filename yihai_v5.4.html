@@ -7787,6 +7787,84 @@ const CARD_RENDERERS = {
       startCardPrompts(pickedTexts, optLang, q.cardType);
     },
     unmount() {}
+  },
+  flip: {
+    mount(q) {
+      document.querySelector('.img-zone').style.display = 'none';
+      document.querySelector('.mid-zone').style.display = 'none';
+
+      const zone = document.getElementById('flip-zone');
+      zone.style.display = 'flex';
+      zone.style.flexDirection = 'column';
+      zone.style.flex = '1';
+
+      const ext = q.ext || {};
+      const hasImg = q.img && q.img.length > 0;
+
+      zone.innerHTML = `
+        <div class="flip-scene">
+          <div class="flip-card-inner" id="flip-inner">
+            <div class="flip-face flip-face-front">
+              <div class="flip-word">${q.name || ''}</div>
+              ${ext.phonetic ? `<div class="flip-phonetic"><span>${ext.phonetic}</span><button class="flip-audio-btn" id="flip-audio-btn" aria-label="播放读音"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button></div>` : `<button class="flip-audio-btn" id="flip-audio-btn" aria-label="播放读音"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>`}
+            </div>
+            <div class="flip-face flip-face-back">
+              ${hasImg ? `<img class="flip-img" src="${q.img}" alt="${q.name || ''}" onerror="this.style.display='none'">` : ''}
+              ${ext.partOfSpeech ? `<div class="flip-pos">${ext.partOfSpeech}</div>` : ''}
+              ${ext.definition ? `<div class="flip-definition">${ext.definition}</div>` : ''}
+              ${ext.example ? `<div class="flip-example">${ext.example}</div>` : ''}
+              ${ext.enDefinition ? `<div class="flip-en-def">${ext.enDefinition}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+
+      const btm = document.querySelector('.btm');
+      document.getElementById('nxtbtn').className = 'nxtbtn';
+      btm.classList.remove('active');
+      btm.innerHTML = `<button class="flip-reveal-btn" id="flip-reveal-btn">翻转</button>`;
+
+      const sid = sessionId;
+
+      document.getElementById('flip-audio-btn').addEventListener('click', () => {
+        playAnswer(q);
+      });
+
+      document.getElementById('flip-reveal-btn').addEventListener('click', () => {
+        document.getElementById('flip-inner').classList.add('flipped');
+        playAnswer(q);
+
+        const gradeBar = document.createElement('div');
+        gradeBar.className = 'flip-grade-bar';
+        gradeBar.innerHTML = `
+          <button class="flip-grade-btn flip-grade-again" data-grade="again">Again</button>
+          <button class="flip-grade-btn flip-grade-hard"  data-grade="hard">Hard</button>
+          <button class="flip-grade-btn flip-grade-good"  data-grade="good">Good</button>
+          <button class="flip-grade-btn flip-grade-easy"  data-grade="easy">Easy</button>
+        `;
+        btm.innerHTML = '';
+        btm.appendChild(gradeBar);
+
+        gradeBar.querySelectorAll('.flip-grade-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (sid !== sessionId) return;
+            const rating = btn.dataset.grade;
+            if (currentMode !== 'browse' && q._srsState) {
+              _lastSrsWrite = _writeSrs(q, rating, { attemptNumber: 1, isCorrect: rating !== 'again', distractorId: null })
+                .catch(e => console.warn('_writeSrs flip error', e));
+            }
+            onNext();
+          });
+        });
+      });
+
+      stopAllPromptTimers();
+      stopNRing();
+    },
+    unmount() {
+      const btm = document.querySelector('.btm');
+      btm.innerHTML = `<button class="nxtbtn" id="nxtbtn" ontouchstart="" onclick="onNext()"><svg class="nring-svg" id="nrsvg"><rect class="nring-t" id="nrt" rx="20"/><rect class="nring-p" id="nrp" rx="20"/></svg><span class="nring-lbl" id="nxt-lbl" data-i18n="quiz_next">下一题</span><span class="nring-sec" id="nrsec"></span></button>`;
+    }
   }
 };
 
