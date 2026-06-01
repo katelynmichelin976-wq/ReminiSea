@@ -264,6 +264,17 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     await run(page, () => setLocale('zh-CN'));
     await wait(page, 200);
 
+    // ════ PHASE 13: 练习模式 UI（普通 + 轻松，无困难/生存）════
+    section('PHASE 13: 练习模式 UI');
+    await run(page, () => openSettingsWithSrs());
+    await wait(page, 300);
+    pass('mode-check-normal 存在', !!(await page.$('#mode-check-normal')));
+    pass('mode-check-easy 存在',   !!(await page.$('#mode-check-easy')));
+    pass('mode-check-hard 已删除',     (await page.$('#mode-check-hard'))     === null);
+    pass('mode-check-survival 已删除', (await page.$('#mode-check-survival')) === null);
+    await run(page, () => document.getElementById('settings-overlay').classList.remove('open'));
+    await wait(page, 200);
+
   } finally {
     const { passed, failed } = getCounts();
     section('结果');

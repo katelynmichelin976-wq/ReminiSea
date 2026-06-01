@@ -26,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v4.9_test.js` | v4.9 配置合并测试（48 cases） |
 | `tests/yihai_v5.0_i18n_test.js` | i18n 纯函数单测（31 cases） |
 | `tests/yihai_v5.2_voice_test.js` | 语音辅助迁移逻辑单测（17 cases） |
-| `tests/run_all.js` | 单元测试统一入口（6 套件，325 断言） |
+| `tests/run_all.js` | 单元测试统一入口（6 套件，360 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音/openSrsDb，58 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/曲线，14 断言，无需登录） |
 | `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登/双客户端防护/feedback E2E，32 断言） |
@@ -150,7 +150,7 @@ $env:TEST_PASSWORD="xxx"; node tests/_pw_cross_device.js
 - **跨设备/同步改动** → 加跑 `_pw_cross_device.js`
 - **全量回归** → 仅用户明确要求时跑全部 4 个 Playwright 文件
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 31, voice 17（run_all.js 合计 325）；Playwright ui_smoke 58 / srs_e2e 14 / cloud_sync 32 / cross_device 11 / session_restore 13 / sync_guard 7 / feedback 11。
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 61, voice 17（run_all.js 合计 360）；Playwright ui_smoke 62 / srs_e2e 14 / cloud_sync 32 / cross_device 11 / session_restore 13 / sync_guard 7 / feedback 11。
 
 ## SRS Architecture
 
@@ -163,11 +163,9 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 31, voice 17（run_all.j
 
 **Learning hard 延迟：** 第一步 `(steps[0]+steps[1])/2`；仅一步时 `steps[0]×1.5`；第二步起不变。
 
-**游戏难度模式（`SRS_CONFIG.session_mode`）：**
-- `normal`：20 张，hard≤5 张，其余 easy/new
-- `hard`：≤30 张 + `applyCurve()`（U 形曲线：首尾易中间难）
-- `survival`：全量积压 + curve
-- `difficultyScore(s)` — ef 反转 + lapses 归一 + learning/relearning +0.5 bonus
+**练习模式（`SRS_CONFIG.session_mode`）：**
+- `normal`：完整 SRS 模式（原生存逻辑）— 全量积压 + `applyCurve()` U 形曲线排序，`difficultyScore(s)` 按 ef/lapses/stage 评分
+- `easy`：轻松陪伴模式 — 全牌组出 `easy_session_size`（默认 20）张，[热身 3 熟悉] + [3:1 熟/不熟穿插] + [收尾 2 熟悉]；答错强制写 Hard 不降级；每张只出一次（session 内不重入队列）
 
 **参数命名规则：** 所有 SRS 参数对齐 Anki 命名，不加后缀。
 

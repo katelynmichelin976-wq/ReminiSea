@@ -162,5 +162,18 @@ if (_missing.length > 0) {
 check('ja 辞書: en の全キーが存在する', _missing.length, 0);
 check('ja 辞書: キー数が en と一致する', _jaKeys.length, _enKeys.length);
 
+section('SUITE 7 — 练习模式 i18n key 迁移检查');
+['en','zh-CN','zh-Hant','es','ja'].forEach(locale => {
+  const keys = _extractI18NKeys(_html, locale);
+  // 旧模式 key 应已删除
+  check(`${locale}: settings_mode_hard 已删除`,     keys.includes('settings_mode_hard'), false);
+  check(`${locale}: settings_mode_hard_desc 已删除`, keys.includes('settings_mode_hard_desc'), false);
+  check(`${locale}: settings_mode_survival 已删除`,  keys.includes('settings_mode_survival'), false);
+  check(`${locale}: settings_mode_survival_desc 已删除`, keys.includes('settings_mode_survival_desc'), false);
+  // 新 easy mode key 应存在
+  check(`${locale}: settings_mode_easy 存在`,      keys.includes('settings_mode_easy'), true);
+  check(`${locale}: settings_mode_easy_desc 存在`, keys.includes('settings_mode_easy_desc'), true);
+});
+
 console.log(`\n通过 ${passed} / 失败 ${failed}`);
 if (failed > 0) process.exit(1);

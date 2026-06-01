@@ -2274,16 +2274,12 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="sheet-section">
           <div class="sheet-section-lbl" data-i18n="settings_section_mode">练习模式</div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('normal')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_normal">普通</span><span class="sheet-mode-desc" data-i18n="settings_mode_normal_desc">固定20张，越做越顺</span></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_normal">普通</span><span class="sheet-mode-desc" data-i18n="settings_mode_normal_desc">完整SRS，按到期顺序</span></span>
             <span class="sheet-mode-check" id="mode-check-normal"></span>
           </div>
-          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('hard')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_hard">困难</span><span class="sheet-mode-desc" data-i18n="settings_mode_hard_desc">SRS节律，最多30张</span></span>
-            <span class="sheet-mode-check" id="mode-check-hard"></span>
-          </div>
-          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('survival')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_survival">生存</span><span class="sheet-mode-desc" data-i18n="settings_mode_survival_desc">清空所有积压</span></span>
-            <span class="sheet-mode-check" id="mode-check-survival"></span>
+          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('easy')">
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_easy">轻松</span><span class="sheet-mode-desc" data-i18n="settings_mode_easy_desc">全牌组巩固，答错不降级</span></span>
+            <span class="sheet-mode-check" id="mode-check-easy"></span>
           </div>
         </div>
         <div class="sheet-section">
@@ -2567,8 +2563,9 @@ const SRS_CONFIG = {
   // default 1200s = 20 min, matches Anki default
   learn_ahead_limit        : 1200,
 
-  // practice modes: 'normal'=standard (arc, 20 cards) | 'hard'=challenging (SRS rhythm, 30 cap) | 'survival'=survival (clear backlog)
+  // practice modes: 'normal'=SRS full queue + applyCurve (was 'survival') | 'easy'=companion mode (full deck, consolidate, no lapse on wrong)
   session_mode             : 'normal',
+  easy_session_size        : 20,             // easy mode cards per session (configurable)
 };
 
 // ── SRS_CONFIG persistent overrides (restore user edits from localStorage) ─
@@ -2588,6 +2585,12 @@ const SRS_CONFIG = {
     }
   });
 })();
+// migrate legacy session_mode values to new two-mode system
+// 'survival' was renamed to 'normal'; old 'normal' (applyNormalMode) and 'hard' also → 'normal'
+if (!['normal', 'easy'].includes(SRS_CONFIG.session_mode)) {
+  SRS_CONFIG.session_mode = 'normal';
+  localStorage.setItem('srs_session_mode', 'normal');
+}
 
 function saveSrsConfigKey(key, value) {
   if (Array.isArray(value)) {
@@ -4001,43 +4004,72 @@ function applyCurve(queue) {
   return result;
 }
 
-// normal mode: fixed 20 card cap, hard cards ≤25%, then apply curve
-function applyNormalMode(cards, stateMap, newSlots) {
-  const SESSION_SIZE = 20;
-  const HARD_RATIO   = 0.25;
-  const now   = Date.now();
+// easy mode: full deck pool, familiar-first ordering, no SRS due filter
+// familiar = srs_stage 'review' AND lapses_total < 3
+// order: [3 warmup familiar] + [3:1 interleave middle] + [2 cooldown familiar]
+// wrong answer in session → forced 'hard' (handled at SRS write call site)
+function applyEasyMode(cards, stateMap) {
+  const SESSION_SIZE = SRS_CONFIG.easy_session_size || 20;
   const today = todayStr();
-  const hardCap = Math.floor(SESSION_SIZE * HARD_RATIO);
 
-  const due = cards.filter(c => {
-    const s = stateMap[c.id];
-    if (!s || s.suspended || _dailyRemovedToday[s.state_key]) return false;
-    if (s.srs_stage === 'review')     return s.due_date && s.due_date <= today;
-    if (s.srs_stage === 'relearning') return s.due_ts   && s.due_ts   <= now;
-    if (s.srs_stage === 'learning')   return s.due_ts   && s.due_ts   <= now;
-    return false;
+  const famPool = [], unfPool = [];
+  for (const card of cards) {
+    const s = stateMap[card.id];
+    if (!s || s.suspended) continue;
+    const isFamiliar = s.srs_stage === 'review' && (s.lapses_total || 0) < 3;
+    (isFamiliar ? famPool : unfPool).push(card);
+  }
+
+  // sort familiar: SRS-due today first, rest random
+  for (let i = famPool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [famPool[i], famPool[j]] = [famPool[j], famPool[i]];
+  }
+  famPool.sort((a, b) => {
+    const aDue = (stateMap[a.id].due_date && stateMap[a.id].due_date <= today) ? 0 : 1;
+    const bDue = (stateMap[b.id].due_date && stateMap[b.id].due_date <= today) ? 0 : 1;
+    return aDue - bDue;
   });
+  // shuffle unfamiliar
+  for (let i = unfPool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unfPool[i], unfPool[j]] = [unfPool[j], unfPool[i]];
+  }
 
-  const byDue = (a, b) =>
-    (stateMap[a.id].due_date || '').localeCompare(stateMap[b.id].due_date || '') ||
-    (stateMap[a.id].due_ts || 0) - (stateMap[b.id].due_ts || 0);
+  // if familiar cards are scarce, relax: include non-new non-review cards
+  if (famPool.length < SESSION_SIZE - 1) {
+    const famIds = new Set(famPool.map(c => c.id));
+    for (const card of cards) {
+      const s = stateMap[card.id];
+      if (!s || s.suspended || famIds.has(card.id)) continue;
+      if (s.srs_stage !== 'new' && s.srs_stage !== 'review') famPool.push(card);
+    }
+  }
 
-  const hard = due.filter(c => difficultyScore(stateMap[c.id]) >= 0.4).sort(byDue);
-  const easy = due.filter(c => difficultyScore(stateMap[c.id]) <  0.4).sort(byDue);
+  // unfamiliar count: floor((SESSION_SIZE - 5) / 4), e.g. 20→3
+  const unfCount = Math.max(0, Math.min(unfPool.length, Math.floor((SESSION_SIZE - 5) / 4)));
+  const selUnf = unfPool.slice(0, unfCount);
+  const selFam = famPool.slice(0, SESSION_SIZE - selUnf.length);
 
-  const selHard = hard.slice(0, hardCap);
-  const selEasy = easy.slice(0, SESSION_SIZE - selHard.length);
-  const remain  = SESSION_SIZE - selHard.length - selEasy.length;
-  const selNew  = cards
-    .filter(c => { const s = stateMap[c.id]; return s && s.srs_stage === 'new' && !s.suspended; })
-    .slice(0, Math.max(0, Math.min(remain, newSlots)));
+  // build ordered result: [warmup 3] + [3:1 interleave] + [cooldown 2]
+  const fam = [...selFam];
+  const unf = [...selUnf];
+  const warmupCount   = Math.min(3, fam.length);
+  const cooldownCount = fam.length >= warmupCount + 2 ? 2 : Math.max(0, fam.length - warmupCount);
+  const warmup   = fam.splice(0, warmupCount);
+  const cooldown = fam.length >= cooldownCount ? fam.splice(-cooldownCount) : fam.splice(0);
+  const result   = [...warmup];
+  let fi = 0, ui = 0;
+  while (fi < fam.length || ui < unf.length) {
+    for (let k = 0; k < 3 && fi < fam.length; k++, fi++) result.push(fam[fi]);
+    if (ui < unf.length) result.push(unf[ui++]);
+  }
+  result.push(...cooldown);
 
-  return applyCurve(
-    [...selEasy, ...selHard, ...selNew].map(card => {
-      const { options, correct } = buildOptions(card, cards);
-      return { ...card, options, correct, _srsState: stateMap[card.id] };
-    })
-  );
+  return result.map(card => {
+    const { options, correct } = buildOptions(card, cards);
+    return { ...card, options, correct, _srsState: stateMap[card.id] };
+  });
 }
 
 // ── buildSessionQueue ────────────────────────────────────────────
@@ -4145,12 +4177,10 @@ async function buildSessionQueue(deckKey) {
   // final queue determined by practice mode
   const mode = SRS_CONFIG.session_mode || 'normal';
   let finalQueue;
-  if (mode === 'normal') {
-    finalQueue = applyNormalMode(cards, stateMap, newSlots);
-  } else if (mode === 'hard') {
-    finalQueue = applyCurve(queue.slice(0, 30));
+  if (mode === 'easy') {
+    finalQueue = applyEasyMode(cards, stateMap);
   } else {
-    // survival: full existing queue + curve arrangement
+    // normal: original survival logic (full SRS queue + applyCurve), internal logic unchanged
     finalQueue = applyCurve(queue);
   }
 
@@ -5923,7 +5953,7 @@ const I18N = {
     settings_section_options: 'Options', settings_opt_count: 'Answer Options', settings_touch_delay: 'Touch Delay',
     settings_section_rhythm: 'Rhythm', settings_quiz_countdown: 'Quiz Countdown', settings_browse_countdown: 'Browse Countdown', settings_browse_ans_delay: 'Browse Answer Delay',
     settings_section_feedback: 'Feedback', settings_confetti: 'Confetti',
-    settings_section_mode: 'Practice Mode', settings_mode_normal: 'Normal', settings_mode_normal_desc: 'Fixed 20 cards, gets easier', settings_mode_hard: 'Hard', settings_mode_hard_desc: 'SRS rhythm, up to 30 cards', settings_mode_survival: 'Survival', settings_mode_survival_desc: 'Clear all backlog',
+    settings_section_mode: 'Practice Mode', settings_mode_normal: 'Normal', settings_mode_normal_desc: 'Full SRS, cards in due order', settings_mode_easy: 'Easy', settings_mode_easy_desc: 'All cards, no penalty on wrong',
     settings_section_storage: 'Storage', settings_storage_desc: 'Scan and remove orphaned media files not referenced by any card.', settings_check_media: '\u{1F9F9} Check Media',
     settings_section_quiz_prompt: 'Quiz Prompt', settings_quiz_prompt: 'Quiz Prompt', settings_quiz_prompt_delay: 'Prompt Delay', settings_quiz_prompt_phrase: 'Prompt Phrase',
     settings_section_opt_hint: 'Option Hint', settings_opt_hint: 'Option Hint', settings_opt_hint_delay: 'Hint Delay', settings_opt_hint_phrase_label: 'Hint Phrase ({A}{B}{C} for options, . for 100ms pause)',
@@ -6202,7 +6232,7 @@ const I18N = {
     settings_section_options: '选项', settings_opt_count: '选项数量', settings_touch_delay: '防误触延迟',
     settings_section_rhythm: '节奏', settings_quiz_countdown: '练习倒计时', settings_browse_countdown: '浏览倒计时', settings_browse_ans_delay: '浏览答案显示延迟',
     settings_section_feedback: '答对反馈', settings_confetti: '撒花动画',
-    settings_section_mode: '练习模式', settings_mode_normal: '普通', settings_mode_normal_desc: '固定20张，越做越顺', settings_mode_hard: '困难', settings_mode_hard_desc: 'SRS节律，最多30张', settings_mode_survival: '生存', settings_mode_survival_desc: '清空所有积压',
+    settings_section_mode: '练习模式', settings_mode_normal: '普通', settings_mode_normal_desc: '完整SRS，按到期顺序', settings_mode_easy: '轻松', settings_mode_easy_desc: '全牌组巩固，答错不降级',
     settings_section_storage: '存储维护', settings_storage_desc: '检查并清理未被任何卡片引用的孤立媒体文件，释放存储空间。', settings_check_media: '🧹 检查媒体文件',
     settings_section_quiz_prompt: '答题提示', settings_quiz_prompt: '答题提示', settings_quiz_prompt_delay: '答题提示延迟', settings_quiz_prompt_phrase: '答题提示文案',
     settings_section_opt_hint: '选项提示', settings_opt_hint: '选项提示', settings_opt_hint_delay: '选项提示延迟', settings_opt_hint_phrase_label: '选项提示文案（{A}{B}{C}替换为选项，. 为停顿100ms）',
@@ -6481,7 +6511,7 @@ const I18N = {
     settings_section_options: '選項', settings_opt_count: '選項數量', settings_touch_delay: '防誤觸延遲',
     settings_section_rhythm: '節奏', settings_quiz_countdown: '練習倒計時', settings_browse_countdown: '瀏覽倒計時', settings_browse_ans_delay: '瀏覽答案顯示延遲',
     settings_section_feedback: '答對反饋', settings_confetti: '撒花動畫',
-    settings_section_mode: '練習模式', settings_mode_normal: '普通', settings_mode_normal_desc: '固定20張，越做越順', settings_mode_hard: '困難', settings_mode_hard_desc: 'SRS節律，最多30張', settings_mode_survival: '生存', settings_mode_survival_desc: '清空所有積壓',
+    settings_section_mode: '練習模式', settings_mode_normal: '普通', settings_mode_normal_desc: '完整SRS，按到期順序', settings_mode_easy: '輕鬆', settings_mode_easy_desc: '全牌組鞏固，答錯不降級',
     settings_section_storage: '儲存維護', settings_storage_desc: '檢查並清理未被任何卡片引用的孤立媒體檔案，釋放儲存空間。', settings_check_media: '🧹 檢查媒體檔案',
     settings_section_quiz_prompt: '答題提示', settings_quiz_prompt: '答題提示', settings_quiz_prompt_delay: '答題提示延遲', settings_quiz_prompt_phrase: '答題提示文案',
     settings_section_opt_hint: '選項提示', settings_opt_hint: '選項提示', settings_opt_hint_delay: '選項提示延遲', settings_opt_hint_phrase_label: '選項提示文案（{A}{B}{C}替換為選項，. 為停頓100ms）',
@@ -6752,7 +6782,7 @@ const I18N = {
     settings_section_options: 'Opciones', settings_opt_count: 'Numero de opciones', settings_touch_delay: 'Retardo tactil',
     settings_section_rhythm: 'Ritmo', settings_quiz_countdown: 'Cuenta regresiva', settings_browse_countdown: 'Cuenta de exploracion', settings_browse_ans_delay: 'Retardo de respuesta',
     settings_section_feedback: 'Feedback', settings_confetti: 'Confeti',
-    settings_section_mode: 'Modo de practica', settings_mode_normal: 'Normal', settings_mode_normal_desc: '20 tarjetas fijas, se vuelve mas facil', settings_mode_hard: 'Dificil', settings_mode_hard_desc: 'Ritmo SRS, hasta 30 tarjetas', settings_mode_survival: 'Supervivencia', settings_mode_survival_desc: 'Limpiar todo el backlog',
+    settings_section_mode: 'Modo de practica', settings_mode_normal: 'Normal', settings_mode_normal_desc: 'SRS completo, orden por vencimiento', settings_mode_easy: 'Facil', settings_mode_easy_desc: 'Todas las tarjetas, sin penalizacion por error',
     settings_section_storage: 'Almacenamiento', settings_storage_desc: 'Escanear y eliminar archivos huerfanos no referenciados.', settings_check_media: '\u{1F9F9} Verificar medios',
     settings_section_quiz_prompt: 'Aviso de pregunta', settings_quiz_prompt: 'Aviso de pregunta', settings_quiz_prompt_delay: 'Retardo de aviso', settings_quiz_prompt_phrase: 'Frase de aviso',
     settings_section_opt_hint: 'Pista de opciones', settings_opt_hint: 'Pista de opciones', settings_opt_hint_delay: 'Retardo de pista', settings_opt_hint_phrase_label: 'Frase de pista ({A}{B}{C} para opciones, . pausa 100ms)',
@@ -7035,7 +7065,7 @@ const I18N = {
     settings_section_options: 'オプション', settings_opt_count: '回答の選択肢数', settings_touch_delay: 'タッチ遅延',
     settings_section_rhythm: 'リズム', settings_quiz_countdown: 'クイズカウントダウン', settings_browse_countdown: 'ブラウズカウントダウン', settings_browse_ans_delay: 'ブラウズ回答遅延',
     settings_section_feedback: 'フィードバック', settings_confetti: '紙吹雪',
-    settings_section_mode: '練習モード', settings_mode_normal: '通常', settings_mode_normal_desc: '固定20枚、徐々に易しくなる', settings_mode_hard: 'ハード', settings_mode_hard_desc: 'SRSリズム、最大30枚', settings_mode_survival: 'サバイバル', settings_mode_survival_desc: '積み残しをすべてクリア',
+    settings_section_mode: '練習モード', settings_mode_normal: '通常', settings_mode_normal_desc: '完全SRS、期限順で出題', settings_mode_easy: 'かんたん', settings_mode_easy_desc: '全カード復習、ミスしてもペナルティなし',
     settings_section_storage: 'ストレージ', settings_storage_desc: 'カードから参照されていない孤立メディアファイルをスキャンして削除します。', settings_check_media: '\u{1F9F9} メディアを確認',
     settings_section_quiz_prompt: 'クイズプロンプト', settings_quiz_prompt: 'クイズプロンプト', settings_quiz_prompt_delay: 'プロンプト遅延', settings_quiz_prompt_phrase: 'プロンプトフレーズ',
     settings_section_opt_hint: '選択肢ヒント', settings_opt_hint: '選択肢ヒント', settings_opt_hint_delay: 'ヒント遅延', settings_opt_hint_phrase_label: 'ヒントフレーズ（{A}{B}{C}は選択肢、.は100msポーズ）',
@@ -7899,7 +7929,9 @@ function revealAnswer() {
 
   // ── SRS write (practice mode) ────────────────────────────
   if (currentMode !== 'browse' && q._srsState) {
-    const rating = _cardAnswerRating || 'good';
+    let rating = _cardAnswerRating || 'good';
+    // easy mode: wrong answer → hard (no lapse, no demotion); is_correct stays false in TrialLog
+    if (SRS_CONFIG.session_mode === 'easy' && rating === 'again') rating = 'hard';
     _lastSrsWrite = _writeSrs(q, rating, _pendingAttempt).catch(e => console.warn('_writeSrs error', e));
     _cardAnswerRating = null;
     _pendingAttempt   = null;
@@ -7925,7 +7957,13 @@ async function onNext() {
 
     const nextIdx = qIdx + 1;
     if (nextIdx >= Qs.length) {
-      // main queue exhausted → check for not-yet-due learning cards to add
+      // easy mode: each card shown once, no re-queuing of learning cards
+      if (SRS_CONFIG.session_mode === 'easy') {
+        await _lastSrsWrite;
+        showFinish();
+        return;
+      }
+      // normal mode: check for not-yet-due learning cards to add
       try {
         const pending = await getPendingLearningCards(currentDeck);
         if (pending.length > 0) {
@@ -9927,7 +9965,7 @@ function syncSrsSettingsUI() {
 
   // practice mode radio
   const curMode = cfg.session_mode || 'normal';
-  ['normal', 'hard', 'survival'].forEach(m => {
+  ['normal', 'easy'].forEach(m => {
     const el = document.getElementById('mode-check-' + m);
     if (el) el.textContent = m === curMode ? '✓' : '';
   });
@@ -9935,7 +9973,7 @@ function syncSrsSettingsUI() {
 
 function setSrsMode(mode) {
   saveSrsConfigKey('session_mode', mode);
-  ['normal', 'hard', 'survival'].forEach(m => {
+  ['normal', 'easy'].forEach(m => {
     const el = document.getElementById('mode-check-' + m);
     if (el) el.textContent = m === mode ? '✓' : '';
   });
