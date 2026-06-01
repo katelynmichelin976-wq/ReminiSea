@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.4.10</title>
+<title data-i18n="app_title">忆海拾光 v5.4.11</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -1549,7 +1549,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.10</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.11</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2690,7 +2690,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.4.10';
+const APP_VERSION = '5.4.11';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -7506,9 +7506,9 @@ function warmupSpeech() {
   setTimeout(() => { loadVoices(); }, 300);
 }
 
-function pickVoice(lang) {
+function pickVoice(lang, autoOnly = false) {
   if (!voices.length) loadVoices();
-  if (TTS_VOICE_NAME) {
+  if (TTS_VOICE_NAME && !autoOnly) {
     const named = voices.find(v => v.name === TTS_VOICE_NAME);
     if (named) return named;
   }
@@ -7560,7 +7560,7 @@ function speak(text, delay = 0, onend = null, lang = null) {
     utt.rate = TTS_RATE;
     utt.pitch = TTS_PITCH;
     utt.volume = 1;
-    const v = pickVoice(useLang);
+    const v = pickVoice(useLang, true);
     if (v) { utt.voice = v; utt.lang = v.lang; }
     if (onend) utt.onend = onend;
     speechSynthesis.speak(utt);
@@ -7584,12 +7584,12 @@ function playAnswer(q, onend) {
 }
 
 // speak without cancel, avoid interrupting just-restored engine
-function speakDirect(text, onend, lang = null) {
+function speakDirect(text, onend, lang = null, autoOnly = false) {
   if (!voices.length) loadVoices();
   const utt = new SpeechSynthesisUtterance(text);
   const useLang = lang || 'zh-CN';
   utt.lang = useLang; utt.rate = TTS_RATE; utt.pitch = TTS_PITCH; utt.volume = 1;
-  const v = pickVoice(useLang); if (v) { utt.voice = v; utt.lang = v.lang; }
+  const v = pickVoice(useLang, autoOnly); if (v) { utt.voice = v; utt.lang = v.lang; }
   if (onend) utt.onend = onend;
   speechSynthesis.speak(utt);
   setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
@@ -7654,7 +7654,7 @@ function speakOptHint(opts, optLang) {
     if (head.type === 'pause') {
       setTimeout(() => playParts(tail), head.ms);
     } else {
-      speakDirect(head.val, () => playParts(tail), head.lang);
+      speakDirect(head.val, () => playParts(tail), head.lang, head.type === 'text');
     }
   }
   playParts(parts);
