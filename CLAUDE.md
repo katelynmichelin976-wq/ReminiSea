@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.4.html` | 主训练 App（v5.4.15，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.4.html` | 主训练 App（v5.4.17，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -57,9 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.4.15**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.4.17**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
-**v5.4.15：** 恢复 v5.4.11 代码状态（TTS 角色拆分：speak() autoOnly=true、speakDirect autoOnly 参数、speakOptHint text/var 分离）
+**v5.4.17：** 修复日文界面选项朗读中日混播 — ①`・`加入暂停正则（停顿而非朗读）②`startIdleQuizTimer` TTS播放中re-schedule延迟触发 ③`stopAllPromptTimers`清除`_idleQuizTimer`防止答题后idle播放；移除诊断日志
 
 **v5.4.10：** 修复英语/西语界面音色「自动」选项文案及实际行为 — `en` 界面显示「Auto (English preferred)」、`es` 显示「Auto (español preferido)」；`pickVoice` `want` 默认值按界面语言选择（en→`en`、es→`es`，而非始终 `zh-CN`）
 

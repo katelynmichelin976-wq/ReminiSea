@@ -5637,7 +5637,8 @@ function startIdleHomeTimer() {
 function startIdleQuizTimer() {
   clearTimeout(_idleQuizTimer);
   if (!VOICE_ASSIST_ENABLED) return;
-  _idleQuizTimer = setTimeout(() => {
+  _idleQuizTimer = setTimeout(function fire() {
+    if (speechSynthesis.speaking) { _idleQuizTimer = setTimeout(fire, 2000); return; }
     if (Date.now() < _idleQuizCooldownUntil) return;
     _idleQuizCooldownUntil = Date.now() + IDLE_COOLDOWN;
     playVoiceSlot('idle_quiz', t('voice_default_idle_quiz'), getLocale());
@@ -5678,6 +5679,7 @@ function clearPromptTimers() {
 }
 function stopAllPromptTimers() {
   clearPromptTimers();
+  clearTimeout(_idleQuizTimer);
   speechSynthesis.cancel();
 }
 
@@ -7510,31 +7512,27 @@ function pickVoice(lang, autoOnly = false) {
   if (!voices.length) loadVoices();
   if (TTS_VOICE_NAME && !autoOnly) {
     const named = voices.find(v => v.name === TTS_VOICE_NAME);
-    if (named) { console.log(`[TTS][pickVoice] lang=${lang} autoOnly=${autoOnly} → named: ${named.name} (${named.lang})`); return named; }
+    if (named) return named;
   }
   const loc = getLocale();
   const want = lang || (loc.startsWith('ja') ? 'ja-JP' : loc === 'en' ? 'en' : loc === 'es' ? 'es' : 'zh-CN');
   const prefix = want.split('-')[0];
   if ((!lang || lang.startsWith('zh')) && loc === 'zh-Hant') {
-    const v = voices.find(v => v.lang === 'zh-TW')
+    return voices.find(v => v.lang === 'zh-TW')
         || voices.find(v => v.lang === 'zh-HK')
         || voices.find(v => v.lang === 'yue-HK' || v.lang.startsWith('yue'))
         || voices.find(v => v.lang === 'zh-CN')
         || (voices.length ? voices[0] : null);
-    console.log(`[TTS][pickVoice] lang=${lang} autoOnly=${autoOnly} locale=zh-Hant → auto: ${v && v.name} (${v && v.lang})`); return v;
   }
   if ((!lang || lang.startsWith('ja')) && loc === 'ja') {
-    const v = voices.find(v => v.lang === 'ja-JP')
+    return voices.find(v => v.lang === 'ja-JP')
         || voices.find(v => v.lang && v.lang.startsWith('ja'))
         || (voices.length ? voices[0] : null);
-    console.log(`[TTS][pickVoice] lang=${lang} autoOnly=${autoOnly} locale=ja → auto: ${v && v.name} (${v && v.lang})`); return v;
   }
-  const v = voices.find(v => v.lang === want)
+  return voices.find(v => v.lang === want)
       || voices.find(v => v.lang && v.lang.split('-')[0] === prefix)
       || (prefix === 'zh' ? voices.find(v => v.lang === 'zh-CN') : null)
       || (voices.length ? voices[0] : null);
-  console.log(`[TTS][pickVoice] lang=${lang} autoOnly=${autoOnly} want=${want} → auto: ${v && v.name} (${v && v.lang})`);
-  return v;
 }
 
 async function playVoiceSlot(slotName, ttsText, ttsLang) {
@@ -7542,7 +7540,6 @@ async function playVoiceSlot(slotName, ttsText, ttsLang) {
   try {
     const slot = await loadVoiceSlot(slotName);
     if (slot && slot.audioBlob) {
-      console.log(`[TTS][playVoiceSlot] slot=${slotName} → recording`);
       const url = URL.createObjectURL(slot.audioBlob);
       const audio = new Audio(url);
       audio.onended = () => URL.revokeObjectURL(url);
@@ -7553,7 +7550,6 @@ async function playVoiceSlot(slotName, ttsText, ttsLang) {
   } catch (e) {
     // IDB read failure — fall through to TTS
   }
-  console.log(`[TTS][playVoiceSlot] slot=${slotName} → TTS text="${ttsText}" lang=${ttsLang}`);
   if (ttsText) speak(ttsText, 0, null, ttsLang || null);
 }
 
@@ -7568,7 +7564,6 @@ function speak(text, delay = 0, onend = null, lang = null) {
     utt.volume = 1;
     const v = pickVoice(useLang, true);
     if (v) { utt.voice = v; utt.lang = v.lang; }
-    console.log(`[TTS][speak] "${text.slice(0,20)}" lang=${lang}→${useLang} voice=${v && v.name}`);
     if (onend) utt.onend = onend;
     speechSynthesis.speak(utt);
     setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
@@ -7579,7 +7574,6 @@ function speak(text, delay = 0, onend = null, lang = null) {
 // play answer speech: prefer recording, fallback TTS
 function playAnswer(q, onend) {
   const lang = q.nameLang || 'zh-CN';
-  console.log(`[TTS][playAnswer] name="${q.name}" nameLang=${q.nameLang} → lang=${lang} audioUrl=${!!q.audioUrl}`);
   if (q.audioUrl) {
     const audio = new Audio(q.audioUrl);
     currentAudio = audio;
@@ -7598,7 +7592,6 @@ function speakDirect(text, onend, lang = null, autoOnly = false) {
   const useLang = lang || 'zh-CN';
   utt.lang = useLang; utt.rate = TTS_RATE; utt.pitch = TTS_PITCH; utt.volume = 1;
   const v = pickVoice(useLang, autoOnly); if (v) { utt.voice = v; utt.lang = v.lang; }
-  console.log(`[TTS][speakDirect] "${text.slice(0,20)}" lang=${lang}→${useLang} autoOnly=${autoOnly} voice=${v && v.name}`);
   if (onend) utt.onend = onend;
   speechSynthesis.speak(utt);
   setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
@@ -7607,7 +7600,6 @@ function speakSequence(items, onDone, pause = 350, sid = sessionId) {
   if (sid !== sessionId) return;  // session switched, abort
   if (!items || items.length === 0) { if (onDone) onDone(); return; }
   const [first, ...rest] = items;
-  console.log(`[TTS][speakSequence] first="${String(first).slice(0,20)}" remaining=${rest.length}`);
   speak(first, 0, () => {
     if (rest.length > 0) setTimeout(() => speakSequence(rest, onDone, pause, sid), pause);
     else { setTimeout(() => { if (onDone && sid === sessionId) onDone(); }, pause); }
@@ -7619,7 +7611,6 @@ function speakSequence(items, onDone, pause = 350, sid = sessionId) {
 // example: "Choose from {A}.{B}.{C}"
 function speakOptHint(opts, optLang) {
   if (!opts || !opts.length) return;
-  console.log(`[TTS][speakOptHint] opts=${JSON.stringify(opts)} optLang=${optLang}`);
   const labels = ['A','B','C','D'];
   const PAUSE_MS = 100;
   const oLang = optLang || 'zh-CN';
@@ -7630,7 +7621,7 @@ function speakOptHint(opts, optLang) {
   //  {var} (card names) → voice follows card language (via resolveFieldLang)
   //  pause
   const parts = [];
-  const re = /[\{｛][A-D][\}｝]|[\.。]+/g;
+  const re = /[\{｛][A-D][\}｝]|[\.。・]+/g;
   const tmpl = PHRASE_OPT_HINT;
   let lastIdx = 0;
   let m;
@@ -7640,7 +7631,7 @@ function speakOptHint(opts, optLang) {
       if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, uiLang) });
     }
     const raw = m[0];
-    if (raw === '.' || raw === '。' || /^[\.。]+$/.test(raw)) {
+    if (/^[\.。・]+$/.test(raw)) {
       parts.push({ type: 'pause', ms: raw.length * PAUSE_MS });
     } else {
       const label = raw[1];
@@ -7657,7 +7648,6 @@ function speakOptHint(opts, optLang) {
     if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, uiLang) });
   }
 
-  console.log(`[TTS][speakOptHint] parsed parts:`, parts.map(p => `${p.type}:"${p.val||p.ms}" lang=${p.lang}`));
   const sid = sessionId;
   function playParts(arr) {
     if (sid !== sessionId) return;
@@ -7666,7 +7656,6 @@ function speakOptHint(opts, optLang) {
     if (head.type === 'pause') {
       setTimeout(() => playParts(tail), head.ms);
     } else {
-      console.log(`[TTS][playParts] type=${head.type} val="${head.val}" lang=${head.lang} autoOnly=${head.type === 'text'}`);
       speakDirect(head.val, () => playParts(tail), head.lang, head.type === 'text');
     }
   }
