@@ -647,6 +647,59 @@ body {
 .nring-sec { position:relative; z-index:var(--z-base); font-size:13px; font-weight:600; opacity:.6; min-width:16px; }
 .sout{opacity:0;transform:translateX(-22px)}
 .sin {opacity:0;transform:translateX(22px)}
+/* ── Flip card ── */
+.flip-zone { padding: 0 16px 8px; display:flex; flex-direction:column; }
+.flip-scene { flex:1; min-height:0; perspective: 800px; }
+.flip-card-inner {
+  width:100%; height:100%; position:relative;
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+.flip-card-inner.flipped { transform: rotateY(180deg); }
+.flip-face {
+  position:absolute; inset:0;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; padding:20px 16px;
+  background:var(--surf); border-radius:var(--r); border:1px solid var(--bd);
+  overflow-y:auto;
+}
+.flip-face-back { transform: rotateY(180deg); align-items:flex-start; justify-content:flex-start; }
+.flip-word { font-size:clamp(28px,8vw,48px); font-weight:800; color:var(--text); text-align:center; width:100%; }
+.flip-phonetic { font-size:16px; color:var(--text2); display:flex; align-items:center; gap:8px; }
+.flip-audio-btn {
+  background:none; border:none; cursor:pointer; padding:4px;
+  color:var(--ocean); display:flex; align-items:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.flip-audio-btn:active { opacity:.6; }
+.flip-img { width:100%; max-height:140px; object-fit:contain; border-radius:var(--rsm); margin-bottom:4px; }
+.flip-pos { font-size:13px; font-weight:600; color:var(--ocean); }
+.flip-definition { font-size:18px; font-weight:700; color:var(--text); }
+.flip-example { font-size:14px; color:var(--text2); font-style:italic; line-height:1.5; }
+.flip-en-def { font-size:13px; color:var(--text3); line-height:1.5; }
+.flip-reveal-btn {
+  width:100%; height:56px; border-radius:var(--rsm); border:none;
+  background:var(--ocean); color:#fff;
+  font-size:17px; font-weight:700; font-family:inherit;
+  cursor:pointer; margin-top:auto;
+  -webkit-tap-highlight-color:transparent;
+}
+.flip-reveal-btn:active { opacity:.85; }
+.flip-grade-bar {
+  display:flex; gap:8px; width:100%; padding:8px 16px calc(12px + var(--safe-bottom));
+}
+.flip-grade-btn {
+  flex:1; height:56px; border-radius:var(--rsm); border:none;
+  font-size:14px; font-weight:700; font-family:inherit;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  transition: opacity .12s;
+}
+.flip-grade-btn:active { opacity:.75; }
+.flip-grade-again { background:#fee2e2; color:#b91c1c; }
+.flip-grade-hard  { background:#fef3c7; color:#92400e; }
+.flip-grade-good  { background:#dcfce7; color:#166534; }
+.flip-grade-easy  { background:#dbeafe; color:#1e40af; }
 
 /* ════════════════════════════════
    FEEDBACK SHEET
