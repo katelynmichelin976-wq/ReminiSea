@@ -283,9 +283,9 @@ async function createTestYhspack() {
     ));
     await run(page, () => setSrsMode('normal'));
 
-    // ════ PHASE 6: normal 模式队列 U 形曲线（applyCurve）════
-    section('PHASE 6: normal 模式队列曲线');
-    const curve = await run(page, async (did) => {
+    // ════ PHASE 6: normal 模式队列按 due_ts 升序（Anki 到期顺序）════
+    section('PHASE 6: normal 模式队列顺序');
+    const queueOrder = await run(page, async (did) => {
       const db = await new Promise((res, rej) => {
         const r = indexedDB.open('yihai_srs'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
       });
@@ -293,33 +293,28 @@ async function createTestYhspack() {
       const sto = tx.objectStore('card_states');
       const all = await new Promise(res => { const r = sto.getAll(); r.onsuccess = () => res(r.result); });
       const deckStates = all.filter(s => s.deck_key === did);
-      // 制造 ease_factor 差异（低值=困难，高值=容易）
-      const efs = [2.5, 1.3, 1.4, 2.4, 2.3, 1.5, 1.6, 2.2, 2.1, 1.7];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-      for (let i = 0; i < Math.min(deckStates.length, efs.length); i++) {
-        deckStates[i].ease_factor = efs[i];
+      // 设置不同 due_ts 以验证排序
+      const now = Date.now();
+      for (let i = 0; i < deckStates.length; i++) {
         deckStates[i].srs_stage = 'review';
-        deckStates[i].due_date = yesterday;
-        deckStates[i].due_ts = Date.now() - 60000;
+        deckStates[i].due_date = new Date(now - 86400000).toISOString().slice(0, 10);
+        deckStates[i].due_ts = now - (deckStates.length - i) * 60000; // 递增 due_ts
         await new Promise(r2 => { const u = sto.put(deckStates[i]); u.onsuccess = r2; });
       }
       if (typeof buildSessionQueue !== 'function') return null;
       SRS_CONFIG.session_mode = 'normal';
       const queue = await buildSessionQueue(did);
       SRS_CONFIG.session_mode = localStorage.getItem('srs_session_mode') || 'normal';
-      if (!queue || queue.length < 4) return null;
-      const first = queue[0]?._srsState?.ease_factor ?? 2.5;
-      const last  = queue[queue.length - 1]?._srsState?.ease_factor ?? 2.5;
-      const mid   = queue[Math.floor(queue.length / 2)]?._srsState?.ease_factor ?? 2.5;
-      return { first, mid, last, len: queue.length };
+      if (!queue || queue.length < 2) return null;
+      const dueTimes = queue.map(q => q._srsState?.due_ts ?? 0);
+      const isAscending = dueTimes.every((t, i) => i === 0 || t >= dueTimes[i - 1]);
+      return { len: queue.length, isAscending };
     }, DECK_ID);
 
-    if (curve) {
-      pass('normal 模式队列首尾 ef > 中间（U 形曲线）',
-        curve.first > curve.mid && curve.last > curve.mid
-      );
+    if (queueOrder) {
+      pass('normal 模式队列按 due_ts 升序（Anki 到期顺序）', queueOrder.isAscending);
     } else {
-      pass('normal 模式队列曲线（条件不足，跳过）', true);
+      pass('normal 模式队列顺序（条件不足，跳过）', true);
     }
 
     // ════ PHASE 7: 清理 ════

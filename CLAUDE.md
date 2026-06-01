@@ -150,7 +150,7 @@ $env:TEST_PASSWORD="xxx"; node tests/_pw_cross_device.js
 - **跨设备/同步改动** → 加跑 `_pw_cross_device.js`
 - **全量回归** → 仅用户明确要求时跑全部 4 个 Playwright 文件
 
-Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 61, voice 17（run_all.js 合计 360）；Playwright ui_smoke 62 / srs_e2e 14 / cloud_sync 32 / cross_device 11 / session_restore 13 / sync_guard 7 / feedback 11。
+Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 71, voice 17（run_all.js 合计 365）；Playwright ui_smoke 62 / srs_e2e 14 / cloud_sync 32 / cross_device 11 / session_restore 13 / sync_guard 7 / feedback 11。
 
 ## SRS Architecture
 
@@ -164,7 +164,7 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 61, voice 17（run_all.j
 **Learning hard 延迟：** 第一步 `(steps[0]+steps[1])/2`；仅一步时 `steps[0]×1.5`；第二步起不变。
 
 **练习模式（`SRS_CONFIG.session_mode`）：**
-- `normal`：完整 SRS 模式（原生存逻辑）— 全量积压 + `applyCurve()` U 形曲线排序，`difficultyScore(s)` 按 ef/lapses/stage 评分
+- `normal`：完整 SRS 模式 — 全量到期积压，按 `due_ts` 升序出牌（Anki 默认顺序，无重排）
 - `easy`：轻松陪伴模式 — 全牌组出 `easy_session_size`（默认 20）张，[热身 3 熟悉] + [3:1 熟/不熟穿插] + [收尾 2 熟悉]；答错强制写 Hard 不降级；每张只出一次（session 内不重入队列）
 
 **参数命名规则：** 所有 SRS 参数对齐 Anki 命名，不加后缀。

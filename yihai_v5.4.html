@@ -4244,8 +4244,7 @@ async function buildSessionQueue(deckKey) {
   if (mode === 'easy') {
     finalQueue = applyEasyMode(cards, stateMap);
   } else {
-    // normal: original survival logic (full SRS queue + applyCurve), internal logic unchanged
-    finalQueue = applyCurve(queue);
+    finalQueue = queue;
   }
 
   logAppEvent('build_queue', { deck_key: deckKey, new_cards_created: newCardsCreated, total_cards: cards.length, queue_length: finalQueue.length, used_review: usedReview, review_slots: Math.max(0, reviewSlots), new_slots: newSlots, max_reviews: SRS_CONFIG.maximum_reviews_per_day, max_new: SRS_CONFIG.new_cards_per_day, mode }, deckKey);
@@ -4846,8 +4845,8 @@ async function deleteDeck(e, key) {
   saveDeckIndex();
   deleteMediaForDeck(key).catch(() => {});
   if (meta.deck_type === 'personal' && _syncEnabled && _sb) {
-    _sb.from('deck_cards').delete().eq('deck_id', key).catch(() => {});
-    _sb.from('decks').delete().eq('id', key).catch(() => {});
+    _sb.from('deck_cards').delete().eq('deck_id', key).then(null, () => {});
+    _sb.from('decks').delete().eq('id', key).then(null, () => {});
   }
   localStorage.removeItem('yihaiSyncAt:' + key);
   if (currentDeck === key) currentDeck = null;
@@ -5336,6 +5335,7 @@ async function shareDeck() {
 }
 
 function _launch(mode) {
+  if (_currentRenderer?.unmount) _currentRenderer.unmount();
   sessionId++;
   currentMode = mode;
   qIdx = 0;
@@ -5676,6 +5676,7 @@ function showPromptDialog(msg, defaultValue) {
 
 function goHome() {
   sessionId++;
+  if (_currentRenderer?.unmount) { _currentRenderer.unmount(); _currentRenderer = null; }
   logAppEvent('go_home', { deck_key: currentDeck }, currentDeck);
   stopNRing(); stopAllPromptTimers();
   speechSynthesis.cancel();
@@ -6035,6 +6036,7 @@ const I18N = {
     settings_cloud_email_ph: 'Email', settings_cloud_pwd_ph: 'Password', settings_cloud_login: 'Login', settings_cloud_restoring: 'Restoring session…',
     settings_cloud_sync_btn: '\u{1F504} Sync', settings_cloud_logout: 'Logout',
     settings_realtime_desc: 'Real-time upload during practice (when off, syncs only on open/foreground/completion, saves power)',
+    flip_reveal_btn: 'Flip',
     rating_again: 'Again', rating_hard: 'Hard', rating_good: 'Good', rating_easy: 'Easy',
     stage_new: 'New', stage_learning: 'Learning', stage_review: 'Review', stage_relearning: 'Relearning',
     theme_title: 'Theme',
@@ -6314,6 +6316,7 @@ const I18N = {
     settings_cloud_email_ph: '邮箱', settings_cloud_pwd_ph: '密码', settings_cloud_login: '登录', settings_cloud_restoring: '正在恢复登录…',
     settings_cloud_sync_btn: '🔄 同步', settings_cloud_logout: '退出',
     settings_realtime_desc: '学习中实时上传（关闭后仅打开/前台/练习完成时同步，更省电）',
+    flip_reveal_btn: '翻转',
     rating_again: '重来', rating_hard: '困难', rating_good: '良好', rating_easy: '容易',
     stage_new: '待开始', stage_learning: '学习中', stage_review: '复习', stage_relearning: '重学中',
     theme_title: '主题',
@@ -6593,6 +6596,7 @@ const I18N = {
     settings_cloud_email_ph: '電子郵件', settings_cloud_pwd_ph: '密碼', settings_cloud_login: '登入', settings_cloud_restoring: '正在恢復登入…',
     settings_cloud_sync_btn: '🔄 同步', settings_cloud_logout: '退出',
     settings_realtime_desc: '學習中即時上傳（關閉後僅打開/前台/練習完成時同步，更省電）',
+    flip_reveal_btn: '翻轉',
     rating_again: '重來', rating_hard: '困難', rating_good: '良好', rating_easy: '容易',
     stage_new: '待開始', stage_learning: '學習中', stage_review: '複習', stage_relearning: '重學中',
     theme_title: '主題',
@@ -6864,6 +6868,7 @@ const I18N = {
     settings_cloud_email_ph: 'Correo', settings_cloud_pwd_ph: 'Contrasena', settings_cloud_login: 'Iniciar sesion', settings_cloud_restoring: 'Restaurando sesion…',
     settings_cloud_sync_btn: '\u{1F504} Sincronizar', settings_cloud_logout: 'Salir',
     settings_realtime_desc: 'Subida en tiempo real durante la practica',
+    flip_reveal_btn: 'Voltear',
     rating_again: 'Otra vez', rating_hard: 'Dificil', rating_good: 'Bien', rating_easy: 'Facil',
     stage_new: 'Nuevo', stage_learning: 'Aprendiendo', stage_review: 'Repaso', stage_relearning: 'Reaprendiendo',
     theme_title: 'Tema',
@@ -7147,6 +7152,7 @@ const I18N = {
     settings_cloud_email_ph: 'メールアドレス', settings_cloud_pwd_ph: 'パスワード', settings_cloud_login: 'ログイン', settings_cloud_restoring: 'セッションを復元中…',
     settings_cloud_sync_btn: '\u{1F504} 同期', settings_cloud_logout: 'ログアウト',
     settings_realtime_desc: '練習中のリアルタイムアップロード（オフ時は起動/フォアグラウンド/完了時のみ同期、バッテリー節約）',
+    flip_reveal_btn: 'めくる',
     rating_again: 'もう一度', rating_hard: '難しい', rating_good: '良い', rating_easy: '簡単',
     stage_new: '新規', stage_learning: '学習中', stage_review: 'レビュー', stage_relearning: '再学習',
     theme_title: 'テーマ',
@@ -7806,15 +7812,15 @@ const CARD_RENDERERS = {
         <div class="flip-scene">
           <div class="flip-card-inner" id="flip-inner">
             <div class="flip-face flip-face-front">
-              <div class="flip-word">${q.name || ''}</div>
-              ${ext.phonetic ? `<div class="flip-phonetic"><span>${ext.phonetic}</span><button class="flip-audio-btn" id="flip-audio-btn" aria-label="播放读音"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button></div>` : `<button class="flip-audio-btn" id="flip-audio-btn" aria-label="播放读音"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>`}
+              <div class="flip-word">${esc(q.name || '')}</div>
+              ${ext.phonetic ? `<div class="flip-phonetic"><span>${esc(ext.phonetic)}</span><button class="flip-audio-btn" id="flip-audio-btn" aria-label="播放读音"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button></div>` : `<button class="flip-audio-btn" id="flip-audio-btn" aria-label="播放读音"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>`}
             </div>
             <div class="flip-face flip-face-back">
-              ${hasImg ? `<img class="flip-img" src="${q.img}" alt="${q.name || ''}" onerror="this.style.display='none'">` : ''}
-              ${ext.partOfSpeech ? `<div class="flip-pos">${ext.partOfSpeech}</div>` : ''}
-              ${ext.definition ? `<div class="flip-definition">${ext.definition}</div>` : ''}
-              ${ext.example ? `<div class="flip-example">${ext.example}</div>` : ''}
-              ${ext.enDefinition ? `<div class="flip-en-def">${ext.enDefinition}</div>` : ''}
+              ${hasImg ? `<img class="flip-img" src="${escAttr(q.img)}" alt="${escAttr(q.name || '')}" onerror="this.style.display='none'">` : ''}
+              ${ext.partOfSpeech ? `<div class="flip-pos">${esc(ext.partOfSpeech)}</div>` : ''}
+              ${ext.definition ? `<div class="flip-definition">${esc(ext.definition)}</div>` : ''}
+              ${ext.example ? `<div class="flip-example">${esc(ext.example)}</div>` : ''}
+              ${ext.enDefinition ? `<div class="flip-en-def">${esc(ext.enDefinition)}</div>` : ''}
             </div>
           </div>
         </div>
@@ -7823,7 +7829,7 @@ const CARD_RENDERERS = {
       const btm = document.querySelector('.btm');
       document.getElementById('nxtbtn').className = 'nxtbtn';
       btm.classList.remove('active');
-      btm.innerHTML = `<button class="flip-reveal-btn" id="flip-reveal-btn">翻转</button>`;
+      btm.innerHTML = `<button class="flip-reveal-btn" id="flip-reveal-btn">${t('flip_reveal_btn')}</button>`;
 
       const sid = sessionId;
 
@@ -7838,10 +7844,10 @@ const CARD_RENDERERS = {
         const gradeBar = document.createElement('div');
         gradeBar.className = 'flip-grade-bar';
         gradeBar.innerHTML = `
-          <button class="flip-grade-btn flip-grade-again" data-grade="again">Again</button>
-          <button class="flip-grade-btn flip-grade-hard"  data-grade="hard">Hard</button>
-          <button class="flip-grade-btn flip-grade-good"  data-grade="good">Good</button>
-          <button class="flip-grade-btn flip-grade-easy"  data-grade="easy">Easy</button>
+          <button class="flip-grade-btn flip-grade-again" data-grade="again">${t('rating_again')}</button>
+          <button class="flip-grade-btn flip-grade-hard"  data-grade="hard">${t('rating_hard')}</button>
+          <button class="flip-grade-btn flip-grade-good"  data-grade="good">${t('rating_good')}</button>
+          <button class="flip-grade-btn flip-grade-easy"  data-grade="easy">${t('rating_easy')}</button>
         `;
         btm.innerHTML = '';
         btm.appendChild(gradeBar);
@@ -7849,7 +7855,8 @@ const CARD_RENDERERS = {
         gradeBar.querySelectorAll('.flip-grade-btn').forEach(btn => {
           btn.addEventListener('click', async () => {
             if (sid !== sessionId) return;
-            const rating = btn.dataset.grade;
+            let rating = btn.dataset.grade;
+            if (SRS_CONFIG.session_mode === 'easy' && rating === 'again') rating = 'hard';
             if (currentMode !== 'browse' && q._srsState) {
               _lastSrsWrite = _writeSrs(q, rating, { attemptNumber: 1, isCorrect: rating !== 'again', distractorId: null })
                 .catch(e => console.warn('_writeSrs flip error', e));
