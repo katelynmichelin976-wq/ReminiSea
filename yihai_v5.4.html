@@ -4629,6 +4629,7 @@ function ldScript(src) {
 }
 
 async function importYhspack(file) {
+  const dismissLoading = showLoadingToast(t('toast_importing') || '正在导入…');
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
@@ -4701,8 +4702,10 @@ async function importYhspack(file) {
     const el = document.querySelector(`.deck-card[data-deck="${key}"]`);
     if (el) selectDeck(el);
 
+    dismissLoading();
     showImportToast(name, cards.length);
   } catch(e) {
+    dismissLoading();
     showCloudToast(t('import_failed', { msg: e.message }), true);
     console.error(e);
   }
@@ -4834,6 +4837,7 @@ async function deleteDeck(e, key) {
   if (!meta || meta.builtin) return;
   const ok = await showConfirmDialog(t('deck_delete_confirm', { name: esc(meta.name) }));
   if (!ok) return;
+  const dismissLoading = showLoadingToast(t('toast_deleting') || '正在删除…');
   // revoke ObjectURL to prevent memory leak
   (DECKS[key] || []).forEach(c => {
     if (c.img && c.img.startsWith('blob:')) URL.revokeObjectURL(c.img);
@@ -4852,6 +4856,7 @@ async function deleteDeck(e, key) {
   if (currentDeck === key) currentDeck = null;
   renderDeckList();
   updateDeckStats();
+  dismissLoading();
 }
 
 async function renameDeck(key) {
@@ -5213,6 +5218,7 @@ async function exportDeck() {
   if (!currentDeck) { showToastMsg(t('deck_no_selected')); return; }
   const meta = DECKS_META.find(m => m.key === currentDeck);
   if (!meta) { showToastMsg(t('deck_not_found')); return; }
+  const dismissLoading = showLoadingToast(t('toast_exporting') || '正在导出…');
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     var zip = new JSZip();
@@ -5268,8 +5274,10 @@ async function exportDeck() {
       document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
     }, 2000);
+    dismissLoading();
     showToastMsg(t('toast_export_done', { name: meta.name }));
   } catch(e) {
+    dismissLoading();
     showCloudToast(t('toast_export_fail', { msg: e.message }), true);
     console.error(e);
   }
@@ -9394,6 +9402,22 @@ function showCloudToast(msg, isErr) {
     z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
+}
+function showLoadingToast(msg) {
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
+    transform:translateX(-50%);background:var(--text);color:#fff;
+    padding:10px 18px;border-radius:20px;font-size:14px;font-weight:600;
+    z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease;
+    display:flex;align-items:center;gap:8px`;
+  const sp = document.createElement('span');
+  sp.style.cssText = 'width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;flex-shrink:0;animation:spin360 .8s linear infinite';
+  const txt = document.createElement('span');
+  txt.textContent = msg;
+  el.appendChild(sp);
+  el.appendChild(txt);
+  document.body.appendChild(el);
+  return () => el.remove();
 }
 
 function openSettings(){
