@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.4.15</title>
+<title data-i18n="app_title">忆海拾光 v5.4.16</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -1549,7 +1549,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.15</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.16</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2690,7 +2690,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.4.15';
+const APP_VERSION = '5.4.16';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -7510,27 +7510,31 @@ function pickVoice(lang, autoOnly = false) {
   if (!voices.length) loadVoices();
   if (TTS_VOICE_NAME && !autoOnly) {
     const named = voices.find(v => v.name === TTS_VOICE_NAME);
-    if (named) return named;
+    if (named) { console.log(`[TTS][pickVoice] lang=${lang} autoOnly=${autoOnly} → named: ${named.name} (${named.lang})`); return named; }
   }
   const loc = getLocale();
   const want = lang || (loc.startsWith('ja') ? 'ja-JP' : loc === 'en' ? 'en' : loc === 'es' ? 'es' : 'zh-CN');
   const prefix = want.split('-')[0];
   if ((!lang || lang.startsWith('zh')) && loc === 'zh-Hant') {
-    return voices.find(v => v.lang === 'zh-TW')
+    const v = voices.find(v => v.lang === 'zh-TW')
         || voices.find(v => v.lang === 'zh-HK')
         || voices.find(v => v.lang === 'yue-HK' || v.lang.startsWith('yue'))
         || voices.find(v => v.lang === 'zh-CN')
         || (voices.length ? voices[0] : null);
+    console.log(`[TTS][pickVoice] lang=${lang} autoOnly=${autoOnly} locale=zh-Hant → auto: ${v && v.name} (${v && v.lang})`); return v;
   }
   if ((!lang || lang.startsWith('ja')) && loc === 'ja') {
-    return voices.find(v => v.lang === 'ja-JP')
+    const v = voices.find(v => v.lang === 'ja-JP')
         || voices.find(v => v.lang && v.lang.startsWith('ja'))
         || (voices.length ? voices[0] : null);
+    console.log(`[TTS][pickVoice] lang=${lang} autoOnly=${autoOnly} locale=ja → auto: ${v && v.name} (${v && v.lang})`); return v;
   }
-  return voices.find(v => v.lang === want)
+  const v = voices.find(v => v.lang === want)
       || voices.find(v => v.lang && v.lang.split('-')[0] === prefix)
       || (prefix === 'zh' ? voices.find(v => v.lang === 'zh-CN') : null)
       || (voices.length ? voices[0] : null);
+  console.log(`[TTS][pickVoice] lang=${lang} autoOnly=${autoOnly} want=${want} → auto: ${v && v.name} (${v && v.lang})`);
+  return v;
 }
 
 async function playVoiceSlot(slotName, ttsText, ttsLang) {
@@ -7538,6 +7542,7 @@ async function playVoiceSlot(slotName, ttsText, ttsLang) {
   try {
     const slot = await loadVoiceSlot(slotName);
     if (slot && slot.audioBlob) {
+      console.log(`[TTS][playVoiceSlot] slot=${slotName} → recording`);
       const url = URL.createObjectURL(slot.audioBlob);
       const audio = new Audio(url);
       audio.onended = () => URL.revokeObjectURL(url);
@@ -7548,6 +7553,7 @@ async function playVoiceSlot(slotName, ttsText, ttsLang) {
   } catch (e) {
     // IDB read failure — fall through to TTS
   }
+  console.log(`[TTS][playVoiceSlot] slot=${slotName} → TTS text="${ttsText}" lang=${ttsLang}`);
   if (ttsText) speak(ttsText, 0, null, ttsLang || null);
 }
 
@@ -7562,6 +7568,7 @@ function speak(text, delay = 0, onend = null, lang = null) {
     utt.volume = 1;
     const v = pickVoice(useLang, true);
     if (v) { utt.voice = v; utt.lang = v.lang; }
+    console.log(`[TTS][speak] "${text.slice(0,20)}" lang=${lang}→${useLang} voice=${v && v.name}`);
     if (onend) utt.onend = onend;
     speechSynthesis.speak(utt);
     setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
@@ -7572,6 +7579,7 @@ function speak(text, delay = 0, onend = null, lang = null) {
 // play answer speech: prefer recording, fallback TTS
 function playAnswer(q, onend) {
   const lang = q.nameLang || 'zh-CN';
+  console.log(`[TTS][playAnswer] name="${q.name}" nameLang=${q.nameLang} → lang=${lang} audioUrl=${!!q.audioUrl}`);
   if (q.audioUrl) {
     const audio = new Audio(q.audioUrl);
     currentAudio = audio;
@@ -7590,6 +7598,7 @@ function speakDirect(text, onend, lang = null, autoOnly = false) {
   const useLang = lang || 'zh-CN';
   utt.lang = useLang; utt.rate = TTS_RATE; utt.pitch = TTS_PITCH; utt.volume = 1;
   const v = pickVoice(useLang, autoOnly); if (v) { utt.voice = v; utt.lang = v.lang; }
+  console.log(`[TTS][speakDirect] "${text.slice(0,20)}" lang=${lang}→${useLang} autoOnly=${autoOnly} voice=${v && v.name}`);
   if (onend) utt.onend = onend;
   speechSynthesis.speak(utt);
   setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
@@ -7598,6 +7607,7 @@ function speakSequence(items, onDone, pause = 350, sid = sessionId) {
   if (sid !== sessionId) return;  // session switched, abort
   if (!items || items.length === 0) { if (onDone) onDone(); return; }
   const [first, ...rest] = items;
+  console.log(`[TTS][speakSequence] first="${String(first).slice(0,20)}" remaining=${rest.length}`);
   speak(first, 0, () => {
     if (rest.length > 0) setTimeout(() => speakSequence(rest, onDone, pause, sid), pause);
     else { setTimeout(() => { if (onDone && sid === sessionId) onDone(); }, pause); }
@@ -7609,6 +7619,7 @@ function speakSequence(items, onDone, pause = 350, sid = sessionId) {
 // example: "Choose from {A}.{B}.{C}"
 function speakOptHint(opts, optLang) {
   if (!opts || !opts.length) return;
+  console.log(`[TTS][speakOptHint] opts=${JSON.stringify(opts)} optLang=${optLang}`);
   const labels = ['A','B','C','D'];
   const PAUSE_MS = 100;
   const oLang = optLang || 'zh-CN';
@@ -7646,6 +7657,7 @@ function speakOptHint(opts, optLang) {
     if (txt) parts.push({ type: 'text', val: txt, lang: resolveFieldLang(txt, uiLang) });
   }
 
+  console.log(`[TTS][speakOptHint] parsed parts:`, parts.map(p => `${p.type}:"${p.val||p.ms}" lang=${p.lang}`));
   const sid = sessionId;
   function playParts(arr) {
     if (sid !== sessionId) return;
@@ -7654,6 +7666,7 @@ function speakOptHint(opts, optLang) {
     if (head.type === 'pause') {
       setTimeout(() => playParts(tail), head.ms);
     } else {
+      console.log(`[TTS][playParts] type=${head.type} val="${head.val}" lang=${head.lang} autoOnly=${head.type === 'text'}`);
       speakDirect(head.val, () => playParts(tail), head.lang, head.type === 'text');
     }
   }
