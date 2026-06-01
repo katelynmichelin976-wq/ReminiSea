@@ -2660,7 +2660,7 @@ function getCurrentUserId() {
   // logged in → cloud user UUID; logged out → last logged in user (persisted in localStorage);
   // never logged in → deviceId fallback. new login on user switch auto-overrides.
   return _cloudUserId
-    || localStorage.getItem('yihai_last_cloud_user_id')
+    || localStorage.getItem('yihaiLastCloudUserId')
     || getOrCreateDeviceId();
 }
 
@@ -2694,7 +2694,7 @@ let _deviceId = null;
 let _lastOrphans = [];    // media cleanup: cache last orphan scan keys
 let _cloudUserEmail = '';
 let _cloudUserId = '';
-var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // realtime upload toggle during learning
+var _realtimeUpload = localStorage.getItem('yihaiRealtimeUpload') !== 'false'; // realtime upload toggle during learning
 var _syncInFlight = false;         // runSync concurrency lock
 
 // CDN media download helper: try CDN first, fallback to Supabase Storage
@@ -2741,7 +2741,7 @@ function restoreSession() {
     var parsed = null;
     try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
     if (!parsed) {
-      try { parsed = JSON.parse(localStorage.getItem('yihai_session_backup') || 'null'); } catch(e) {}
+      try { parsed = JSON.parse(localStorage.getItem('yihaiSessionBackup') || 'null'); } catch(e) {}
     }
     if (!parsed || !parsed.user || !parsed.user.email) {
       logAppEvent('session_restore_none', {});
@@ -2759,8 +2759,8 @@ function restoreSession() {
         _syncEnabled    = true;
         _cloudUserEmail = data.session.user.email;
         _cloudUserId    = data.session.user.id;
-        localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
-        localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+        localStorage.setItem('yihaiSessionBackup', JSON.stringify(data.session));
+        localStorage.setItem('yihaiLastCloudEmail', _cloudUserEmail);
         logAppEvent('session_restore_ok', { uid: _cloudUserId });
         checkPersonalDeckUpdates().catch(() => {});
         return;
@@ -3197,7 +3197,7 @@ async function runSync(opts) {
         .select('deck_key, practice_days, last_practice_date')
         .eq('user_id', _cloudUserId);
       if (_dsResp.data) {
-        localStorage.setItem('yihai_practice_days', JSON.stringify(_dsResp.data));
+        localStorage.setItem('yihaiPracticeDays', JSON.stringify(_dsResp.data));
         for (var _ds of _dsResp.data) {
           var _dm = DECKS_META.find(function(d) { return d.key === _ds.deck_key; });
           if (_dm) _dm.practiceDays = _ds.practice_days;
@@ -3237,17 +3237,17 @@ async function runSync(opts) {
     syncStats.decks = newDecks + syncedDecks;
     // cleanup & mark
     // retry pending feedback (written during offline/degraded state)
-    var _pfb = localStorage.getItem('yihai_pending_feedback');
+    var _pfb = localStorage.getItem('yihaiPendingFeedback');
     if (_pfb && _syncEnabled) {
       try {
         var _pfbPayload = JSON.parse(_pfb);
         var _pfbClient  = supabase.createClient(FB_SUPABASE_URL, FB_SUPABASE_ANON_KEY);
         var _pfbRes     = await _pfbClient.from('feedback').insert(_pfbPayload);
-        if (!_pfbRes.error) localStorage.removeItem('yihai_pending_feedback');
+        if (!_pfbRes.error) localStorage.removeItem('yihaiPendingFeedback');
       } catch(e) { log.warn('feedback', 'pending retry failed', e.message); }
     }
     purgeOldLogs();
-    localStorage.setItem('yihai_global_sync_ts', String(Date.now()));
+    localStorage.setItem('yihaiGlobalSyncTs', String(Date.now()));
     logAppEvent('sync_done', { deck_key: options.deckKey, stats: syncStats }, options.deckKey);
     // done
     updateProg(t('sync_done'), 100);
@@ -3308,7 +3308,7 @@ function openSrsDb() {
         if (!csStore.indexNames.contains('user_id')) csStore.createIndex('user_id', 'user_id');
         const trStore = e.target.transaction.objectStore(TRIAL_STORE);
         if (!trStore.indexNames.contains('user_id')) trStore.createIndex('user_id', 'user_id');
-        localStorage.setItem('yihai_v5_migration_pending', '1');
+        localStorage.setItem('yihaiV5MigrationPending', '1');
       }
       if (oldVer < 6) {
         if (!db.objectStoreNames.contains(LOG_STORE)) {
@@ -3336,7 +3336,7 @@ function openSrsDb() {
 
 async function migrateV5IfNeeded() {
   if (_v5MigrationDone) return;
-  if (localStorage.getItem('yihai_v5_migration_pending') !== '1') { _v5MigrationDone = true; return; }
+  if (localStorage.getItem('yihaiV5MigrationPending') !== '1') { _v5MigrationDone = true; return; }
   const db = await openSrsDb();
   if (!db) return;
   const uid = getOrCreateDeviceId();
@@ -3354,13 +3354,13 @@ async function migrateV5IfNeeded() {
     trAll.forEach(t => { if (!t.user_id) { t.user_id = uid; trStore.put(t); trUpdated++; } });
     await new Promise((resolve, reject) => { trTx.oncomplete = resolve; trTx.onerror = reject; });
   } catch(e) { log.error('idb', 'migrateV5 failed', e.message); }
-  localStorage.removeItem('yihai_v5_migration_pending');
+  localStorage.removeItem('yihaiV5MigrationPending');
   _v5MigrationDone = true;
 }
 
 // migrate local offline records to current user on login (deviceId match only)
 async function migrateDeviceRecordsToUser(cloudUserId) {
-  var did = localStorage.getItem('yihai_device_id');
+  var did = localStorage.getItem('yihaiDeviceId');
   if (!did || !cloudUserId || did === cloudUserId) return;
   var db = await openSrsDb();
   if (!db) return;
@@ -3382,13 +3382,13 @@ async function migrateDeviceRecordsToUser(cloudUserId) {
 }
 
 // ── diagnostic log system ──────────────────────────────────────────
-// priority: URL ?log=debug > localStorage yihai_log_level > default warn
+// priority: URL ?log=debug > localStorage yihaiLogLevel > default warn
 // IDB write: info+; console color output: all levels visible (depends on current level)
 // DevTools: window.yhLog.setLevel / show / showErrors / clear / export
 const _LOG_LEVELS  = { debug: 0, info: 1, warn: 2, error: 3 };
 const _LOG_COLORS  = { debug: 'color:#888', info: 'color:#0ea5e9', warn: 'color:#f59e0b', error: 'color:#ef4444' };
 const _urlLogParam = new URLSearchParams(location.search).get('log');
-let _logLevel = _LOG_LEVELS[_urlLogParam || localStorage.getItem('yihai_log_level') || 'warn'] ?? 2;
+let _logLevel = _LOG_LEVELS[_urlLogParam || localStorage.getItem('yihaiLogLevel') || 'warn'] ?? 2;
 
 function _writeLogToIdb(entry) {
   openSrsDb().then(function(db) {
@@ -3420,7 +3420,7 @@ var log = {
   setLevel: function(name) {
     if (_LOG_LEVELS[name] === undefined) { console.warn('yhLog: unknown level', name); return; }
     _logLevel = _LOG_LEVELS[name];
-    localStorage.setItem('yihai_log_level', name);
+    localStorage.setItem('yihaiLogLevel', name);
     console.log('%c[LOG] level set to ' + name, _LOG_COLORS[name]);
   }
 };
@@ -3867,7 +3867,7 @@ function processAnswer(state, rating, todayDateStr) {
     }
 
   } else if (state.srs_stage === 'review') {
-    const days_late = daysLate(state.due_date, today);
+    const daysLate = daysLate(state.due_date, today);
     if (rating === 'again') {
       state.lapses_streak++;
       state.lapses_total++;
@@ -3896,7 +3896,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.lapses_streak = 0;
       state.interval = Math.max(
         cfg.minimum_interval,
-        Math.ceil((state.interval + days_late / 2) * state.ease_factor * cfg.interval_modifier)
+        Math.ceil((state.interval + daysLate / 2) * state.ease_factor * cfg.interval_modifier)
       );
       state.interval = Math.min(state.interval, cfg.maximum_interval);
       state.due_date = addDays(today, state.interval);
@@ -3907,7 +3907,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.ease_factor = Math.min(3.0, state.ease_factor + 0.15);
       state.interval = Math.max(
         cfg.minimum_interval,
-        Math.ceil((state.interval + days_late) * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)
+        Math.ceil((state.interval + daysLate) * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)
       );
       state.interval = Math.min(state.interval, cfg.maximum_interval);
       state.due_date = addDays(today, state.interval);
@@ -4254,10 +4254,10 @@ async function getDeckStatsSrs(deckKey) {
 
 // ── cloud sync prep: device_id ──────────────────────────────────
 function getOrCreateDeviceId() {
-  let id = localStorage.getItem('yihai_device_id');
+  let id = localStorage.getItem('yihaiDeviceId');
   if (!id) {
     id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-    localStorage.setItem('yihai_device_id', id);
+    localStorage.setItem('yihaiDeviceId', id);
   }
   return id;
 }
@@ -4478,8 +4478,8 @@ async function restoreDecks() {
       const newKey = m.key.slice(6);
       const cardsRaw = localStorage.getItem(LS_DECK_PREFIX + m.key);
       if (cardsRaw) { localStorage.setItem(LS_DECK_PREFIX + newKey, cardsRaw); localStorage.removeItem(LS_DECK_PREFIX + m.key); }
-      const syncAt = localStorage.getItem('yihai_sync_at_' + m.key);
-      if (syncAt) { localStorage.setItem('yihai_sync_at_' + newKey, syncAt); localStorage.removeItem('yihai_sync_at_' + m.key); }
+      const syncAt = localStorage.getItem('yihaiSyncAt:' + m.key);
+      if (syncAt) { localStorage.setItem('yihaiSyncAt:' + newKey, syncAt); localStorage.removeItem('yihaiSyncAt:' + m.key); }
       return { ...m, key: newKey, deck_type: 'preset' };
     });
     localStorage.setItem(LS_INDEX, JSON.stringify(migratedIdx));
@@ -4525,7 +4525,7 @@ async function restoreDecks() {
   }
   // restore cloud practice days cache
   try {
-    var raw = localStorage.getItem('yihai_practice_days');
+    var raw = localStorage.getItem('yihaiPracticeDays');
     if (raw) {
       var allStats = JSON.parse(raw);
       for (var i = 0; i < allStats.length; i++) {
@@ -4668,25 +4668,20 @@ let qIdx = 0, sel = null, revealed = false, wrongCount = 0;
 let nRaf = null, nStart = null;
 let NDUR = 6000;       // practice mode countdown (ms), 0=manual
 let BDUR = 4000;       // browse mode countdown (ms), 0=manual
-// ── 全局语音参数 ──
-let ANS_READ_DELAY   = 1200; // 答案朗读延迟 ms（练习+浏览共用）
-const ENTRY_READ_DELAY = 1500; // 进题延迟 ms（固定不开放 UI）
-let OPT_READ_DELAY   = 5000; // 选项朗读延迟 ms（语音辅助专属）
-let VOICE_MUTED      = false; // 全局静音
-// ── 语音辅助参数 ──
-let VOICE_ASSIST_ENABLED = false; // 语音辅助开关
+let ANS_READ_DELAY   = 1200;
+const ENTRY_READ_DELAY = 1500; // not exposed in UI
+let OPT_READ_DELAY   = 5000;
+let VOICE_MUTED      = false;
+let VOICE_ASSIST_ENABLED = false;
 
-// ── 语音辅助连对计数 ──
 let _correctStreak = 0;
 
-// ── 空闲语音定时器 ──
 let _ttsPromptActive = false;  // true while startCardPrompts sequence (quiz_prompt + speakOptHint) is running
 let _idleBrowseTimer = null;
 const IDLE_BROWSE_SEC = 10;
 const IDLE_COOLDOWN   = 60000;
 let _idleBrowseCooldownUntil = 0;
 
-// ── 语音槽位注册表 ──────────────────────────────────────────────────
 const VOICE_SLOTS = {
   emotion: [
     { name: 'wrong_hint',     storageKey: 'phraseWrong',         labelKey: 'voice_slot_wrong_hint',     defaultKey: 'voice_default_wrong_hint' },
@@ -4745,7 +4740,7 @@ let _launchBusy  = false; // prevent duplicate start-practice clicks
 let _browseCards = [];
 let _browseIdx   = 0;
 // Migrate old mode names
-  let _stored = localStorage.getItem('yihai_app_mode');
+  let _stored = localStorage.getItem('yihaiAppMode');
   if (_stored === 'patient') _stored = 'standard';
   else if (_stored === 'caregiver') _stored = 'advanced';
   let _appMode = _stored || 'standard';; // 'standard' | 'advanced'
@@ -4793,7 +4788,7 @@ async function deleteDeck(e, key) {
     _sb.from('deck_cards').delete().eq('deck_id', key).catch(() => {});
     _sb.from('decks').delete().eq('id', key).catch(() => {});
   }
-  localStorage.removeItem('yihai_sync_at_' + key);
+  localStorage.removeItem('yihaiSyncAt:' + key);
   if (currentDeck === key) currentDeck = null;
   renderDeckList();
   updateDeckStats();
@@ -4924,7 +4919,7 @@ document.addEventListener('visibilitychange', () => {
 // ── advanced mode ───────────────────────────────────────────────
 function onAppModeToggle(el) {
   _appMode = el.checked ? 'advanced' : 'standard';
-  localStorage.setItem('yihai_app_mode', _appMode);
+  localStorage.setItem('yihaiAppMode', _appMode);
   document.documentElement.setAttribute('data-mode', _appMode);
   updateTabBarMode();
   updateHomeTopbar();
@@ -5372,7 +5367,7 @@ function renderAccount() {
   }
   // Not logged in
   outEl.style.display = '';
-  document.getElementById('account-email').value = localStorage.getItem('yihai_last_cloud_email') || '';
+  document.getElementById('account-email').value = localStorage.getItem('yihaiLastCloudEmail') || '';
   document.getElementById('account-password').value = '';
   document.getElementById('account-msg').style.display = 'none';
   document.getElementById('account-login-btn').disabled = false;
@@ -5405,12 +5400,12 @@ async function doAccountLogin() {
     _syncEnabled      = true;
     _cloudUserEmail = data.user.email;
     _cloudUserId = data.user.id;
-    localStorage.setItem('yihai_last_cloud_user_id', _cloudUserId);
-    localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
-    _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
+    localStorage.setItem('yihaiLastCloudUserId', _cloudUserId);
+    localStorage.setItem('yihaiLastCloudEmail', _cloudUserEmail);
+    _deviceId = localStorage.getItem('yihaiDeviceId') || 'unknown';
     localStorage.setItem('yihai_has_ever_logged_in', '1');
     if (data.session) {
-      localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
+      localStorage.setItem('yihaiSessionBackup', JSON.stringify(data.session));
     }
     await migrateDeviceRecordsToUser(_cloudUserId);
     updateCloudTabUI();
@@ -5430,8 +5425,8 @@ async function doAccountLogout() {
   logAppEvent('logout', {});
   try { if (_sb) await _sb.auth.signOut(); } catch(e) { console.warn('[sync] signOut error:', e.message); }
   _syncEnabled = false; _cloudUserEmail = ''; _sb = null;
-  localStorage.removeItem('yihai_global_sync_ts');
-  localStorage.removeItem('yihai_session_backup');
+  localStorage.removeItem('yihaiGlobalSyncTs');
+  localStorage.removeItem('yihaiSessionBackup');
   renderDeckList(); updateDeckStats();
   updateCloudTabUI();
   renderAccount();
@@ -5448,7 +5443,7 @@ function doAccountSync() {
 
 function onAccountRealtimeToggle(el) {
   _realtimeUpload = el.checked;
-  localStorage.setItem('yihai_realtime_upload', el.checked ? 'true' : 'false');
+  localStorage.setItem('yihaiRealtimeUpload', el.checked ? 'true' : 'false');
 }
 
 // ── deck detail screen ───────────────────────────────────────────
@@ -5732,20 +5727,18 @@ function detectLocale(navLang, supported, fallback) {
   return fallback;
 }
 
-// ── 反馈模块常量（正式上线前替换为独立项目 URL/Key）──────────────
 const FB_SUPABASE_URL      = SUPABASE_URL;
 const FB_SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 const FEEDBACK_EMAIL       = 'zyhacl@gmail.com';
 
-// ── 收集诊断数据（IDB 2s 超时兜底）─────────────────────────────
 async function collectDiagnostics() {
   var base = {
     app_version:        APP_VERSION,
     collected_at:       Date.now(),
     idb_version:        SRS_DB_VER,
     sync_enabled:       _syncEnabled,
-    has_session_backup: !!localStorage.getItem('yihai_session_backup'),
-    last_sync_ts:       Number(localStorage.getItem('yihai_global_sync_ts')) || null,
+    has_session_backup: !!localStorage.getItem('yihaiSessionBackup'),
+    last_sync_ts:       Number(localStorage.getItem('yihaiGlobalSyncTs')) || null,
     deck_count:         (typeof DECKS_META !== 'undefined' ? DECKS_META.length : null),
     logs:               null,
     log_source:         null,
@@ -5772,11 +5765,10 @@ async function collectDiagnostics() {
       r.onerror   = function(e) { rej(e.target.error); };
     });
     base.events = evts.slice(-10).map(function(e) { return { type: e.event_type, payload: e.payload, ts: e.timestamp }; });
-  } catch(e) { /* IDB 不可用，logs/events 保持 null */ }
+  } catch(e) {}
   return base;
 }
 
-// ── 格式化剪贴板兜底文本 ────────────────────────────────────────
 function formatFeedbackText(payload) {
   var di   = payload.device_info || {};
   var d    = payload.diagnostics  || {};
@@ -5802,7 +5794,6 @@ function formatFeedbackText(payload) {
   return lines.join('\n');
 }
 
-// ── 提交反馈（主通道 Supabase 5s 超时，失败降级剪贴板）──────────
 async function submitFeedback(userDesc) {
   var diagnostics = await collectDiagnostics();
   var payload = {
@@ -5823,11 +5814,10 @@ async function submitFeedback(userDesc) {
   } catch(e) {}
   var text = formatFeedbackText(payload);
   try { await navigator.clipboard.writeText(text); } catch(e) {}
-  localStorage.setItem('yihai_pending_feedback', JSON.stringify(payload));
+  localStorage.setItem('yihaiPendingFeedback', JSON.stringify(payload));
   return 'clipboard';
 }
 
-// ── 反馈 sheet UI ────────────────────────────────────────────────
 function openFeedbackSheet() {
   var overlay = document.getElementById('feedback-overlay');
   var ta      = document.getElementById('feedback-textarea');
@@ -8545,7 +8535,6 @@ async function updateVoiceAssistStatus() {
     : (t('voice_assist_off') || '未开启');
 }
 
-// ── 录制覆层状态机 ──────────────────────────────────────────────────
 let _recSlotName      = '';
 let _recMediaRecorder = null;
 let _recChunks        = [];
@@ -8580,7 +8569,6 @@ function closeRecordingOverlay() {
   _recSlotName = '';
 }
 
-// ── 功能槽文案编辑覆层 ──────────────────────────────────────────────
 let _teSlotName = '';
 let _teSaveCallback = null;
 
@@ -8736,9 +8724,7 @@ function onBdurChange(v) {
 }
 
 function migrateVoiceSettings() {
-  // 旧 toggle=0 → 清空对应文案
   if (localStorage.getItem('wrongHintOn')  === '0') localStorage.removeItem('phraseWrong');
-  // 旧延迟 key 迁移
   const oldDelay = localStorage.getItem('delay');
   if (oldDelay && !localStorage.getItem('ansReadDelay')) {
     localStorage.setItem('ansReadDelay', oldDelay);
@@ -8747,14 +8733,12 @@ function migrateVoiceSettings() {
   if (oldOptDelay && !localStorage.getItem('optReadDelay')) {
     localStorage.setItem('optReadDelay', oldOptDelay);
   }
-  // 清理废弃 key
   ['quizPromptOn','optHintOn','wrongHintOn','readHint',
    'quizPromptDelay','optHintDelay','delay','browseDelay',
    'phraseSelect'].forEach(k => localStorage.removeItem(k));
 }
 
-// load phrase from localStorage, but reset if it matches any locale's default
-// (prevents cross-device/locale pollution via cloud sync)
+// resets to locale default if stored value matches any locale's default (prevents cross-device pollution)
 function loadPhraseOrDefault(storageKey, i18nKey) {
   const stored = localStorage.getItem(storageKey);
   if (!stored) return t(i18nKey);
@@ -8781,14 +8765,12 @@ function loadSettings() {
   const ttsVoiceName = localStorage.getItem('ttsVoiceName');
   if (ttsVoiceName !== null) TTS_VOICE_NAME = ttsVoiceName;
 
-  // 全局语音参数
   const voiceMuted = localStorage.getItem('voiceMuted');
   if (voiceMuted !== null) VOICE_MUTED = voiceMuted === '1';
   const ansReadDelay = localStorage.getItem('ansReadDelay');
   if (ansReadDelay) ANS_READ_DELAY = parseFloat(ansReadDelay) * 1000;
   const optReadDelay = localStorage.getItem('optReadDelay');
   if (optReadDelay) OPT_READ_DELAY = parseFloat(optReadDelay) * 1000;
-  // 语音辅助
   const voiceAssistEnabled = localStorage.getItem('voiceAssistEnabled');
   if (voiceAssistEnabled !== null) VOICE_ASSIST_ENABLED = voiceAssistEnabled === '1';
 
@@ -8929,7 +8911,6 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     if (linkErr) throw linkErr;
     if (!ordered || !ordered.length) { showCloudToast(t('sync_deck_empty'), true); return; }
 
-    // 3. deck key = decks.id 直接用，无前缀
     const key = deckId;
 
     // 4. download media and assemble cards (concurrency 3, image+audio parallel per card)
@@ -8964,7 +8945,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     if (!deckCards.length) { showCloudToast(t('sync_no_valid_cards'), true); return; }
 
     // record sync timestamp
-    localStorage.setItem('yihai_sync_at_' + key, new Date().toISOString());
+    localStorage.setItem('yihaiSyncAt:' + key, new Date().toISOString());
 
     // 4. write to memory + persist
     DECKS[key] = deckCards;
@@ -9024,7 +9005,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
   }
   try {
     const syncNow = new Date().toISOString();
-    const lastSyncAt = localStorage.getItem('yihai_sync_at_' + localKey) || '';
+    const lastSyncAt = localStorage.getItem('yihaiSyncAt:' + localKey) || '';
 
     // 1. get server card_id list (lightweight, IDs only)
     const { data: links, error: linkErr } = await _sb.from('deck_cards')
@@ -9132,7 +9113,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 8. delete sync: cards removed from server not kept locally (matches Anki)
 
     // 9. save
-    localStorage.setItem('yihai_sync_at_' + localKey, syncNow);
+    localStorage.setItem('yihaiSyncAt:' + localKey, syncNow);
     DECKS[localKey] = merged;
     saveDeckCards(localKey, merged);
 
@@ -9199,7 +9180,7 @@ async function checkPersonalDeckUpdates() {
       .eq('deck_type', 'personal');
     if (error || !remoteDecks) return;
     for (const rd of remoteDecks) {
-      const lastSync = localStorage.getItem('yihai_sync_at_' + rd.id) || '';
+      const lastSync = localStorage.getItem('yihaiSyncAt:' + rd.id) || '';
       if (rd.updated_at > lastSync) {
         const existingMeta = DECKS_META.find(m => m.key === rd.id);
         const deckName = (existingMeta && existingMeta.name) || rd.name;
@@ -9238,7 +9219,7 @@ async function downloadPersonalDeckFromCloud(deckId, deckName) {
       card._audUrl = c.audio_url || '';
       deckCards[i] = card;
     });
-    localStorage.setItem('yihai_sync_at_' + deckId, syncNow);
+    localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
     DECKS[deckId] = deckCards;
     const existingIdx = DECKS_META.findIndex(m => m.key === deckId);
     if (existingIdx >= 0) DECKS_META[existingIdx] = { key: deckId, name: deckName, deck_type: 'personal' };
@@ -9363,7 +9344,7 @@ function showAbout() {
           _cloudUserEmail = session.user.email;
           _cloudUserId    = session.user.id;
           _syncEnabled    = true;
-          localStorage.setItem('yihai_session_backup', JSON.stringify(session));
+          localStorage.setItem('yihaiSessionBackup', JSON.stringify(session));
           logAppEvent('session_restore_token_refreshed', { uid: _cloudUserId });
           updateCloudTabUI();
         } else if (event === 'SIGNED_OUT' && _syncEnabled) {
@@ -9529,7 +9510,7 @@ async function renderStatsDeck() {
   var practiceDays = 0;
   var cloudDays = 0, cloudLastDate = '';
   try {
-    var raw = localStorage.getItem('yihai_practice_days');
+    var raw = localStorage.getItem('yihaiPracticeDays');
     if (raw) {
       var allStats = JSON.parse(raw);
       var ds = allStats.find(function(d) { return d.deck_key === key; });
