@@ -4,7 +4,7 @@
  * 运行：node tests/_pw_srs_e2e.js
  *
  * 覆盖：.yhspack 导入、5天练习、CardState/TrialLog 写入、统计 KPI、
- *       session_mode 持久化、hard 模式队列 U 形曲线
+ *       session_mode 持久化、normal 模式队列 U 形曲线（applyCurve）
  * 无需登录，无需 Supabase
  */
 const { chromium } = require('playwright');
@@ -275,18 +275,17 @@ async function createTestYhspack() {
 
     // ════ PHASE 5: session_mode 持久化 ════
     section('PHASE 5: session_mode 持久化');
-    await run(page, () => localStorage.setItem('srs_session_mode', 'hard'));
+    await run(page, () => setSrsMode('easy'));
     await page.reload({ waitUntil: 'networkidle' });
     await wait(page, 1000);
-    pass('hard 模式刷新后恢复', await run(page, () =>
-      localStorage.getItem('srs_session_mode') === 'hard'
+    pass('easy 模式刷新后恢复', await run(page, () =>
+      localStorage.getItem('srs_session_mode') === 'easy'
     ));
-    await run(page, () => localStorage.removeItem('srs_session_mode'));
+    await run(page, () => setSrsMode('normal'));
 
-    // ════ PHASE 6: hard 模式队列 U 形曲线 ════
-    section('PHASE 6: hard 模式队列曲线');
+    // ════ PHASE 6: normal 模式队列 U 形曲线（applyCurve）════
+    section('PHASE 6: normal 模式队列曲线');
     const curve = await run(page, async (did) => {
-      // 为卡片设置不同 ease_factor 制造难度差异，阶段设为 review
       const db = await new Promise((res, rej) => {
         const r = indexedDB.open('yihai_srs'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
       });
@@ -304,10 +303,8 @@ async function createTestYhspack() {
         deckStates[i].due_ts = Date.now() - 60000;
         await new Promise(r2 => { const u = sto.put(deckStates[i]); u.onsuccess = r2; });
       }
-      // 构建 hard 模式队列
       if (typeof buildSessionQueue !== 'function') return null;
-      // 设置 session_mode 为 hard
-      SRS_CONFIG.session_mode = 'hard';
+      SRS_CONFIG.session_mode = 'normal';
       const queue = await buildSessionQueue(did);
       SRS_CONFIG.session_mode = localStorage.getItem('srs_session_mode') || 'normal';
       if (!queue || queue.length < 4) return null;
@@ -318,11 +315,11 @@ async function createTestYhspack() {
     }, DECK_ID);
 
     if (curve) {
-      pass('hard 模式队列首尾 ef > 中间（U 形曲线）',
+      pass('normal 模式队列首尾 ef > 中间（U 形曲线）',
         curve.first > curve.mid && curve.last > curve.mid
       );
     } else {
-      pass('hard 模式队列曲线（条件不足，跳过）', true);
+      pass('normal 模式队列曲线（条件不足，跳过）', true);
     }
 
     // ════ PHASE 7: 清理 ════
