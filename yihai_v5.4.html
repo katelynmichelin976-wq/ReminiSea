@@ -3015,8 +3015,12 @@ async function cloudPushConfig() {
     // collect local UI params
     const localUi = {
       confettiOn:         localStorage.getItem('confettiOn'),
-      phraseWrong:        localStorage.getItem('phraseWrong'),
-      phraseOptHint:      localStorage.getItem('phraseOptHint'),
+      phraseWrong:          localStorage.getItem('phraseWrong'),
+      phraseCorrect:        localStorage.getItem('phraseCorrect'),
+      phraseStreakCorrect:  localStorage.getItem('phraseStreakCorrect'),
+      phraseSessionFinish:  localStorage.getItem('phraseSessionFinish'),
+      phraseIdleBrowse:     localStorage.getItem('phraseIdleBrowse'),
+      phraseOptHint:        localStorage.getItem('phraseOptHint'),
       ttsRate:            localStorage.getItem('ttsRate'),
       ttsPitch:           localStorage.getItem('ttsPitch'),
       ttsVoiceName:       localStorage.getItem('ttsVoiceName'),
@@ -4685,17 +4689,25 @@ let _idleBrowseCooldownUntil = 0;
 // ── 语音槽位注册表 ──────────────────────────────────────────────────
 const VOICE_SLOTS = {
   emotion: [
-    { name: 'wrong_hint',     labelKey: 'voice_slot_wrong_hint',     defaultKey: 'voice_default_wrong_hint' },
-    { name: 'correct_hint',   labelKey: 'voice_slot_correct_hint',   defaultKey: 'voice_default_correct_hint' },
-    { name: 'streak_correct', labelKey: 'voice_slot_streak_correct', defaultKey: 'voice_default_streak_correct' },
-    { name: 'session_finish', labelKey: 'voice_slot_session_finish', defaultKey: 'voice_default_session_finish' },
+    { name: 'wrong_hint',     storageKey: 'phraseWrong',         labelKey: 'voice_slot_wrong_hint',     defaultKey: 'voice_default_wrong_hint' },
+    { name: 'correct_hint',   storageKey: 'phraseCorrect',       labelKey: 'voice_slot_correct_hint',   defaultKey: 'voice_default_correct_hint' },
+    { name: 'streak_correct', storageKey: 'phraseStreakCorrect',  labelKey: 'voice_slot_streak_correct', defaultKey: 'voice_default_streak_correct' },
+    { name: 'session_finish', storageKey: 'phraseSessionFinish', labelKey: 'voice_slot_session_finish', defaultKey: 'voice_default_session_finish' },
   ],
   functional: [
     { name: 'quiz_prompt', labelKey: 'voice_slot_quiz_prompt', functional: true },
     { name: 'opt_hint',    labelKey: 'voice_slot_opt_hint',    functional: true },
-    { name: 'idle_browse', labelKey: 'voice_slot_idle_browse', defaultKey: 'voice_default_idle_browse' },
+    { name: 'idle_browse', storageKey: 'phraseIdleBrowse',     labelKey: 'voice_slot_idle_browse', defaultKey: 'voice_default_idle_browse' },
   ],
 };
+
+// lookup storageKey by slot name
+function slotStorageKey(slotName) {
+  for (const slots of Object.values(VOICE_SLOTS))
+    for (const s of slots)
+      if (s.name === slotName && s.storageKey) return s.storageKey;
+  return null;
+}
 
 // quiz prompt
 let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // quiz prompt text (i18n default English, overridden by loadPhrases)
@@ -4703,8 +4715,7 @@ let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // quiz prompt text (i18n def
 // option hint
 let PHRASE_OPT_HINT  = ''; // populated by initPhrases() after t() is ready
 
-// wrong hint
-let PHRASE_WRONG     = ''; // populated by initPhrases() after t() is ready
+// PHRASE_WRONG removed — wrong_hint TTS text read directly from localStorage('phraseWrong') in playVoiceSlot
 
 // read item name hint
 let READ_HINT        = true;    // read item name toggle (browse + practice)
@@ -7301,10 +7312,10 @@ function setLocale(loc) {
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
   // reset voice prompts to current locale defaults on language switch
-  ['phraseQuizPrompt','phraseOptHint','phraseWrong'].forEach(k => localStorage.removeItem(k));
+  ['phraseQuizPrompt','phraseOptHint','phraseWrong',
+   'phraseCorrect','phraseStreakCorrect','phraseSessionFinish','phraseIdleBrowse'].forEach(k => localStorage.removeItem(k));
   PHRASE_SELECT   = t('quiz_select_hint');
   PHRASE_OPT_HINT = t('default_opt_hint');
-  PHRASE_WRONG    = t('default_wrong');
   if (typeof _updateSettingsLangVal === 'function') _updateSettingsLangVal();
 }
 
@@ -7471,7 +7482,8 @@ function pickVoice(lang, autoOnly = false) {
 
 async function playVoiceSlot(slotName, ttsText, ttsLang) {
   if (VOICE_MUTED) return;
-  const customTts = localStorage.getItem('phraseSlot_' + slotName);
+  const key = slotStorageKey(slotName);
+  const customTts = key ? localStorage.getItem(key) : null;
   const effectiveTts = customTts !== null ? customTts : ttsText;
   try {
     const slot = await loadVoiceSlot(slotName);
@@ -7856,7 +7868,7 @@ function onSel(e, idx, btn) {
         btn.style.transform = 'scale(.9)';
         setTimeout(() => btn.remove(), 300);
       });
-      playVoiceSlot('wrong_hint', PHRASE_WRONG, getLocale());
+      playVoiceSlot('wrong_hint', t('voice_default_wrong_hint'), getLocale());
     } else {
       // 2nd wrong → Again
       if (currentMode !== 'browse' && q._srsState) {
@@ -8355,7 +8367,6 @@ function toggleConfetti(cb) {
 
 function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
-  if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || t('default_wrong');    localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
   if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
   debouncePushConfig();
 }
@@ -8551,7 +8562,8 @@ function openRecordingOverlay(slotName, defaultScript) {
   document.getElementById('rec-slot-label').textContent =
     t('voice_slot_' + slotName) || slotName;
   const scriptEl = document.getElementById('rec-script-txt');
-  const stored = localStorage.getItem('phraseSlot_' + slotName);
+  const key = slotStorageKey(slotName);
+  const stored = key ? localStorage.getItem(key) : null;
   scriptEl.value = stored !== null ? stored : (defaultScript || '');
   _showRecState('idle');
   document.getElementById('rec-save-btn').disabled = true;
@@ -8666,8 +8678,11 @@ async function saveVoiceRecording() {
   try {
     const scriptEl = document.getElementById('rec-script-txt');
     const scriptText = scriptEl ? scriptEl.value.trim() : '';
-    if (scriptText) localStorage.setItem('phraseSlot_' + _recSlotName, scriptText);
-    else localStorage.removeItem('phraseSlot_' + _recSlotName);
+    const _key = slotStorageKey(_recSlotName);
+    if (_key) {
+      if (scriptText) localStorage.setItem(_key, scriptText);
+      else localStorage.removeItem(_key);
+    }
     if (_recBlob) await saveVoiceSlot(_recSlotName, _recBlob, _recMimeType, _recDuration);
     closeRecordingOverlay();
     const vaScreen = document.getElementById('screen-voice-assist');
@@ -8752,7 +8767,6 @@ function loadSettings() {
   migrateVoiceSettings();
   PHRASE_SELECT   = loadPhraseOrDefault('phraseQuizPrompt', 'quiz_select_hint');
   PHRASE_OPT_HINT = loadPhraseOrDefault('phraseOptHint',    'default_opt_hint');
-  PHRASE_WRONG    = loadPhraseOrDefault('phraseWrong',      'default_wrong');
 
   // browse answer delay / correct feedback
   const browseAnsDelay = localStorage.getItem('browseAnsDelay');
