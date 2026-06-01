@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.4.9</title>
+<title data-i18n="app_title">忆海拾光 v5.4.10</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -1549,7 +1549,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.9</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.10</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2690,7 +2690,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.4.9';
+const APP_VERSION = '5.4.10';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -5976,7 +5976,7 @@ const I18N = {
     settings_section_opt_hint: 'Option Hint', settings_opt_hint: 'Option Hint', settings_opt_hint_delay: 'Hint Delay', settings_opt_hint_phrase_label: 'Hint Phrase ({A}{B}{C} for options, . for 100ms pause)',
     settings_section_wrong_hint: 'Wrong Answer Hint', settings_wrong_hint: 'Wrong Answer Hint', settings_wrong_phrase: 'Wrong Answer Phrase',
     settings_section_answer: 'Answer Announcement', settings_read_hint: 'Read Item Name', settings_answer_delay: 'Quiz Speak Delay', settings_browse_answer_delay: 'Browse Speak Delay',
-    settings_tts_rate: 'Speech Rate', settings_tts_pitch: 'Pitch', settings_tts_voice: 'Voice', settings_tts_voice_auto: 'Auto (Chinese preferred)',
+    settings_tts_rate: 'Speech Rate', settings_tts_pitch: 'Pitch', settings_tts_voice: 'Voice', settings_tts_voice_auto: 'Auto (English preferred)',
     voice_global_mute: 'Mute All', voice_ans_read_delay: 'Answer Read Delay', voice_assist_nav: 'Voice Assistance',
     settings_section_preset: 'Preset', settings_srs_reset_default: 'Reset to Anki Defaults',
     settings_section_new_cards: 'New Cards', settings_learning_steps: 'Learning Steps (min, comma separated)', settings_graduating_interval: 'Graduating Interval (days)', settings_easy_interval: 'Easy Interval (days)',
@@ -6829,7 +6829,7 @@ const I18N = {
     settings_section_opt_hint: 'Pista de opciones', settings_opt_hint: 'Pista de opciones', settings_opt_hint_delay: 'Retardo de pista', settings_opt_hint_phrase_label: 'Frase de pista ({A}{B}{C} para opciones, . pausa 100ms)',
     settings_section_wrong_hint: 'Aviso de error', settings_wrong_hint: 'Aviso de error', settings_wrong_phrase: 'Frase de error',
     settings_section_answer: 'Anuncio de respuesta', settings_read_hint: 'Leer nombre', settings_answer_delay: 'Retardo de locucion', settings_browse_answer_delay: 'Retardo de exploracion',
-    settings_tts_rate: 'Velocidad', settings_tts_pitch: 'Tono', settings_tts_voice: 'Voz', settings_tts_voice_auto: 'Auto (chino preferido)',
+    settings_tts_rate: 'Velocidad', settings_tts_pitch: 'Tono', settings_tts_voice: 'Voz', settings_tts_voice_auto: 'Auto (español preferido)',
     voice_global_mute: 'Silenciar todo', voice_ans_read_delay: 'Retardo de lectura', voice_assist_nav: 'Asistencia de voz',
     settings_section_preset: 'Preajuste', settings_srs_reset_default: 'Restaurar valores Anki',
     settings_section_new_cards: 'Nuevas tarjetas', settings_learning_steps: 'Pasos de aprendizaje (min, coma)', settings_graduating_interval: 'Intervalo de graduacion (dias)', settings_easy_interval: 'Intervalo facil (dias)',
@@ -7512,16 +7512,17 @@ function pickVoice(lang) {
     const named = voices.find(v => v.name === TTS_VOICE_NAME);
     if (named) return named;
   }
-  const want = lang || (getLocale().startsWith('ja') ? 'ja-JP' : 'zh-CN');
+  const loc = getLocale();
+  const want = lang || (loc.startsWith('ja') ? 'ja-JP' : loc === 'en' ? 'en' : loc === 'es' ? 'es' : 'zh-CN');
   const prefix = want.split('-')[0];
-  if ((!lang || lang.startsWith('zh')) && getLocale() === 'zh-Hant') {
+  if ((!lang || lang.startsWith('zh')) && loc === 'zh-Hant') {
     return voices.find(v => v.lang === 'zh-TW')
         || voices.find(v => v.lang === 'zh-HK')
         || voices.find(v => v.lang === 'yue-HK' || v.lang.startsWith('yue'))
         || voices.find(v => v.lang === 'zh-CN')
         || (voices.length ? voices[0] : null);
   }
-  if ((!lang || lang.startsWith('ja')) && getLocale() === 'ja') {
+  if ((!lang || lang.startsWith('ja')) && loc === 'ja') {
     return voices.find(v => v.lang === 'ja-JP')
         || voices.find(v => v.lang && v.lang.startsWith('ja'))
         || (voices.length ? voices[0] : null);
