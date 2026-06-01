@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.4.html` | 主训练 App（v5.4.20，单 HTML 文件，Supabase 云同步） |
+| `yihai_v5.4.html` | 主训练 App（v5.5.0，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -57,13 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.4.20**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.5.0**（`yihai_v5.4.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
-**dev/cleanup-and-features（未发布）：**
-- 修复 `processAnswer` review 分支 TDZ 名称冲突：`const daysLate = daysLate(...)` 中变量名与函数名重名，触发 ReferenceError，导致所有 review 阶段答题静默失败（CardState/TrialLog 不写入）。改为 `const lateDays = daysLate(...)`，3 处引用同步更新。
-- 修复 `buildSessionQueue` normal 模式仍调用 `applyCurve`：计划要求 `finalQueue = queue`（Anki 到期顺序），实现遗留了旧 survival 逻辑的 `applyCurve(queue)`。现改为直接返回 queue，与 i18n 描述「按到期顺序」一致。
-- 测试同步：`_pw_srs_e2e` PHASE5 改测 easy 模式持久化、PHASE6 改测 due_ts 升序顺序；`_pw_ui_smoke` 对齐 v5.4.20 UI（语言入口移至 mine 菜单、固定节点并入情绪触发，64 断言）。
-- 代码清理：删除 `_pw_srs_e2e` 所有诊断日志（console 监听/spy patch/dayInfo/allTrialKeys 等）。
+**v5.5.0：** 练习模式重设计 + 翻转卡 + 导入导出 loading 提示 — ①删除困难/生存模式，新增「普通」（完整 SRS，due_ts 升序）和「轻松」（全牌组，答错不降级，20 张，首尾熟悉卡）；②flip card renderer（翻转卡，自评 SRS）；③`CARD_RENDERERS` 分派架构；④localStorage key 全面 camelCase；⑤importYhspack/deleteDeck/exportDeck 加 loading toast（`showLoadingToast`）；⑥修复 `processAnswer` review 分支 `daysLate` TDZ 名称冲突（SRS 写入静默失败）；⑦修复 normal 模式遗留 `applyCurve` 排序，改为 Anki 到期顺序
 
 **v5.4.20：** UI 整合与性能优化 — ①`syncAppEvents` 批量上传（10条/批，`upsert+ignoreDuplicates`，174条从29分钟降至秒级）②修复「我的」Tab 切换时 profile card 残留「点击登录」（`showScreen` 补 `updateMineProfile`）③语音辅助页：宽度对齐、取消折叠、固定节点并入情绪触发（答错/答对/连对/完成）、浏览引导移至功能提示末位 ④「我的」页高级模式加⚡图标、间距对齐 ⑤界面语言从设置内移至「我的」顶层菜单（地球图标），语言页标题/顺序调整（EN→繁→简→日→ES）
 

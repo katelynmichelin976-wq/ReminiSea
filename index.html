@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.4.20</title>
+<title data-i18n="app_title">忆海拾光 v5.5.0</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -647,6 +647,59 @@ body {
 .nring-sec { position:relative; z-index:var(--z-base); font-size:13px; font-weight:600; opacity:.6; min-width:16px; }
 .sout{opacity:0;transform:translateX(-22px)}
 .sin {opacity:0;transform:translateX(22px)}
+/* ── Flip card ── */
+.flip-zone { padding: 0 16px 8px; display:flex; flex-direction:column; }
+.flip-scene { flex:1; min-height:0; perspective: 800px; }
+.flip-card-inner {
+  width:100%; height:100%; position:relative;
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+.flip-card-inner.flipped { transform: rotateY(180deg); }
+.flip-face {
+  position:absolute; inset:0;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; padding:20px 16px;
+  background:var(--surf); border-radius:var(--r); border:1px solid var(--bd);
+  overflow-y:auto;
+}
+.flip-face-back { transform: rotateY(180deg); align-items:flex-start; justify-content:flex-start; }
+.flip-word { font-size:clamp(28px,8vw,48px); font-weight:800; color:var(--text); text-align:center; width:100%; }
+.flip-phonetic { font-size:16px; color:var(--text2); display:flex; align-items:center; gap:8px; }
+.flip-audio-btn {
+  background:none; border:none; cursor:pointer; padding:4px;
+  color:var(--ocean); display:flex; align-items:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.flip-audio-btn:active { opacity:.6; }
+.flip-img { width:100%; max-height:140px; object-fit:contain; border-radius:var(--rsm); margin-bottom:4px; }
+.flip-pos { font-size:13px; font-weight:600; color:var(--ocean); }
+.flip-definition { font-size:18px; font-weight:700; color:var(--text); }
+.flip-example { font-size:14px; color:var(--text2); font-style:italic; line-height:1.5; }
+.flip-en-def { font-size:13px; color:var(--text3); line-height:1.5; }
+.flip-reveal-btn {
+  width:100%; height:56px; border-radius:var(--rsm); border:none;
+  background:var(--ocean); color:#fff;
+  font-size:17px; font-weight:700; font-family:inherit;
+  cursor:pointer; margin-top:auto;
+  -webkit-tap-highlight-color:transparent;
+}
+.flip-reveal-btn:active { opacity:.85; }
+.flip-grade-bar {
+  display:flex; gap:8px; width:100%; padding:8px 16px calc(12px + var(--safe-bottom));
+}
+.flip-grade-btn {
+  flex:1; height:56px; border-radius:var(--rsm); border:none;
+  font-size:14px; font-weight:700; font-family:inherit;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  transition: opacity .12s;
+}
+.flip-grade-btn:active { opacity:.75; }
+.flip-grade-again { background:#fee2e2; color:#b91c1c; }
+.flip-grade-hard  { background:#fef3c7; color:#92400e; }
+.flip-grade-good  { background:#dcfce7; color:#166534; }
+.flip-grade-easy  { background:#dbeafe; color:#1e40af; }
 
 /* ════════════════════════════════
    FEEDBACK SHEET
@@ -1544,7 +1597,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.4.20</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.5.0</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -1669,6 +1722,8 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="answer-details" id="ans-details"></div>
       </div>
     </div>
+
+    <div id="flip-zone" style="display:none;flex:1;min-height:0;width:100%;max-width:var(--mw);"></div>
 
   </div>
 
@@ -2114,6 +2169,11 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         <span data-i18n="action_create_deck">创建空牌组</span>
       </button>
+      <button class="action-sheet-btn" onclick="closeActionSheet();document.getElementById('action-sheet-import-input').click()">
+        <svg class="action-sheet-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span data-i18n="action_import_file">导入文件</span>
+      </button>
+      <input type="file" id="action-sheet-import-input" accept=".yhspack" hidden onchange="if(this.files[0])importYhspack(this.files[0]);this.value=''">
     </div>
     <div class="action-sheet-group">
       <button class="action-sheet-btn" onclick="closeActionSheet();exportDeck()">
@@ -2274,16 +2334,12 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="sheet-section">
           <div class="sheet-section-lbl" data-i18n="settings_section_mode">练习模式</div>
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('normal')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_normal">普通</span><span class="sheet-mode-desc" data-i18n="settings_mode_normal_desc">固定20张，越做越顺</span></span>
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_normal">普通</span><span class="sheet-mode-desc" data-i18n="settings_mode_normal_desc">完整SRS，按到期顺序</span></span>
             <span class="sheet-mode-check" id="mode-check-normal"></span>
           </div>
-          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('hard')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_hard">困难</span><span class="sheet-mode-desc" data-i18n="settings_mode_hard_desc">SRS节律，最多30张</span></span>
-            <span class="sheet-mode-check" id="mode-check-hard"></span>
-          </div>
-          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('survival')">
-            <span class="sheet-row-lbl"><span data-i18n="settings_mode_survival">生存</span><span class="sheet-mode-desc" data-i18n="settings_mode_survival_desc">清空所有积压</span></span>
-            <span class="sheet-mode-check" id="mode-check-survival"></span>
+          <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('easy')">
+            <span class="sheet-row-lbl"><span data-i18n="settings_mode_easy">轻松</span><span class="sheet-mode-desc" data-i18n="settings_mode_easy_desc">全牌组巩固，答错不降级</span></span>
+            <span class="sheet-mode-check" id="mode-check-easy"></span>
           </div>
         </div>
         <div class="sheet-section">
@@ -2567,8 +2623,9 @@ const SRS_CONFIG = {
   // default 1200s = 20 min, matches Anki default
   learn_ahead_limit        : 1200,
 
-  // practice modes: 'normal'=standard (arc, 20 cards) | 'hard'=challenging (SRS rhythm, 30 cap) | 'survival'=survival (clear backlog)
+  // practice modes: 'normal'=SRS full queue + applyCurve (was 'survival') | 'easy'=companion mode (full deck, consolidate, no lapse on wrong)
   session_mode             : 'normal',
+  easy_session_size        : 20,             // easy mode cards per session (configurable)
 };
 
 // ── SRS_CONFIG persistent overrides (restore user edits from localStorage) ─
@@ -2588,6 +2645,12 @@ const SRS_CONFIG = {
     }
   });
 })();
+// migrate legacy session_mode values to new two-mode system
+// 'survival' was renamed to 'normal'; old 'normal' (applyNormalMode) and 'hard' also → 'normal'
+if (!['normal', 'easy'].includes(SRS_CONFIG.session_mode)) {
+  SRS_CONFIG.session_mode = 'normal';
+  localStorage.setItem('srs_session_mode', 'normal');
+}
 
 function saveSrsConfigKey(key, value) {
   if (Array.isArray(value)) {
@@ -2657,14 +2720,14 @@ function getCurrentUserId() {
   // logged in → cloud user UUID; logged out → last logged in user (persisted in localStorage);
   // never logged in → deviceId fallback. new login on user switch auto-overrides.
   return _cloudUserId
-    || localStorage.getItem('yihai_last_cloud_user_id')
+    || localStorage.getItem('yihaiLastCloudUserId')
     || getOrCreateDeviceId();
 }
 
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.4.20';
+const APP_VERSION = '5.5.0';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -2691,7 +2754,7 @@ let _deviceId = null;
 let _lastOrphans = [];    // media cleanup: cache last orphan scan keys
 let _cloudUserEmail = '';
 let _cloudUserId = '';
-var _realtimeUpload = localStorage.getItem('yihai_realtime_upload') !== 'false'; // realtime upload toggle during learning
+var _realtimeUpload = localStorage.getItem('yihaiRealtimeUpload') !== 'false'; // realtime upload toggle during learning
 var _syncInFlight = false;         // runSync concurrency lock
 
 // CDN media download helper: try CDN first, fallback to Supabase Storage
@@ -2738,7 +2801,7 @@ function restoreSession() {
     var parsed = null;
     try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
     if (!parsed) {
-      try { parsed = JSON.parse(localStorage.getItem('yihai_session_backup') || 'null'); } catch(e) {}
+      try { parsed = JSON.parse(localStorage.getItem('yihaiSessionBackup') || 'null'); } catch(e) {}
     }
     if (!parsed || !parsed.user || !parsed.user.email) {
       logAppEvent('session_restore_none', {});
@@ -2756,8 +2819,8 @@ function restoreSession() {
         _syncEnabled    = true;
         _cloudUserEmail = data.session.user.email;
         _cloudUserId    = data.session.user.id;
-        localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
-        localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
+        localStorage.setItem('yihaiSessionBackup', JSON.stringify(data.session));
+        localStorage.setItem('yihaiLastCloudEmail', _cloudUserEmail);
         logAppEvent('session_restore_ok', { uid: _cloudUserId });
         checkPersonalDeckUpdates().catch(() => {});
         return;
@@ -3012,8 +3075,12 @@ async function cloudPushConfig() {
     // collect local UI params
     const localUi = {
       confettiOn:         localStorage.getItem('confettiOn'),
-      phraseWrong:        localStorage.getItem('phraseWrong'),
-      phraseOptHint:      localStorage.getItem('phraseOptHint'),
+      phraseWrong:          localStorage.getItem('phraseWrong'),
+      phraseCorrect:        localStorage.getItem('phraseCorrect'),
+      phraseStreakCorrect:  localStorage.getItem('phraseStreakCorrect'),
+      phraseSessionFinish:  localStorage.getItem('phraseSessionFinish'),
+      phraseIdleBrowse:     localStorage.getItem('phraseIdleBrowse'),
+      phraseOptHint:        localStorage.getItem('phraseOptHint'),
       ttsRate:            localStorage.getItem('ttsRate'),
       ttsPitch:           localStorage.getItem('ttsPitch'),
       ttsVoiceName:       localStorage.getItem('ttsVoiceName'),
@@ -3190,7 +3257,7 @@ async function runSync(opts) {
         .select('deck_key, practice_days, last_practice_date')
         .eq('user_id', _cloudUserId);
       if (_dsResp.data) {
-        localStorage.setItem('yihai_practice_days', JSON.stringify(_dsResp.data));
+        localStorage.setItem('yihaiPracticeDays', JSON.stringify(_dsResp.data));
         for (var _ds of _dsResp.data) {
           var _dm = DECKS_META.find(function(d) { return d.key === _ds.deck_key; });
           if (_dm) _dm.practiceDays = _ds.practice_days;
@@ -3230,17 +3297,17 @@ async function runSync(opts) {
     syncStats.decks = newDecks + syncedDecks;
     // cleanup & mark
     // retry pending feedback (written during offline/degraded state)
-    var _pfb = localStorage.getItem('yihai_pending_feedback');
+    var _pfb = localStorage.getItem('yihaiPendingFeedback');
     if (_pfb && _syncEnabled) {
       try {
         var _pfbPayload = JSON.parse(_pfb);
         var _pfbClient  = supabase.createClient(FB_SUPABASE_URL, FB_SUPABASE_ANON_KEY);
         var _pfbRes     = await _pfbClient.from('feedback').insert(_pfbPayload);
-        if (!_pfbRes.error) localStorage.removeItem('yihai_pending_feedback');
+        if (!_pfbRes.error) localStorage.removeItem('yihaiPendingFeedback');
       } catch(e) { log.warn('feedback', 'pending retry failed', e.message); }
     }
     purgeOldLogs();
-    localStorage.setItem('yihai_global_sync_ts', String(Date.now()));
+    localStorage.setItem('yihaiGlobalSyncTs', String(Date.now()));
     logAppEvent('sync_done', { deck_key: options.deckKey, stats: syncStats }, options.deckKey);
     // done
     updateProg(t('sync_done'), 100);
@@ -3301,7 +3368,7 @@ function openSrsDb() {
         if (!csStore.indexNames.contains('user_id')) csStore.createIndex('user_id', 'user_id');
         const trStore = e.target.transaction.objectStore(TRIAL_STORE);
         if (!trStore.indexNames.contains('user_id')) trStore.createIndex('user_id', 'user_id');
-        localStorage.setItem('yihai_v5_migration_pending', '1');
+        localStorage.setItem('yihaiV5MigrationPending', '1');
       }
       if (oldVer < 6) {
         if (!db.objectStoreNames.contains(LOG_STORE)) {
@@ -3329,7 +3396,7 @@ function openSrsDb() {
 
 async function migrateV5IfNeeded() {
   if (_v5MigrationDone) return;
-  if (localStorage.getItem('yihai_v5_migration_pending') !== '1') { _v5MigrationDone = true; return; }
+  if (localStorage.getItem('yihaiV5MigrationPending') !== '1') { _v5MigrationDone = true; return; }
   const db = await openSrsDb();
   if (!db) return;
   const uid = getOrCreateDeviceId();
@@ -3347,13 +3414,13 @@ async function migrateV5IfNeeded() {
     trAll.forEach(t => { if (!t.user_id) { t.user_id = uid; trStore.put(t); trUpdated++; } });
     await new Promise((resolve, reject) => { trTx.oncomplete = resolve; trTx.onerror = reject; });
   } catch(e) { log.error('idb', 'migrateV5 failed', e.message); }
-  localStorage.removeItem('yihai_v5_migration_pending');
+  localStorage.removeItem('yihaiV5MigrationPending');
   _v5MigrationDone = true;
 }
 
 // migrate local offline records to current user on login (deviceId match only)
 async function migrateDeviceRecordsToUser(cloudUserId) {
-  var did = localStorage.getItem('yihai_device_id');
+  var did = localStorage.getItem('yihaiDeviceId');
   if (!did || !cloudUserId || did === cloudUserId) return;
   var db = await openSrsDb();
   if (!db) return;
@@ -3375,13 +3442,13 @@ async function migrateDeviceRecordsToUser(cloudUserId) {
 }
 
 // ── diagnostic log system ──────────────────────────────────────────
-// priority: URL ?log=debug > localStorage yihai_log_level > default warn
+// priority: URL ?log=debug > localStorage yihaiLogLevel > default warn
 // IDB write: info+; console color output: all levels visible (depends on current level)
 // DevTools: window.yhLog.setLevel / show / showErrors / clear / export
 const _LOG_LEVELS  = { debug: 0, info: 1, warn: 2, error: 3 };
 const _LOG_COLORS  = { debug: 'color:#888', info: 'color:#0ea5e9', warn: 'color:#f59e0b', error: 'color:#ef4444' };
 const _urlLogParam = new URLSearchParams(location.search).get('log');
-let _logLevel = _LOG_LEVELS[_urlLogParam || localStorage.getItem('yihai_log_level') || 'warn'] ?? 2;
+let _logLevel = _LOG_LEVELS[_urlLogParam || localStorage.getItem('yihaiLogLevel') || 'warn'] ?? 2;
 
 function _writeLogToIdb(entry) {
   openSrsDb().then(function(db) {
@@ -3413,7 +3480,7 @@ var log = {
   setLevel: function(name) {
     if (_LOG_LEVELS[name] === undefined) { console.warn('yhLog: unknown level', name); return; }
     _logLevel = _LOG_LEVELS[name];
-    localStorage.setItem('yihai_log_level', name);
+    localStorage.setItem('yihaiLogLevel', name);
     console.log('%c[LOG] level set to ' + name, _LOG_COLORS[name]);
   }
 };
@@ -3860,7 +3927,7 @@ function processAnswer(state, rating, todayDateStr) {
     }
 
   } else if (state.srs_stage === 'review') {
-    const days_late = daysLate(state.due_date, today);
+    const lateDays = daysLate(state.due_date, today);
     if (rating === 'again') {
       state.lapses_streak++;
       state.lapses_total++;
@@ -3889,7 +3956,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.lapses_streak = 0;
       state.interval = Math.max(
         cfg.minimum_interval,
-        Math.ceil((state.interval + days_late / 2) * state.ease_factor * cfg.interval_modifier)
+        Math.ceil((state.interval + lateDays / 2) * state.ease_factor * cfg.interval_modifier)
       );
       state.interval = Math.min(state.interval, cfg.maximum_interval);
       state.due_date = addDays(today, state.interval);
@@ -3900,7 +3967,7 @@ function processAnswer(state, rating, todayDateStr) {
       state.ease_factor = Math.min(3.0, state.ease_factor + 0.15);
       state.interval = Math.max(
         cfg.minimum_interval,
-        Math.ceil((state.interval + days_late) * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)
+        Math.ceil((state.interval + lateDays) * state.ease_factor * cfg.easy_bonus * cfg.interval_modifier)
       );
       state.interval = Math.min(state.interval, cfg.maximum_interval);
       state.due_date = addDays(today, state.interval);
@@ -3945,7 +4012,7 @@ function processAnswer(state, rating, todayDateStr) {
 }
 
 // ── DailyProgress ────────────────────────────────────────────────
-const LS_DAILY = 'yihai_daily_progress';
+const LS_DAILY = 'yihaiDailyProgress';
 
 function newDailyProgress() {
   return {
@@ -4001,43 +4068,72 @@ function applyCurve(queue) {
   return result;
 }
 
-// normal mode: fixed 20 card cap, hard cards ≤25%, then apply curve
-function applyNormalMode(cards, stateMap, newSlots) {
-  const SESSION_SIZE = 20;
-  const HARD_RATIO   = 0.25;
-  const now   = Date.now();
+// easy mode: full deck pool, familiar-first ordering, no SRS due filter
+// familiar = srs_stage 'review' AND lapses_total < 3
+// order: [3 warmup familiar] + [3:1 interleave middle] + [2 cooldown familiar]
+// wrong answer in session → forced 'hard' (handled at SRS write call site)
+function applyEasyMode(cards, stateMap) {
+  const SESSION_SIZE = SRS_CONFIG.easy_session_size || 20;
   const today = todayStr();
-  const hardCap = Math.floor(SESSION_SIZE * HARD_RATIO);
 
-  const due = cards.filter(c => {
-    const s = stateMap[c.id];
-    if (!s || s.suspended || _dailyRemovedToday[s.state_key]) return false;
-    if (s.srs_stage === 'review')     return s.due_date && s.due_date <= today;
-    if (s.srs_stage === 'relearning') return s.due_ts   && s.due_ts   <= now;
-    if (s.srs_stage === 'learning')   return s.due_ts   && s.due_ts   <= now;
-    return false;
+  const famPool = [], unfPool = [];
+  for (const card of cards) {
+    const s = stateMap[card.id];
+    if (!s || s.suspended) continue;
+    const isFamiliar = s.srs_stage === 'review' && (s.lapses_total || 0) < 3;
+    (isFamiliar ? famPool : unfPool).push(card);
+  }
+
+  // sort familiar: SRS-due today first, rest random
+  for (let i = famPool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [famPool[i], famPool[j]] = [famPool[j], famPool[i]];
+  }
+  famPool.sort((a, b) => {
+    const aDue = (stateMap[a.id].due_date && stateMap[a.id].due_date <= today) ? 0 : 1;
+    const bDue = (stateMap[b.id].due_date && stateMap[b.id].due_date <= today) ? 0 : 1;
+    return aDue - bDue;
   });
+  // shuffle unfamiliar
+  for (let i = unfPool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unfPool[i], unfPool[j]] = [unfPool[j], unfPool[i]];
+  }
 
-  const byDue = (a, b) =>
-    (stateMap[a.id].due_date || '').localeCompare(stateMap[b.id].due_date || '') ||
-    (stateMap[a.id].due_ts || 0) - (stateMap[b.id].due_ts || 0);
+  // if familiar cards are scarce, relax: include non-new non-review cards
+  if (famPool.length < SESSION_SIZE - 1) {
+    const famIds = new Set(famPool.map(c => c.id));
+    for (const card of cards) {
+      const s = stateMap[card.id];
+      if (!s || s.suspended || famIds.has(card.id)) continue;
+      if (s.srs_stage !== 'new' && s.srs_stage !== 'review') famPool.push(card);
+    }
+  }
 
-  const hard = due.filter(c => difficultyScore(stateMap[c.id]) >= 0.4).sort(byDue);
-  const easy = due.filter(c => difficultyScore(stateMap[c.id]) <  0.4).sort(byDue);
+  // unfamiliar count: floor((SESSION_SIZE - 5) / 4), e.g. 20→3
+  const unfCount = Math.max(0, Math.min(unfPool.length, Math.floor((SESSION_SIZE - 5) / 4)));
+  const selUnf = unfPool.slice(0, unfCount);
+  const selFam = famPool.slice(0, SESSION_SIZE - selUnf.length);
 
-  const selHard = hard.slice(0, hardCap);
-  const selEasy = easy.slice(0, SESSION_SIZE - selHard.length);
-  const remain  = SESSION_SIZE - selHard.length - selEasy.length;
-  const selNew  = cards
-    .filter(c => { const s = stateMap[c.id]; return s && s.srs_stage === 'new' && !s.suspended; })
-    .slice(0, Math.max(0, Math.min(remain, newSlots)));
+  // build ordered result: [warmup 3] + [3:1 interleave] + [cooldown 2]
+  const fam = [...selFam];
+  const unf = [...selUnf];
+  const warmupCount   = Math.min(3, fam.length);
+  const cooldownCount = fam.length >= warmupCount + 2 ? 2 : Math.max(0, fam.length - warmupCount);
+  const warmup   = fam.splice(0, warmupCount);
+  const cooldown = fam.length >= cooldownCount ? fam.splice(-cooldownCount) : fam.splice(0);
+  const result   = [...warmup];
+  let fi = 0, ui = 0;
+  while (fi < fam.length || ui < unf.length) {
+    for (let k = 0; k < 3 && fi < fam.length; k++, fi++) result.push(fam[fi]);
+    if (ui < unf.length) result.push(unf[ui++]);
+  }
+  result.push(...cooldown);
 
-  return applyCurve(
-    [...selEasy, ...selHard, ...selNew].map(card => {
-      const { options, correct } = buildOptions(card, cards);
-      return { ...card, options, correct, _srsState: stateMap[card.id] };
-    })
-  );
+  return result.map(card => {
+    const { options, correct } = buildOptions(card, cards);
+    return { ...card, options, correct, _srsState: stateMap[card.id] };
+  });
 }
 
 // ── buildSessionQueue ────────────────────────────────────────────
@@ -4145,13 +4241,10 @@ async function buildSessionQueue(deckKey) {
   // final queue determined by practice mode
   const mode = SRS_CONFIG.session_mode || 'normal';
   let finalQueue;
-  if (mode === 'normal') {
-    finalQueue = applyNormalMode(cards, stateMap, newSlots);
-  } else if (mode === 'hard') {
-    finalQueue = applyCurve(queue.slice(0, 30));
+  if (mode === 'easy') {
+    finalQueue = applyEasyMode(cards, stateMap);
   } else {
-    // survival: full existing queue + curve arrangement
-    finalQueue = applyCurve(queue);
+    finalQueue = queue;
   }
 
   logAppEvent('build_queue', { deck_key: deckKey, new_cards_created: newCardsCreated, total_cards: cards.length, queue_length: finalQueue.length, used_review: usedReview, review_slots: Math.max(0, reviewSlots), new_slots: newSlots, max_reviews: SRS_CONFIG.maximum_reviews_per_day, max_new: SRS_CONFIG.new_cards_per_day, mode }, deckKey);
@@ -4220,10 +4313,10 @@ async function getDeckStatsSrs(deckKey) {
 
 // ── cloud sync prep: device_id ──────────────────────────────────
 function getOrCreateDeviceId() {
-  let id = localStorage.getItem('yihai_device_id');
+  let id = localStorage.getItem('yihaiDeviceId');
   if (!id) {
     id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-    localStorage.setItem('yihai_device_id', id);
+    localStorage.setItem('yihaiDeviceId', id);
   }
   return id;
 }
@@ -4303,7 +4396,7 @@ function getDeck(key) {
 }
 
 // ── localStorage persistence ──────────────────────────────────────
-const LS_INDEX = 'yihai_decks_index';
+const LS_INDEX = 'yihaiDecksIndex';
 const LS_DECK_PREFIX = 'yihai_deck_';
 
 function saveDeckIndex() {
@@ -4444,8 +4537,8 @@ async function restoreDecks() {
       const newKey = m.key.slice(6);
       const cardsRaw = localStorage.getItem(LS_DECK_PREFIX + m.key);
       if (cardsRaw) { localStorage.setItem(LS_DECK_PREFIX + newKey, cardsRaw); localStorage.removeItem(LS_DECK_PREFIX + m.key); }
-      const syncAt = localStorage.getItem('yihai_sync_at_' + m.key);
-      if (syncAt) { localStorage.setItem('yihai_sync_at_' + newKey, syncAt); localStorage.removeItem('yihai_sync_at_' + m.key); }
+      const syncAt = localStorage.getItem('yihaiSyncAt:' + m.key);
+      if (syncAt) { localStorage.setItem('yihaiSyncAt:' + newKey, syncAt); localStorage.removeItem('yihaiSyncAt:' + m.key); }
       return { ...m, key: newKey, deck_type: 'preset' };
     });
     localStorage.setItem(LS_INDEX, JSON.stringify(migratedIdx));
@@ -4491,7 +4584,7 @@ async function restoreDecks() {
   }
   // restore cloud practice days cache
   try {
-    var raw = localStorage.getItem('yihai_practice_days');
+    var raw = localStorage.getItem('yihaiPracticeDays');
     if (raw) {
       var allStats = JSON.parse(raw);
       for (var i = 0; i < allStats.length; i++) {
@@ -4536,6 +4629,7 @@ function ldScript(src) {
 }
 
 async function importYhspack(file) {
+  const dismissLoading = showLoadingToast(t('toast_importing') || '正在导入…');
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
@@ -4555,7 +4649,8 @@ async function importYhspack(file) {
       const c = deck.cards[i];
       if (!c.name) continue;
       const nf = normalizeField(c.name, deckLang);
-      const card = { id: c.id || String(i), name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: [] };
+      const card = { id: c.id || String(i), name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: [],
+                     cardType: c.cardType || c.card_type || 'choice', ext: c.ext || {} };
 
       // image (derive MIME from extension, supports PNG/WebP/GIF)
       if (c.image) {
@@ -4607,8 +4702,10 @@ async function importYhspack(file) {
     const el = document.querySelector(`.deck-card[data-deck="${key}"]`);
     if (el) selectDeck(el);
 
+    dismissLoading();
     showImportToast(name, cards.length);
   } catch(e) {
+    dismissLoading();
     showCloudToast(t('import_failed', { msg: e.message }), true);
     console.error(e);
   }
@@ -4634,38 +4731,41 @@ let qIdx = 0, sel = null, revealed = false, wrongCount = 0;
 let nRaf = null, nStart = null;
 let NDUR = 6000;       // practice mode countdown (ms), 0=manual
 let BDUR = 4000;       // browse mode countdown (ms), 0=manual
-// ── 全局语音参数 ──
-let ANS_READ_DELAY   = 1200; // 答案朗读延迟 ms（练习+浏览共用）
-const ENTRY_READ_DELAY = 1500; // 进题延迟 ms（固定不开放 UI）
-let OPT_READ_DELAY   = 5000; // 选项朗读延迟 ms（语音辅助专属）
-let VOICE_MUTED      = false; // 全局静音
-// ── 语音辅助参数 ──
-let VOICE_ASSIST_ENABLED = false; // 语音辅助开关
+let ANS_READ_DELAY   = 1200;
+const ENTRY_READ_DELAY = 1500; // not exposed in UI
+let OPT_READ_DELAY   = 5000;
+let VOICE_MUTED      = false;
+let VOICE_ASSIST_ENABLED = false;
 
-// ── 语音辅助连对计数 ──
 let _correctStreak = 0;
 
-// ── 空闲语音定时器 ──
 let _ttsPromptActive = false;  // true while startCardPrompts sequence (quiz_prompt + speakOptHint) is running
 let _idleBrowseTimer = null;
 const IDLE_BROWSE_SEC = 10;
 const IDLE_COOLDOWN   = 60000;
 let _idleBrowseCooldownUntil = 0;
 
-// ── 语音槽位注册表 ──────────────────────────────────────────────────
 const VOICE_SLOTS = {
   emotion: [
-    { name: 'wrong_hint',     labelKey: 'voice_slot_wrong_hint',     defaultKey: 'voice_default_wrong_hint' },
-    { name: 'correct_hint',   labelKey: 'voice_slot_correct_hint',   defaultKey: 'voice_default_correct_hint' },
-    { name: 'streak_correct', labelKey: 'voice_slot_streak_correct', defaultKey: 'voice_default_streak_correct' },
-    { name: 'session_finish', labelKey: 'voice_slot_session_finish', defaultKey: 'voice_default_session_finish' },
+    { name: 'wrong_hint',     storageKey: 'phraseWrong',         labelKey: 'voice_slot_wrong_hint',     defaultKey: 'voice_default_wrong_hint' },
+    { name: 'correct_hint',   storageKey: 'phraseCorrect',       labelKey: 'voice_slot_correct_hint',   defaultKey: 'voice_default_correct_hint' },
+    { name: 'streak_correct', storageKey: 'phraseStreakCorrect',  labelKey: 'voice_slot_streak_correct', defaultKey: 'voice_default_streak_correct' },
+    { name: 'session_finish', storageKey: 'phraseSessionFinish', labelKey: 'voice_slot_session_finish', defaultKey: 'voice_default_session_finish' },
   ],
   functional: [
     { name: 'quiz_prompt', labelKey: 'voice_slot_quiz_prompt', functional: true },
     { name: 'opt_hint',    labelKey: 'voice_slot_opt_hint',    functional: true },
-    { name: 'idle_browse', labelKey: 'voice_slot_idle_browse', defaultKey: 'voice_default_idle_browse' },
+    { name: 'idle_browse', storageKey: 'phraseIdleBrowse',     labelKey: 'voice_slot_idle_browse', defaultKey: 'voice_default_idle_browse' },
   ],
 };
+
+// lookup storageKey by slot name
+function slotStorageKey(slotName) {
+  for (const slots of Object.values(VOICE_SLOTS))
+    for (const s of slots)
+      if (s.name === slotName && s.storageKey) return s.storageKey;
+  return null;
+}
 
 // quiz prompt
 let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // quiz prompt text (i18n default English, overridden by loadPhrases)
@@ -4673,8 +4773,7 @@ let PHRASE_SELECT    = '\u{1F446} Pick an answer'; // quiz prompt text (i18n def
 // option hint
 let PHRASE_OPT_HINT  = ''; // populated by initPhrases() after t() is ready
 
-// wrong hint
-let PHRASE_WRONG     = ''; // populated by initPhrases() after t() is ready
+// PHRASE_WRONG removed — wrong_hint TTS text read directly from localStorage('phraseWrong') in playVoiceSlot
 
 // read item name hint
 let READ_HINT        = true;    // read item name toggle (browse + practice)
@@ -4704,7 +4803,7 @@ let _launchBusy  = false; // prevent duplicate start-practice clicks
 let _browseCards = [];
 let _browseIdx   = 0;
 // Migrate old mode names
-  let _stored = localStorage.getItem('yihai_app_mode');
+  let _stored = localStorage.getItem('yihaiAppMode');
   if (_stored === 'patient') _stored = 'standard';
   else if (_stored === 'caregiver') _stored = 'advanced';
   let _appMode = _stored || 'standard';; // 'standard' | 'advanced'
@@ -4738,6 +4837,7 @@ async function deleteDeck(e, key) {
   if (!meta || meta.builtin) return;
   const ok = await showConfirmDialog(t('deck_delete_confirm', { name: esc(meta.name) }));
   if (!ok) return;
+  const dismissLoading = showLoadingToast(t('toast_deleting') || '正在删除…');
   // revoke ObjectURL to prevent memory leak
   (DECKS[key] || []).forEach(c => {
     if (c.img && c.img.startsWith('blob:')) URL.revokeObjectURL(c.img);
@@ -4749,13 +4849,14 @@ async function deleteDeck(e, key) {
   saveDeckIndex();
   deleteMediaForDeck(key).catch(() => {});
   if (meta.deck_type === 'personal' && _syncEnabled && _sb) {
-    _sb.from('deck_cards').delete().eq('deck_id', key).catch(() => {});
-    _sb.from('decks').delete().eq('id', key).catch(() => {});
+    _sb.from('deck_cards').delete().eq('deck_id', key).then(null, () => {});
+    _sb.from('decks').delete().eq('id', key).then(null, () => {});
   }
-  localStorage.removeItem('yihai_sync_at_' + key);
+  localStorage.removeItem('yihaiSyncAt:' + key);
   if (currentDeck === key) currentDeck = null;
   renderDeckList();
   updateDeckStats();
+  dismissLoading();
 }
 
 async function renameDeck(key) {
@@ -4883,7 +4984,7 @@ document.addEventListener('visibilitychange', () => {
 // ── advanced mode ───────────────────────────────────────────────
 function onAppModeToggle(el) {
   _appMode = el.checked ? 'advanced' : 'standard';
-  localStorage.setItem('yihai_app_mode', _appMode);
+  localStorage.setItem('yihaiAppMode', _appMode);
   document.documentElement.setAttribute('data-mode', _appMode);
   updateTabBarMode();
   updateHomeTopbar();
@@ -5117,6 +5218,7 @@ async function exportDeck() {
   if (!currentDeck) { showToastMsg(t('deck_no_selected')); return; }
   const meta = DECKS_META.find(m => m.key === currentDeck);
   if (!meta) { showToastMsg(t('deck_not_found')); return; }
+  const dismissLoading = showLoadingToast(t('toast_exporting') || '正在导出…');
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     var zip = new JSZip();
@@ -5172,8 +5274,10 @@ async function exportDeck() {
       document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
     }, 2000);
+    dismissLoading();
     showToastMsg(t('toast_export_done', { name: meta.name }));
   } catch(e) {
+    dismissLoading();
     showCloudToast(t('toast_export_fail', { msg: e.message }), true);
     console.error(e);
   }
@@ -5239,6 +5343,7 @@ async function shareDeck() {
 }
 
 function _launch(mode) {
+  if (_currentRenderer?.unmount) _currentRenderer.unmount();
   sessionId++;
   currentMode = mode;
   qIdx = 0;
@@ -5331,7 +5436,7 @@ function renderAccount() {
   }
   // Not logged in
   outEl.style.display = '';
-  document.getElementById('account-email').value = localStorage.getItem('yihai_last_cloud_email') || '';
+  document.getElementById('account-email').value = localStorage.getItem('yihaiLastCloudEmail') || '';
   document.getElementById('account-password').value = '';
   document.getElementById('account-msg').style.display = 'none';
   document.getElementById('account-login-btn').disabled = false;
@@ -5364,12 +5469,12 @@ async function doAccountLogin() {
     _syncEnabled      = true;
     _cloudUserEmail = data.user.email;
     _cloudUserId = data.user.id;
-    localStorage.setItem('yihai_last_cloud_user_id', _cloudUserId);
-    localStorage.setItem('yihai_last_cloud_email', _cloudUserEmail);
-    _deviceId = localStorage.getItem('yihai_device_id') || 'unknown';
+    localStorage.setItem('yihaiLastCloudUserId', _cloudUserId);
+    localStorage.setItem('yihaiLastCloudEmail', _cloudUserEmail);
+    _deviceId = localStorage.getItem('yihaiDeviceId') || 'unknown';
     localStorage.setItem('yihai_has_ever_logged_in', '1');
     if (data.session) {
-      localStorage.setItem('yihai_session_backup', JSON.stringify(data.session));
+      localStorage.setItem('yihaiSessionBackup', JSON.stringify(data.session));
     }
     await migrateDeviceRecordsToUser(_cloudUserId);
     updateCloudTabUI();
@@ -5389,8 +5494,8 @@ async function doAccountLogout() {
   logAppEvent('logout', {});
   try { if (_sb) await _sb.auth.signOut(); } catch(e) { console.warn('[sync] signOut error:', e.message); }
   _syncEnabled = false; _cloudUserEmail = ''; _sb = null;
-  localStorage.removeItem('yihai_global_sync_ts');
-  localStorage.removeItem('yihai_session_backup');
+  localStorage.removeItem('yihaiGlobalSyncTs');
+  localStorage.removeItem('yihaiSessionBackup');
   renderDeckList(); updateDeckStats();
   updateCloudTabUI();
   renderAccount();
@@ -5407,7 +5512,7 @@ function doAccountSync() {
 
 function onAccountRealtimeToggle(el) {
   _realtimeUpload = el.checked;
-  localStorage.setItem('yihai_realtime_upload', el.checked ? 'true' : 'false');
+  localStorage.setItem('yihaiRealtimeUpload', el.checked ? 'true' : 'false');
 }
 
 // ── deck detail screen ───────────────────────────────────────────
@@ -5579,6 +5684,7 @@ function showPromptDialog(msg, defaultValue) {
 
 function goHome() {
   sessionId++;
+  if (_currentRenderer?.unmount) { _currentRenderer.unmount(); _currentRenderer = null; }
   logAppEvent('go_home', { deck_key: currentDeck }, currentDeck);
   stopNRing(); stopAllPromptTimers();
   speechSynthesis.cancel();
@@ -5691,20 +5797,18 @@ function detectLocale(navLang, supported, fallback) {
   return fallback;
 }
 
-// ── 反馈模块常量（正式上线前替换为独立项目 URL/Key）──────────────
 const FB_SUPABASE_URL      = SUPABASE_URL;
 const FB_SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 const FEEDBACK_EMAIL       = 'zyhacl@gmail.com';
 
-// ── 收集诊断数据（IDB 2s 超时兜底）─────────────────────────────
 async function collectDiagnostics() {
   var base = {
     app_version:        APP_VERSION,
     collected_at:       Date.now(),
     idb_version:        SRS_DB_VER,
     sync_enabled:       _syncEnabled,
-    has_session_backup: !!localStorage.getItem('yihai_session_backup'),
-    last_sync_ts:       Number(localStorage.getItem('yihai_global_sync_ts')) || null,
+    has_session_backup: !!localStorage.getItem('yihaiSessionBackup'),
+    last_sync_ts:       Number(localStorage.getItem('yihaiGlobalSyncTs')) || null,
     deck_count:         (typeof DECKS_META !== 'undefined' ? DECKS_META.length : null),
     logs:               null,
     log_source:         null,
@@ -5731,11 +5835,10 @@ async function collectDiagnostics() {
       r.onerror   = function(e) { rej(e.target.error); };
     });
     base.events = evts.slice(-10).map(function(e) { return { type: e.event_type, payload: e.payload, ts: e.timestamp }; });
-  } catch(e) { /* IDB 不可用，logs/events 保持 null */ }
+  } catch(e) {}
   return base;
 }
 
-// ── 格式化剪贴板兜底文本 ────────────────────────────────────────
 function formatFeedbackText(payload) {
   var di   = payload.device_info || {};
   var d    = payload.diagnostics  || {};
@@ -5761,7 +5864,6 @@ function formatFeedbackText(payload) {
   return lines.join('\n');
 }
 
-// ── 提交反馈（主通道 Supabase 5s 超时，失败降级剪贴板）──────────
 async function submitFeedback(userDesc) {
   var diagnostics = await collectDiagnostics();
   var payload = {
@@ -5782,11 +5884,10 @@ async function submitFeedback(userDesc) {
   } catch(e) {}
   var text = formatFeedbackText(payload);
   try { await navigator.clipboard.writeText(text); } catch(e) {}
-  localStorage.setItem('yihai_pending_feedback', JSON.stringify(payload));
+  localStorage.setItem('yihaiPendingFeedback', JSON.stringify(payload));
   return 'clipboard';
 }
 
-// ── 反馈 sheet UI ────────────────────────────────────────────────
 function openFeedbackSheet() {
   var overlay = document.getElementById('feedback-overlay');
   var ta      = document.getElementById('feedback-textarea');
@@ -5923,7 +6024,7 @@ const I18N = {
     settings_section_options: 'Options', settings_opt_count: 'Answer Options', settings_touch_delay: 'Touch Delay',
     settings_section_rhythm: 'Rhythm', settings_quiz_countdown: 'Quiz Countdown', settings_browse_countdown: 'Browse Countdown', settings_browse_ans_delay: 'Browse Answer Delay',
     settings_section_feedback: 'Feedback', settings_confetti: 'Confetti',
-    settings_section_mode: 'Practice Mode', settings_mode_normal: 'Normal', settings_mode_normal_desc: 'Fixed 20 cards, gets easier', settings_mode_hard: 'Hard', settings_mode_hard_desc: 'SRS rhythm, up to 30 cards', settings_mode_survival: 'Survival', settings_mode_survival_desc: 'Clear all backlog',
+    settings_section_mode: 'Practice Mode', settings_mode_normal: 'Normal', settings_mode_normal_desc: 'Full SRS, cards in due order', settings_mode_easy: 'Easy', settings_mode_easy_desc: 'All cards, no penalty on wrong',
     settings_section_storage: 'Storage', settings_storage_desc: 'Scan and remove orphaned media files not referenced by any card.', settings_check_media: '\u{1F9F9} Check Media',
     settings_section_quiz_prompt: 'Quiz Prompt', settings_quiz_prompt: 'Quiz Prompt', settings_quiz_prompt_delay: 'Prompt Delay', settings_quiz_prompt_phrase: 'Prompt Phrase',
     settings_section_opt_hint: 'Option Hint', settings_opt_hint: 'Option Hint', settings_opt_hint_delay: 'Hint Delay', settings_opt_hint_phrase_label: 'Hint Phrase ({A}{B}{C} for options, . for 100ms pause)',
@@ -5943,6 +6044,7 @@ const I18N = {
     settings_cloud_email_ph: 'Email', settings_cloud_pwd_ph: 'Password', settings_cloud_login: 'Login', settings_cloud_restoring: 'Restoring session…',
     settings_cloud_sync_btn: '\u{1F504} Sync', settings_cloud_logout: 'Logout',
     settings_realtime_desc: 'Real-time upload during practice (when off, syncs only on open/foreground/completion, saves power)',
+    flip_reveal_btn: 'Flip',
     rating_again: 'Again', rating_hard: 'Hard', rating_good: 'Good', rating_easy: 'Easy',
     stage_new: 'New', stage_learning: 'Learning', stage_review: 'Review', stage_relearning: 'Relearning',
     theme_title: 'Theme',
@@ -6202,7 +6304,7 @@ const I18N = {
     settings_section_options: '选项', settings_opt_count: '选项数量', settings_touch_delay: '防误触延迟',
     settings_section_rhythm: '节奏', settings_quiz_countdown: '练习倒计时', settings_browse_countdown: '浏览倒计时', settings_browse_ans_delay: '浏览答案显示延迟',
     settings_section_feedback: '答对反馈', settings_confetti: '撒花动画',
-    settings_section_mode: '练习模式', settings_mode_normal: '普通', settings_mode_normal_desc: '固定20张，越做越顺', settings_mode_hard: '困难', settings_mode_hard_desc: 'SRS节律，最多30张', settings_mode_survival: '生存', settings_mode_survival_desc: '清空所有积压',
+    settings_section_mode: '练习模式', settings_mode_normal: '普通', settings_mode_normal_desc: '完整SRS，按到期顺序', settings_mode_easy: '轻松', settings_mode_easy_desc: '全牌组巩固，答错不降级',
     settings_section_storage: '存储维护', settings_storage_desc: '检查并清理未被任何卡片引用的孤立媒体文件，释放存储空间。', settings_check_media: '🧹 检查媒体文件',
     settings_section_quiz_prompt: '答题提示', settings_quiz_prompt: '答题提示', settings_quiz_prompt_delay: '答题提示延迟', settings_quiz_prompt_phrase: '答题提示文案',
     settings_section_opt_hint: '选项提示', settings_opt_hint: '选项提示', settings_opt_hint_delay: '选项提示延迟', settings_opt_hint_phrase_label: '选项提示文案（{A}{B}{C}替换为选项，. 为停顿100ms）',
@@ -6222,6 +6324,7 @@ const I18N = {
     settings_cloud_email_ph: '邮箱', settings_cloud_pwd_ph: '密码', settings_cloud_login: '登录', settings_cloud_restoring: '正在恢复登录…',
     settings_cloud_sync_btn: '🔄 同步', settings_cloud_logout: '退出',
     settings_realtime_desc: '学习中实时上传（关闭后仅打开/前台/练习完成时同步，更省电）',
+    flip_reveal_btn: '翻转',
     rating_again: '重来', rating_hard: '困难', rating_good: '良好', rating_easy: '容易',
     stage_new: '待开始', stage_learning: '学习中', stage_review: '复习', stage_relearning: '重学中',
     theme_title: '主题',
@@ -6481,7 +6584,7 @@ const I18N = {
     settings_section_options: '選項', settings_opt_count: '選項數量', settings_touch_delay: '防誤觸延遲',
     settings_section_rhythm: '節奏', settings_quiz_countdown: '練習倒計時', settings_browse_countdown: '瀏覽倒計時', settings_browse_ans_delay: '瀏覽答案顯示延遲',
     settings_section_feedback: '答對反饋', settings_confetti: '撒花動畫',
-    settings_section_mode: '練習模式', settings_mode_normal: '普通', settings_mode_normal_desc: '固定20張，越做越順', settings_mode_hard: '困難', settings_mode_hard_desc: 'SRS節律，最多30張', settings_mode_survival: '生存', settings_mode_survival_desc: '清空所有積壓',
+    settings_section_mode: '練習模式', settings_mode_normal: '普通', settings_mode_normal_desc: '完整SRS，按到期順序', settings_mode_easy: '輕鬆', settings_mode_easy_desc: '全牌組鞏固，答錯不降級',
     settings_section_storage: '儲存維護', settings_storage_desc: '檢查並清理未被任何卡片引用的孤立媒體檔案，釋放儲存空間。', settings_check_media: '🧹 檢查媒體檔案',
     settings_section_quiz_prompt: '答題提示', settings_quiz_prompt: '答題提示', settings_quiz_prompt_delay: '答題提示延遲', settings_quiz_prompt_phrase: '答題提示文案',
     settings_section_opt_hint: '選項提示', settings_opt_hint: '選項提示', settings_opt_hint_delay: '選項提示延遲', settings_opt_hint_phrase_label: '選項提示文案（{A}{B}{C}替換為選項，. 為停頓100ms）',
@@ -6501,6 +6604,7 @@ const I18N = {
     settings_cloud_email_ph: '電子郵件', settings_cloud_pwd_ph: '密碼', settings_cloud_login: '登入', settings_cloud_restoring: '正在恢復登入…',
     settings_cloud_sync_btn: '🔄 同步', settings_cloud_logout: '退出',
     settings_realtime_desc: '學習中即時上傳（關閉後僅打開/前台/練習完成時同步，更省電）',
+    flip_reveal_btn: '翻轉',
     rating_again: '重來', rating_hard: '困難', rating_good: '良好', rating_easy: '容易',
     stage_new: '待開始', stage_learning: '學習中', stage_review: '複習', stage_relearning: '重學中',
     theme_title: '主題',
@@ -6752,7 +6856,7 @@ const I18N = {
     settings_section_options: 'Opciones', settings_opt_count: 'Numero de opciones', settings_touch_delay: 'Retardo tactil',
     settings_section_rhythm: 'Ritmo', settings_quiz_countdown: 'Cuenta regresiva', settings_browse_countdown: 'Cuenta de exploracion', settings_browse_ans_delay: 'Retardo de respuesta',
     settings_section_feedback: 'Feedback', settings_confetti: 'Confeti',
-    settings_section_mode: 'Modo de practica', settings_mode_normal: 'Normal', settings_mode_normal_desc: '20 tarjetas fijas, se vuelve mas facil', settings_mode_hard: 'Dificil', settings_mode_hard_desc: 'Ritmo SRS, hasta 30 tarjetas', settings_mode_survival: 'Supervivencia', settings_mode_survival_desc: 'Limpiar todo el backlog',
+    settings_section_mode: 'Modo de practica', settings_mode_normal: 'Normal', settings_mode_normal_desc: 'SRS completo, orden por vencimiento', settings_mode_easy: 'Facil', settings_mode_easy_desc: 'Todas las tarjetas, sin penalizacion por error',
     settings_section_storage: 'Almacenamiento', settings_storage_desc: 'Escanear y eliminar archivos huerfanos no referenciados.', settings_check_media: '\u{1F9F9} Verificar medios',
     settings_section_quiz_prompt: 'Aviso de pregunta', settings_quiz_prompt: 'Aviso de pregunta', settings_quiz_prompt_delay: 'Retardo de aviso', settings_quiz_prompt_phrase: 'Frase de aviso',
     settings_section_opt_hint: 'Pista de opciones', settings_opt_hint: 'Pista de opciones', settings_opt_hint_delay: 'Retardo de pista', settings_opt_hint_phrase_label: 'Frase de pista ({A}{B}{C} para opciones, . pausa 100ms)',
@@ -6772,6 +6876,7 @@ const I18N = {
     settings_cloud_email_ph: 'Correo', settings_cloud_pwd_ph: 'Contrasena', settings_cloud_login: 'Iniciar sesion', settings_cloud_restoring: 'Restaurando sesion…',
     settings_cloud_sync_btn: '\u{1F504} Sincronizar', settings_cloud_logout: 'Salir',
     settings_realtime_desc: 'Subida en tiempo real durante la practica',
+    flip_reveal_btn: 'Voltear',
     rating_again: 'Otra vez', rating_hard: 'Dificil', rating_good: 'Bien', rating_easy: 'Facil',
     stage_new: 'Nuevo', stage_learning: 'Aprendiendo', stage_review: 'Repaso', stage_relearning: 'Reaprendiendo',
     theme_title: 'Tema',
@@ -7035,7 +7140,7 @@ const I18N = {
     settings_section_options: 'オプション', settings_opt_count: '回答の選択肢数', settings_touch_delay: 'タッチ遅延',
     settings_section_rhythm: 'リズム', settings_quiz_countdown: 'クイズカウントダウン', settings_browse_countdown: 'ブラウズカウントダウン', settings_browse_ans_delay: 'ブラウズ回答遅延',
     settings_section_feedback: 'フィードバック', settings_confetti: '紙吹雪',
-    settings_section_mode: '練習モード', settings_mode_normal: '通常', settings_mode_normal_desc: '固定20枚、徐々に易しくなる', settings_mode_hard: 'ハード', settings_mode_hard_desc: 'SRSリズム、最大30枚', settings_mode_survival: 'サバイバル', settings_mode_survival_desc: '積み残しをすべてクリア',
+    settings_section_mode: '練習モード', settings_mode_normal: '通常', settings_mode_normal_desc: '完全SRS、期限順で出題', settings_mode_easy: 'かんたん', settings_mode_easy_desc: '全カード復習、ミスしてもペナルティなし',
     settings_section_storage: 'ストレージ', settings_storage_desc: 'カードから参照されていない孤立メディアファイルをスキャンして削除します。', settings_check_media: '\u{1F9F9} メディアを確認',
     settings_section_quiz_prompt: 'クイズプロンプト', settings_quiz_prompt: 'クイズプロンプト', settings_quiz_prompt_delay: 'プロンプト遅延', settings_quiz_prompt_phrase: 'プロンプトフレーズ',
     settings_section_opt_hint: '選択肢ヒント', settings_opt_hint: '選択肢ヒント', settings_opt_hint_delay: 'ヒント遅延', settings_opt_hint_phrase_label: 'ヒントフレーズ（{A}{B}{C}は選択肢、.は100msポーズ）',
@@ -7055,6 +7160,7 @@ const I18N = {
     settings_cloud_email_ph: 'メールアドレス', settings_cloud_pwd_ph: 'パスワード', settings_cloud_login: 'ログイン', settings_cloud_restoring: 'セッションを復元中…',
     settings_cloud_sync_btn: '\u{1F504} 同期', settings_cloud_logout: 'ログアウト',
     settings_realtime_desc: '練習中のリアルタイムアップロード（オフ時は起動/フォアグラウンド/完了時のみ同期、バッテリー節約）',
+    flip_reveal_btn: 'めくる',
     rating_again: 'もう一度', rating_hard: '難しい', rating_good: '良い', rating_easy: '簡単',
     stage_new: '新規', stage_learning: '学習中', stage_review: 'レビュー', stage_relearning: '再学習',
     theme_title: 'テーマ',
@@ -7271,10 +7377,10 @@ function setLocale(loc) {
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
   // reset voice prompts to current locale defaults on language switch
-  ['phraseQuizPrompt','phraseOptHint','phraseWrong'].forEach(k => localStorage.removeItem(k));
+  ['phraseQuizPrompt','phraseOptHint','phraseWrong',
+   'phraseCorrect','phraseStreakCorrect','phraseSessionFinish','phraseIdleBrowse'].forEach(k => localStorage.removeItem(k));
   PHRASE_SELECT   = t('quiz_select_hint');
   PHRASE_OPT_HINT = t('default_opt_hint');
-  PHRASE_WRONG    = t('default_wrong');
   if (typeof _updateSettingsLangVal === 'function') _updateSettingsLangVal();
 }
 
@@ -7441,7 +7547,8 @@ function pickVoice(lang, autoOnly = false) {
 
 async function playVoiceSlot(slotName, ttsText, ttsLang) {
   if (VOICE_MUTED) return;
-  const customTts = localStorage.getItem('phraseSlot_' + slotName);
+  const key = slotStorageKey(slotName);
+  const customTts = key ? localStorage.getItem(key) : null;
   const effectiveTts = customTts !== null ? customTts : ttsText;
   try {
     const slot = await loadVoiceSlot(slotName);
@@ -7604,112 +7711,196 @@ function updateSrsCounter() {
   if (elLrn) elLrn.textContent = lrnC;
   if (elRev) elRev.textContent = revC;
 }
+let _currentRenderer = null;
+
+const CARD_RENDERERS = {
+  choice: {
+    mount(q) {
+      const timg = document.getElementById('timg');
+      timg.style.animation = 'none'; void timg.offsetWidth; timg.style.animation = '';
+      const imgSrc = q.img || '';
+      const _card = timg.closest('.target-card');
+      _card.style.aspectRatio = '1/1';
+      if (imgSrc.length > 4) {
+        const _img = document.createElement('img');
+        _img.alt = q.name;
+        _img.onerror = () => { timg.textContent = '🖼️'; };
+        _img.onload = () => {
+          if (window.innerWidth >= 600 && _img.naturalWidth > _img.naturalHeight * 1.15) {
+            _card.style.aspectRatio = `${_img.naturalWidth}/${_img.naturalHeight}`;
+          }
+        };
+        _img.src = imgSrc;
+        timg.innerHTML = '';
+        timg.appendChild(_img);
+      } else {
+        timg.textContent = imgSrc;
+      }
+
+      document.querySelector('.img-zone').style.display = '';
+      document.querySelector('.mid-zone').style.display = '';
+      document.getElementById('flip-zone').style.display = 'none';
+
+      if (q.browse) {
+        document.getElementById('opts-zone').style.display = 'none';
+        document.getElementById('content').classList.remove('revealed');
+        document.getElementById('answer-panel').className = 'answer-panel';
+        revealBrowse(q);
+        return;
+      }
+
+      const opts = document.getElementById('opts');
+      opts.innerHTML = '';
+
+      const allOpts = q.options.map((o, i) => ({ name: o.name, cardId: o.cardId, i }));
+      const correct = allOpts[q.correct];
+      const distractors = allOpts.filter(o => o.i !== q.correct);
+      const picked = distractors.sort(() => Math.random() - .5).slice(0, OPT_COUNT - 1);
+      picked.push(correct);
+      picked.sort(() => Math.random() - .5);
+
+      picked.forEach(({ name, cardId, i }) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt';
+        btn.dataset.idx    = i;
+        btn.dataset.cardId = cardId || '';
+        btn.innerHTML = `<div class="otxt">${name}</div>`;
+        let touchStart = 0;
+        btn.addEventListener('touchstart', () => { touchStart = Date.now(); }, { passive: true });
+        btn.addEventListener('touchend', e => {
+          if (Date.now() - touchStart >= OPT_TOUCH_DELAY) onSel(e, i, btn);
+        });
+        btn.addEventListener('mouseup', e => { if (!('ontouchstart' in window)) onSel(e, i, btn); });
+        opts.appendChild(btn);
+      });
+
+      document.getElementById('opts-zone').style.display = '';
+      document.getElementById('content').classList.remove('revealed');
+      document.getElementById('answer-panel').className = 'answer-panel';
+      const _nb = document.getElementById('nxtbtn'); _nb.className = 'nxtbtn'; document.querySelector('.btm').classList.remove('active'); stopNRing();
+
+      requestAnimationFrame(() => {
+        const n = OPT_COUNT, vh = window.innerHeight;
+        const btnH = Math.round(Math.min(84, Math.max(52, vh * 0.09)));
+        const gap  = Math.round(Math.min(16, Math.max(8,  vh * 0.012)));
+        const padV = Math.round(Math.min(14, Math.max(8,  vh * 0.014)));
+        const zoneH = btnH * n + gap * (n - 1) + padV * 2;
+        document.documentElement.style.setProperty('--opts-zone-h', `${zoneH}px`);
+        document.documentElement.style.setProperty('--opt-btn-h',   `${btnH}px`);
+        document.documentElement.style.setProperty('--opts-gap',    `${gap}px`);
+        document.documentElement.style.setProperty('--opts-pad',    `${padV}px`);
+        if (window.innerWidth >= 600) {
+          const vvh = (window.visualViewport || {height: vh}).height;
+          const barH = (document.querySelector('.bar') || {offsetHeight: 70}).offsetHeight;
+          document.documentElement.style.setProperty('--img-max-h', `${Math.max(vvh - barH - zoneH - 30, 120)}px`);
+        }
+      });
+
+      stopAllPromptTimers();
+      const pickedTexts = picked.map(({ name }) => name);
+      const optLang = q.nameLang || resolveFieldLang(q.name);
+      startCardPrompts(pickedTexts, optLang, q.cardType);
+    },
+    unmount() {}
+  },
+  flip: {
+    mount(q) {
+      document.querySelector('.img-zone').style.display = 'none';
+      document.querySelector('.mid-zone').style.display = 'none';
+
+      const zone = document.getElementById('flip-zone');
+      zone.style.display = 'flex';
+      zone.style.flexDirection = 'column';
+      zone.style.flex = '1';
+
+      const ext = q.ext || {};
+      const hasImg = q.img && q.img.length > 0;
+
+      zone.innerHTML = `
+        <div class="flip-scene">
+          <div class="flip-card-inner" id="flip-inner">
+            <div class="flip-face flip-face-front">
+              <div class="flip-word">${esc(q.name || '')}</div>
+              ${ext.phonetic ? `<div class="flip-phonetic"><span>${esc(ext.phonetic)}</span><button class="flip-audio-btn" id="flip-audio-btn" aria-label="播放读音"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button></div>` : `<button class="flip-audio-btn" id="flip-audio-btn" aria-label="播放读音"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>`}
+            </div>
+            <div class="flip-face flip-face-back">
+              ${hasImg ? `<img class="flip-img" src="${escAttr(q.img)}" alt="${escAttr(q.name || '')}" onerror="this.style.display='none'">` : ''}
+              ${ext.partOfSpeech ? `<div class="flip-pos">${esc(ext.partOfSpeech)}</div>` : ''}
+              ${ext.definition ? `<div class="flip-definition">${esc(ext.definition)}</div>` : ''}
+              ${ext.example ? `<div class="flip-example">${esc(ext.example)}</div>` : ''}
+              ${ext.enDefinition ? `<div class="flip-en-def">${esc(ext.enDefinition)}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+
+      const btm = document.querySelector('.btm');
+      document.getElementById('nxtbtn').className = 'nxtbtn';
+      btm.classList.remove('active');
+      btm.innerHTML = `<button class="flip-reveal-btn" id="flip-reveal-btn">${t('flip_reveal_btn')}</button>`;
+
+      const sid = sessionId;
+
+      document.getElementById('flip-audio-btn').addEventListener('click', () => {
+        playAnswer(q);
+      });
+
+      document.getElementById('flip-reveal-btn').addEventListener('click', () => {
+        document.getElementById('flip-inner').classList.add('flipped');
+        playAnswer(q);
+
+        const gradeBar = document.createElement('div');
+        gradeBar.className = 'flip-grade-bar';
+        gradeBar.innerHTML = `
+          <button class="flip-grade-btn flip-grade-again" data-grade="again">${t('rating_again')}</button>
+          <button class="flip-grade-btn flip-grade-hard"  data-grade="hard">${t('rating_hard')}</button>
+          <button class="flip-grade-btn flip-grade-good"  data-grade="good">${t('rating_good')}</button>
+          <button class="flip-grade-btn flip-grade-easy"  data-grade="easy">${t('rating_easy')}</button>
+        `;
+        btm.innerHTML = '';
+        btm.appendChild(gradeBar);
+
+        gradeBar.querySelectorAll('.flip-grade-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (sid !== sessionId) return;
+            let rating = btn.dataset.grade;
+            if (SRS_CONFIG.session_mode === 'easy' && rating === 'again') rating = 'hard';
+            if (currentMode !== 'browse' && q._srsState) {
+              _lastSrsWrite = _writeSrs(q, rating, { attemptNumber: 1, isCorrect: rating !== 'again', distractorId: null })
+                .catch(e => console.warn('_writeSrs flip error', e));
+            }
+            onNext();
+          });
+        });
+      });
+
+      stopAllPromptTimers();
+      stopNRing();
+    },
+    unmount() {
+      const btm = document.querySelector('.btm');
+      btm.innerHTML = `<button class="nxtbtn" id="nxtbtn" ontouchstart="" onclick="onNext()"><svg class="nring-svg" id="nrsvg"><rect class="nring-t" id="nrt" rx="20"/><rect class="nring-p" id="nrp" rx="20"/></svg><span class="nring-lbl" id="nxt-lbl" data-i18n="quiz_next">下一题</span><span class="nring-sec" id="nrsec"></span></button>`;
+    }
+  }
+};
+
 function render() {
   const q = Qs[qIdx];
   sel = null; revealed = false; wrongCount = 0;
   _cardAnswerRating = null; _pendingAttempt = null;
-  _cardStartTs = Date.now();   // record card display time for response_time_ms
+  _cardStartTs = Date.now();
   if (!_lastCardTs) _lastCardTs = _cardStartTs;
   updateSrsCounter();
 
-  // immediately clear previous answer state, prevent flash on browse nav
   document.getElementById('answer-panel').className = 'answer-panel';
   document.getElementById('content').classList.remove('revealed');
   document.querySelectorAll('.detail-item').forEach(el => el.classList.remove('show'));
 
   document.getElementById('pfill').style.width = `${(qIdx / Qs.length) * 100}%`;
 
-  const timg = document.getElementById('timg');
-  timg.style.animation='none'; void timg.offsetWidth; timg.style.animation='';
-  // img field: URL (blob/http/data) → <img>, Emoji or empty → textContent
-  const imgSrc = q.img || '';
-  const _card = timg.closest('.target-card');
-  _card.style.aspectRatio = '1/1';  // reset each question
-  if (imgSrc.length > 4) {
-    const _img = document.createElement('img');
-    _img.alt = q.name;
-    _img.onerror = () => { timg.textContent = '🖼️'; };
-    _img.onload = () => {
-      // landscape images on tablet (e.g. 16:9 family photos) use original ratio, max image area
-      if (window.innerWidth >= 600 && _img.naturalWidth > _img.naturalHeight * 1.15) {
-        _card.style.aspectRatio = `${_img.naturalWidth}/${_img.naturalHeight}`;
-      }
-    };
-    _img.src = imgSrc;
-    timg.innerHTML = '';
-    timg.appendChild(_img);
-  } else {
-    timg.textContent = imgSrc;
-  }
-
-  // Browse mode: skip options, auto-reveal
-  if (q.browse) {
-    document.getElementById('opts-zone').style.display = 'none';
-    document.getElementById('content').classList.remove('revealed');
-    document.getElementById('answer-panel').className = 'answer-panel';
-    revealBrowse(q);
-    return;
-  }
-
-  const opts = document.getElementById('opts');
-  opts.innerHTML = '';
-
-  // Pick OPT_COUNT options, always including the correct one
-  // options format: [{name, cardId}]
-  const allOpts = q.options.map((o, i) => ({ name: o.name, cardId: o.cardId, i }));
-  const correct = allOpts[q.correct];
-  const distractors = allOpts.filter(o => o.i !== q.correct);
-  const picked = distractors.sort(() => Math.random() - .5).slice(0, OPT_COUNT - 1);
-  picked.push(correct);
-  picked.sort(() => Math.random() - .5);
-
-  picked.forEach(({ name, cardId, i }) => {
-    const btn = document.createElement('button');
-    btn.className = 'opt';
-    btn.dataset.idx    = i;
-    btn.dataset.cardId = cardId || '';   // for TrialLog distractor_chosen field
-    btn.innerHTML = `<div class="otxt">${name}</div>`;
-
-    // touch guard: touchstart records press time, touchend checks threshold
-    let touchStart = 0;
-    btn.addEventListener('touchstart', () => { touchStart = Date.now(); }, { passive: true });
-    btn.addEventListener('touchend', e => {
-      if (Date.now() - touchStart >= OPT_TOUCH_DELAY) onSel(e, i, btn);
-    });
-    // PC mouse click triggers normally (no touch guard needed)
-    btn.addEventListener('mouseup', e => { if (!('ontouchstart' in window)) onSel(e, i, btn); });
-
-    opts.appendChild(btn);
-  });
-
-  document.getElementById('opts-zone').style.display = '';
-  document.getElementById('content').classList.remove('revealed');
-  document.getElementById('answer-panel').className = 'answer-panel';
-  const _nb=document.getElementById('nxtbtn'); _nb.className='nxtbtn'; document.querySelector('.btm').classList.remove('active'); stopNRing();
-
-  // option area height scales proportionally with viewport
-  requestAnimationFrame(() => {
-    const n = OPT_COUNT, vh = window.innerHeight;
-    const btnH = Math.round(Math.min(84, Math.max(52, vh * 0.09)));
-    const gap  = Math.round(Math.min(16, Math.max(8,  vh * 0.012)));
-    const padV = Math.round(Math.min(14, Math.max(8,  vh * 0.014)));
-    const zoneH = btnH * n + gap * (n - 1) + padV * 2;
-    document.documentElement.style.setProperty('--opts-zone-h', `${zoneH}px`);
-    document.documentElement.style.setProperty('--opt-btn-h',   `${btnH}px`);
-    document.documentElement.style.setProperty('--opts-gap',    `${gap}px`);
-    document.documentElement.style.setProperty('--opts-pad',    `${padV}px`);
-    if (window.innerWidth >= 600) {
-      const vvh = (window.visualViewport || {height: vh}).height;
-      const barH = (document.querySelector('.bar') || {offsetHeight: 70}).offsetHeight;
-      // 30 = content gap(10) + mid-zone padding-bottom(8) + safety(12)
-      document.documentElement.style.setProperty('--img-max-h', `${Math.max(vvh - barH - zoneH - 30, 120)}px`);
-    }
-  });
-
-  stopAllPromptTimers();
-  // pass actual option text for option hint speech
-  const pickedTexts = picked.map(({ name }) => name);
-  const optLang = q.nameLang || resolveFieldLang(q.name); startCardPrompts(pickedTexts, optLang, q.cardType);
+  const type = q.cardType ?? 'choice';
+  _currentRenderer = CARD_RENDERERS[type] ?? CARD_RENDERERS.choice;
+  _currentRenderer.mount(q);
 }
 
 function revealBrowse(q) {
@@ -7826,7 +8017,7 @@ function onSel(e, idx, btn) {
         btn.style.transform = 'scale(.9)';
         setTimeout(() => btn.remove(), 300);
       });
-      playVoiceSlot('wrong_hint', PHRASE_WRONG, getLocale());
+      playVoiceSlot('wrong_hint', t('voice_default_wrong_hint'), getLocale());
     } else {
       // 2nd wrong → Again
       if (currentMode !== 'browse' && q._srsState) {
@@ -7899,7 +8090,9 @@ function revealAnswer() {
 
   // ── SRS write (practice mode) ────────────────────────────
   if (currentMode !== 'browse' && q._srsState) {
-    const rating = _cardAnswerRating || 'good';
+    let rating = _cardAnswerRating || 'good';
+    // easy mode: wrong answer → hard (no lapse, no demotion); is_correct stays false in TrialLog
+    if (SRS_CONFIG.session_mode === 'easy' && rating === 'again') rating = 'hard';
     _lastSrsWrite = _writeSrs(q, rating, _pendingAttempt).catch(e => console.warn('_writeSrs error', e));
     _cardAnswerRating = null;
     _pendingAttempt   = null;
@@ -7908,6 +8101,7 @@ function revealAnswer() {
 
 // ── Next ───────────────────────────────────────────────────────
 async function onNext() {
+  if (_currentRenderer?.unmount) _currentRenderer.unmount();
   stopNRing(); stopAllPromptTimers(); stopCelebration();
   speechSynthesis.cancel();
   if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
@@ -7925,7 +8119,13 @@ async function onNext() {
 
     const nextIdx = qIdx + 1;
     if (nextIdx >= Qs.length) {
-      // main queue exhausted → check for not-yet-due learning cards to add
+      // easy mode: each card shown once, no re-queuing of learning cards
+      if (SRS_CONFIG.session_mode === 'easy') {
+        await _lastSrsWrite;
+        showFinish();
+        return;
+      }
+      // normal mode: check for not-yet-due learning cards to add
       try {
         const pending = await getPendingLearningCards(currentDeck);
         if (pending.length > 0) {
@@ -8317,7 +8517,6 @@ function toggleConfetti(cb) {
 
 function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
-  if (key === 'wrong')   { PHRASE_WRONG    = normalize(val) || t('default_wrong');    localStorage.setItem('phraseWrong',   PHRASE_WRONG); }
   if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
   debouncePushConfig();
 }
@@ -8496,7 +8695,6 @@ async function updateVoiceAssistStatus() {
     : (t('voice_assist_off') || '未开启');
 }
 
-// ── 录制覆层状态机 ──────────────────────────────────────────────────
 let _recSlotName      = '';
 let _recMediaRecorder = null;
 let _recChunks        = [];
@@ -8513,7 +8711,8 @@ function openRecordingOverlay(slotName, defaultScript) {
   document.getElementById('rec-slot-label').textContent =
     t('voice_slot_' + slotName) || slotName;
   const scriptEl = document.getElementById('rec-script-txt');
-  const stored = localStorage.getItem('phraseSlot_' + slotName);
+  const key = slotStorageKey(slotName);
+  const stored = key ? localStorage.getItem(key) : null;
   scriptEl.value = stored !== null ? stored : (defaultScript || '');
   _showRecState('idle');
   document.getElementById('rec-save-btn').disabled = true;
@@ -8530,7 +8729,6 @@ function closeRecordingOverlay() {
   _recSlotName = '';
 }
 
-// ── 功能槽文案编辑覆层 ──────────────────────────────────────────────
 let _teSlotName = '';
 let _teSaveCallback = null;
 
@@ -8628,8 +8826,11 @@ async function saveVoiceRecording() {
   try {
     const scriptEl = document.getElementById('rec-script-txt');
     const scriptText = scriptEl ? scriptEl.value.trim() : '';
-    if (scriptText) localStorage.setItem('phraseSlot_' + _recSlotName, scriptText);
-    else localStorage.removeItem('phraseSlot_' + _recSlotName);
+    const _key = slotStorageKey(_recSlotName);
+    if (_key) {
+      if (scriptText) localStorage.setItem(_key, scriptText);
+      else localStorage.removeItem(_key);
+    }
     if (_recBlob) await saveVoiceSlot(_recSlotName, _recBlob, _recMimeType, _recDuration);
     closeRecordingOverlay();
     const vaScreen = document.getElementById('screen-voice-assist');
@@ -8683,9 +8884,7 @@ function onBdurChange(v) {
 }
 
 function migrateVoiceSettings() {
-  // 旧 toggle=0 → 清空对应文案
   if (localStorage.getItem('wrongHintOn')  === '0') localStorage.removeItem('phraseWrong');
-  // 旧延迟 key 迁移
   const oldDelay = localStorage.getItem('delay');
   if (oldDelay && !localStorage.getItem('ansReadDelay')) {
     localStorage.setItem('ansReadDelay', oldDelay);
@@ -8694,14 +8893,12 @@ function migrateVoiceSettings() {
   if (oldOptDelay && !localStorage.getItem('optReadDelay')) {
     localStorage.setItem('optReadDelay', oldOptDelay);
   }
-  // 清理废弃 key
   ['quizPromptOn','optHintOn','wrongHintOn','readHint',
    'quizPromptDelay','optHintDelay','delay','browseDelay',
    'phraseSelect'].forEach(k => localStorage.removeItem(k));
 }
 
-// load phrase from localStorage, but reset if it matches any locale's default
-// (prevents cross-device/locale pollution via cloud sync)
+// resets to locale default if stored value matches any locale's default (prevents cross-device pollution)
 function loadPhraseOrDefault(storageKey, i18nKey) {
   const stored = localStorage.getItem(storageKey);
   if (!stored) return t(i18nKey);
@@ -8714,7 +8911,6 @@ function loadSettings() {
   migrateVoiceSettings();
   PHRASE_SELECT   = loadPhraseOrDefault('phraseQuizPrompt', 'quiz_select_hint');
   PHRASE_OPT_HINT = loadPhraseOrDefault('phraseOptHint',    'default_opt_hint');
-  PHRASE_WRONG    = loadPhraseOrDefault('phraseWrong',      'default_wrong');
 
   // browse answer delay / correct feedback
   const browseAnsDelay = localStorage.getItem('browseAnsDelay');
@@ -8729,14 +8925,12 @@ function loadSettings() {
   const ttsVoiceName = localStorage.getItem('ttsVoiceName');
   if (ttsVoiceName !== null) TTS_VOICE_NAME = ttsVoiceName;
 
-  // 全局语音参数
   const voiceMuted = localStorage.getItem('voiceMuted');
   if (voiceMuted !== null) VOICE_MUTED = voiceMuted === '1';
   const ansReadDelay = localStorage.getItem('ansReadDelay');
   if (ansReadDelay) ANS_READ_DELAY = parseFloat(ansReadDelay) * 1000;
   const optReadDelay = localStorage.getItem('optReadDelay');
   if (optReadDelay) OPT_READ_DELAY = parseFloat(optReadDelay) * 1000;
-  // 语音辅助
   const voiceAssistEnabled = localStorage.getItem('voiceAssistEnabled');
   if (voiceAssistEnabled !== null) VOICE_ASSIST_ENABLED = voiceAssistEnabled === '1';
 
@@ -8877,7 +9071,6 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     if (linkErr) throw linkErr;
     if (!ordered || !ordered.length) { showCloudToast(t('sync_deck_empty'), true); return; }
 
-    // 3. deck key = decks.id 直接用，无前缀
     const key = deckId;
 
     // 4. download media and assemble cards (concurrency 3, image+audio parallel per card)
@@ -8912,7 +9105,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     if (!deckCards.length) { showCloudToast(t('sync_no_valid_cards'), true); return; }
 
     // record sync timestamp
-    localStorage.setItem('yihai_sync_at_' + key, new Date().toISOString());
+    localStorage.setItem('yihaiSyncAt:' + key, new Date().toISOString());
 
     // 4. write to memory + persist
     DECKS[key] = deckCards;
@@ -8972,7 +9165,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
   }
   try {
     const syncNow = new Date().toISOString();
-    const lastSyncAt = localStorage.getItem('yihai_sync_at_' + localKey) || '';
+    const lastSyncAt = localStorage.getItem('yihaiSyncAt:' + localKey) || '';
 
     // 1. get server card_id list (lightweight, IDs only)
     const { data: links, error: linkErr } = await _sb.from('deck_cards')
@@ -9080,7 +9273,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 8. delete sync: cards removed from server not kept locally (matches Anki)
 
     // 9. save
-    localStorage.setItem('yihai_sync_at_' + localKey, syncNow);
+    localStorage.setItem('yihaiSyncAt:' + localKey, syncNow);
     DECKS[localKey] = merged;
     saveDeckCards(localKey, merged);
 
@@ -9147,7 +9340,7 @@ async function checkPersonalDeckUpdates() {
       .eq('deck_type', 'personal');
     if (error || !remoteDecks) return;
     for (const rd of remoteDecks) {
-      const lastSync = localStorage.getItem('yihai_sync_at_' + rd.id) || '';
+      const lastSync = localStorage.getItem('yihaiSyncAt:' + rd.id) || '';
       if (rd.updated_at > lastSync) {
         const existingMeta = DECKS_META.find(m => m.key === rd.id);
         const deckName = (existingMeta && existingMeta.name) || rd.name;
@@ -9186,7 +9379,7 @@ async function downloadPersonalDeckFromCloud(deckId, deckName) {
       card._audUrl = c.audio_url || '';
       deckCards[i] = card;
     });
-    localStorage.setItem('yihai_sync_at_' + deckId, syncNow);
+    localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
     DECKS[deckId] = deckCards;
     const existingIdx = DECKS_META.findIndex(m => m.key === deckId);
     if (existingIdx >= 0) DECKS_META[existingIdx] = { key: deckId, name: deckName, deck_type: 'personal' };
@@ -9209,6 +9402,22 @@ function showCloudToast(msg, isErr) {
     z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
+}
+function showLoadingToast(msg) {
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
+    transform:translateX(-50%);background:var(--text);color:#fff;
+    padding:10px 18px;border-radius:20px;font-size:14px;font-weight:600;
+    z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease;
+    display:flex;align-items:center;gap:8px`;
+  const sp = document.createElement('span');
+  sp.style.cssText = 'width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;flex-shrink:0;animation:spin360 .8s linear infinite';
+  const txt = document.createElement('span');
+  txt.textContent = msg;
+  el.appendChild(sp);
+  el.appendChild(txt);
+  document.body.appendChild(el);
+  return () => el.remove();
 }
 
 function openSettings(){
@@ -9311,7 +9520,7 @@ function showAbout() {
           _cloudUserEmail = session.user.email;
           _cloudUserId    = session.user.id;
           _syncEnabled    = true;
-          localStorage.setItem('yihai_session_backup', JSON.stringify(session));
+          localStorage.setItem('yihaiSessionBackup', JSON.stringify(session));
           logAppEvent('session_restore_token_refreshed', { uid: _cloudUserId });
           updateCloudTabUI();
         } else if (event === 'SIGNED_OUT' && _syncEnabled) {
@@ -9477,7 +9686,7 @@ async function renderStatsDeck() {
   var practiceDays = 0;
   var cloudDays = 0, cloudLastDate = '';
   try {
-    var raw = localStorage.getItem('yihai_practice_days');
+    var raw = localStorage.getItem('yihaiPracticeDays');
     if (raw) {
       var allStats = JSON.parse(raw);
       var ds = allStats.find(function(d) { return d.deck_key === key; });
@@ -9927,7 +10136,7 @@ function syncSrsSettingsUI() {
 
   // practice mode radio
   const curMode = cfg.session_mode || 'normal';
-  ['normal', 'hard', 'survival'].forEach(m => {
+  ['normal', 'easy'].forEach(m => {
     const el = document.getElementById('mode-check-' + m);
     if (el) el.textContent = m === curMode ? '✓' : '';
   });
@@ -9935,7 +10144,7 @@ function syncSrsSettingsUI() {
 
 function setSrsMode(mode) {
   saveSrsConfigKey('session_mode', mode);
-  ['normal', 'hard', 'survival'].forEach(m => {
+  ['normal', 'easy'].forEach(m => {
     const el = document.getElementById('mode-check-' + m);
     if (el) el.textContent = m === mode ? '✓' : '';
   });

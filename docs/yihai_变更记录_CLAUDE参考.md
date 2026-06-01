@@ -2,7 +2,7 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
-## dev/cleanup-and-features（未发布，#310）
+## v5.5.0 Key Changes
 
 - **processAnswer lateDays TDZ 修复**: `processAnswer` review 分支原代码 `const daysLate = daysLate(state.due_date, today)` — 变量名与外层函数 `daysLate(dueDate, todayStr)`（line ~2639）同名，`const` 声明产生 TDZ（Temporal Dead Zone），调用点即抛 ReferenceError。该错误被 `_lastSrsWrite` 链末尾的 `.catch(e => console.warn(...))` 静默吞掉，导致所有 review 阶段答题完全不写入 CardState/TrialLog。修复：将局部变量重命名为 `lateDays`，3 处引用同步更新（`const lateDays =`、`lateDays / 2`、`lateDays`）。这是 snake_case→camelCase 批量重命名时引入的名称冲突。
 - **buildSessionQueue normal 模式移除 applyCurve**: 练习模式重设计计划明确 normal 模式 `finalQueue = queue`（直接返回，Anki 到期顺序，不重排）。但实现时 else 分支遗留 `finalQueue = applyCurve(queue)`（原 survival 逻辑）。现改为 `finalQueue = queue`，与 i18n 描述「完整SRS，按到期顺序」对齐。`applyCurve` 函数保留定义（easy 模式未使用，暂不删除）。
