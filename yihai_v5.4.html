@@ -4657,6 +4657,7 @@ let _correctStreak = 0;
 // ── 空闲语音定时器 ──
 let _idleHomeTimer   = null;
 let _idleQuizTimer   = null;
+let _ttsPromptActive = false;  // true while startCardPrompts sequence (quiz_prompt + speakOptHint) is running
 let _idleBrowseTimer = null;
 const IDLE_HOME_SEC   = 8;
 const IDLE_QUIZ_SEC   = 15;
@@ -5638,7 +5639,7 @@ function startIdleQuizTimer() {
   clearTimeout(_idleQuizTimer);
   if (!VOICE_ASSIST_ENABLED) return;
   _idleQuizTimer = setTimeout(function fire() {
-    if (speechSynthesis.speaking) { _idleQuizTimer = setTimeout(fire, 2000); return; }
+    if (_ttsPromptActive) { _idleQuizTimer = setTimeout(fire, 2000); return; }
     if (Date.now() < _idleQuizCooldownUntil) return;
     _idleQuizCooldownUntil = Date.now() + IDLE_COOLDOWN;
     playVoiceSlot('idle_quiz', t('voice_default_idle_quiz'), getLocale());
@@ -5676,6 +5677,7 @@ function clearPromptTimers() {
   if (tQuizPromptTimer) { clearTimeout(tQuizPromptTimer); tQuizPromptTimer = null; }
   if (tOptHintTimer)    { clearTimeout(tOptHintTimer);    tOptHintTimer    = null; }
   if (tAnswerTimer)     { clearTimeout(tAnswerTimer);     tAnswerTimer     = null; }
+  _ttsPromptActive = false;
 }
 function stopAllPromptTimers() {
   clearPromptTimers();
@@ -5686,6 +5688,7 @@ function stopAllPromptTimers() {
 // start speech prompt sequence after entering a card
 function startCardPrompts(pickedOpts, optLang, cardType) {
   clearPromptTimers();
+  _ttsPromptActive = true;
   // Phase 1: quiz prompt
   tQuizPromptTimer = setTimeout(() => {
     tQuizPromptTimer = null;
@@ -5698,6 +5701,9 @@ function startCardPrompts(pickedOpts, optLang, cardType) {
       tOptHintTimer = null;
       if (pickedOpts && pickedOpts.length && (cardType !== 'recognize')) {
         if (!VOICE_MUTED) speakOptHint(pickedOpts, optLang);
+        else _ttsPromptActive = false;
+      } else {
+        _ttsPromptActive = false;
       }
     }, OPT_READ_DELAY);
   }, ENTRY_READ_DELAY);
@@ -7662,8 +7668,8 @@ function speakOptHint(opts, optLang) {
   console.info(`[TTS][speakOptHint] parts:`, parts.map(p => `${p.type}:"${p.val||p.ms}" lang=${p.lang}`));
   const sid = sessionId;
   function playParts(arr) {
-    if (sid !== sessionId) return;
-    if (!arr.length) return;
+    if (sid !== sessionId) { _ttsPromptActive = false; return; }
+    if (!arr.length) { _ttsPromptActive = false; return; }
     const [head, ...tail] = arr;
     if (head.type === 'pause') {
       console.info(`[TTS][playParts] pause ${head.ms}ms`);
