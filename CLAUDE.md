@@ -192,6 +192,8 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 61, voice 17（run_all.j
 1. **Simplicity first** — 最少代码解决问题。不添加未要求的功能，不为单次使用创建抽象。
 2. **Surgical changes** — 只改必须改的。不"改进"相邻代码，匹配现有风格。只清理自己改动造成的孤儿引用。
 3. **Goal-driven** — "修 bug" → 先写复现测试；"加功能" → 先定义验收标准。
+4. **No comments** — 不写注释。变量/函数命名足够清晰时，注释是噪音。唯一例外：隐藏约束或反直觉的 workaround，一行以内。
+5. **camelCase only** — 所有变量、函数、localStorage key 一律 camelCase。不用 snake_case、kebab-case（HTML id/class 除外）。
 
 ## Workflow Rules
 
