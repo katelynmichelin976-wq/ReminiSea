@@ -9356,7 +9356,8 @@ async function uploadDeckToCloud(key) {
       name: meta.name,
       deck_type: 'personal',
       card_count: cards.length,
-      name_lang: meta.nameLang || 'zh-CN'
+      name_lang: meta.nameLang || 'zh-CN',
+      updated_at: new Date().toISOString()
     }, { onConflict: 'id', ignoreDuplicates: false });
     await _sb.from('deck_cards').delete().eq('deck_id', key);
     if (cards.length > 0) {
