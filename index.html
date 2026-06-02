@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.5.1</title>
+<title data-i18n="app_title">忆海拾光 v5.6.0</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -791,7 +791,7 @@ body {
 /* Icon SVG helper */
 .ico { display:inline-flex; align-items:center; justify-content:center; }
 
-@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+@keyframes toastIn { from{opacity:0;transform:translate(-50%,-50%) scale(.94)} to{opacity:1;transform:translate(-50%,-50%) scale(1)} }
 
 /* empty state */
 .empty-state {
@@ -1602,7 +1602,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.5.1</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.6.0</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2732,7 +2732,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.5.1';
+const APP_VERSION = '5.6.0';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -4634,7 +4634,7 @@ function ldScript(src) {
 }
 
 async function importYhspack(file) {
-  const dismissLoading = showLoadingToast(t('toast_importing') || '正在导入…');
+  const dismissLoading = showLoadingToast(t('toast_importing'));
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
@@ -4694,12 +4694,16 @@ async function importYhspack(file) {
     DECKS[key] = cards;
     // update or append meta
     const existing = DECKS_META.findIndex(m => m.key === key);
-    if (existing >= 0) DECKS_META[existing] = { key, name, source: 'local' };
-    else DECKS_META.push({ key, name, source: 'local' });
+    const deckLangVal = deckLang || 'zh-CN';
+    if (existing >= 0) DECKS_META[existing] = { key, name, deck_type: 'personal', nameLang: deckLangVal };
+    else DECKS_META.push({ key, name, deck_type: 'personal', nameLang: deckLangVal });
 
     // persist (id+name only, blob URL not stored)
     saveDeckIndex();
     saveDeckCards(key, cards);
+
+    // upload structure to cloud (fire-and-forget; media deferred to next sync)
+    uploadDeckToCloud(key).catch(() => {});
 
     // refresh home list, select the just-imported deck
     renderDeckList();
@@ -4719,8 +4723,8 @@ async function importYhspack(file) {
 function showImportToast(name, count) {
   const el = document.createElement('div');
   el.textContent = t('toast_import_done', { name, count });
-  el.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
-    transform:translateX(-50%);background:var(--text);color:var(--bg);
+  el.style.cssText = `position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(el);
@@ -4843,7 +4847,7 @@ async function deleteDeck(e, key) {
   if (!meta || meta.builtin) return;
   const ok = await showConfirmDialog(t('deck_delete_confirm', { name: esc(meta.name) }));
   if (!ok) return;
-  const dismissLoading = showLoadingToast(t('toast_deleting') || '正在删除…');
+  const dismissLoading = showLoadingToast(t('toast_deleting'));
   // revoke ObjectURL to prevent memory leak
   (DECKS[key] || []).forEach(c => {
     if (c.img && c.img.startsWith('blob:')) URL.revokeObjectURL(c.img);
@@ -5224,7 +5228,7 @@ async function exportDeck() {
   if (!currentDeck) { showToastMsg(t('deck_no_selected')); return; }
   const meta = DECKS_META.find(m => m.key === currentDeck);
   if (!meta) { showToastMsg(t('deck_not_found')); return; }
-  const dismissLoading = showLoadingToast(t('toast_exporting') || '正在导出…');
+  const dismissLoading = showLoadingToast(t('toast_exporting'));
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     var zip = new JSZip();
@@ -5487,7 +5491,9 @@ async function doAccountLogin() {
     updateCloudTabUI();
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
-    runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
+    runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck })
+      .then(() => { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadDeckToCloud(m.key).then(() => uploadPersonalDeckMedia(m.key)).catch(() => {})); })
+      .catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
     msgEl.style.display = ''; msgEl.textContent = t('account_login_fail', { msg: e.message }); msgEl.style.color = '#9B3A2A';
@@ -5513,6 +5519,7 @@ function doAccountSync() {
   const btn = document.getElementById('account-sync-btn');
   if (btn) btn.disabled = true;
   runSync({ modal: true, decks: true, events: true, showToast: true, voice: true, deckKey: currentDeck })
+    .then(function() { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadDeckToCloud(m.key).then(() => uploadPersonalDeckMedia(m.key)).catch(() => {})); })
     .catch(function(e){ console.warn('[sync] account sync error:', e.message); })
     .finally(function() { if (btn) btn.disabled = false; });
 }
@@ -6151,6 +6158,10 @@ const I18N = {
     deck_builtin_label: '── Test Deck (Read-only) ──',
     deck_new_option: '+ New Deck...',
     // Toast
+    toast_importing: 'Importing…',
+    toast_deleting: 'Deleting…',
+    toast_exporting: 'Exporting…',
+    toast_media_synced: '✓ Media synced ({n} files)',
     toast_rename_done: 'Renamed to "{name}"',
     toast_export_done: 'Exported: {name}',
     toast_download_done: 'Downloaded: {name}',
@@ -6431,6 +6442,10 @@ const I18N = {
     deck_builtin_label: '── 测试牌组（只读）──',
     deck_new_option: '＋ 新建牌组…',
     // Toast
+    toast_importing: '正在导入…',
+    toast_deleting: '正在删除…',
+    toast_exporting: '正在导出…',
+    toast_media_synced: '✓ 媒体已同步（{n} 个文件）',
     toast_rename_done: '已重命名为「{name}」',
     toast_export_done: '已导出：{name}',
     toast_download_done: '已下载：{name}',
@@ -6707,6 +6722,10 @@ const I18N = {
     deck_no_selected: '請先選擇一個牌組',
     deck_builtin_label: '── 測試牌組（唯讀）──',
     deck_new_option: '＋ 新增牌組…',
+    toast_importing: '正在匯入…',
+    toast_deleting: '正在刪除…',
+    toast_exporting: '正在匯出…',
+    toast_media_synced: '✓ 媒體已同步（{n} 個文件）',
     toast_rename_done: '已重新命名為「{name}」',
     toast_export_done: '已匯出：{name}',
     toast_download_done: '已下載：{name}',
@@ -6983,6 +7002,10 @@ const I18N = {
     deck_builtin_label: '── Mazo de prueba (solo lectura) ──',
     deck_new_option: '+ Nuevo mazo...',
     // Toast
+    toast_importing: 'Importando…',
+    toast_deleting: 'Eliminando…',
+    toast_exporting: 'Exportando…',
+    toast_media_synced: '✓ Medios sincronizados ({n} archivos)',
     toast_rename_done: 'Renombrado a "{name}"',
     toast_export_done: 'Exportado: {name}',
     toast_download_done: 'Descargado: {name}',
@@ -7267,6 +7290,10 @@ const I18N = {
     deck_builtin_label: '── テストデッキ（読み取り専用）──',
     deck_new_option: '＋ 新規デッキ...',
     // Toast
+    toast_importing: 'インポート中…',
+    toast_deleting: '削除中…',
+    toast_exporting: 'エクスポート中…',
+    toast_media_synced: '✓ メディアを同期しました（{n} 件）',
     toast_rename_done: '「{name}」に変更しました',
     toast_export_done: 'エクスポートしました: {name}',
     toast_download_done: 'ダウンロードしました: {name}',
@@ -9346,6 +9373,50 @@ async function uploadDeckToCloud(key) {
   }
 }
 
+async function uploadPersonalDeckMedia(deckId) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  const meta = DECKS_META.find(m => m.key === deckId);
+  if (!meta || meta.deck_type !== 'personal') return;
+  const cards = DECKS[deckId];
+  if (!cards || !cards.length) return;
+
+  try {
+    let uploaded = 0;
+    await parallelMapLimit(cards, 3, async (c) => {
+      if (!c._imgUrl) {
+        const blob = await loadMedia(`${deckId}_${c.id}_img`).catch(() => null);
+        if (blob) {
+          const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+          const path = `personal/${_cloudUserId}/${deckId}/${c.id}_img.${ext}`;
+          const { error } = await _sb.storage.from('ReminiSea').upload(path, blob, { upsert: true });
+          if (!error) { c._imgUrl = path; uploaded++; }
+          else console.warn('[cloud] media upload img fail:', c.id, error.message);
+        }
+      }
+
+      if (!c._audUrl) {
+        const blob = await loadMedia(`${deckId}_${c.id}_aud`).catch(() => null);
+        if (blob) {
+          const ext = {'audio/mpeg':'mp3','audio/ogg':'ogg','audio/webm':'webm','audio/aac':'aac'}[blob.type] || 'm4a';
+          const path = `personal/${_cloudUserId}/${deckId}/${c.id}_aud.${ext}`;
+          const { error } = await _sb.storage.from('ReminiSea').upload(path, blob, { upsert: true });
+          if (!error) { c._audUrl = path; uploaded++; }
+          else console.warn('[cloud] media upload aud fail:', c.id, error.message);
+        }
+      }
+    });
+
+    if (uploaded > 0) {
+      saveDeckCards(deckId, cards);
+      await uploadDeckToCloud(deckId);
+      showCloudToast(t('toast_media_synced', { n: uploaded }));
+      console.log('[cloud] uploadPersonalDeckMedia ok:', deckId, uploaded, 'files');
+    }
+  } catch(e) {
+    console.warn('[cloud] uploadPersonalDeckMedia fail:', e.message);
+  }
+}
+
 async function checkPersonalDeckUpdates() {
   if (!_syncEnabled || !_sb || !_cloudUserId) return;
   try {
@@ -9411,8 +9482,8 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
 function showCloudToast(msg, isErr) {
   const t = document.createElement('div');
   t.textContent = msg;
-  t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
-    transform:translateX(-50%);background:${isErr?'#9B3A2A':'var(--text)'};color:#fff;
+  t.style.cssText = `position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%);background:${isErr?'#9B3A2A':'var(--text)'};color:#fff;
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(t);
@@ -9420,8 +9491,8 @@ function showCloudToast(msg, isErr) {
 }
 function showLoadingToast(msg) {
   const el = document.createElement('div');
-  el.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
-    transform:translateX(-50%);background:var(--text);color:#fff;
+  el.style.cssText = `position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%);background:var(--text);color:#fff;
     padding:10px 18px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease;
     display:flex;align-items:center;gap:8px`;
@@ -10396,8 +10467,8 @@ function showConfirmDialog(msg) {
 function showToastMsg(msg) {
   const t = document.createElement('div');
   t.textContent = msg;
-  t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
-    transform:translateX(-50%);background:var(--text);color:var(--bg);
+  t.style.cssText = `position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(t);

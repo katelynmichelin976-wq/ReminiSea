@@ -2,6 +2,14 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.6.0 Key Changes
+
+- **个人牌组媒体云同步**: `importYhspack` 导入时 meta 写入 `deck_type:'personal'` + `nameLang`，立即 fire-and-forget 调 `uploadDeckToCloud`（原写法 `source:'local'` 导致 `uploadDeckToCloud` 门禁跳过，结构永不上传）。
+- **新函数 `uploadPersonalDeckMedia(deckId)`**: 从 IDB 读取 blob，`parallelMapLimit(3)` 并发上传到 Supabase Storage（bucket `ReminiSea`，路径 `personal/{userId}/{deckId}/{cardId}_{type}.{ext}`）。续传机制：`_imgUrl`/`_audUrl` 非空跳过；上传成功写入字段，`saveDeckCards` 持久化，再调 `uploadDeckToCloud` 更新 `deck_cards.image_url`/`audio_url`。完成后 toast 通知。try/catch 包裹，单卡失败不中断整体。音频 MIME 映射完整（mpeg/ogg/webm/aac → mp3/ogg/webm/aac，fallback m4a）。
+- **`doAccountLogin`/`doAccountSync` 串联**: `runSync().then()` 对所有 `deck_type:'personal'` 牌组触发 `uploadDeckToCloud + uploadPersonalDeckMedia`，覆盖「离线导入、上线后同步」场景。
+- **i18n**: 5 个 locale 加 `toast_media_synced`（含 `{n}` 文件数）。
+- **_pw_ui_smoke.js**: 新增 `uploadPersonalDeckMedia` 函数存在性断言，共 65 断言。
+
 ## v5.5.1 Key Changes
 
 - **yh_fr_ localStorage key 清理**: `_writeSrs` 中每卡每日首次评级计数原用 `yh_fr_{date}_{cardId}` 写入 localStorage（每次答题一条），随时间积累不清理。改为内存 `_dailyRatedCards`（`Set`），每次 `_launch` 重置。tradeoff：同一天两个 session 各自计数（可接受，家庭场景单日单 session）。

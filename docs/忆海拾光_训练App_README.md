@@ -129,6 +129,18 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.6.0 — 2026-06-02
+
+**个人牌组媒体云同步 + 跨设备支持**
+
+- **媒体上传**：新增 `uploadPersonalDeckMedia(deckId)` 函数，将 IndexedDB 中的图片/音频 blob 上传到 Supabase Storage（`personal/{userId}/{deckId}/` 路径）
+- **续传支持**：以 `card._imgUrl` / `card._audUrl` 为上传状态标志（持久化至 localStorage），中断后下次同步自动从断点继续
+- **触发时机**：登录和手动点「同步」后，串联执行媒体上传（不影响 runSync 30s watchdog）
+- **修复 importYhspack**：导入时 meta 正确写入 `deck_type:'personal'`，并触发结构上传
+- **i18n**：5 个语言新增 `toast_media_synced` 提示文案
+
+---
+
 ### v5.5.1 — 2026-06-02
 
 **内存优化 + flip card 背面改进**

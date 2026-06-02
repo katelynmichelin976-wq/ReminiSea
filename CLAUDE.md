@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.5.1**（`yihai_v5.5.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.6.0**（`yihai_v5.5.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.6.0：** 个人牌组媒体云同步 — ①`importYhspack` 导入时写入 `deck_type:'personal'`，立即上传结构到 Supabase；②新增 `uploadPersonalDeckMedia(deckId)`，点「同步」后逐卡上传图片/音频 blob 到 Storage（路径 `personal/{userId}/{deckId}/{cardId}_{type}.{ext}`），支持中断续传（`_imgUrl`/`_audUrl` 非空跳过）；③`doAccountLogin`/`doAccountSync` 在 `runSync()` 完成后串联触发媒体上传；④音频 MIME 完整映射（mp3/ogg/webm/aac/m4a）
 
 **v5.5.0：** 练习模式重设计 + 翻转卡 + 导入导出 loading 提示 — ①删除困难/生存模式，新增「普通」（完整 SRS，due_ts 升序）和「轻松」（全牌组，答错不降级，20 张，首尾熟悉卡）；②flip card renderer（翻转卡，自评 SRS）；③`CARD_RENDERERS` 分派架构；④localStorage key 全面 camelCase；⑤importYhspack/deleteDeck/exportDeck 加 loading toast（`showLoadingToast`）；⑥修复 `processAnswer` review 分支 `daysLate` TDZ 名称冲突（SRS 写入静默失败）；⑦修复 normal 模式遗留 `applyCurve` 排序，改为 Anki 到期顺序
 
