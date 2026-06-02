@@ -5492,7 +5492,7 @@ async function doAccountLogin() {
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
     runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck })
-      .then(() => { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadDeckToCloud(m.key).then(() => uploadPersonalDeckMedia(m.key)).catch(() => {})); })
+      .then(() => { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadPersonalDeckMedia(m.key).catch(() => {})); })
       .catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
@@ -5519,7 +5519,7 @@ function doAccountSync() {
   const btn = document.getElementById('account-sync-btn');
   if (btn) btn.disabled = true;
   runSync({ modal: true, decks: true, events: true, showToast: true, voice: true, deckKey: currentDeck })
-    .then(function() { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadDeckToCloud(m.key).then(() => uploadPersonalDeckMedia(m.key)).catch(() => {})); })
+    .then(function() { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadPersonalDeckMedia(m.key).catch(() => {})); })
     .catch(function(e){ console.warn('[sync] account sync error:', e.message); })
     .finally(function() { if (btn) btn.disabled = false; });
 }
@@ -9407,11 +9407,14 @@ async function uploadPersonalDeckMedia(deckId) {
       }
     });
 
-    if (uploaded > 0) {
-      saveDeckCards(deckId, cards);
+    if (uploaded > 0) saveDeckCards(deckId, cards);
+    const hasUrls = cards.some(c => c._imgUrl || c._audUrl);
+    if (hasUrls) {
       await uploadDeckToCloud(deckId);
-      showCloudToast(t('toast_media_synced', { n: uploaded }));
-      console.log('[cloud] uploadPersonalDeckMedia ok:', deckId, uploaded, 'files');
+      if (uploaded > 0) {
+        showCloudToast(t('toast_media_synced', { n: uploaded }));
+        console.log('[cloud] uploadPersonalDeckMedia ok:', deckId, uploaded, 'files');
+      }
     }
   } catch(e) {
     console.warn('[cloud] uploadPersonalDeckMedia fail:', e.message);
