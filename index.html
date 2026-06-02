@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.5.0</title>
+<title data-i18n="app_title">忆海拾光 v5.5.1</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -618,6 +618,9 @@ body {
 .btm:has(.nxtbtn.show) {
   padding: 8px 16px calc(12px + var(--safe-bottom));
 }
+.btm:has(.flip-reveal-btn) {
+  padding: 8px 16px calc(12px + var(--safe-bottom));
+}
 /* Fallback for Safari < 15.4 without :has */
 .btm.active {
   padding: 8px 16px calc(12px + var(--safe-bottom));
@@ -649,6 +652,7 @@ body {
 .sin {opacity:0;transform:translateX(22px)}
 /* ── Flip card ── */
 .flip-zone { padding: 0 16px 8px; display:flex; flex-direction:column; }
+#flip-zone { padding: 0 16px; }
 .flip-scene { flex:1; min-height:0; perspective: 800px; }
 .flip-card-inner {
   width:100%; height:100%; position:relative;
@@ -660,11 +664,11 @@ body {
   position:absolute; inset:0;
   backface-visibility:hidden; -webkit-backface-visibility:hidden;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:8px; padding:20px 16px;
+  gap:8px; padding:20px 0;
   background:var(--surf); border-radius:var(--r); border:1px solid var(--bd);
   overflow-y:auto;
 }
-.flip-face-back { transform: rotateY(180deg); align-items:flex-start; justify-content:flex-start; }
+.flip-face-back { transform: rotateY(180deg); align-items:flex-start; justify-content:flex-start; padding:0; gap:0; }
 .flip-word { font-size:clamp(28px,8vw,48px); font-weight:800; color:var(--text); text-align:center; width:100%; }
 .flip-phonetic { font-size:16px; color:var(--text2); display:flex; align-items:center; gap:8px; }
 .flip-audio-btn {
@@ -673,7 +677,8 @@ body {
   -webkit-tap-highlight-color:transparent;
 }
 .flip-audio-btn:active { opacity:.6; }
-.flip-img { width:100%; max-height:140px; object-fit:contain; border-radius:var(--rsm); margin-bottom:4px; }
+.flip-img { width:100%; max-height:44vh; object-fit:contain; flex-shrink:0; }
+.flip-back-body { width:100%; padding:8px 16px 8px; display:flex; flex-direction:column; gap:5px; flex:1; min-height:0; overflow-y:auto; }
 .flip-pos { font-size:13px; font-weight:600; color:var(--ocean); }
 .flip-definition { font-size:18px; font-weight:700; color:var(--text); }
 .flip-example { font-size:14px; color:var(--text2); font-style:italic; line-height:1.5; }
@@ -682,7 +687,7 @@ body {
   width:100%; height:56px; border-radius:var(--rsm); border:none;
   background:var(--ocean); color:#fff;
   font-size:17px; font-weight:700; font-family:inherit;
-  cursor:pointer; margin-top:auto;
+  cursor:pointer;
   -webkit-tap-highlight-color:transparent;
 }
 .flip-reveal-btn:active { opacity:.85; }
@@ -1597,7 +1602,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.5.0</span>
+      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.5.1</span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2727,7 +2732,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.5.0';
+const APP_VERSION = '5.5.1';
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -3269,14 +3274,14 @@ async function runSync(opts) {
     if (options.decks) {
       updateProg(t('sync_decks_prog'), 80);
       var serverDecks, sd, meta;
-      var dd = await _sb.from('decks').select('id,name').eq('deck_type','preset');
+      var dd = await _sb.from('decks').select('id,name,name_lang').eq('deck_type','preset');
       if (dd.data) {
         serverDecks = dd.data;
         for (sd of serverDecks) {
           try {
             meta = DECKS_META.find(function(m) { return m.name === sd.name; });
-            if (meta) { await syncDeckFromCloud(sd.id, sd.name, null, true); syncedDecks++; }
-            else { await downloadDeckFromCloud(sd.id, sd.name, null, true); newDecks++; }
+            if (meta) { await syncDeckFromCloud(sd.id, sd.name, null, true, sd.name_lang); syncedDecks++; }
+            else { await downloadDeckFromCloud(sd.id, sd.name, null, true, sd.name_lang); newDecks++; }
           } catch(e) { console.warn('[sync] skip deck:', sd.name, e.message); }
         }
         for (sd of serverDecks) {
@@ -4405,7 +4410,7 @@ function saveDeckIndex() {
   ));
 }
 function saveDeckCards(key, cards) {
-  const slim = cards.map(c => ({ id: c.id, name: c.name, nameLang: c.nameLang || '', imgUrl: c._imgUrl || '', audUrl: c._audUrl || '' }));
+  const slim = cards.map(c => ({ id: c.id, name: c.name, nameLang: c.nameLang || '', imgUrl: c._imgUrl || '', audUrl: c._audUrl || '', cardType: c.cardType || 'choice', ext: c.ext || {} }));
   localStorage.setItem(LS_DECK_PREFIX + key, JSON.stringify(slim));
 }
 
@@ -4814,6 +4819,7 @@ let _cardAnswerRating = null; // final rating for this card ('again'|'hard'|'goo
 let _sessionId       = '';    // unique session ID (TrialLog use)
 // per-card first rating stats (for finish screen)
 let _sessionFirstRatings = {}; // state_key → first rating
+let _dailyRatedCards = new Set(); // card_ids rated this session (replaces yh_fr_ localStorage keys)
 let _dailyRemovedToday = {};  // { deckKey::cardId: true } cards removed today by daily_remove_lapses
 // active duration calculation
 let _sessionActiveSec = 0;
@@ -5362,6 +5368,7 @@ function _launch(mode) {
     _cardAnswerRating = null;
     _pendingAttempt   = null;
     _sessionFirstRatings = {};
+    _dailyRatedCards = new Set();
     logAppEvent('start_practice', { deck_key: currentDeck, mode: mode }, currentDeck);
 
     buildSessionQueue(currentDeck).then(queue => {
@@ -7825,10 +7832,13 @@ const CARD_RENDERERS = {
             </div>
             <div class="flip-face flip-face-back">
               ${hasImg ? `<img class="flip-img" src="${escAttr(q.img)}" alt="${escAttr(q.name || '')}" onerror="this.style.display='none'">` : ''}
-              ${ext.partOfSpeech ? `<div class="flip-pos">${esc(ext.partOfSpeech)}</div>` : ''}
-              ${ext.definition ? `<div class="flip-definition">${esc(ext.definition)}</div>` : ''}
-              ${ext.example ? `<div class="flip-example">${esc(ext.example)}</div>` : ''}
-              ${ext.enDefinition ? `<div class="flip-en-def">${esc(ext.enDefinition)}</div>` : ''}
+              <div class="flip-back-body">
+                <div class="flip-word">${esc(q.name || '')}</div>
+                ${ext.phonetic ? `<div class="flip-phonetic" style="justify-content:center;width:100%"><span>${esc(ext.phonetic)}</span><button class="flip-audio-btn" id="flip-audio-btn-back" aria-label="播放读音"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button></div>` : ''}
+                ${ext.definition ? `<div class="flip-definition">${esc(ext.definition)}</div>` : ''}
+                ${ext.enDefinition ? `<div class="flip-en-def">${esc(ext.enDefinition)}</div>` : ''}
+                ${ext.example ? `<div class="flip-example">${esc(ext.example)}</div>` : ''}
+              </div>
             </div>
           </div>
         </div>
@@ -7844,6 +7854,8 @@ const CARD_RENDERERS = {
       document.getElementById('flip-audio-btn').addEventListener('click', () => {
         playAnswer(q);
       });
+      const _backAudioBtn = document.getElementById('flip-audio-btn-back');
+      if (_backAudioBtn) _backAudioBtn.addEventListener('click', () => playAnswer(q));
 
       document.getElementById('flip-reveal-btn').addEventListener('click', () => {
         document.getElementById('flip-inner').classList.add('flipped');
@@ -8201,9 +8213,8 @@ async function _writeSrs(q, rating, attempt) {
   // DailyProgress update (count once per card per day, learning step repeats excluded)
   const dp2 = getDailyProgress();
   if (stageBefore === 'new') dp2.daily_new_today++;
-  const firstRatingKey = 'yh_fr_' + todayStr() + '_' + state.card_id;
-  if (!localStorage.getItem(firstRatingKey)) {
-    localStorage.setItem(firstRatingKey, rating);
+  if (!_dailyRatedCards.has(state.card_id)) {
+    _dailyRatedCards.add(state.card_id);
     dp2.reviewed_today++;
     if (rating === 'again') dp2.first_fail_today++;
     else if (rating === 'hard') dp2.first_hard_today++;
@@ -9059,7 +9070,7 @@ async function parallelMapLimit(arr, limit, fn) {
   await Promise.all(workers);
 }
 
-async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
+async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
   if (!_syncEnabled || !_sb) { showCloudToast(t('sync_offline'), true); return; }
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('common_downloading'); }
 
@@ -9110,8 +9121,8 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
     // 4. write to memory + persist
     DECKS[key] = deckCards;
     const existing = DECKS_META.findIndex(m => m.key === key);
-    if (existing >= 0) DECKS_META[existing] = { key, name: deckName, deck_type: 'preset' };
-    else DECKS_META.push({ key, name: deckName, deck_type: 'preset' });
+    if (existing >= 0) DECKS_META[existing] = { key, name: deckName, deck_type: 'preset', nameLang: nameLang || 'zh-CN' };
+    else DECKS_META.push({ key, name: deckName, deck_type: 'preset', nameLang: nameLang || 'zh-CN' });
     saveDeckIndex();
     saveDeckCards(key, deckCards);
 
@@ -9131,7 +9142,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast) {
   }
 }
 
-async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
+async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
   if (!_syncEnabled || !_sb) { showCloudToast(t('sync_offline'), true); return; }
   const existing = DECKS_META.find(m => m.name === deckName);
   if (!existing) { showCloudToast(t('sync_no_local_deck'), true); return; }
@@ -9280,8 +9291,11 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast) {
     currentDeck = localKey;
     // mark as cloud deck
     const metaIdx = DECKS_META.findIndex(m => m.key === localKey);
-    if (metaIdx >= 0 && !DECKS_META[metaIdx].deck_type)
-      DECKS_META[metaIdx].deck_type = 'preset';
+    if (metaIdx >= 0) {
+      if (!DECKS_META[metaIdx].deck_type) DECKS_META[metaIdx].deck_type = 'preset';
+      if (nameLang) DECKS_META[metaIdx].nameLang = nameLang;
+      saveDeckIndex();
+    }
     renderDeckList();
     // noToast=true means called from within runSync, which calls updateDeckStats() after state sync
     if (!noToast) updateDeckStats();
@@ -9314,7 +9328,8 @@ async function uploadDeckToCloud(key) {
       user_id: _cloudUserId,
       name: meta.name,
       deck_type: 'personal',
-      card_count: cards.length
+      card_count: cards.length,
+      name_lang: meta.nameLang || 'zh-CN'
     }, { onConflict: 'id', ignoreDuplicates: false });
     await _sb.from('deck_cards').delete().eq('deck_id', key);
     if (cards.length > 0) {
@@ -9335,7 +9350,7 @@ async function checkPersonalDeckUpdates() {
   if (!_syncEnabled || !_sb || !_cloudUserId) return;
   try {
     const { data: remoteDecks, error } = await _sb.from('decks')
-      .select('id,name,updated_at')
+      .select('id,name,updated_at,name_lang')
       .eq('user_id', _cloudUserId)
       .eq('deck_type', 'personal');
     if (error || !remoteDecks) return;
@@ -9344,7 +9359,7 @@ async function checkPersonalDeckUpdates() {
       if (rd.updated_at > lastSync) {
         const existingMeta = DECKS_META.find(m => m.key === rd.id);
         const deckName = (existingMeta && existingMeta.name) || rd.name;
-        await downloadPersonalDeckFromCloud(rd.id, deckName);
+        await downloadPersonalDeckFromCloud(rd.id, deckName, rd.name_lang);
       }
     }
   } catch(e) {
@@ -9352,7 +9367,7 @@ async function checkPersonalDeckUpdates() {
   }
 }
 
-async function downloadPersonalDeckFromCloud(deckId, deckName) {
+async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
   if (!_syncEnabled || !_sb) return;
   try {
     const { data: cards, error } = await _sb.from('deck_cards')
@@ -9382,8 +9397,8 @@ async function downloadPersonalDeckFromCloud(deckId, deckName) {
     localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
     DECKS[deckId] = deckCards;
     const existingIdx = DECKS_META.findIndex(m => m.key === deckId);
-    if (existingIdx >= 0) DECKS_META[existingIdx] = { key: deckId, name: deckName, deck_type: 'personal' };
-    else DECKS_META.push({ key: deckId, name: deckName, deck_type: 'personal' });
+    if (existingIdx >= 0) DECKS_META[existingIdx] = { key: deckId, name: deckName, deck_type: 'personal', nameLang: nameLang || 'zh-CN' };
+    else DECKS_META.push({ key: deckId, name: deckName, deck_type: 'personal', nameLang: nameLang || 'zh-CN' });
     saveDeckIndex();
     saveDeckCards(deckId, deckCards);
     renderDeckList();

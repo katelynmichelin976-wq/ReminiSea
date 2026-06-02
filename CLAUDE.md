@@ -57,7 +57,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.5.0**（`yihai_v5.5.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.5.1**（`yihai_v5.5.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 **v5.5.0：** 练习模式重设计 + 翻转卡 + 导入导出 loading 提示 — ①删除困难/生存模式，新增「普通」（完整 SRS，due_ts 升序）和「轻松」（全牌组，答错不降级，20 张，首尾熟悉卡）；②flip card renderer（翻转卡，自评 SRS）；③`CARD_RENDERERS` 分派架构；④localStorage key 全面 camelCase；⑤importYhspack/deleteDeck/exportDeck 加 loading toast（`showLoadingToast`）；⑥修复 `processAnswer` review 分支 `daysLate` TDZ 名称冲突（SRS 写入静默失败）；⑦修复 normal 模式遗留 `applyCurve` 排序，改为 Anki 到期顺序
 

@@ -129,6 +129,15 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.5.1 — 2026-06-02
+
+**内存优化 + flip card 背面改进**
+
+- **localStorage 清理**：移除逐卡写入的 `yh_fr_` 每日首次评级 key，改用内存 Set，不再积累
+- **flip card 背面**：补充单词+音标行及背面音频按钮；修复 `saveDeckCards` 未保存 `cardType`/`ext`，flip 卡数据不再丢失
+
+---
+
 ### v5.5.0 — 2026-06-01
 
 **练习模式重设计 + 翻转卡 + 导入导出 loading 提示**

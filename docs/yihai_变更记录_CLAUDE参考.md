@@ -2,6 +2,12 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.5.1 Key Changes
+
+- **yh_fr_ localStorage key 清理**: `_writeSrs` 中每卡每日首次评级计数原用 `yh_fr_{date}_{cardId}` 写入 localStorage（每次答题一条），随时间积累不清理。改为内存 `_dailyRatedCards`（`Set`），每次 `_launch` 重置。tradeoff：同一天两个 session 各自计数（可接受，家庭场景单日单 session）。
+- **flip card 背面布局改进**: 新增 `flip-back-body` 容器包裹内容区；背面补充单词+音标行（含音频按钮）；`flip-img` 改 `max-height:44vh` 支持大图；CSS 微调（`btm:has(.flip-reveal-btn)` padding、`flip-face` gap/padding 去内边距统一由 `flip-back-body` 管理）。
+- **saveDeckCards 补存 cardType/ext**: 原 slim 格式只保存 `id/name/nameLang/imgUrl/audUrl`，flip 卡的 `cardType:'flip'` 和 `ext`（phonetic/definition/example 等）丢失。现补入两字段，flip 卡片数据跨 session 完整保留。
+
 ## v5.5.0 Key Changes
 
 - **processAnswer lateDays TDZ 修复**: `processAnswer` review 分支原代码 `const daysLate = daysLate(state.due_date, today)` — 变量名与外层函数 `daysLate(dueDate, todayStr)`（line ~2639）同名，`const` 声明产生 TDZ（Temporal Dead Zone），调用点即抛 ReferenceError。该错误被 `_lastSrsWrite` 链末尾的 `.catch(e => console.warn(...))` 静默吞掉，导致所有 review 阶段答题完全不写入 CardState/TrialLog。修复：将局部变量重命名为 `lateDays`，3 处引用同步更新（`const lateDays =`、`lateDays / 2`、`lateDays`）。这是 snake_case→camelCase 批量重命名时引入的名称冲突。
