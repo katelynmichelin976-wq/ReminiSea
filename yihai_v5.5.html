@@ -618,6 +618,9 @@ body {
 .btm:has(.nxtbtn.show) {
   padding: 8px 16px calc(12px + var(--safe-bottom));
 }
+.btm:has(.flip-reveal-btn) {
+  padding: 8px 16px calc(12px + var(--safe-bottom));
+}
 /* Fallback for Safari < 15.4 without :has */
 .btm.active {
   padding: 8px 16px calc(12px + var(--safe-bottom));
@@ -649,6 +652,7 @@ body {
 .sin {opacity:0;transform:translateX(22px)}
 /* ── Flip card ── */
 .flip-zone { padding: 0 16px 8px; display:flex; flex-direction:column; }
+#flip-zone { padding: 0 16px; }
 .flip-scene { flex:1; min-height:0; perspective: 800px; }
 .flip-card-inner {
   width:100%; height:100%; position:relative;
@@ -660,11 +664,11 @@ body {
   position:absolute; inset:0;
   backface-visibility:hidden; -webkit-backface-visibility:hidden;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:8px; padding:20px 16px;
+  gap:8px; padding:20px 0;
   background:var(--surf); border-radius:var(--r); border:1px solid var(--bd);
   overflow-y:auto;
 }
-.flip-face-back { transform: rotateY(180deg); align-items:flex-start; justify-content:flex-start; }
+.flip-face-back { transform: rotateY(180deg); align-items:flex-start; justify-content:flex-start; padding:0; gap:0; }
 .flip-word { font-size:clamp(28px,8vw,48px); font-weight:800; color:var(--text); text-align:center; width:100%; }
 .flip-phonetic { font-size:16px; color:var(--text2); display:flex; align-items:center; gap:8px; }
 .flip-audio-btn {
@@ -673,7 +677,8 @@ body {
   -webkit-tap-highlight-color:transparent;
 }
 .flip-audio-btn:active { opacity:.6; }
-.flip-img { width:100%; max-height:140px; object-fit:contain; border-radius:var(--rsm); margin-bottom:4px; }
+.flip-img { width:100%; max-height:44vh; object-fit:contain; flex-shrink:0; }
+.flip-back-body { width:100%; padding:8px 16px 8px; display:flex; flex-direction:column; gap:5px; flex:1; min-height:0; overflow-y:auto; }
 .flip-pos { font-size:13px; font-weight:600; color:var(--ocean); }
 .flip-definition { font-size:18px; font-weight:700; color:var(--text); }
 .flip-example { font-size:14px; color:var(--text2); font-style:italic; line-height:1.5; }
@@ -682,7 +687,7 @@ body {
   width:100%; height:56px; border-radius:var(--rsm); border:none;
   background:var(--ocean); color:#fff;
   font-size:17px; font-weight:700; font-family:inherit;
-  cursor:pointer; margin-top:auto;
+  cursor:pointer;
   -webkit-tap-highlight-color:transparent;
 }
 .flip-reveal-btn:active { opacity:.85; }
@@ -4405,7 +4410,7 @@ function saveDeckIndex() {
   ));
 }
 function saveDeckCards(key, cards) {
-  const slim = cards.map(c => ({ id: c.id, name: c.name, nameLang: c.nameLang || '', imgUrl: c._imgUrl || '', audUrl: c._audUrl || '' }));
+  const slim = cards.map(c => ({ id: c.id, name: c.name, nameLang: c.nameLang || '', imgUrl: c._imgUrl || '', audUrl: c._audUrl || '', cardType: c.cardType || 'choice', ext: c.ext || {} }));
   localStorage.setItem(LS_DECK_PREFIX + key, JSON.stringify(slim));
 }
 
@@ -4814,6 +4819,7 @@ let _cardAnswerRating = null; // final rating for this card ('again'|'hard'|'goo
 let _sessionId       = '';    // unique session ID (TrialLog use)
 // per-card first rating stats (for finish screen)
 let _sessionFirstRatings = {}; // state_key → first rating
+let _dailyRatedCards = new Set(); // card_ids rated this session (replaces yh_fr_ localStorage keys)
 let _dailyRemovedToday = {};  // { deckKey::cardId: true } cards removed today by daily_remove_lapses
 // active duration calculation
 let _sessionActiveSec = 0;
@@ -5362,6 +5368,7 @@ function _launch(mode) {
     _cardAnswerRating = null;
     _pendingAttempt   = null;
     _sessionFirstRatings = {};
+    _dailyRatedCards = new Set();
     logAppEvent('start_practice', { deck_key: currentDeck, mode: mode }, currentDeck);
 
     buildSessionQueue(currentDeck).then(queue => {
@@ -7825,10 +7832,13 @@ const CARD_RENDERERS = {
             </div>
             <div class="flip-face flip-face-back">
               ${hasImg ? `<img class="flip-img" src="${escAttr(q.img)}" alt="${escAttr(q.name || '')}" onerror="this.style.display='none'">` : ''}
-              ${ext.partOfSpeech ? `<div class="flip-pos">${esc(ext.partOfSpeech)}</div>` : ''}
-              ${ext.definition ? `<div class="flip-definition">${esc(ext.definition)}</div>` : ''}
-              ${ext.example ? `<div class="flip-example">${esc(ext.example)}</div>` : ''}
-              ${ext.enDefinition ? `<div class="flip-en-def">${esc(ext.enDefinition)}</div>` : ''}
+              <div class="flip-back-body">
+                <div class="flip-word">${esc(q.name || '')}</div>
+                ${ext.phonetic ? `<div class="flip-phonetic" style="justify-content:center;width:100%"><span>${esc(ext.phonetic)}</span><button class="flip-audio-btn" id="flip-audio-btn-back" aria-label="播放读音"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button></div>` : ''}
+                ${ext.definition ? `<div class="flip-definition">${esc(ext.definition)}</div>` : ''}
+                ${ext.enDefinition ? `<div class="flip-en-def">${esc(ext.enDefinition)}</div>` : ''}
+                ${ext.example ? `<div class="flip-example">${esc(ext.example)}</div>` : ''}
+              </div>
             </div>
           </div>
         </div>
@@ -7844,6 +7854,8 @@ const CARD_RENDERERS = {
       document.getElementById('flip-audio-btn').addEventListener('click', () => {
         playAnswer(q);
       });
+      const _backAudioBtn = document.getElementById('flip-audio-btn-back');
+      if (_backAudioBtn) _backAudioBtn.addEventListener('click', () => playAnswer(q));
 
       document.getElementById('flip-reveal-btn').addEventListener('click', () => {
         document.getElementById('flip-inner').classList.add('flipped');
@@ -8201,9 +8213,8 @@ async function _writeSrs(q, rating, attempt) {
   // DailyProgress update (count once per card per day, learning step repeats excluded)
   const dp2 = getDailyProgress();
   if (stageBefore === 'new') dp2.daily_new_today++;
-  const firstRatingKey = 'yh_fr_' + todayStr() + '_' + state.card_id;
-  if (!localStorage.getItem(firstRatingKey)) {
-    localStorage.setItem(firstRatingKey, rating);
+  if (!_dailyRatedCards.has(state.card_id)) {
+    _dailyRatedCards.add(state.card_id);
     dp2.reviewed_today++;
     if (rating === 'again') dp2.first_fail_today++;
     else if (rating === 'hard') dp2.first_hard_today++;
