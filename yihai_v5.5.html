@@ -791,7 +791,7 @@ body {
 /* Icon SVG helper */
 .ico { display:inline-flex; align-items:center; justify-content:center; }
 
-@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+@keyframes toastIn { from{opacity:0;transform:translate(-50%,-50%) scale(.94)} to{opacity:1;transform:translate(-50%,-50%) scale(1)} }
 
 /* empty state */
 .empty-state {
@@ -4634,7 +4634,7 @@ function ldScript(src) {
 }
 
 async function importYhspack(file) {
-  const dismissLoading = showLoadingToast(t('toast_importing') || '正在导入…');
+  const dismissLoading = showLoadingToast(t('toast_importing'));
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
@@ -4719,8 +4719,8 @@ async function importYhspack(file) {
 function showImportToast(name, count) {
   const el = document.createElement('div');
   el.textContent = t('toast_import_done', { name, count });
-  el.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
-    transform:translateX(-50%);background:var(--text);color:var(--bg);
+  el.style.cssText = `position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(el);
@@ -4843,7 +4843,7 @@ async function deleteDeck(e, key) {
   if (!meta || meta.builtin) return;
   const ok = await showConfirmDialog(t('deck_delete_confirm', { name: esc(meta.name) }));
   if (!ok) return;
-  const dismissLoading = showLoadingToast(t('toast_deleting') || '正在删除…');
+  const dismissLoading = showLoadingToast(t('toast_deleting'));
   // revoke ObjectURL to prevent memory leak
   (DECKS[key] || []).forEach(c => {
     if (c.img && c.img.startsWith('blob:')) URL.revokeObjectURL(c.img);
@@ -5224,7 +5224,7 @@ async function exportDeck() {
   if (!currentDeck) { showToastMsg(t('deck_no_selected')); return; }
   const meta = DECKS_META.find(m => m.key === currentDeck);
   if (!meta) { showToastMsg(t('deck_not_found')); return; }
-  const dismissLoading = showLoadingToast(t('toast_exporting') || '正在导出…');
+  const dismissLoading = showLoadingToast(t('toast_exporting'));
   try {
     await ldScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     var zip = new JSZip();
@@ -6151,6 +6151,9 @@ const I18N = {
     deck_builtin_label: '── Test Deck (Read-only) ──',
     deck_new_option: '+ New Deck...',
     // Toast
+    toast_importing: 'Importing…',
+    toast_deleting: 'Deleting…',
+    toast_exporting: 'Exporting…',
     toast_rename_done: 'Renamed to "{name}"',
     toast_export_done: 'Exported: {name}',
     toast_download_done: 'Downloaded: {name}',
@@ -6431,6 +6434,9 @@ const I18N = {
     deck_builtin_label: '── 测试牌组（只读）──',
     deck_new_option: '＋ 新建牌组…',
     // Toast
+    toast_importing: '正在导入…',
+    toast_deleting: '正在删除…',
+    toast_exporting: '正在导出…',
     toast_rename_done: '已重命名为「{name}」',
     toast_export_done: '已导出：{name}',
     toast_download_done: '已下载：{name}',
@@ -6707,6 +6713,9 @@ const I18N = {
     deck_no_selected: '請先選擇一個牌組',
     deck_builtin_label: '── 測試牌組（唯讀）──',
     deck_new_option: '＋ 新增牌組…',
+    toast_importing: '正在匯入…',
+    toast_deleting: '正在刪除…',
+    toast_exporting: '正在匯出…',
     toast_rename_done: '已重新命名為「{name}」',
     toast_export_done: '已匯出：{name}',
     toast_download_done: '已下載：{name}',
@@ -6983,6 +6992,9 @@ const I18N = {
     deck_builtin_label: '── Mazo de prueba (solo lectura) ──',
     deck_new_option: '+ Nuevo mazo...',
     // Toast
+    toast_importing: 'Importando…',
+    toast_deleting: 'Eliminando…',
+    toast_exporting: 'Exportando…',
     toast_rename_done: 'Renombrado a "{name}"',
     toast_export_done: 'Exportado: {name}',
     toast_download_done: 'Descargado: {name}',
@@ -7267,6 +7279,9 @@ const I18N = {
     deck_builtin_label: '── テストデッキ（読み取り専用）──',
     deck_new_option: '＋ 新規デッキ...',
     // Toast
+    toast_importing: 'インポート中…',
+    toast_deleting: '削除中…',
+    toast_exporting: 'エクスポート中…',
     toast_rename_done: '「{name}」に変更しました',
     toast_export_done: 'エクスポートしました: {name}',
     toast_download_done: 'ダウンロードしました: {name}',
@@ -9411,8 +9426,8 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
 function showCloudToast(msg, isErr) {
   const t = document.createElement('div');
   t.textContent = msg;
-  t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
-    transform:translateX(-50%);background:${isErr?'#9B3A2A':'var(--text)'};color:#fff;
+  t.style.cssText = `position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%);background:${isErr?'#9B3A2A':'var(--text)'};color:#fff;
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(t);
@@ -9420,8 +9435,8 @@ function showCloudToast(msg, isErr) {
 }
 function showLoadingToast(msg) {
   const el = document.createElement('div');
-  el.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
-    transform:translateX(-50%);background:var(--text);color:#fff;
+  el.style.cssText = `position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%);background:var(--text);color:#fff;
     padding:10px 18px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease;
     display:flex;align-items:center;gap:8px`;
@@ -10396,8 +10411,8 @@ function showConfirmDialog(msg) {
 function showToastMsg(msg) {
   const t = document.createElement('div');
   t.textContent = msg;
-  t.style.cssText = `position:fixed;bottom:calc(100px + var(--safe-bottom));left:50%;
-    transform:translateX(-50%);background:var(--text);color:var(--bg);
+  t.style.cssText = `position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%);background:var(--text);color:var(--bg);
     padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;
     z-index:var(--z-toast);white-space:nowrap;animation:toastIn .3s ease`;
   document.body.appendChild(t);
