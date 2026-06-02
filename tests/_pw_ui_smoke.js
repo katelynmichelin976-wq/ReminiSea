@@ -100,6 +100,7 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     pass('processAnswer 函数存在', await run(page, () => typeof processAnswer === 'function'));
     pass('buildSessionQueue 函数存在', await run(page, () => typeof buildSessionQueue === 'function'));
     pass('runSync 函数存在', await run(page, () => typeof runSync === 'function'));
+    pass('uploadPersonalDeckMedia 函数存在', await run(page, () => typeof uploadPersonalDeckMedia === 'function'));
     pass('旧元素 .browse-btn 已删除', await run(page, () =>
       document.querySelectorAll('.browse-btn').length === 0
     ));

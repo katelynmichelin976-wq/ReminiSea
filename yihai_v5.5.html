@@ -4694,12 +4694,16 @@ async function importYhspack(file) {
     DECKS[key] = cards;
     // update or append meta
     const existing = DECKS_META.findIndex(m => m.key === key);
-    if (existing >= 0) DECKS_META[existing] = { key, name, source: 'local' };
-    else DECKS_META.push({ key, name, source: 'local' });
+    const deckLangVal = deckLang || 'zh-CN';
+    if (existing >= 0) DECKS_META[existing] = { key, name, deck_type: 'personal', nameLang: deckLangVal };
+    else DECKS_META.push({ key, name, deck_type: 'personal', nameLang: deckLangVal });
 
     // persist (id+name only, blob URL not stored)
     saveDeckIndex();
     saveDeckCards(key, cards);
+
+    // upload structure to cloud (fire-and-forget; media deferred to next sync)
+    uploadDeckToCloud(key).catch(() => {});
 
     // refresh home list, select the just-imported deck
     renderDeckList();
@@ -5487,7 +5491,9 @@ async function doAccountLogin() {
     updateCloudTabUI();
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
-    runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck }).catch(e => console.warn('[sync] login sync error:', e.message));
+    runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck })
+      .then(() => { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadDeckToCloud(m.key).then(() => uploadPersonalDeckMedia(m.key)).catch(() => {})); })
+      .catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
     msgEl.style.display = ''; msgEl.textContent = t('account_login_fail', { msg: e.message }); msgEl.style.color = '#9B3A2A';
@@ -5513,6 +5519,7 @@ function doAccountSync() {
   const btn = document.getElementById('account-sync-btn');
   if (btn) btn.disabled = true;
   runSync({ modal: true, decks: true, events: true, showToast: true, voice: true, deckKey: currentDeck })
+    .then(function() { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadDeckToCloud(m.key).then(() => uploadPersonalDeckMedia(m.key)).catch(() => {})); })
     .catch(function(e){ console.warn('[sync] account sync error:', e.message); })
     .finally(function() { if (btn) btn.disabled = false; });
 }
@@ -6154,6 +6161,7 @@ const I18N = {
     toast_importing: 'Importing…',
     toast_deleting: 'Deleting…',
     toast_exporting: 'Exporting…',
+    toast_media_synced: '✓ Media synced ({n} files)',
     toast_rename_done: 'Renamed to "{name}"',
     toast_export_done: 'Exported: {name}',
     toast_download_done: 'Downloaded: {name}',
@@ -6437,6 +6445,7 @@ const I18N = {
     toast_importing: '正在导入…',
     toast_deleting: '正在删除…',
     toast_exporting: '正在导出…',
+    toast_media_synced: '✓ 媒体已同步（{n} 个文件）',
     toast_rename_done: '已重命名为「{name}」',
     toast_export_done: '已导出：{name}',
     toast_download_done: '已下载：{name}',
@@ -6716,6 +6725,7 @@ const I18N = {
     toast_importing: '正在匯入…',
     toast_deleting: '正在刪除…',
     toast_exporting: '正在匯出…',
+    toast_media_synced: '✓ 媒體已同步（{n} 個文件）',
     toast_rename_done: '已重新命名為「{name}」',
     toast_export_done: '已匯出：{name}',
     toast_download_done: '已下載：{name}',
@@ -6995,6 +7005,7 @@ const I18N = {
     toast_importing: 'Importando…',
     toast_deleting: 'Eliminando…',
     toast_exporting: 'Exportando…',
+    toast_media_synced: '✓ Medios sincronizados ({n} archivos)',
     toast_rename_done: 'Renombrado a "{name}"',
     toast_export_done: 'Exportado: {name}',
     toast_download_done: 'Descargado: {name}',
@@ -7282,6 +7293,7 @@ const I18N = {
     toast_importing: 'インポート中…',
     toast_deleting: '削除中…',
     toast_exporting: 'エクスポート中…',
+    toast_media_synced: '✓ メディアを同期しました（{n} 件）',
     toast_rename_done: '「{name}」に変更しました',
     toast_export_done: 'エクスポートしました: {name}',
     toast_download_done: 'ダウンロードしました: {name}',
@@ -9358,6 +9370,50 @@ async function uploadDeckToCloud(key) {
     console.log('[cloud] uploadDeckToCloud ok:', key, cards.length, 'cards');
   } catch(e) {
     console.warn('[cloud] uploadDeckToCloud fail:', e.message);
+  }
+}
+
+async function uploadPersonalDeckMedia(deckId) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  const meta = DECKS_META.find(m => m.key === deckId);
+  if (!meta || meta.deck_type !== 'personal') return;
+  const cards = DECKS[deckId];
+  if (!cards || !cards.length) return;
+
+  try {
+    let uploaded = 0;
+    await parallelMapLimit(cards, 3, async (c) => {
+      if (!c._imgUrl) {
+        const blob = await loadMedia(`${deckId}_${c.id}_img`).catch(() => null);
+        if (blob) {
+          const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+          const path = `personal/${_cloudUserId}/${deckId}/${c.id}_img.${ext}`;
+          const { error } = await _sb.storage.from('ReminiSea').upload(path, blob, { upsert: true });
+          if (!error) { c._imgUrl = path; uploaded++; }
+          else console.warn('[cloud] media upload img fail:', c.id, error.message);
+        }
+      }
+
+      if (!c._audUrl) {
+        const blob = await loadMedia(`${deckId}_${c.id}_aud`).catch(() => null);
+        if (blob) {
+          const ext = {'audio/mpeg':'mp3','audio/ogg':'ogg','audio/webm':'webm','audio/aac':'aac'}[blob.type] || 'm4a';
+          const path = `personal/${_cloudUserId}/${deckId}/${c.id}_aud.${ext}`;
+          const { error } = await _sb.storage.from('ReminiSea').upload(path, blob, { upsert: true });
+          if (!error) { c._audUrl = path; uploaded++; }
+          else console.warn('[cloud] media upload aud fail:', c.id, error.message);
+        }
+      }
+    });
+
+    if (uploaded > 0) {
+      saveDeckCards(deckId, cards);
+      await uploadDeckToCloud(deckId);
+      showCloudToast(t('toast_media_synced', { n: uploaded }));
+      console.log('[cloud] uploadPersonalDeckMedia ok:', deckId, uploaded, 'files');
+    }
+  } catch(e) {
+    console.warn('[cloud] uploadPersonalDeckMedia fail:', e.message);
   }
 }
 
