@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<title data-i18n="app_title">忆海拾光 v5.6.1</title>
+<title data-i18n="app_title">忆海拾光</title>
 <style>
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -277,7 +277,8 @@ body {
 .deck-card-inner.selected::before { height: 32px; opacity: 1; }
 .deck-card-inner.no-transition { transition: none !important; }
 .deck-info { flex:1; min-width: 0; }
-.deck-name { font-size: 18px; font-weight: 600; color: var(--text); transition: color .15s; }
+.deck-name { font-size: 18px; font-weight: 600; color: var(--text); transition: color .15s; display:flex; align-items:center; gap:6px; }
+.deck-update-dot { flex-shrink:0; width:8px; height:8px; border-radius:50%; background:#F59E0B; }
 
 /* Due / New count columns */
 .deck-stats { display: flex; gap: 22px; align-items: center; flex-shrink: 0; }
@@ -401,7 +402,7 @@ body {
   background: rgba(0,0,0,0.45);
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
-  animation: toastIn .15s ease;
+  animation: dialogIn .15s ease;
 }
 .yh-dialog {
   background: var(--surf); border-radius: 18px;
@@ -792,6 +793,7 @@ body {
 .ico { display:inline-flex; align-items:center; justify-content:center; }
 
 @keyframes toastIn { from{opacity:0;transform:translate(-50%,-50%) scale(.94)} to{opacity:1;transform:translate(-50%,-50%) scale(1)} }
+@keyframes dialogIn { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
 
 /* empty state */
 .empty-state {
@@ -1602,7 +1604,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   <div class="home-topbar">
     <div class="home-title-wrap">
       <span class="home-title" data-i18n="app_title">忆海拾光</span>
-      <span class="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板">v5.6.1</span>
+      <span class="home-version" id="home-version" onclick="openDiagPanel(event)" data-i18n-title="common_version_title" title="点击5次打开诊断面板"></span>
       <button class="home-refresh-btn" onclick="forceRefresh()" data-i18n-aria="home_force_refresh" aria-label="强制刷新">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -2733,6 +2735,8 @@ function getCurrentUserId() {
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
 const APP_VERSION = '5.6.1';
+document.title = '忆海拾光 v' + APP_VERSION;
+document.getElementById('home-version').textContent = 'v' + APP_VERSION;
 
 // ── PWA diagnostic panel entry (tap version 5× to load) ──────────
 var _diagTapCount = 0, _diagTapTimer = null;
@@ -2754,6 +2758,7 @@ const MEDIA_CDN_BASE = '';
 
 let _sb = null;
 let _syncEnabled = false;
+let _pendingDeckUpdates = new Set();
 let _sessionRestoring = false;
 let _deviceId = null;
 let _lastOrphans = [];    // media cleanup: cache last orphan scan keys
@@ -2827,7 +2832,7 @@ function restoreSession() {
         localStorage.setItem('yihaiSessionBackup', JSON.stringify(data.session));
         localStorage.setItem('yihaiLastCloudEmail', _cloudUserEmail);
         logAppEvent('session_restore_ok', { uid: _cloudUserId });
-        checkPersonalDeckUpdates().catch(() => {});
+        runSync({ decks: false, showToast: false }).catch(() => {});
         return;
       }
 
@@ -2908,6 +2913,7 @@ async function syncTrialLog(entry) {
       due_date: entry.due_date || '',
       suspended: entry.suspended || false,
       suspended_reason: entry.suspended_reason || '',
+      session_mode: entry.session_mode || 'normal',
       timestamp: entry.timestamp
     });
     if (error) {
@@ -2929,6 +2935,34 @@ async function syncTrialLog(entry) {
     tx.objectStore(TRIAL_STORE).put(entry);
     tx.onerror = e => console.warn('[sync] trial synced_at writeback failed');
   } catch(e) { console.warn('[sync] trial upload error:', e.message); }
+}
+
+async function uploadTrialBatch(entries) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return false;
+  try {
+    var payloads = entries.map(function(e) {
+      return {
+        device_id: _deviceId, device_info: getDeviceInfo(), app_version: APP_VERSION,
+        trial_id: e.trial_id, user_id: _cloudUserId, card_id: e.card_id,
+        deck_key: e.deck_key, session_id: e.session_id, question_type: e.question_type,
+        rating: e.rating, is_correct: e.is_correct, attempt_number: e.attempt_number,
+        options_shown: e.options_shown, correct_option: e.correct_option,
+        distractor_chosen: e.distractor_chosen, response_time_ms: e.response_time_ms,
+        active_gap_ms: e.active_gap_ms, srs_stage_before: e.srs_stage_before,
+        interval_before: e.interval_before, ease_before: e.ease_before,
+        lapses_streak_before: e.lapses_streak_before, lapses_total_before: e.lapses_total_before,
+        review_mode_before: e.review_mode_before, srs_stage_after: e.srs_stage_after,
+        interval_after: e.interval_after, ease_after: e.ease_after,
+        due_ts: e.due_ts, due_date: e.due_date || '',
+        suspended: e.suspended || false, suspended_reason: e.suspended_reason || '',
+        session_mode: e.session_mode || 'normal', timestamp: e.timestamp
+      };
+    });
+    var result = await _sb.from('sync_trials').upsert(payloads, { onConflict: 'trial_id', ignoreDuplicates: true });
+    if (!result.error) return true;
+    console.warn('[sync] uploadTrialBatch error:', result.error);
+    return false;
+  } catch(e) { console.warn('[sync] uploadTrialBatch exception:', e.message); return false; }
 }
 
 async function syncCardState(state) {
@@ -3240,10 +3274,24 @@ async function runSync(opts) {
       r.onerror   = function(e) { rej(e.target.error); };
     });
     var uid = getCurrentUserId();
-    var pendingCount = allTrials.filter(function(t) { return !t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid); }).length;
-    for (var tr of allTrials) {
-      if (!tr.synced_at && tr.deck_key && (!tr.user_id || tr.user_id === uid)) {
-        try { await syncTrialLog(tr); syncStats.trials++; } catch(e) { /* skip */ }
+    var pendingTrials = allTrials.filter(function(t) { return !t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid); });
+    var TRIAL_BATCH = 10;
+    for (var bi = 0; bi < pendingTrials.length; bi += TRIAL_BATCH) {
+      var tBatch = pendingTrials.slice(bi, bi + TRIAL_BATCH);
+      var tOk = await uploadTrialBatch(tBatch);
+      if (tOk) {
+        syncStats.trials += tBatch.length;
+        var tNow = Date.now();
+        await new Promise(function(res, rej) {
+          var tx = db.transaction(TRIAL_STORE, 'readwrite');
+          var store = tx.objectStore(TRIAL_STORE);
+          tBatch.forEach(function(t) {
+            var req = store.get(t.trial_id);
+            req.onsuccess = function() { if (req.result) { req.result.synced_at = tNow; store.put(req.result); } };
+          });
+          tx.oncomplete = res;
+          tx.onerror = function(e) { rej(e.target.error); };
+        });
       }
     }
     // 2. config sync
@@ -3629,45 +3677,6 @@ async function syncAppEvents() {
       tx.oncomplete = res;
       tx.onerror = function(e) { log.error('sync', 'batch markSynced failed', e.target.error && e.target.error.message); rej(e.target.error); };
     });
-  }
-
-  // upload warn/error diagnostic logs (wrapped as app_events format)
-  if (db.objectStoreNames.contains(LOG_STORE)) {
-    var logAll = await new Promise(function(res, rej) {
-      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
-      r.onsuccess = function(e) { res(e.target.result || []); };
-      r.onerror   = function(e) { rej(e.target.error); };
-    });
-    var pendingLogs = logAll.filter(function(l) { return !l.synced_at && (l.level === 'warn' || l.level === 'error'); });
-    var syncedLogIds = [];
-    for (var j = 0; j < pendingLogs.length; j += EVT_BATCH) {
-      var logSlice = pendingLogs.slice(j, j + EVT_BATCH);
-      var syntheticEvts = logSlice.map(function(l) {
-        return {
-          event_id:   'log_' + (l.log_id || Date.now()) + '_' + Math.random().toString(36).slice(2, 5),
-          event_type: 'log:' + l.level,
-          deck_key:   '',
-          payload:    { module: l.module, msg: l.msg, data: l.data },
-          device_id:  _deviceId || '',
-          timestamp:  l.timestamp
-        };
-      });
-      var ok2 = await uploadAppEventBatch(syntheticEvts);
-      if (ok2) logSlice.forEach(function(l) { syncedLogIds.push(l.log_id); });
-    }
-    if (syncedLogIds.length > 0) {
-      var now2 = Date.now();
-      await new Promise(function(res2, rej2) {
-        var tx2 = db.transaction(LOG_STORE, 'readwrite');
-        var s2 = tx2.objectStore(LOG_STORE);
-        syncedLogIds.forEach(function(id) {
-          var req2 = s2.get(id);
-          req2.onsuccess = function() { if (req2.result) { req2.result.synced_at = now2; s2.put(req2.result); } };
-        });
-        tx2.oncomplete = res2;
-        tx2.onerror = rej2;
-      });
-    }
   }
 
   return syncedIds.length;
@@ -4712,6 +4721,7 @@ async function importYhspack(file) {
     const el = document.querySelector(`.deck-card[data-deck="${key}"]`);
     if (el) selectDeck(el);
 
+    logAppEvent('import_deck', { deck_key: key, deck_name: name, card_count: cards.length }, key);
     dismissLoading();
     showImportToast(name, cards.length);
   } catch(e) {
@@ -4867,6 +4877,7 @@ async function deleteDeck(e, key) {
   if (currentDeck === key) currentDeck = null;
   renderDeckList();
   updateDeckStats();
+  logAppEvent('delete_deck', { deck_key: key, deck_name: meta.name, deck_type: meta.deck_type || 'personal' });
   dismissLoading();
 }
 
@@ -5520,6 +5531,7 @@ function doAccountSync() {
   const btn = document.getElementById('account-sync-btn');
   if (btn) btn.disabled = true;
   runSync({ modal: true, decks: true, events: true, showToast: true, voice: true, deckKey: currentDeck })
+    .then(function() { return checkPersonalDeckUpdates(); })
     .then(function() { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadPersonalDeckMedia(m.key).catch(() => {})); })
     .catch(function(e){ console.warn('[sync] account sync error:', e.message); })
     .finally(function() { if (btn) btn.disabled = false; });
@@ -8301,7 +8313,7 @@ async function _writeSrs(q, rating, attempt) {
     response_time_ms     : responseMs,
     active_gap_ms        : activeGapMs,
 
-    session_mode         : 'practice',
+    session_mode         : SRS_CONFIG.session_mode || 'normal',
     time_of_day          : timeOfDay,
     timestamp            : now,
 
@@ -9438,9 +9450,28 @@ async function checkPersonalDeckUpdates() {
         await downloadPersonalDeckFromCloud(rd.id, deckName, rd.name_lang);
       }
     }
+    _pendingDeckUpdates.clear();
+    renderDeckList();
   } catch(e) {
     console.warn('[cloud] checkPersonalDeckUpdates fail:', e.message);
   }
+}
+
+async function refreshDeckUpdateBadges() {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  try {
+    const { data, error } = await _sb.from('decks')
+      .select('id,updated_at')
+      .eq('user_id', _cloudUserId)
+      .eq('deck_type', 'personal');
+    if (error || !data) return;
+    _pendingDeckUpdates.clear();
+    for (const rd of data) {
+      const lastSync = localStorage.getItem('yihaiSyncAt:' + rd.id) || '';
+      if (rd.updated_at > lastSync) _pendingDeckUpdates.add(rd.id);
+    }
+    if (_pendingDeckUpdates.size > 0) renderDeckList();
+  } catch(e) {}
 }
 
 async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
@@ -9451,20 +9482,34 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
       .eq('deck_id', deckId).order('sort_order');
     if (error || !cards || !cards.length) return;
     const syncNow = new Date().toISOString();
+    const localCards = DECKS[deckId] || [];
     const deckCards = [];
     await parallelMapLimit(cards, 3, async (c, i) => {
       const card = { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] };
+      const local = localCards.find(lc => lc.id === c.card_id);
       const tasks = [];
-      if (c.image_url) tasks.push(
-        downloadMediaFromCDNorSupabase(c.image_url)
-          .then(async blob => { card.img = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_img`, blob).catch(() => {}); })
-          .catch(e => console.warn('[cloud] img failed:', e.message))
-      );
-      if (c.audio_url) tasks.push(
-        downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url))
-          .then(async blob => { card.audioUrl = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_aud`, blob).catch(() => {}); })
-          .catch(e => console.warn('[cloud] aud failed:', e.message))
-      );
+      if (c.image_url) {
+        if (local && local._imgUrl === c.image_url) {
+          tasks.push(loadMedia(`${deckId}_${card.id}_img`)
+            .then(blob => { if (blob) card.img = URL.createObjectURL(blob); })
+            .catch(() => {}));
+        } else {
+          tasks.push(downloadMediaFromCDNorSupabase(c.image_url)
+            .then(async blob => { card.img = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_img`, blob).catch(() => {}); })
+            .catch(e => console.warn('[cloud] img failed:', e.message)));
+        }
+      }
+      if (c.audio_url) {
+        if (local && local._audUrl === c.audio_url) {
+          tasks.push(loadMedia(`${deckId}_${card.id}_aud`)
+            .then(blob => { if (blob) card.audioUrl = URL.createObjectURL(blob); })
+            .catch(() => {}));
+        } else {
+          tasks.push(downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url))
+            .then(async blob => { card.audioUrl = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_aud`, blob).catch(() => {}); })
+            .catch(e => console.warn('[cloud] aud failed:', e.message)));
+        }
+      }
       await Promise.all(tasks);
       card._imgUrl = c.image_url || '';
       card._audUrl = c.audio_url || '';
