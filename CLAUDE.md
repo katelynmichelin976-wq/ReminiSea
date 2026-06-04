@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `yihai_v5.5.html` | 主训练 App（v5.5.0，单 HTML 文件，Supabase 云同步） |
+| `index.html` | 主训练 App（v5.5.0，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -57,7 +57,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.6.0**（`yihai_v5.5.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.6.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 **v5.6.0：** 个人牌组媒体云同步 — ①`importYhspack` 导入时写入 `deck_type:'personal'`，立即上传结构到 Supabase；②新增 `uploadPersonalDeckMedia(deckId)`，点「同步」后逐卡上传图片/音频 blob 到 Storage（路径 `personal/{userId}/{deckId}/{cardId}_{type}.{ext}`），支持中断续传（`_imgUrl`/`_audUrl` 非空跳过）；③`doAccountLogin`/`doAccountSync` 在 `runSync()` 完成后串联触发媒体上传；④音频 MIME 完整映射（mp3/ogg/webm/aac/m4a）
 
@@ -139,7 +139,7 @@ git config core.hooksPath .githooks
 # 单元测试（全量，325 断言）
 node tests/run_all.js
 
-# Playwright（需先启动：python -m http.server 8080 --directory C:\code）
+# Playwright（需先用 PowerShell 启动，不能用 Bash：python -m http.server 8080 --directory C:\code）
 node tests/_pw_ui_smoke.js
 node tests/_pw_srs_e2e.js
 $env:TEST_PASSWORD="xxx"; node tests/_pw_cloud_sync.js
@@ -190,6 +190,7 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 71, voice 17（run_all.j
 13. **runSync 统一入口** — 所有同步通过 `runSync(options)`。`options.modal` 控制弹窗；`options.decks` 控制牌组同步。
 14. **DP 仅本地** — `daily_progress` 不跨设备同步，只记本地。
 15. **`_writeSrs` 改动后必须跑 Playwright** — 运行时错误会导致 TrialLog 静默丢失，单测覆盖不到 IDB 写入路径。
+16. **Supabase 功能测试必须走真实 RLS 路径** — 测试不能 mock 掉网络层；anon 和已登录角色都要覆盖，上线前验证 RLS 策略覆盖所有预期角色。
 
 ## Coding & Editing Rules
 
@@ -197,7 +198,7 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 71, voice 17（run_all.j
 2. **Surgical changes** — 只改必须改的。不"改进"相邻代码，匹配现有风格。只清理自己改动造成的孤儿引用。
 3. **Goal-driven** — "修 bug" → 先写复现测试；"加功能" → 先定义验收标准。
 4. **No comments** — 不写注释。变量/函数命名足够清晰时，注释是噪音。唯一例外：隐藏约束或反直觉的 workaround，一行以内。
-5. **camelCase only** — 所有变量、函数、localStorage key 一律 camelCase。不用 snake_case、kebab-case（HTML id/class 除外）。
+5. **camelCase only** — 所有变量、函数、localStorage key 一律 camelCase。不用 snake_case、kebab-case（HTML id/class 除外）。数据库列名用 snake_case（与 JS 命名独立，不混用）。新增列/key 前先 grep 现有代码确认规范。修改内存中的 deck 元数据后必须调用 `saveDeckIndex()` 持久化。
 
 ## Workflow Rules
 
@@ -205,7 +206,7 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 71, voice 17（run_all.j
 2. **Feature/enhancement** — 先列路径和利弊，确定方向后再实现。
 3. **文档先行** — `git add` 前检查 README/docs/CLAUDE.md 是否需同步。
 4. **本地提交** — commit 前必须跑对应单元测试并全部通过。
-5. **发布需指令** — `git push` / GitHub Pages 部署必须等明确「发布」指令。
+5. **发布需指令** — `git push` / GitHub Pages 部署必须等明确「发布」指令。「提交」/「commit」只做本地 commit，不 push、不 merge、不打 tag。回滚代码改动前必须先确认。
 6. **版本号仅在发布时 bump** — 发布 commit 同时完成：HTML 3 处版本号 + 复制为 `index.html` + 打 tag。
 7. **Commit message** — 格式 `type: v{version}: description (#issue)`：
    - `fix: v5.1.6: 描述 (#N)` — 版本号为发现问题的已发布版本
@@ -216,9 +217,8 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 71, voice 17（run_all.j
 
 1. 所有测试通过（run_all.js + _pw_ui_smoke + _pw_srs_e2e）
 2. 文档同步：`CLAUDE.md` 版本号 + `docs/忆海拾光_训练App_README.md` + `docs/yihai_变更记录_CLAUDE参考.md`
-3. 修改 `yihai_v5.5.html` 中 **3 处**版本号：`<title>`、`.home-version`、`APP_VERSION`
-4. 复制 `yihai_v5.5.html` → `index.html`
-5. 所有改动放入 `release: v5.x.x` commit
+3. 修改 `index.html` 中 `APP_VERSION` 常量（唯一入口，title 和首页版本号自动跟随）
+4. 所有改动放入 `release: v5.x.x` commit
 6. `git tag v5.x.x`
 7. `git push; git push --tags`
 8. `$env:HTTPS_PROXY="http://127.0.0.1:10808"; gh release create v5.x.x --title "v5.x.x" --notes "..."`

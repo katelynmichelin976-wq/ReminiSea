@@ -2832,7 +2832,7 @@ function restoreSession() {
         localStorage.setItem('yihaiSessionBackup', JSON.stringify(data.session));
         localStorage.setItem('yihaiLastCloudEmail', _cloudUserEmail);
         logAppEvent('session_restore_ok', { uid: _cloudUserId });
-        runSync({ decks: false, showToast: false }).catch(() => {});
+        runSync({ decks: false, showToast: false }).then(() => refreshDeckUpdateBadges().catch(() => {})).catch(() => {});
         return;
       }
 
@@ -2858,7 +2858,7 @@ function _onOnlineRetry() {
   log.info('sync', 'online — retrying session restore');
   window.removeEventListener('online', _onOnlineRetry);
   restoreSession().then(function() {
-    if (_syncEnabled) runSync({ decks: false, showToast: true }).catch(function(){});
+    if (_syncEnabled) runSync({ decks: false, showToast: true }).then(function(){ refreshDeckUpdateBadges().catch(function(){}); }).catch(function(){});
   });
 }
 
@@ -10353,7 +10353,7 @@ function renderDeckList() {
     return '<div class="deck-card" data-deck="'+m.key+'" data-swipeable>' +
       '<div class="deck-card-actions">'+swipeExport+swipeRename+swipeDel+'</div>' +
       '<div class="deck-card-inner'+(m.key === currentDeck ? ' selected' : '')+'" data-deck="'+m.key+'">' +
-        '<div class="deck-info"><div class="deck-name">'+esc(m.name)+'</div></div>' +
+        '<div class="deck-info"><div class="deck-name">'+esc(m.name)+(_pendingDeckUpdates.has(m.key) ? '<span class="deck-update-dot"></span>' : '')+'</div></div>' +
         '<div class="deck-stats">' +
           '<div class="deck-stat"><span class="deck-stat-num due'+(dueVal===0?' zero':'')+'" data-deck="'+m.key+'">'+dueVal+'</span><span class="deck-stat-lbl">'+t('home_due_label')+'</span></div>' +
           '<div class="deck-stat"><span class="deck-stat-num new-c'+(newVal===0?' zero':'')+'" data-deck="'+m.key+'">'+newVal+'</span><span class="deck-stat-lbl">'+t('home_new_label')+'</span></div>' +
