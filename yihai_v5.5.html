@@ -500,7 +500,7 @@ body {
   width:100%; aspect-ratio:1/1;
   max-height:44vh;
 }
-.target-card > .target-img { border-radius:var(--r); overflow:hidden; }
+.target-card > .target-img { position:absolute; inset:0; border-radius:var(--r); overflow:hidden; }
 .target-img {
   width:100%; height:100%;
   border-radius:var(--r);
@@ -513,8 +513,8 @@ body {
 /* Real photo: fills square, cropped to center */
 .target-img img {
   width:100%; height:100%;
-  object-fit:contain; object-position:center;
-  display:block; border-radius:var(--r);
+  object-fit:cover; object-position:center;
+  display:block;
 }
 @keyframes imgPop{from{transform:scale(.78);opacity:0}to{transform:scale(1);opacity:1}}
 .instr {
@@ -2834,7 +2834,8 @@ function restoreSession() {
       _syncEnabled    = false;
       _cloudUserEmail = parsed.user.email;
       _cloudUserId    = parsed.user.id || '';
-      logAppEvent('session_restore_offline', { reason: timedOut ? 'timeout' : (error && error.message) || 'no_session' });
+      try { _sb.auth.stopAutoRefresh(); } catch(e) {}
+	      logAppEvent('session_restore_offline', { reason: timedOut ? 'timeout' : (error && error.message) || 'no_session' });
 
       window.removeEventListener('online', _onOnlineRetry);
       window.addEventListener('online', _onOnlineRetry);
@@ -4640,10 +4641,10 @@ async function importYhspack(file) {
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
 
     const jsonFile = zip.file('deck.json');
-    if (!jsonFile) { showCloudToast(t('import_bad_format_json'), true); return; }
+    if (!jsonFile) { dismissLoading(); showCloudToast(t('import_bad_format_json'), true); return; }
     const deckData = JSON.parse(await jsonFile.async('string'));
     const deck = deckData.deck;
-    if (!deck || !deck.cards) { showCloudToast(t('import_bad_format_cards'), true); return; }
+    if (!deck || !deck.cards) { dismissLoading(); showCloudToast(t('import_bad_format_cards'), true); return; }
 
     const key = deck.id || crypto.randomUUID();
     const name = deck.name || file.name.replace('.yhspack','');
@@ -4688,7 +4689,7 @@ async function importYhspack(file) {
       cards.push(card);
     }
 
-    if (!cards.length) { showCloudToast(t('import_no_valid_cards'), true); return; }
+    if (!cards.length) { dismissLoading(); showCloudToast(t('import_no_valid_cards'), true); return; }
 
     // write to memory
     DECKS[key] = cards;
@@ -9599,6 +9600,7 @@ function showAbout() {
   // 2. cloud init — runs after Supabase SDK loads
   async function initCloud() {
     window.addEventListener('offline', function() {
+      if (_sb) { try { _sb.auth.stopAutoRefresh(); } catch(e) {} }
       if (_syncEnabled) { _syncEnabled = false; updateCloudTabUI(); }
     });
 
