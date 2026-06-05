@@ -5569,8 +5569,7 @@ async function doAccountLogin() {
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
     runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck })
-      .then(() => uploadMissingPersonalDecks())
-      .then(() => { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadPersonalDeckMedia(m.key).catch(() => {})); })
+      .then(() => syncAllDirtyDecks())
       .catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
     _syncEnabled = false;
@@ -5598,9 +5597,7 @@ function doAccountSync() {
   const btn = document.getElementById('account-sync-btn');
   if (btn) btn.disabled = true;
   runSync({ modal: true, decks: true, events: true, showToast: true, voice: true, deckKey: currentDeck })
-    .then(function() { return uploadMissingPersonalDecks(); })
-    .then(function() { return checkPersonalDeckUpdates(); })
-    .then(function() { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadPersonalDeckMedia(m.key).catch(() => {})); })
+    .then(function() { return syncAllDirtyDecks(); })
     .catch(function(e){ console.warn('[sync] account sync error:', e.message); })
     .finally(function() { if (btn) btn.disabled = false; });
 }
@@ -9677,7 +9674,38 @@ class SyncJob {
       this._setPhase('cards', done, total);
     }
   }
-  async runMediaPhase() { /* Task 10 实现 */ }
+  async runMediaPhase() {
+    await uploadPersonalDeckMedia(this.deckKey);
+    localStorage.setItem('yihaiPushedMediaAt:' + this.deckKey, String(Date.now()));
+  }
+}
+
+const _activeSyncJobs = new Map();
+
+async function syncDeck(deckKey, opts = {}) {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  if (_activeSyncJobs.has(deckKey)) return _activeSyncJobs.get(deckKey);
+  const job = new SyncJob(deckKey, opts);
+  _activeSyncJobs.set(deckKey, job);
+  try { await job.run(); }
+  catch(e) { console.warn('[sync] syncDeck fail:', deckKey, e.message); throw e; }
+  finally { _activeSyncJobs.delete(deckKey); }
+  return job;
+}
+
+async function syncAllDirtyDecks() {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  const personals = DECKS_META.filter(m => m.deck_type === 'personal');
+  for (const m of personals) {
+    const state = computeDeckSyncState(m.key);
+    if (state.status === 'clean' || state.status === 'remoteAhead') continue;
+    try { await syncDeck(m.key); }
+    catch(e) { console.warn('[sync] dirty deck fail:', m.key, e.message); }
+  }
+}
+
+function getActiveSyncJob(deckKey) {
+  return _activeSyncJobs.get(deckKey) || null;
 }
 
 async function uploadDeckToCloud(key) {
@@ -9741,21 +9769,7 @@ function computeDeckSyncState(deckKey) {
 }
 
 async function uploadMissingPersonalDecks() {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return;
-  try {
-    const { data: cloudDecks } = await _sb.from('decks')
-      .select('id')
-      .eq('user_id', _cloudUserId)
-      .eq('deck_type', 'personal');
-    const cloudIds = new Set((cloudDecks || []).map(d => d.id));
-    for (const meta of DECKS_META.filter(m => m.deck_type === 'personal')) {
-      if (!cloudIds.has(meta.key)) {
-        await uploadDeckToCloud(meta.key);
-      }
-    }
-  } catch(e) {
-    console.warn('[cloud] uploadMissingPersonalDecks fail:', e.message);
-  }
+  return syncAllDirtyDecks();
 }
 
 async function uploadPersonalDeckMedia(deckId) {
