@@ -5618,10 +5618,24 @@ async function showCloudDecks() {
       listEl.innerHTML = '<div style="color:#999;padding:32px 0;text-align:center">云端没有个人牌组</div>';
       return;
     }
+    for (const cd of cloudDecks) {
+      const m = DECKS_META.find(x => x.key === cd.id);
+      if (m) m._remoteUpdatedAt = cd.updated_at;
+    }
     listEl.innerHTML = cloudDecks.map(d => {
       const dl = _downloading.get(d.id);
+      const job = getActiveSyncJob(d.id);
       const local = DECKS_META.find(m => m.key === d.id);
+      const state = local ? computeDeckSyncState(d.id) : { status: 'remoteAhead' };
       const nameArg = `'${d.id}','${esc(d.name).replace(/'/g,'&#39;')}','${d.name_lang||'zh-CN'}'`;
+
+      let badge = '';
+      if (job) badge = `<span style="color:#888">同步中 ${job.progress.done}/${job.progress.total}</span>`;
+      else if (state.status === 'clean') badge = `<span style="color:#888">已同步</span>`;
+      else if (state.status === 'localDirty') badge = `<span style="color:#d97706">待上传 ${state.pushCount}</span>`;
+      else if (state.status === 'remoteAhead') badge = `<span style="color:#2563eb">待下载</span>`;
+      else if (state.status === 'bothChanged') badge = `<span style="color:#7c3aed">双向 +${state.pushCount}</span>`;
+
       let btn;
       if (dl) {
         const txt = dl.total > 0 ? `${dl.done}/${dl.total}` : '…';
@@ -5630,12 +5644,17 @@ async function showCloudDecks() {
           <span id="dl-prog-${d.id}" style="font-size:13px;color:var(--text-sub);min-width:72px;text-align:right">${txt}</span>
           <button class="account-sync-btn" onclick="toggleDownloadPause('${d.id}')">${pauseLabel}</button>
         </div>`;
+      } else if (job) {
+        const pauseLabel = job._paused ? '继续' : '暂停';
+        btn = `<button class="account-sync-btn" onclick="toggleSyncJobPause('${d.id}')">${pauseLabel}</button>`;
       } else if (local) {
-        btn = `<button class="account-sync-btn" onclick="doCloudDeckAction(${nameArg},this)">同步</button>`;
+        btn = `<button class="account-sync-btn" onclick="doSyncDeckAction('${d.id}',this)">同步</button>`;
       } else {
         btn = `<button class="account-btn account-btn-primary" style="padding:6px 16px;min-height:0;font-size:14px" onclick="doCloudDeckAction(${nameArg},this)">下载</button>`;
       }
-      const sub = dl ? (dl.paused ? '已暂停' : '下载中…') : `${d.card_count || 0} 张卡片${local ? ' · 已下载' : ''}`;
+
+      const sub = dl ? (dl.paused ? '已暂停' : '下载中…')
+                : `${d.card_count || 0} 张卡片${local ? ' · ' : ''}${badge}`;
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
         <div>
           <div style="font-weight:600;color:var(--text)">${esc(d.name)}</div>
@@ -5670,6 +5689,26 @@ async function doCloudDeckAction(deckId, deckName, nameLang, btnEl) {
   });
   _downloading.delete(deckId);
   await showCloudDecks();
+}
+
+async function doSyncDeckAction(deckId, btnEl) {
+  if (getActiveSyncJob(deckId)) return;
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '同步中…'; }
+  try {
+    await syncDeck(deckId, { onProgress: () => showCloudDecks() });
+    showCloudToast('同步完成');
+  } catch(e) {
+    showCloudToast('同步失败：' + e.message, true);
+  } finally {
+    await showCloudDecks();
+  }
+}
+
+function toggleSyncJobPause(deckId) {
+  const job = getActiveSyncJob(deckId);
+  if (!job) return;
+  if (job._paused) job.resume(); else job.pause();
+  showCloudDecks();
 }
 
 function toggleDownloadPause(deckId) {
