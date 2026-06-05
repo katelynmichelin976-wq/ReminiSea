@@ -5585,13 +5585,17 @@ async function showCloudDecks() {
       let btn;
       if (dl) {
         const txt = dl.total > 0 ? `${dl.done}/${dl.total}` : '…';
-        btn = `<button class="account-sync-btn" id="dl-btn-${d.id}" disabled>${txt}</button>`;
+        const pauseLabel = dl.paused ? '继续' : '暂停';
+        btn = `<div style="display:flex;gap:8px;align-items:center">
+          <span id="dl-prog-${d.id}" style="font-size:13px;color:var(--text-sub);min-width:72px;text-align:right">${txt}</span>
+          <button class="account-sync-btn" onclick="toggleDownloadPause('${d.id}')">${pauseLabel}</button>
+        </div>`;
       } else if (local) {
         btn = `<button class="account-sync-btn" onclick="doCloudDeckAction(${nameArg},this)">同步</button>`;
       } else {
         btn = `<button class="account-btn account-btn-primary" style="padding:6px 16px;min-height:0;font-size:14px" onclick="doCloudDeckAction(${nameArg},this)">下载</button>`;
       }
-      const sub = dl ? `下载中…` : `${d.card_count || 0} 张卡片${local ? ' · 已下载' : ''}`;
+      const sub = dl ? (dl.paused ? '已暂停' : '下载中…') : `${d.card_count || 0} 张卡片${local ? ' · 已下载' : ''}`;
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
         <div>
           <div style="font-weight:600;color:var(--text)">${esc(d.name)}</div>
@@ -5608,14 +5612,29 @@ async function showCloudDecks() {
 async function doCloudDeckAction(deckId, deckName, nameLang, btnEl) {
   if (_downloading.has(deckId)) return;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
-  _downloading.set(deckId, { done: 0, total: 0 });
+  _downloading.set(deckId, { done: 0, total: 0, paused: false, pausePromise: null, pauseResolve: null });
   await downloadPersonalDeckFromCloud(deckId, deckName, nameLang, (done, total) => {
-    _downloading.set(deckId, { done, total });
-    const liveBtn = document.getElementById(`dl-btn-${deckId}`);
-    if (liveBtn) liveBtn.textContent = `${done}/${total}`;
+    const s = _downloading.get(deckId);
+    if (s) { s.done = done; s.total = total; }
+    const liveEl = document.getElementById(`dl-prog-${deckId}`);
+    if (liveEl) liveEl.textContent = `${done}/${total}`;
   });
   _downloading.delete(deckId);
   await showCloudDecks();
+}
+
+function toggleDownloadPause(deckId) {
+  const s = _downloading.get(deckId);
+  if (!s) return;
+  if (!s.paused) {
+    s.paused = true;
+    s.pausePromise = new Promise(resolve => { s.pauseResolve = resolve; });
+  } else {
+    s.paused = false;
+    if (s.pauseResolve) s.pauseResolve();
+    s.pausePromise = null; s.pauseResolve = null;
+  }
+  showCloudDecks();
 }
 
 function onAccountRealtimeToggle(el) {
@@ -9655,6 +9674,9 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
       onProgress && onProgress(done, total);
       // 每 100 张持久化一次，支持断点续传
       if (done % 100 === 0) saveDeckCards(deckId, DECKS[deckId]);
+      // 暂停支持：若被暂停则挂起 worker 直到 resume
+      const dlState = _downloading.get(deckId);
+      if (dlState && dlState.pausePromise) await dlState.pausePromise;
     });
     localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
     saveDeckCards(deckId, DECKS[deckId]);
