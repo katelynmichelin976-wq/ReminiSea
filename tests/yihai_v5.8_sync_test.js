@@ -91,5 +91,29 @@ function check(desc, ok) {
   check('清墓碑', getDeletedCards('d1').length === 0);
 }
 
+// Test 6: 水位迁移
+{
+  const ls = {};
+  function migrateSyncWatermarks() {
+    const keys = Object.keys(ls).filter(k => k.startsWith('yihaiSyncAt:'));
+    for (const k of keys) {
+      const deckKey = k.substring('yihaiSyncAt:'.length);
+      const v = ls[k];
+      if (!ls['yihaiPushedAt:' + deckKey]) ls['yihaiPushedAt:' + deckKey] = v;
+      if (!ls['yihaiPulledAt:' + deckKey]) ls['yihaiPulledAt:' + deckKey] = v;
+    }
+  }
+
+  ls['yihaiSyncAt:d1'] = '2026-06-01T00:00:00Z';
+  migrateSyncWatermarks();
+  check('迁移生成 pushedAt', ls['yihaiPushedAt:d1'] === '2026-06-01T00:00:00Z');
+  check('迁移生成 pulledAt', ls['yihaiPulledAt:d1'] === '2026-06-01T00:00:00Z');
+
+  ls['yihaiSyncAt:d2'] = '2026-06-01';
+  ls['yihaiPushedAt:d2'] = '2026-06-05';
+  migrateSyncWatermarks();
+  check('已存在 pushedAt 不被覆盖', ls['yihaiPushedAt:d2'] === '2026-06-05');
+}
+
 console.log(`\n  通过 ${passed} / 失败 ${failed}`);
 process.exit(failed > 0 ? 1 : 0);

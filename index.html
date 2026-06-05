@@ -4388,6 +4388,24 @@ function clearDeletedCards(deckKey) {
   localStorage.removeItem('yihaiDeletedCards:' + deckKey);
 }
 
+function migrateSyncWatermarks() {
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('yihaiSyncAt:')) keys.push(k);
+  }
+  for (const k of keys) {
+    const deckKey = k.substring('yihaiSyncAt:'.length);
+    const v = localStorage.getItem(k);
+    if (!localStorage.getItem('yihaiPushedAt:' + deckKey)) {
+      localStorage.setItem('yihaiPushedAt:' + deckKey, v);
+    }
+    if (!localStorage.getItem('yihaiPulledAt:' + deckKey)) {
+      localStorage.setItem('yihaiPulledAt:' + deckKey, v);
+    }
+  }
+}
+
 // fallback pool: supplement distractors when deck has <4 cards
 const FALLBACK_WORDS = ['苹果','香蕉','椅子','水壶','钥匙','手机','眼镜','雨伞','毛巾','牙刷',
   '西瓜','胡萝卜','土豆','玉米','火车','汽车','飞机','冰箱','电视','桌子'];
@@ -9827,6 +9845,7 @@ function showAbout() {
     try {
       migrateV5IfNeeded();
       await restoreDecks();
+      migrateSyncWatermarks();
       if (!currentDeck && DECKS_META.length) {
         currentDeck = DECKS_META[0].key;
       }
