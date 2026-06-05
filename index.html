@@ -2247,6 +2247,13 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 
       <div class="account-section">
         <div class="account-row">
+          <span class="account-row-lbl">云端牌组</span>
+          <button class="account-sync-btn" onclick="showCloudDecks()">查看</button>
+        </div>
+      </div>
+
+      <div class="account-section">
+        <div class="account-row">
           <div class="account-toggle-row">
             <span class="account-row-lbl">
               <span data-i18n="account_realtime_upload">学习实时上传</span>
@@ -2267,6 +2274,18 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
     </div>
 
   </div>
+</div>
+
+<!-- ══════════════ CLOUD DECKS SCREEN ══════════════ -->
+<div class="screen" id="screen-cloud-decks">
+  <div class="account-topbar">
+    <button class="back-btn" onclick="showScreen('screen-account')" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="account-topbar-title">云端牌组</span>
+    <div style="width:30px"></div>
+  </div>
+  <div id="cloud-decks-list" style="padding:0 16px"></div>
 </div>
 
 <!-- ══════════════ SETTINGS DRAWER ══════════════ -->
@@ -5506,6 +5525,7 @@ async function doAccountLogin() {
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
     runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), voice: true, deckKey: currentDeck })
+      .then(() => uploadMissingPersonalDecks())
       .then(() => { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadPersonalDeckMedia(m.key).catch(() => {})); })
       .catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
@@ -5534,10 +5554,51 @@ function doAccountSync() {
   const btn = document.getElementById('account-sync-btn');
   if (btn) btn.disabled = true;
   runSync({ modal: true, decks: true, events: true, showToast: true, voice: true, deckKey: currentDeck })
+    .then(function() { return uploadMissingPersonalDecks(); })
     .then(function() { return checkPersonalDeckUpdates(); })
     .then(function() { DECKS_META.filter(m => m.deck_type === 'personal').forEach(m => uploadPersonalDeckMedia(m.key).catch(() => {})); })
     .catch(function(e){ console.warn('[sync] account sync error:', e.message); })
     .finally(function() { if (btn) btn.disabled = false; });
+}
+
+async function showCloudDecks() {
+  if (!_syncEnabled || !_sb || !_cloudUserId) { showCloudToast('请先登录', true); return; }
+  showScreen('screen-cloud-decks');
+  const listEl = document.getElementById('cloud-decks-list');
+  listEl.innerHTML = '<div style="color:#999;padding:32px 0;text-align:center">加载中…</div>';
+  try {
+    const { data: cloudDecks, error } = await _sb.from('decks')
+      .select('id,name,name_lang,card_count,updated_at')
+      .eq('user_id', _cloudUserId)
+      .eq('deck_type', 'personal')
+      .order('updated_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    if (!cloudDecks || !cloudDecks.length) {
+      listEl.innerHTML = '<div style="color:#999;padding:32px 0;text-align:center">云端没有个人牌组</div>';
+      return;
+    }
+    listEl.innerHTML = cloudDecks.map(d => {
+      const local = DECKS_META.find(m => m.key === d.id);
+      const btn = local
+        ? `<button class="account-sync-btn" onclick="doCloudDeckAction('${d.id}','${esc(d.name).replace(/'/g,'&#39;')}','${d.name_lang||'zh-CN'}',this)">同步</button>`
+        : `<button class="account-btn account-btn-primary" style="padding:6px 16px;min-height:0;font-size:14px" onclick="doCloudDeckAction('${d.id}','${esc(d.name).replace(/'/g,'&#39;')}','${d.name_lang||'zh-CN'}',this)">下载</button>`;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-weight:600;color:var(--text)">${esc(d.name)}</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:2px">${d.card_count || 0} 张卡片${local ? ' · 已下载' : ''}</div>
+        </div>
+        ${btn}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = `<div style="color:#c00;padding:32px 0;text-align:center">加载失败：${esc(e.message)}</div>`;
+  }
+}
+
+async function doCloudDeckAction(deckId, deckName, nameLang, btnEl) {
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
+  await downloadPersonalDeckFromCloud(deckId, deckName, nameLang);
+  await showCloudDecks();
 }
 
 function onAccountRealtimeToggle(el) {
@@ -9404,6 +9465,24 @@ async function uploadDeckToCloud(key) {
   }
 }
 
+async function uploadMissingPersonalDecks() {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return;
+  try {
+    const { data: cloudDecks } = await _sb.from('decks')
+      .select('id')
+      .eq('user_id', _cloudUserId)
+      .eq('deck_type', 'personal');
+    const cloudIds = new Set((cloudDecks || []).map(d => d.id));
+    for (const meta of DECKS_META.filter(m => m.deck_type === 'personal')) {
+      if (!cloudIds.has(meta.key)) {
+        await uploadDeckToCloud(meta.key);
+      }
+    }
+  } catch(e) {
+    console.warn('[cloud] uploadMissingPersonalDecks fail:', e.message);
+  }
+}
+
 async function uploadPersonalDeckMedia(deckId) {
   if (!_syncEnabled || !_sb || !_cloudUserId) return;
   const meta = DECKS_META.find(m => m.key === deckId);
@@ -9498,6 +9577,16 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
     const cards = await fetchAllDeckCards(deckId, 'card_id,name,image_url,audio_url');
     if (!cards.length) return;
     const syncNow = new Date().toISOString();
+
+    // 立即把牌组加入首页（文字版），媒体下载在后台继续
+    const metaEntry = { key: deckId, name: deckName, deck_type: 'personal', nameLang: nameLang || 'zh-CN' };
+    const existingIdx0 = DECKS_META.findIndex(m => m.key === deckId);
+    if (existingIdx0 >= 0) DECKS_META[existingIdx0] = metaEntry;
+    else DECKS_META.push(metaEntry);
+    if (!DECKS[deckId]) DECKS[deckId] = cards.map(c => ({ id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] }));
+    saveDeckIndex();
+    renderDeckList();
+
     const localCards = DECKS[deckId] || [];
     const deckCards = [];
     await parallelMapLimit(cards, 3, async (c, i) => {
@@ -9507,7 +9596,12 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
       if (c.image_url) {
         if (local && local._imgUrl === c.image_url) {
           tasks.push(loadMedia(`${deckId}_${card.id}_img`)
-            .then(blob => { if (blob) card.img = URL.createObjectURL(blob); })
+            .then(async blob => {
+              if (blob) { card.img = URL.createObjectURL(blob); return; }
+              // IDB miss — 补充从远端下载
+              const fresh = await downloadMediaFromCDNorSupabase(c.image_url).catch(() => null);
+              if (fresh) { card.img = URL.createObjectURL(fresh); await saveMedia(`${deckId}_${card.id}_img`, fresh).catch(() => {}); }
+            })
             .catch(() => {}));
         } else {
           tasks.push(downloadMediaFromCDNorSupabase(c.image_url)
@@ -9518,7 +9612,12 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
       if (c.audio_url) {
         if (local && local._audUrl === c.audio_url) {
           tasks.push(loadMedia(`${deckId}_${card.id}_aud`)
-            .then(blob => { if (blob) card.audioUrl = URL.createObjectURL(blob); })
+            .then(async blob => {
+              if (blob) { card.audioUrl = URL.createObjectURL(blob); return; }
+              // IDB miss — 补充从远端下载
+              const fresh = await downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url)).catch(() => null);
+              if (fresh) { card.audioUrl = URL.createObjectURL(fresh); await saveMedia(`${deckId}_${card.id}_aud`, fresh).catch(() => {}); }
+            })
             .catch(() => {}));
         } else {
           tasks.push(downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url))
@@ -9533,10 +9632,6 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
     });
     localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
     DECKS[deckId] = deckCards;
-    const existingIdx = DECKS_META.findIndex(m => m.key === deckId);
-    if (existingIdx >= 0) DECKS_META[existingIdx] = { key: deckId, name: deckName, deck_type: 'personal', nameLang: nameLang || 'zh-CN' };
-    else DECKS_META.push({ key: deckId, name: deckName, deck_type: 'personal', nameLang: nameLang || 'zh-CN' });
-    saveDeckIndex();
     saveDeckCards(deckId, deckCards);
     renderDeckList();
     console.log('[cloud] downloadPersonalDeckFromCloud ok:', deckId, deckCards.length, 'cards');
