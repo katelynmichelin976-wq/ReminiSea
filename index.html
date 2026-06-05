@@ -9623,7 +9623,60 @@ class SyncJob {
       throw e;
     }
   }
-  async runCardsPhase(diff) { /* Task 9 实现 */ }
+  async runCardsPhase(diff) {
+    const { toPush, toPull, toDelete } = diff;
+    const total = toPush.length + toPull.length + (toDelete.length > 0 ? 1 : 0);
+    let done = 0;
+    this._setPhase('cards', done, total);
+
+    for (let b = 0; b < toPush.length; b += 100) {
+      await this._checkpoint();
+      const batch = toPush.slice(b, b + 100);
+      await upsertCardsBatch(this.deckKey, batch);
+      const maxMod = batch.reduce((m, c) => Math.max(m, c.mod || 0), 0);
+      const curPushed = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
+      if (maxMod > curPushed) localStorage.setItem('yihaiPushedAt:' + this.deckKey, String(maxMod));
+      done += batch.length;
+      this._setPhase('cards', done, total);
+    }
+
+    for (let b = 0; b < toPull.length; b += 100) {
+      await this._checkpoint();
+      const ids = toPull.slice(b, b + 100).map(r => r.card_id);
+      const { data, error } = await _sb.from('deck_cards')
+        .select('card_id,name,image_url,audio_url,sort_order,card_type,ext,updated_at')
+        .eq('deck_id', this.deckKey).in('card_id', ids);
+      if (error) throw new Error('pull cards: ' + error.message);
+      const cards = DECKS[this.deckKey] || (DECKS[this.deckKey] = []);
+      for (const r of data || []) {
+        const remoteMod = Date.parse(r.updated_at) || 0;
+        const idx = cards.findIndex(c => c.id === r.card_id);
+        const merged = {
+          id: r.card_id, name: r.name, nameLang: '',
+          _imgUrl: r.image_url || '', _audUrl: r.audio_url || '',
+          img: '', audioUrl: '', details: [],
+          cardType: r.card_type || 'choice', ext: r.ext || {},
+          mod: remoteMod
+        };
+        if (idx >= 0) cards[idx] = merged;
+        else cards.push(merged);
+      }
+      const maxRemoteMod = data.reduce((m, r) => Math.max(m, Date.parse(r.updated_at) || 0), 0);
+      const curPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
+      if (maxRemoteMod > curPulled) localStorage.setItem('yihaiPulledAt:' + this.deckKey, String(maxRemoteMod));
+      done += ids.length;
+      this._setPhase('cards', done, total);
+    }
+    saveDeckCards(this.deckKey, DECKS[this.deckKey] || []);
+
+    if (toDelete.length) {
+      await this._checkpoint();
+      await deleteCardsBatch(this.deckKey, toDelete);
+      clearDeletedCards(this.deckKey);
+      done += 1;
+      this._setPhase('cards', done, total);
+    }
+  }
   async runMediaPhase() { /* Task 10 实现 */ }
 }
 
