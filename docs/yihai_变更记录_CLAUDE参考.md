@@ -2,6 +2,19 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.8.0 Key Changes
+
+- **重设计动机**：v5.7 的 `uploadMissingPersonalDecks` 只判 deck ID 是否存在，本地修改/删除卡片不会传到云端，跨设备「我这台改了，对方收不到」；每次媒体同步即便没改也走 DELETE+INSERT 全量重传，3601 张卡逼近 30s watchdog；下载中断只能从头重来。
+- **核心改动 — 卡片级 `mod` 时间戳**：每次新建/编辑/打答题/导入都调 `nextMod()`（基于 `Date.now()` 单调递增）写入 `card.mod` 与 `deck.mod`；同步时比 mod 找增量。
+- **删除墓碑**：本地删卡写入 `yihaiDeletedCards:{deckId}` localStorage 记录 `{cardId, mod}`，同步时 push 到云端并触发对端 delete，确认后清墓碑。
+- **SyncJob 三阶段引擎**：Phase 1 拉/推 `decks` 表元信息；Phase 2 比较卡片 mod，分批 push/pull/delete `deck_cards`（按 1000 行分页）；Phase 3 上传/下载媒体 blob。每阶段独立 try/catch + 进度回调，可在阶段间暂停。
+- **暂停续传**：`SyncJob` 加 `paused/pausePromise` 字段，每张卡完成后 await pausePromise；`toggleSyncPause` 切换状态；每 100 张持久化进度（`saveDeckCards`），恢复或重启都能从断点继续。
+- **状态徽章**：纯函数 `computeDeckSyncState(deckMeta, lastPushedAt, lastPulledAt, remoteUpdatedAt)` 返回 `synced/needsPush/needsPull/conflict`；`showCloudDecks` 渲染按状态显示徽章 + 单牌组「同步」按钮。
+- **双水位拆分**：`yihaiSyncAt:{key}` 单值改为 `yihaiPushedAt:{key}` + `yihaiPulledAt:{key}`，分别追踪上传/下载水位；启动时一次性迁移（旧值复制到两个新 key）。
+- **Supabase migration `deck_cards_deck_card_uk`**：`unique(deck_id, card_id)` 约束，配合 `upsert(onConflict='deck_id,card_id')`，消除并发写入导致的重复行。
+- **deprecation**：`uploadMissingPersonalDecks` 和 `checkPersonalDeckUpdates` 改为 `syncAllDirtyDecks()` 的 wrapper，加 `// deprecated v5.8 ... remove in v5.9` 注释保留一版兼容。
+- **测试**：新增 `tests/yihai_v5.8_sync_test.js`（22 断言，覆盖 `nextMod` 单调性、`computeDeckDiff` 增删改、`computeDeckSyncState` 四状态、水位迁移幂等）；`_pw_cross_device.js` +15 断言（设备 A 改卡只传增量、删卡墓碑跨设备生效、暂停续传、旧水位迁移）。spec/plan 见 `docs/superpowers/specs/2026-06-05-personal-deck-sync-design.md` 与 `docs/superpowers/plans/2026-06-05-personal-deck-sync.md`。
+
 ## v5.7.2 Key Changes
 
 - **云端牌组下载支持暂停/继续**：`_downloading` Map 新增 `paused/pausePromise/pauseResolve` 字段；`parallelMapLimit` 每张卡完成后检查 `pausePromise`，非 null 则 `await` 挂起所有 worker；`toggleDownloadPause` 切换状态并 resolve 唤醒；`showCloudDecks` 渲染进行中状态时显示进度数字+暂停/继续按钮，`sub` 文字显示「下载中…」或「已暂停」。

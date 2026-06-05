@@ -26,11 +26,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v4.9_test.js` | v4.9 配置合并测试（48 cases） |
 | `tests/yihai_v5.0_i18n_test.js` | i18n 纯函数单测（31 cases） |
 | `tests/yihai_v5.2_voice_test.js` | 语音辅助迁移逻辑单测（17 cases） |
-| `tests/run_all.js` | 单元测试统一入口（6 套件，360 断言） |
+| `tests/yihai_v5.8_sync_test.js` | 个人牌组同步纯函数单测（mod/diff/syncState/水位迁移，24 cases） |
+| `tests/run_all.js` | 单元测试统一入口（7 套件，389 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音/openSrsDb/练习模式，64 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/队列顺序，14 断言，无需登录） |
 | `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登/双客户端防护/feedback E2E，32 断言） |
-| `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备，11 断言） |
+| `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备/增量上传/暂停续传/水位迁移，26 断言） |
 | `tests/_pw_session_restore.js` | 会话恢复流程（SDK失败/无backup/token失效/backup损坏/pathD/登录超时，13 断言，无需登录） |
 | `tests/_pw_sync_guard.js` | runSync 30s watchdog（REST挂起/IDB blocked 时 modal 自动关闭+toast，7 断言，无需登录） |
 | `tests/_pw_feedback.js` | 意见反馈模块（函数存在性/sheet 开关/表单校验，11 断言，无需登录） |
@@ -57,7 +58,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.7.2**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.8.0**（`index.html`，未发布，待用户「发布」指令时由 release skill 处理）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.8.0：** 个人牌组同步重做 — 卡片级 `mod` 时间戳 + 删除墓碑 + `SyncJob` 三阶段（结构 → 卡片 → 媒体）增量同步 + 暂停续传 + 云端牌组页状态徽章；`deck_cards` 加 `unique(deck_id, card_id)` 约束（v5.8 migration via MCP）；`yihaiSyncAt:{key}` 拆为 `yihaiPushedAt` + `yihaiPulledAt` 双水位（带迁移）；新增 `tests/yihai_v5.8_sync_test.js`（22 断言）与 `_pw_cross_device.js` 增量/暂停/迁移场景（+15 断言）。spec: `docs/superpowers/specs/2026-06-05-personal-deck-sync-design.md`；plan: `docs/superpowers/plans/2026-06-05-personal-deck-sync.md`。
 
 **v5.7.2：** 云端牌组下载支持暂停/继续（`toggleDownloadPause`，`_downloading` 加 `pausePromise`，每张卡完成后检查暂停状态）；诊断面板 Tab 0 新增媒体统计（图片/音频已下载数、待下载数、逐牌组明细、`navigator.storage.estimate` 本地总占用）
 

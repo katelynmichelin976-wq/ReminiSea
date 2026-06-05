@@ -9808,6 +9808,7 @@ function computeDeckSyncState(deckKey) {
 }
 
 async function uploadMissingPersonalDecks() {
+  // deprecated v5.8: replaced by SyncJob; kept for backward compat one version, remove in v5.9
   return syncAllDirtyDecks();
 }
 
@@ -9856,26 +9857,8 @@ async function uploadPersonalDeckMedia(deckId) {
 }
 
 async function checkPersonalDeckUpdates() {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return;
-  try {
-    const { data: remoteDecks, error } = await _sb.from('decks')
-      .select('id,name,updated_at,name_lang')
-      .eq('user_id', _cloudUserId)
-      .eq('deck_type', 'personal');
-    if (error || !remoteDecks) return;
-    for (const rd of remoteDecks) {
-      const lastSync = localStorage.getItem('yihaiSyncAt:' + rd.id) || '';
-      if (rd.updated_at > lastSync) {
-        const existingMeta = DECKS_META.find(m => m.key === rd.id);
-        const deckName = (existingMeta && existingMeta.name) || rd.name;
-        await downloadPersonalDeckFromCloud(rd.id, deckName, rd.name_lang);
-      }
-    }
-    _pendingDeckUpdates.clear();
-    renderDeckList();
-  } catch(e) {
-    console.warn('[cloud] checkPersonalDeckUpdates fail:', e.message);
-  }
+  // deprecated v5.8: structure pull is now handled by SyncJob Phase 2; kept for backward compat one version, remove in v5.9
+  return syncAllDirtyDecks();
 }
 
 async function refreshDeckUpdateBadges() {

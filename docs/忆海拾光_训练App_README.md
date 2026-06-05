@@ -129,6 +129,20 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.8.0 — 2026-06-06
+
+**个人牌组双向增量同步（重做）**
+
+- 卡片级 `mod` 时间戳：每次修改/打答题/导入都打单调时间戳，跨设备比较只传变化的卡片
+- 删除墓碑：本地删卡记入 `yihaiDeletedCards`，同步时下发到云端并由对端清理
+- `SyncJob` 三阶段引擎：结构（decks 元信息）→ 卡片（按 mod 增量 push/pull/delete）→ 媒体（图片/音频）
+- 暂停续传：长时间同步可随时暂停，恢复后从断点继续，每 100 张持久化进度
+- 云端牌组页状态徽章：每个牌组显示「已同步 / 待上传 / 待下载 / 冲突」实时状态
+- Supabase migration：`deck_cards` 加 `unique(deck_id, card_id)` 约束防重复插入
+- 本地水位：`yihaiSyncAt:{key}` 拆为 `yihaiPushedAt:{key}` + `yihaiPulledAt:{key}` 双水位（带自动迁移）
+
+---
+
 ### v5.7.2 — 2026-06-05
 
 **云端牌组下载暂停/继续 + 诊断媒体统计**
