@@ -22,7 +22,13 @@ function getBaseUrl() {
       }
       return 0;
     });
-  if (!files.length) throw new Error('No yihai_v*.html found in ' + root);
+  if (!files.length) {
+    if (fs.existsSync(path.join(root, 'index.html'))) {
+      console.log('  [helper] 测试目标: index.html');
+      return 'http://localhost:8080/index.html';
+    }
+    throw new Error('No yihai_v*.html or index.html found in ' + root);
+  }
   const latest = files[files.length - 1];
   console.log(`  [helper] 测试目标: ${latest}`);
   return `http://localhost:8080/${latest}`;
