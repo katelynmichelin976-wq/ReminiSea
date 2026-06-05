@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.6.4**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.7.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.7.0：** 个人牌组云端管理 — 修复本地有云端无时同步不上传（新增 `uploadMissingPersonalDecks`）；新增「云端牌组」管理页（账户页入口，下载/同步）；`downloadPersonalDeckFromCloud` 两阶段渲染（拉到卡片列表立即显示首页）；IDB miss 回退远端补下；断点续传（每 100 张 `saveDeckCards`）；进度显示（按钮实时 `done/total`）
 
 **v5.6.4：** 修复个人牌组每次同步全量上传导致 30s watchdog timeout — `uploadPersonalDeckMedia` 只在本次实际上传了新媒体（`uploaded > 0`）时才调用 `uploadDeckToCloud`，消除 3600+ 张牌组每次同步触发全量 DELETE+INSERT 的性能问题；修复诊断面板 `yh_diag.js` 读取 localStorage key 仍用 snake_case 旧格式（v5.5.0 迁移遗漏），`doAccountLogout` 补清旧 `yihai_session_backup` 僵尸 key
 

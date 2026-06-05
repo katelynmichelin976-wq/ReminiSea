@@ -2,6 +2,15 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.7.0 Key Changes
+
+- **修复个人牌组本地有云端无时同步不上传**：新增 `uploadMissingPersonalDecks()`，登录/手动同步时查询 Supabase `decks` 表，本地存在但云端缺失的个人牌组自动调 `uploadDeckToCloud`。根因：`uploadPersonalDeckMedia` 仅在 `uploaded > 0` 时调 `uploadDeckToCloud`；若所有媒体已标记上传则跳过，云端牌组结构永远缺失。
+- **新增云端牌组管理页 `screen-cloud-decks`**：账户页登录态新增「云端牌组 → 查看」入口；列表展示云端所有个人牌组，本地已有显示「同步」，本地没有显示「下载」。
+- **下载后立即显示首页**：`downloadPersonalDeckFromCloud` 改为两阶段——拉到卡片列表后立即更新 `DECKS_META` 并 `renderDeckList()`，媒体下载继续在后台进行。原实现需等 7202 次网络请求全完成才刷新首页。
+- **IDB miss 回退**：若 `_imgUrl`/`_audUrl` 已设但 IDB 内无 blob（上次下载被中断），自动回落到远端重新下载并存入 IDB，不再静默跳过。
+- **断点续传**：`downloadPersonalDeckFromCloud` 每完成 100 张调一次 `saveDeckCards`，将已下载卡的 `_imgUrl`/`_audUrl` 持久化；重启后这些卡走 IDB 路径，不重复下载。
+- **进度显示**：下载按钮实时更新为 `{done}/{total}` 格式（如 `1800/3601`），通过 `onProgress` 回调驱动。
+
 ## v5.6.4 Key Changes
 
 - **修复个人牌组全量上传导致 watchdog timeout**：`uploadPersonalDeckMedia` 末尾的 `uploadDeckToCloud` 调用从「有任何媒体 URL 就跑」改为「本次实际上传了新媒体（`uploaded > 0`）才跑」。根因：3601 张卡的牌组每次同步触发 DELETE+INSERT（9 次 Supabase 请求），高延迟下超过 30s watchdog。
