@@ -2779,6 +2779,7 @@ let _sb = null;
 let _syncEnabled = false;
 let _pendingDeckUpdates = new Set();
 let _sessionRestoring = false;
+const _downloading = new Map(); // deckId → {done, total}，进行中的媒体下载
 let _deviceId = null;
 let _lastOrphans = [];    // media cleanup: cache last orphan scan keys
 let _cloudUserEmail = '';
@@ -5578,14 +5579,23 @@ async function showCloudDecks() {
       return;
     }
     listEl.innerHTML = cloudDecks.map(d => {
+      const dl = _downloading.get(d.id);
       const local = DECKS_META.find(m => m.key === d.id);
-      const btn = local
-        ? `<button class="account-sync-btn" onclick="doCloudDeckAction('${d.id}','${esc(d.name).replace(/'/g,'&#39;')}','${d.name_lang||'zh-CN'}',this)">同步</button>`
-        : `<button class="account-btn account-btn-primary" style="padding:6px 16px;min-height:0;font-size:14px" onclick="doCloudDeckAction('${d.id}','${esc(d.name).replace(/'/g,'&#39;')}','${d.name_lang||'zh-CN'}',this)">下载</button>`;
+      const nameArg = `'${d.id}','${esc(d.name).replace(/'/g,'&#39;')}','${d.name_lang||'zh-CN'}'`;
+      let btn;
+      if (dl) {
+        const txt = dl.total > 0 ? `${dl.done}/${dl.total}` : '…';
+        btn = `<button class="account-sync-btn" id="dl-btn-${d.id}" disabled>${txt}</button>`;
+      } else if (local) {
+        btn = `<button class="account-sync-btn" onclick="doCloudDeckAction(${nameArg},this)">同步</button>`;
+      } else {
+        btn = `<button class="account-btn account-btn-primary" style="padding:6px 16px;min-height:0;font-size:14px" onclick="doCloudDeckAction(${nameArg},this)">下载</button>`;
+      }
+      const sub = dl ? `下载中…` : `${d.card_count || 0} 张卡片${local ? ' · 已下载' : ''}`;
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
         <div>
           <div style="font-weight:600;color:var(--text)">${esc(d.name)}</div>
-          <div style="font-size:12px;color:var(--text-sub);margin-top:2px">${d.card_count || 0} 张卡片${local ? ' · 已下载' : ''}</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:2px">${sub}</div>
         </div>
         ${btn}
       </div>`;
@@ -5596,10 +5606,15 @@ async function showCloudDecks() {
 }
 
 async function doCloudDeckAction(deckId, deckName, nameLang, btnEl) {
+  if (_downloading.has(deckId)) return;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
+  _downloading.set(deckId, { done: 0, total: 0 });
   await downloadPersonalDeckFromCloud(deckId, deckName, nameLang, (done, total) => {
-    if (btnEl) btnEl.textContent = `${done}/${total}`;
+    _downloading.set(deckId, { done, total });
+    const liveBtn = document.getElementById(`dl-btn-${deckId}`);
+    if (liveBtn) liveBtn.textContent = `${done}/${total}`;
   });
+  _downloading.delete(deckId);
   await showCloudDecks();
 }
 
