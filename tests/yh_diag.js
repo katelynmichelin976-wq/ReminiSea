@@ -200,6 +200,62 @@
         body.appendChild(kv('最近一次恢复', fmtTs(lastRestore.timestamp) + '  app:' + (lastRestore.payload?.app||'?')));
       }
 
+      // 媒体统计
+      body.appendChild(sec('媒体统计'));
+      if (typeof DECKS !== 'undefined' && typeof DECKS_META !== 'undefined') {
+        let totalCards = 0, withImgUrl = 0, loadedImg = 0, withAudUrl = 0, loadedAud = 0;
+        const deckStats = [];
+        for (const meta of (DECKS_META || [])) {
+          const cards = DECKS[meta.key] || [];
+          let dWithImg = 0, dLoadedImg = 0, dWithAud = 0, dLoadedAud = 0;
+          for (const c of cards) {
+            if (c._imgUrl) dWithImg++;
+            if (c.img && c.img.startsWith('blob:')) dLoadedImg++;
+            if (c._audUrl) dWithAud++;
+            if (c.audioUrl && c.audioUrl.startsWith('blob:')) dLoadedAud++;
+          }
+          totalCards += cards.length;
+          withImgUrl += dWithImg;
+          loadedImg  += dLoadedImg;
+          withAudUrl += dWithAud;
+          loadedAud  += dLoadedAud;
+          deckStats.push({ name: meta.name, total: cards.length, dWithImg, dLoadedImg, dWithAud, dLoadedAud });
+        }
+        const missingImg = withImgUrl - loadedImg;
+        const missingAud = withAudUrl - loadedAud;
+        body.appendChild(kv('总卡片', totalCards + ' 张'));
+        body.appendChild(kv('图片已下载', loadedImg + ' / ' + withImgUrl,
+          missingImg > 0 ? '#f59e0b' : '#22c55e'));
+        body.appendChild(kv('音频已下载', loadedAud + ' / ' + withAudUrl,
+          missingAud > 0 ? '#f59e0b' : '#22c55e'));
+        if (missingImg > 0 || missingAud > 0) {
+          body.appendChild(kv('待下载', '图 ' + missingImg + '  音 ' + missingAud, '#f59e0b'));
+          for (const ds of deckStats) {
+            const mi = ds.dWithImg - ds.dLoadedImg;
+            const ma = ds.dWithAud - ds.dLoadedAud;
+            if (mi > 0 || ma > 0) {
+              body.appendChild(el('div', 'font-size:11px;color:#94a3b8;padding:1px 0 1px 8px',
+                '↳ ' + ds.name + ': 图-' + mi + '  音-' + ma));
+            }
+          }
+        } else {
+          body.appendChild(el('div', 'font-size:11px;color:#22c55e;padding:2px 0', '✓ 所有媒体已下载'));
+        }
+      } else {
+        body.appendChild(el('div', 'color:#475569;font-size:12px', 'DECKS 未加载'));
+      }
+
+      // 存储占用（来自浏览器 Storage API）
+      if (navigator.storage && navigator.storage.estimate) {
+        try {
+          const est = await navigator.storage.estimate();
+          const fmt = b => !b ? '?' : b < 1048576 ? (b/1024).toFixed(0)+'KB' : (b/1048576).toFixed(1)+'MB';
+          const pct = est.quota ? ((est.usage/est.quota)*100).toFixed(0)+'%' : '?';
+          const vc  = est.quota && est.usage/est.quota > 0.7 ? '#ef4444' : '#e2e8f0';
+          body.appendChild(kv('本地总占用', fmt(est.usage) + ' / ' + fmt(est.quota) + '  (' + pct + ')', vc));
+        } catch(e) {}
+      }
+
       // 日志等级
       body.appendChild(sec('日志等级'));
       const lvl = localStorage.getItem('yihaiLogLevel') || 'warn (默认)';
