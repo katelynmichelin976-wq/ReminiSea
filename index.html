@@ -4727,7 +4727,7 @@ async function importYhspack(file) {
       if (!c.name) continue;
       const nf = normalizeField(c.name, deckLang);
       const card = { id: c.id || String(i), name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: [],
-                     cardType: c.cardType || c.card_type || 'choice', ext: c.ext || {} };
+                     cardType: c.cardType || c.card_type || 'choice', ext: c.ext || {}, mod: nextMod() };
 
       // image (derive MIME from extension, supports PNG/WebP/GIF)
       if (c.image) {
@@ -4767,16 +4767,15 @@ async function importYhspack(file) {
     // update or append meta
     const existing = DECKS_META.findIndex(m => m.key === key);
     const deckLangVal = deckLang || 'zh-CN';
-    if (existing >= 0) DECKS_META[existing] = { key, name, deck_type: 'personal', nameLang: deckLangVal };
-    else DECKS_META.push({ key, name, deck_type: 'personal', nameLang: deckLangVal });
+    const metaMod = nextMod();
+    if (existing >= 0) DECKS_META[existing] = { key, name, deck_type: 'personal', nameLang: deckLangVal, mod: metaMod };
+    else DECKS_META.push({ key, name, deck_type: 'personal', nameLang: deckLangVal, mod: metaMod });
 
     // persist (id+name only, blob URL not stored)
     saveDeckIndex();
     saveDeckCards(key, cards);
 
-    // upload structure to cloud (fire-and-forget; media deferred to next sync)
-    localStorage.setItem('yihaiSyncAt:' + key, new Date().toISOString());
-    uploadDeckToCloud(key).catch(() => {});
+    syncDeck(key).catch(() => {});
 
     // refresh home list, select the just-imported deck
     renderDeckList();
@@ -4951,7 +4950,9 @@ async function renameDeck(key) {
   const newName = await showPromptDialog(t('common_rename'), meta.name || '');
   if (!newName || newName.trim() === '' || newName.trim() === meta.name) return;
   meta.name = newName.trim();
+  meta.mod = nextMod();
   saveDeckIndex();
+  if (meta.deck_type === 'personal' && _syncEnabled) syncDeck(key).catch(() => {});
   renderDeckList();
   // if deck detail screen is showing this deck, sync name update
   if (currentDeck === key) {
@@ -5290,11 +5291,10 @@ async function createEmptyDeck() {
   if (!name || !name.trim()) return;
   const key = crypto.randomUUID();
   DECKS[key] = [];
-  DECKS_META.push({ key: key, name: name.trim(), deck_type: 'personal' });
+  DECKS_META.push({ key: key, name: name.trim(), deck_type: 'personal', mod: nextMod() });
   saveDeckIndex();
   saveDeckCards(key, []);
-  localStorage.setItem('yihaiSyncAt:' + key, new Date().toISOString());
-  uploadDeckToCloud(key).catch(() => {});
+  syncDeck(key).catch(() => {});
   renderDeckList();
   updateDeckStats();
   showCloudToast(t('home_deck_created', { name: name.trim() }));
@@ -9863,15 +9863,15 @@ async function refreshDeckUpdateBadges() {
 async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgress) {
   if (!_syncEnabled || !_sb) return;
   try {
-    const cards = await fetchAllDeckCards(deckId, 'card_id,name,image_url,audio_url,card_type,ext');
+    const cards = await fetchAllDeckCards(deckId, 'card_id,name,image_url,audio_url,card_type,ext,updated_at');
     if (!cards.length) return;
     const syncNow = new Date().toISOString();
     const total = cards.length;
 
     const makeCard = c => ({
       id: c.card_id, name: c.name, img: '', audioUrl: '', details: [],
-      cardType: c.card_type || 'choice',
-      ext: c.ext || {}
+      cardType: c.card_type || 'choice', ext: c.ext || {},
+      mod: Date.parse(c.updated_at) || 0
     });
 
     // 立即把牌组加入首页（文字版），媒体下载在后台继续
@@ -9887,7 +9887,7 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
     const prevCards = DECKS[deckId] || [];
     DECKS[deckId] = cards.map(c => {
       const prev = prevCards.find(p => p.id === c.card_id);
-      return prev ? { ...prev, img: '', audioUrl: '', cardType: c.card_type || 'choice', ext: c.ext || {} } : makeCard(c);
+      return prev ? { ...prev, img: '', audioUrl: '', cardType: c.card_type || 'choice', ext: c.ext || {}, mod: Date.parse(c.updated_at) || 0 } : makeCard(c);
     });
 
     let done = 0;
@@ -9939,6 +9939,11 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
     });
     localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
     saveDeckCards(deckId, DECKS[deckId]);
+    const maxMod = (cards || []).reduce((m, c) => Math.max(m, Date.parse(c.updated_at) || 0), 0);
+    if (maxMod) {
+      localStorage.setItem('yihaiPushedAt:' + deckId, String(maxMod));
+      localStorage.setItem('yihaiPulledAt:' + deckId, String(maxMod));
+    }
     renderDeckList();
     console.log('[cloud] downloadPersonalDeckFromCloud ok:', deckId, DECKS[deckId].length, 'cards');
   } catch(e) {
