@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.6.2 Key Changes
+
+- **修复 `deck_cards` 下载截断**：新增 `fetchAllDeckCards(deckId, select)` 分页 helper，每次取 1000 行循环直到返回行数 < pageSize 为止。替换三处无分页查询：`downloadDeckFromCloud`（手动下载）、`checkPersonalDeckUpdates`（同步时 card_id 列表）、`downloadPersonalDeckFromCloud`（同步时完整卡片内容）。根因：Supabase PostgREST 默认 `db_max_rows=1000`，超过 1000 张的牌组静默截断，iPhone 同步 3601 张牌组只收到 1000 张。
+
 ## v5.6.0 Key Changes
 
 - **个人牌组媒体云同步**: `importYhspack` 导入时 meta 写入 `deck_type:'personal'` + `nameLang`，立即 fire-and-forget 调 `uploadDeckToCloud`（原写法 `source:'local'` 导致 `uploadDeckToCloud` 门禁跳过，结构永不上传）。

@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.6.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.6.2**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.6.2：** 修复 `deck_cards` 下载截断 — 新增 `fetchAllDeckCards(deckId, select)` 分页 helper（每页 1000 行循环直到拉完），替换 `downloadDeckFromCloud`/`checkPersonalDeckUpdates`/`downloadPersonalDeckFromCloud` 三处无分页查询；修复超过 1000 张卡片的牌组同步到其他设备时被 Supabase PostgREST 默认行数上限截断的问题
 
 **v5.6.0：** 个人牌组媒体云同步 — ①`importYhspack` 导入时写入 `deck_type:'personal'`，立即上传结构到 Supabase；②新增 `uploadPersonalDeckMedia(deckId)`，点「同步」后逐卡上传图片/音频 blob 到 Storage（路径 `personal/{userId}/{deckId}/{cardId}_{type}.{ext}`），支持中断续传（`_imgUrl`/`_audUrl` 非空跳过）；③`doAccountLogin`/`doAccountSync` 在 `runSync()` 完成后串联触发媒体上传；④音频 MIME 完整映射（mp3/ogg/webm/aac/m4a）
 

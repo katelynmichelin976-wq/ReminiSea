@@ -2734,7 +2734,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.6.1';
+const APP_VERSION = '5.6.2';
 document.title = '忆海拾光 v' + APP_VERSION;
 document.getElementById('home-version').textContent = 'v' + APP_VERSION;
 
@@ -9112,17 +9112,31 @@ async function parallelMapLimit(arr, limit, fn) {
   await Promise.all(workers);
 }
 
+async function fetchAllDeckCards(deckId, select) {
+  const PAGE = 1000;
+  const rows = [];
+  let offset = 0;
+  while (true) {
+    const { data, error } = await _sb.from('deck_cards')
+      .select(select).eq('deck_id', deckId).order('sort_order')
+      .range(offset, offset + PAGE - 1);
+    if (error) throw error;
+    if (!data || !data.length) break;
+    rows.push(...data);
+    if (data.length < PAGE) break;
+    offset += PAGE;
+  }
+  return rows;
+}
+
 async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
   if (!_syncEnabled || !_sb) { showCloudToast(t('sync_offline'), true); return; }
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('common_downloading'); }
 
   try {
-    // 1. get cards from deck_cards (ordered)
-    const { data: ordered, error: linkErr } = await _sb.from('deck_cards')
-      .select('card_id,name,image_url,audio_url')
-      .eq('deck_id', deckId).order('sort_order');
-    if (linkErr) throw linkErr;
-    if (!ordered || !ordered.length) { showCloudToast(t('sync_deck_empty'), true); return; }
+    // 1. get cards from deck_cards (ordered, paginated)
+    const ordered = await fetchAllDeckCards(deckId, 'card_id,name,image_url,audio_url');
+    if (!ordered.length) { showCloudToast(t('sync_deck_empty'), true); return; }
 
     const key = deckId;
 
@@ -9220,11 +9234,9 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
     const syncNow = new Date().toISOString();
     const lastSyncAt = localStorage.getItem('yihaiSyncAt:' + localKey) || '';
 
-    // 1. get server card_id list (lightweight, IDs only)
-    const { data: links, error: linkErr } = await _sb.from('deck_cards')
-      .select('card_id').eq('deck_id', deckId).order('sort_order');
-    if (linkErr) throw linkErr;
-    if (!links || !links.length) { showCloudToast(t('sync_deck_empty'), true); return; }
+    // 1. get server card_id list (lightweight, IDs only, paginated)
+    const links = await fetchAllDeckCards(deckId, 'card_id');
+    if (!links.length) { showCloudToast(t('sync_deck_empty'), true); return; }
     const serverIds = links.map(l => l.card_id);
     const serverIdSet = new Set(serverIds);
 
@@ -9483,10 +9495,8 @@ async function refreshDeckUpdateBadges() {
 async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang) {
   if (!_syncEnabled || !_sb) return;
   try {
-    const { data: cards, error } = await _sb.from('deck_cards')
-      .select('card_id,name,image_url,audio_url')
-      .eq('deck_id', deckId).order('sort_order');
-    if (error || !cards || !cards.length) return;
+    const cards = await fetchAllDeckCards(deckId, 'card_id,name,image_url,audio_url');
+    if (!cards.length) return;
     const syncNow = new Date().toISOString();
     const localCards = DECKS[deckId] || [];
     const deckCards = [];
