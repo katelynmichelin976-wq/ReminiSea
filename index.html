@@ -9619,17 +9619,23 @@ async function refreshDeckUpdateBadges() {
 async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgress) {
   if (!_syncEnabled || !_sb) return;
   try {
-    const cards = await fetchAllDeckCards(deckId, 'card_id,name,image_url,audio_url');
+    const cards = await fetchAllDeckCards(deckId, 'card_id,name,image_url,audio_url,card_type,ext');
     if (!cards.length) return;
     const syncNow = new Date().toISOString();
     const total = cards.length;
+
+    const makeCard = c => ({
+      id: c.card_id, name: c.name, img: '', audioUrl: '', details: [],
+      cardType: c.card_type || 'choice',
+      ext: c.ext || {}
+    });
 
     // 立即把牌组加入首页（文字版），媒体下载在后台继续
     const metaEntry = { key: deckId, name: deckName, deck_type: 'personal', nameLang: nameLang || 'zh-CN' };
     const existingIdx0 = DECKS_META.findIndex(m => m.key === deckId);
     if (existingIdx0 >= 0) DECKS_META[existingIdx0] = metaEntry;
     else DECKS_META.push(metaEntry);
-    if (!DECKS[deckId]) DECKS[deckId] = cards.map(c => ({ id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] }));
+    if (!DECKS[deckId]) DECKS[deckId] = cards.map(makeCard);
     saveDeckIndex();
     renderDeckList();
 
@@ -9637,7 +9643,7 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
     const prevCards = DECKS[deckId] || [];
     DECKS[deckId] = cards.map(c => {
       const prev = prevCards.find(p => p.id === c.card_id);
-      return prev ? { ...prev, img: '', audioUrl: '' } : { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] };
+      return prev ? { ...prev, img: '', audioUrl: '', cardType: c.card_type || 'choice', ext: c.ext || {} } : makeCard(c);
     });
 
     let done = 0;
