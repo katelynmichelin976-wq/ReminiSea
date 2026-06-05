@@ -66,5 +66,30 @@ function check(desc, ok) {
   check('无 mod 字段加载为 0', loaded2[0].mod === 0);
 }
 
+// Test 5: 删除墓碑
+{
+  const ls = {};
+  function markCardDeleted(deckKey, cardId) {
+    const k = 'yihaiDeletedCards:' + deckKey;
+    const arr = JSON.parse(ls[k] || '[]');
+    if (!arr.includes(cardId)) arr.push(cardId);
+    ls[k] = JSON.stringify(arr);
+  }
+  function getDeletedCards(deckKey) {
+    return JSON.parse(ls['yihaiDeletedCards:' + deckKey] || '[]');
+  }
+  function clearDeletedCards(deckKey) {
+    delete ls['yihaiDeletedCards:' + deckKey];
+  }
+
+  markCardDeleted('d1', 'c1');
+  markCardDeleted('d1', 'c2');
+  markCardDeleted('d1', 'c1');
+  check('墓碑去重', JSON.stringify(getDeletedCards('d1')) === '["c1","c2"]');
+
+  clearDeletedCards('d1');
+  check('清墓碑', getDeletedCards('d1').length === 0);
+}
+
 console.log(`\n  通过 ${passed} / 失败 ${failed}`);
 process.exit(failed > 0 ? 1 : 0);

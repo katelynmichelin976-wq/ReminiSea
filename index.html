@@ -4375,6 +4375,19 @@ function nextMod() {
   return _lastMod;
 }
 
+function markCardDeleted(deckKey, cardId) {
+  const k = 'yihaiDeletedCards:' + deckKey;
+  const arr = JSON.parse(localStorage.getItem(k) || '[]');
+  if (!arr.includes(cardId)) arr.push(cardId);
+  localStorage.setItem(k, JSON.stringify(arr));
+}
+function getDeletedCards(deckKey) {
+  return JSON.parse(localStorage.getItem('yihaiDeletedCards:' + deckKey) || '[]');
+}
+function clearDeletedCards(deckKey) {
+  localStorage.removeItem('yihaiDeletedCards:' + deckKey);
+}
+
 // fallback pool: supplement distractors when deck has <4 cards
 const FALLBACK_WORDS = ['苹果','香蕉','椅子','水壶','钥匙','手机','眼镜','雨伞','毛巾','牙刷',
   '西瓜','胡萝卜','土豆','玉米','火车','汽车','飞机','冰箱','电视','桌子'];
@@ -4906,6 +4919,7 @@ async function deleteDeck(e, key) {
     _sb.from('decks').delete().eq('id', key).then(null, () => {});
   }
   localStorage.removeItem('yihaiSyncAt:' + key);
+  clearDeletedCards(key);
   if (currentDeck === key) currentDeck = null;
   renderDeckList();
   updateDeckStats();
