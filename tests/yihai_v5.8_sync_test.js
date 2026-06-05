@@ -115,5 +115,87 @@ function check(desc, ok) {
   check('已存在 pushedAt 不被覆盖', ls['yihaiPushedAt:d2'] === '2026-06-05');
 }
 
+// Test 7: computeDeckDiff
+{
+  function computeDeckDiff(localCards, deletedIds, remoteCardMeta, pushedAt, pulledAt) {
+    const localMap = new Map(localCards.map(c => [c.id, c]));
+    const remoteMap = new Map(remoteCardMeta.map(r => [r.card_id, r.updated_at]));
+    const toPush = localCards.filter(c => {
+      if (!c.mod || c.mod <= pushedAt) return false;
+      const rUpd = remoteMap.get(c.id);
+      return !rUpd || c.mod > rUpd;
+    });
+    const toPull = remoteCardMeta.filter(r => {
+      if (r.updated_at <= pulledAt) return false;
+      const local = localMap.get(r.card_id);
+      return !local || r.updated_at > (local.mod || 0);
+    });
+    const toDelete = deletedIds.filter(id => remoteMap.has(id));
+    return { toPush, toPull, toDelete };
+  }
+
+  {
+    const r = computeDeckDiff(
+      [{ id: 'c1', mod: 100 }, { id: 'c2', mod: 50 }],
+      [],
+      [{ card_id: 'c2', updated_at: 50 }],
+      50, 50
+    );
+    check('A: toPush=[c1]', r.toPush.length === 1 && r.toPush[0].id === 'c1');
+    check('A: toPull 空', r.toPull.length === 0);
+  }
+
+  {
+    const r = computeDeckDiff(
+      [{ id: 'c1', mod: 50 }],
+      [],
+      [{ card_id: 'c1', updated_at: 50 }, { card_id: 'c2', updated_at: 100 }],
+      50, 50
+    );
+    check('B: toPull=[c2]', r.toPull.length === 1 && r.toPull[0].card_id === 'c2');
+    check('B: toPush 空', r.toPush.length === 0);
+  }
+
+  {
+    const r = computeDeckDiff(
+      [{ id: 'c1', mod: 200 }],
+      [],
+      [{ card_id: 'c1', updated_at: 150 }],
+      100, 100
+    );
+    check('C: 本地赢', r.toPush.length === 1 && r.toPull.length === 0);
+  }
+
+  {
+    const r = computeDeckDiff(
+      [{ id: 'c1', mod: 150 }],
+      [],
+      [{ card_id: 'c1', updated_at: 200 }],
+      100, 100
+    );
+    check('D: 云端赢', r.toPush.length === 0 && r.toPull.length === 1);
+  }
+
+  {
+    const r = computeDeckDiff(
+      [],
+      ['c1'],
+      [{ card_id: 'c1', updated_at: 100 }],
+      50, 50
+    );
+    check('E: toDelete=[c1]', r.toDelete.length === 1 && r.toDelete[0] === 'c1');
+  }
+
+  {
+    const r = computeDeckDiff(
+      [{ id: 'c1', mod: 0 }],
+      [],
+      [],
+      50, 50
+    );
+    check('F: mod=0 不进 toPush', r.toPush.length === 0);
+  }
+}
+
 console.log(`\n  通过 ${passed} / 失败 ${failed}`);
 process.exit(failed > 0 ? 1 : 0);

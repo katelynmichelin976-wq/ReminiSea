@@ -9554,6 +9554,23 @@ async function uploadDeckToCloud(key) {
   }
 }
 
+function computeDeckDiff(localCards, deletedIds, remoteCardMeta, pushedAt, pulledAt) {
+  const localMap = new Map(localCards.map(c => [c.id, c]));
+  const remoteMap = new Map(remoteCardMeta.map(r => [r.card_id, r.updated_at]));
+  const toPush = localCards.filter(c => {
+    if (!c.mod || c.mod <= pushedAt) return false;
+    const rUpd = remoteMap.get(c.id);
+    return !rUpd || c.mod > rUpd;
+  });
+  const toPull = remoteCardMeta.filter(r => {
+    if (r.updated_at <= pulledAt) return false;
+    const local = localMap.get(r.card_id);
+    return !local || r.updated_at > (local.mod || 0);
+  });
+  const toDelete = deletedIds.filter(id => remoteMap.has(id));
+  return { toPush, toPull, toDelete };
+}
+
 async function uploadMissingPersonalDecks() {
   if (!_syncEnabled || !_sb || !_cloudUserId) return;
   try {
