@@ -129,6 +129,16 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.6.4 — 2026-06-05
+
+**修复个人牌组同步性能问题 + 诊断面板 key 修正**
+
+- `uploadPersonalDeckMedia` 只在本次有新媒体上传时才调用 `uploadDeckToCloud`，消除 3600+ 张牌组每次同步全量 DELETE+INSERT 导致的 30s 超时
+- 诊断面板 `yh_diag.js` localStorage key 修正（snake_case → camelCase），Session Backup 信息现在可正确显示
+- 登出时清理旧 `yihai_session_backup` 僵尸数据
+
+---
+
 ### v5.6.3 — 2026-06-05
 
 **修复个人牌组同步黄点误报**

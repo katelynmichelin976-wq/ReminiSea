@@ -2734,7 +2734,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.6.3';
+const APP_VERSION = '5.6.4';
 document.title = '忆海拾光 v' + APP_VERSION;
 document.getElementById('home-version').textContent = 'v' + APP_VERSION;
 
@@ -9437,14 +9437,11 @@ async function uploadPersonalDeckMedia(deckId) {
       }
     });
 
-    if (uploaded > 0) saveDeckCards(deckId, cards);
-    const hasUrls = cards.some(c => c._imgUrl || c._audUrl);
-    if (hasUrls) {
+    if (uploaded > 0) {
+      saveDeckCards(deckId, cards);
       await uploadDeckToCloud(deckId);
-      if (uploaded > 0) {
-        showCloudToast(t('toast_media_synced', { n: uploaded }));
-        console.log('[cloud] uploadPersonalDeckMedia ok:', deckId, uploaded, 'files');
-      }
+      showCloudToast(t('toast_media_synced', { n: uploaded }));
+      console.log('[cloud] uploadPersonalDeckMedia ok:', deckId, uploaded, 'files');
     }
   } catch(e) {
     console.warn('[cloud] uploadPersonalDeckMedia fail:', e.message);

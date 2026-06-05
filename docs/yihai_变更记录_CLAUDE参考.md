@@ -2,6 +2,12 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.6.4 Key Changes
+
+- **修复个人牌组全量上传导致 watchdog timeout**：`uploadPersonalDeckMedia` 末尾的 `uploadDeckToCloud` 调用从「有任何媒体 URL 就跑」改为「本次实际上传了新媒体（`uploaded > 0`）才跑」。根因：3601 张卡的牌组每次同步触发 DELETE+INSERT（9 次 Supabase 请求），高延迟下超过 30s watchdog。
+- **修复诊断面板 `yh_diag.js` key 错误**：v5.5.0 camelCase 迁移后 `yh_diag.js` 有 6 处仍读旧 snake_case key（`yihai_session_backup`、`yihai_device_id`、`yihai_global_sync_ts` ×2、`yihai_log_level` ×3、`yihai_daily_progress`），导致 Session Backup email/expires_at 永远显示 `—`。
+- **清理旧 key**：`doAccountLogout` 补 `removeItem('yihai_session_backup')`，清除 v5.5.0 前遗留的僵尸数据。
+
 ## v5.6.3 Key Changes
 
 - **修复个人牌组同步黄点误报**：`uploadDeckToCloud` 上传成功后补写本地 `yihaiSyncAt = Date.now()`，消除上传后本地 `yihaiSyncAt` 未更新导致下次打开 app 误报未同步黄点的问题。
