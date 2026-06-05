@@ -9571,6 +9571,31 @@ function computeDeckDiff(localCards, deletedIds, remoteCardMeta, pushedAt, pulle
   return { toPush, toPull, toDelete };
 }
 
+function parseWatermark(v) {
+  if (!v) return 0;
+  if (/^\d+$/.test(v)) return parseInt(v);
+  return Date.parse(v) || 0;
+}
+
+function computeDeckSyncState(deckKey) {
+  const meta = DECKS_META.find(m => m.key === deckKey);
+  if (!meta || meta.deck_type !== 'personal') return { status: 'clean' };
+  const cards = DECKS[deckKey] || [];
+  const deleted = getDeletedCards(deckKey);
+  const pushedAt = parseWatermark(localStorage.getItem('yihaiPushedAt:' + deckKey));
+  const pulledAt = parseWatermark(localStorage.getItem('yihaiPulledAt:' + deckKey));
+  const remoteUpdatedAt = meta._remoteUpdatedAt ? Date.parse(meta._remoteUpdatedAt) : 0;
+  const localChanged = cards.some(c => c.mod && c.mod > pushedAt)
+    || deleted.length > 0
+    || (meta.mod && meta.mod > pushedAt);
+  const pushCount = cards.filter(c => c.mod && c.mod > pushedAt).length + deleted.length;
+  const remoteAhead = remoteUpdatedAt && remoteUpdatedAt > pulledAt;
+  if (localChanged && remoteAhead) return { status: 'bothChanged', pushCount };
+  if (localChanged) return { status: 'localDirty', pushCount };
+  if (remoteAhead) return { status: 'remoteAhead' };
+  return { status: 'clean' };
+}
+
 async function uploadMissingPersonalDecks() {
   if (!_syncEnabled || !_sb || !_cloudUserId) return;
   try {

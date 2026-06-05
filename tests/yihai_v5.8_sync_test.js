@@ -197,5 +197,26 @@ function check(desc, ok) {
   }
 }
 
+// Test 8: computeDeckSyncState 核心逻辑
+{
+  function computeDeckSyncState(localCards, deletedIds, localMeta, remoteUpdatedAt, pushedAt, pulledAt) {
+    const localChanged = localCards.some(c => c.mod && c.mod > pushedAt)
+      || deletedIds.length > 0
+      || (localMeta.mod && localMeta.mod > pushedAt);
+    const remoteAhead = remoteUpdatedAt && remoteUpdatedAt > pulledAt;
+    if (localChanged && remoteAhead) return { status: 'bothChanged' };
+    if (localChanged) return { status: 'localDirty' };
+    if (remoteAhead) return { status: 'remoteAhead' };
+    return { status: 'clean' };
+  }
+
+  check('clean', computeDeckSyncState([{id:'c',mod:50}], [], {mod:50}, 2025, 100, 2025).status === 'clean');
+  check('localDirty (card)', computeDeckSyncState([{id:'c',mod:200}], [], {mod:50}, 2025, 100, 2025).status === 'localDirty');
+  check('localDirty (delete)', computeDeckSyncState([], ['x'], {mod:50}, 2025, 100, 2025).status === 'localDirty');
+  check('localDirty (meta)', computeDeckSyncState([], [], {mod:200}, 2025, 100, 2025).status === 'localDirty');
+  check('remoteAhead', computeDeckSyncState([{id:'c',mod:50}], [], {mod:50}, 2030, 2025, 2025).status === 'remoteAhead');
+  check('bothChanged', computeDeckSyncState([{id:'c',mod:200}], [], {mod:50}, 2030, 100, 2025).status === 'bothChanged');
+}
+
 console.log(`\n  通过 ${passed} / 失败 ${failed}`);
 process.exit(failed > 0 ? 1 : 0);
