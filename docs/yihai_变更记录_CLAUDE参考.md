@@ -2,6 +2,10 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.6.3 Key Changes
+
+- **修复个人牌组同步黄点误报**：`uploadDeckToCloud` 上传成功后补写本地 `yihaiSyncAt = Date.now()`，消除上传后本地 `yihaiSyncAt` 未更新导致下次打开 app 误报未同步黄点的问题。
+
 ## v5.6.2 Key Changes
 
 - **修复 `deck_cards` 下载截断**：新增 `fetchAllDeckCards(deckId, select)` 分页 helper，每次取 1000 行循环直到返回行数 < pageSize 为止。替换三处无分页查询：`downloadDeckFromCloud`（手动下载）、`checkPersonalDeckUpdates`（同步时 card_id 列表）、`downloadPersonalDeckFromCloud`（同步时完整卡片内容）。根因：Supabase PostgREST 默认 `db_max_rows=1000`，超过 1000 张的牌组静默截断，iPhone 同步 3601 张牌组只收到 1000 张。

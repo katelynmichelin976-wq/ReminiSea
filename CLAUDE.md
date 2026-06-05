@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.6.2**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.6.3**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.6.3：** 修复个人牌组同步黄点误报 — `uploadDeckToCloud` 上传成功后同步写入本地 `yihaiSyncAt`，消除上传后立即显示未同步黄点的问题
 
 **v5.6.2：** 修复 `deck_cards` 下载截断 — 新增 `fetchAllDeckCards(deckId, select)` 分页 helper（每页 1000 行循环直到拉完），替换 `downloadDeckFromCloud`/`checkPersonalDeckUpdates`/`downloadPersonalDeckFromCloud` 三处无分页查询；修复超过 1000 张卡片的牌组同步到其他设备时被 Supabase PostgREST 默认行数上限截断的问题
 
