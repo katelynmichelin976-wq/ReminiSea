@@ -9605,15 +9605,19 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
     saveDeckIndex();
     renderDeckList();
 
-    const localCards = DECKS[deckId] || [];
-    const deckCards = [];
+    // 重建 DECKS[deckId]，保留已有的 _imgUrl/_audUrl 供断点续传判断
+    const prevCards = DECKS[deckId] || [];
+    DECKS[deckId] = cards.map(c => {
+      const prev = prevCards.find(p => p.id === c.card_id);
+      return prev ? { ...prev, img: '', audioUrl: '' } : { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] };
+    });
+
     let done = 0;
     await parallelMapLimit(cards, 3, async (c, i) => {
-      const card = { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] };
-      const local = localCards.find(lc => lc.id === c.card_id);
+      const card = DECKS[deckId][i]; // 直接操作 DECKS，下载完立即反映到渲染
       const tasks = [];
       if (c.image_url) {
-        if (local && local._imgUrl === c.image_url) {
+        if (card._imgUrl === c.image_url) {
           tasks.push(loadMedia(`${deckId}_${card.id}_img`)
             .then(async blob => {
               if (blob) { card.img = URL.createObjectURL(blob); return; }
@@ -9629,7 +9633,7 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
         }
       }
       if (c.audio_url) {
-        if (local && local._audUrl === c.audio_url) {
+        if (card._audUrl === c.audio_url) {
           tasks.push(loadMedia(`${deckId}_${card.id}_aud`)
             .then(async blob => {
               if (blob) { card.audioUrl = URL.createObjectURL(blob); return; }
@@ -9647,17 +9651,15 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
       await Promise.all(tasks);
       card._imgUrl = c.image_url || '';
       card._audUrl = c.audio_url || '';
-      deckCards[i] = card;
       done++;
       onProgress && onProgress(done, total);
       // 每 100 张持久化一次，支持断点续传
-      if (done % 100 === 0) saveDeckCards(deckId, deckCards.filter(Boolean));
+      if (done % 100 === 0) saveDeckCards(deckId, DECKS[deckId]);
     });
     localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
-    DECKS[deckId] = deckCards;
-    saveDeckCards(deckId, deckCards);
+    saveDeckCards(deckId, DECKS[deckId]);
     renderDeckList();
-    console.log('[cloud] downloadPersonalDeckFromCloud ok:', deckId, deckCards.length, 'cards');
+    console.log('[cloud] downloadPersonalDeckFromCloud ok:', deckId, DECKS[deckId].length, 'cards');
   } catch(e) {
     console.warn('[cloud] downloadPersonalDeckFromCloud fail:', e.message);
   }
