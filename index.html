@@ -5611,8 +5611,17 @@ async function showCloudDecks() {
 
 async function doCloudDeckAction(deckId, deckName, nameLang, btnEl) {
   if (_downloading.has(deckId)) return;
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
   _downloading.set(deckId, { done: 0, total: 0, paused: false, pausePromise: null, pauseResolve: null });
+  // 立即把按钮替换成进度 span + 暂停按钮，不等 showCloudDecks() 重渲染
+  if (btnEl && btnEl.parentNode) {
+    const subEl = btnEl.parentNode.querySelector('div > div:last-child');
+    if (subEl) subEl.textContent = '下载中…';
+    const progDiv = document.createElement('div');
+    progDiv.style.cssText = 'display:flex;gap:8px;align-items:center';
+    progDiv.innerHTML = `<span id="dl-prog-${deckId}" style="font-size:13px;color:var(--text-sub);min-width:72px;text-align:right">…</span>`
+      + `<button class="account-sync-btn" onclick="toggleDownloadPause('${deckId}')">暂停</button>`;
+    btnEl.parentNode.replaceChild(progDiv, btnEl);
+  }
   await downloadPersonalDeckFromCloud(deckId, deckName, nameLang, (done, total) => {
     const s = _downloading.get(deckId);
     if (s) { s.done = done; s.total = total; }
