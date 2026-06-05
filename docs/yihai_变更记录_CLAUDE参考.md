@@ -2,6 +2,11 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.7.2 Key Changes
+
+- **云端牌组下载支持暂停/继续**：`_downloading` Map 新增 `paused/pausePromise/pauseResolve` 字段；`parallelMapLimit` 每张卡完成后检查 `pausePromise`，非 null 则 `await` 挂起所有 worker；`toggleDownloadPause` 切换状态并 resolve 唤醒；`showCloudDecks` 渲染进行中状态时显示进度数字+暂停/继续按钮，`sub` 文字显示「下载中…」或「已暂停」。
+- **诊断面板 Tab 0 新增媒体统计**：遍历 `DECKS_META/DECKS`，统计每张卡 `_imgUrl`（云端有图）和 `img.startsWith('blob:')` （已在内存），输出图片/音频已下载数、待下载数、逐牌组明细；`navigator.storage.estimate()` 显示本地总占用和配额，使用率超 70% 标红。
+
 ## v5.7.1 Key Changes
 
 - **修复下载个人牌组时图片不显示**：`downloadPersonalDeckFromCloud` 原本把每张卡的下载结果写进局部变量 `deckCards[i]`，而 `DECKS[deckId]` 是 Phase 1 创建的 placeholder 数组，两者不同对象，只有最后 `DECKS[deckId] = deckCards` 才合并，练习页读取 `DECKS[deckId]` 全是 `img:''`。修复：删除 `deckCards` 中间变量，改为 `const card = DECKS[deckId][i]` 直接引用，blob URL 写入 `card.img` 即刻反映在 `DECKS` 里。同时重建 `DECKS[deckId]` 时保留已有 `_imgUrl/_audUrl` 供断点续传判断。
