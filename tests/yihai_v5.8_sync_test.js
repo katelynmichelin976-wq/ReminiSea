@@ -1,5 +1,3 @@
-const assert = require('assert');
-
 // 复制 index.html 中的 nextMod 实现（保持同步）
 let _lastMod = 0;
 function nextMod() {
@@ -35,6 +33,7 @@ function check(desc, ok) {
 
 // Test 3: 时钟回拨时仍单调
 {
+  resetMod();
   _lastMod = Date.now() + 10000;
   const m1 = nextMod();
   const m2 = nextMod();
