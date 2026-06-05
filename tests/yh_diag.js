@@ -159,7 +159,7 @@
       const se  = typeof _syncEnabled    !== 'undefined' ? _syncEnabled    : null;
       const em  = typeof _cloudUserEmail !== 'undefined' ? _cloudUserEmail : null;
       const uid = typeof _cloudUserId    !== 'undefined' ? _cloudUserId    : null;
-      const did = typeof _deviceId       !== 'undefined' ? _deviceId       : localStorage.getItem('yihai_device_id');
+      const did = typeof _deviceId       !== 'undefined' ? _deviceId       : localStorage.getItem('yihaiDeviceId');
 
       // v5.1.1: 3-variable model — state derived from _syncEnabled + _cloudUserEmail
       let sText = '未登录', sColor = '#64748b';
@@ -189,7 +189,7 @@
 
       // 同步
       body.appendChild(sec('同步'));
-      const gst = localStorage.getItem('yihai_global_sync_ts');
+      const gst = localStorage.getItem('yihaiGlobalSyncTs');
       body.appendChild(kv('上次同步', gst ? fmtDt(parseInt(gst)) : '(无记录)'));
 
       // 最近一条 session_restore_start
@@ -202,7 +202,7 @@
 
       // 日志等级
       body.appendChild(sec('日志等级'));
-      const lvl = localStorage.getItem('yihai_log_level') || 'warn (默认)';
+      const lvl = localStorage.getItem('yihaiLogLevel') || 'warn (默认)';
       body.appendChild(kv('当前等级', lvl));
       body.appendChild(kv('调整方式', '⚙️ 设置 Tab，或控制台 yhLog.setLevel("debug")'));
 
@@ -425,7 +425,7 @@
 
     // 每日进度
     body.appendChild(sec('每日进度'));
-    const dp = localStorage.getItem('yihai_daily_progress');
+    const dp = localStorage.getItem('yihaiDailyProgress');
     if (dp) {
       try { Object.entries(JSON.parse(dp)).forEach(([k,v]) => body.appendChild(kv(k, JSON.stringify(v)))); }
       catch(e) { body.appendChild(kv('raw', dp.substring(0,120))); }
@@ -435,7 +435,7 @@
 
     // session_backup
     body.appendChild(sec('Session Backup'));
-    const bk = localStorage.getItem('yihai_session_backup');
+    const bk = localStorage.getItem('yihaiSessionBackup');
     if (bk) {
       try {
         const p = JSON.parse(bk);
@@ -448,7 +448,7 @@
 
     // 日志等级控制
     body.appendChild(sec('日志等级'));
-    const cur = localStorage.getItem('yihai_log_level') || 'warn';
+    const cur = localStorage.getItem('yihaiLogLevel') || 'warn';
     const lvlRow = el('div','display:flex;gap:6px;margin-bottom:6px');
     ['debug','info','warn','error'].forEach(lvl => {
       const b = el('button',
@@ -456,7 +456,7 @@
       b.textContent = lvl;
       b.onclick = () => {
         if (typeof yhLog !== 'undefined') yhLog.setLevel(lvl);
-        else localStorage.setItem('yihai_log_level', lvl);
+        else localStorage.setItem('yihaiLogLevel', lvl);
         renderSettings();
       };
       lvlRow.appendChild(b);
@@ -474,9 +474,9 @@
         'APP_VERSION: ' + (typeof APP_VERSION!=='undefined'?APP_VERSION:'?'),
         '_syncEnabled: '    + (typeof _syncEnabled!=='undefined'?_syncEnabled:'?'),
         '_cloudUserEmail: ' + (typeof _cloudUserEmail!=='undefined'?_cloudUserEmail:'?'),
-        'device_id: '       + (typeof _deviceId!=='undefined'?_deviceId:localStorage.getItem('yihai_device_id')||'?'),
-        'log_level: '       + (localStorage.getItem('yihai_log_level')||'warn(默认)'),
-        'last_sync: '       + (localStorage.getItem('yihai_global_sync_ts')?fmtDt(+localStorage.getItem('yihai_global_sync_ts')):'无'),
+        'device_id: '       + (typeof _deviceId!=='undefined'?_deviceId:localStorage.getItem('yihaiDeviceId')||'?'),
+        'log_level: '       + (localStorage.getItem('yihaiLogLevel')||'warn(默认)'),
+        'last_sync: '       + (localStorage.getItem('yihaiGlobalSyncTs')?fmtDt(+localStorage.getItem('yihaiGlobalSyncTs')):'无'),
       ];
       navigator.clipboard.writeText(lines.join('\n')).catch(()=>{});
       cpBtn.textContent = '✓ 已复制';

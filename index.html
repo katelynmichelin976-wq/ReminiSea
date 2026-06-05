@@ -5523,6 +5523,7 @@ async function doAccountLogout() {
   _syncEnabled = false; _cloudUserEmail = ''; _sb = null;
   localStorage.removeItem('yihaiGlobalSyncTs');
   localStorage.removeItem('yihaiSessionBackup');
+  localStorage.removeItem('yihai_session_backup');
   renderDeckList(); updateDeckStats();
   updateCloudTabUI();
   renderAccount();
