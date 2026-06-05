@@ -9521,33 +9521,59 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
   }
 }
 
+async function upsertDeckRow(deckKey) {
+  const meta = DECKS_META.find(m => m.key === deckKey);
+  if (!meta || meta.deck_type !== 'personal') return;
+  const cards = DECKS[deckKey] || [];
+  const { error } = await _sb.from('decks').upsert({
+    id: deckKey,
+    user_id: _cloudUserId,
+    name: meta.name,
+    deck_type: 'personal',
+    card_count: cards.length,
+    name_lang: meta.nameLang || 'zh-CN',
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'id', ignoreDuplicates: false });
+  if (error) throw new Error('upsertDeckRow: ' + error.message);
+}
+
+async function upsertCardsBatch(deckKey, cards) {
+  if (!cards.length) return;
+  const rows = cards.map((c, i) => ({
+    deck_id: deckKey, card_id: c.id, name: c.name,
+    image_url: c._imgUrl || null, audio_url: c._audUrl || null, sort_order: i,
+    card_type: c.cardType || 'choice', ext: c.ext || {},
+    updated_at: new Date(c.mod || Date.now()).toISOString()
+  }));
+  for (let b = 0; b < rows.length; b += 100) {
+    const { error } = await _sb.from('deck_cards')
+      .upsert(rows.slice(b, b + 100), { onConflict: 'deck_id,card_id' });
+    if (error) throw new Error('upsertCardsBatch: ' + error.message);
+  }
+}
+
+async function deleteCardsBatch(deckKey, cardIds) {
+  if (!cardIds.length) return;
+  for (let b = 0; b < cardIds.length; b += 100) {
+    const slice = cardIds.slice(b, b + 100);
+    const { error } = await _sb.from('deck_cards')
+      .delete().eq('deck_id', deckKey).in('card_id', slice);
+    if (error) throw new Error('deleteCardsBatch: ' + error.message);
+  }
+}
+
 async function uploadDeckToCloud(key) {
   if (!_syncEnabled || !_sb || !_cloudUserId) return;
   const meta = DECKS_META.find(m => m.key === key);
   if (!meta || meta.deck_type !== 'personal') return;
   const cards = DECKS[key] || [];
   try {
-    const updatedAt = new Date().toISOString();
-    await _sb.from('decks').upsert({
-      id: key,
-      user_id: _cloudUserId,
-      name: meta.name,
-      deck_type: 'personal',
-      card_count: cards.length,
-      name_lang: meta.nameLang || 'zh-CN',
-      updated_at: updatedAt
-    }, { onConflict: 'id', ignoreDuplicates: false });
+    await upsertDeckRow(key);
     await _sb.from('deck_cards').delete().eq('deck_id', key);
-    if (cards.length > 0) {
-      const rows = cards.map((c, i) => ({
-        deck_id: key, card_id: c.id, name: c.name,
-        image_url: c._imgUrl || null, audio_url: c._audUrl || null, sort_order: i,
-        card_type: c.cardType || 'choice', ext: c.ext || {}
-      }));
-      for (let b = 0; b < rows.length; b += 500)
-        await _sb.from('deck_cards').insert(rows.slice(b, b + 500));
-    }
-    localStorage.setItem('yihaiSyncAt:' + key, updatedAt);
+    await upsertCardsBatch(key, cards);
+    const now = Date.now();
+    localStorage.setItem('yihaiPushedAt:' + key, String(now));
+    localStorage.setItem('yihaiSyncAt:' + key, new Date(now).toISOString());
     console.log('[cloud] uploadDeckToCloud ok:', key, cards.length, 'cards');
   } catch(e) {
     console.warn('[cloud] uploadDeckToCloud fail:', e.message);

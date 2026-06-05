@@ -289,3 +289,11 @@ CREATE TABLE IF NOT EXISTS feedback (
 ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "anon_insert"  ON feedback FOR INSERT TO anon          WITH CHECK (true);
 CREATE POLICY "auth_insert"  ON feedback FOR INSERT TO authenticated WITH CHECK (true);
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'deck_cards_deck_card_uk'
+  ) THEN
+    ALTER TABLE deck_cards ADD CONSTRAINT deck_cards_deck_card_uk UNIQUE (deck_id, card_id);
+  END IF;
+END $$;
