@@ -270,6 +270,10 @@ create policy "individual_access" on device_registry
 ALTER TABLE cards_pool ADD COLUMN IF NOT EXISTS card_type text NOT NULL DEFAULT 'choice';
 ALTER TABLE cards_pool ADD COLUMN IF NOT EXISTS ext jsonb NOT NULL DEFAULT '{}'::jsonb;
 
+-- personal deck card type extensibility (added v5.7.3, backfill v5.2 omission)
+ALTER TABLE deck_cards ADD COLUMN IF NOT EXISTS card_type text NOT NULL DEFAULT 'choice';
+ALTER TABLE deck_cards ADD COLUMN IF NOT EXISTS ext jsonb NOT NULL DEFAULT '{}'::jsonb;
+
 -- ── feedback 表（意见反馈，anon+authenticated 可写，无读权限）──────
 CREATE TABLE IF NOT EXISTS feedback (
   id            uuid        DEFAULT gen_random_uuid() PRIMARY KEY,

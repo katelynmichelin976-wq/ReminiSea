@@ -9498,7 +9498,8 @@ async function uploadDeckToCloud(key) {
     if (cards.length > 0) {
       const rows = cards.map((c, i) => ({
         deck_id: key, card_id: c.id, name: c.name,
-        image_url: c._imgUrl || null, audio_url: c._audUrl || null, sort_order: i
+        image_url: c._imgUrl || null, audio_url: c._audUrl || null, sort_order: i,
+        card_type: c.cardType || 'choice', ext: c.ext || {}
       }));
       for (let b = 0; b < rows.length; b += 500)
         await _sb.from('deck_cards').insert(rows.slice(b, b + 500));
