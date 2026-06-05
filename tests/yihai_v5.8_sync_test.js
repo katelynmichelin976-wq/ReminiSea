@@ -40,5 +40,31 @@ function check(desc, ok) {
   check('时钟回拨仍单调', m2 === m1 + 1);
 }
 
+// Test 4: saveDeckCards 序列化保留 mod
+{
+  const ls = {};
+  function saveDeckCards(key, cards) {
+    const slim = cards.map(c => ({
+      id: c.id, name: c.name, nameLang: c.nameLang || '',
+      imgUrl: c._imgUrl || '', audUrl: c._audUrl || '',
+      cardType: c.cardType || 'choice', ext: c.ext || {},
+      mod: c.mod || 0
+    }));
+    ls['yihai_deck_' + key] = JSON.stringify(slim);
+  }
+  function loadDeckCards(key) {
+    const arr = JSON.parse(ls['yihai_deck_' + key] || '[]');
+    return arr.map(c => ({ ...c, mod: c.mod || 0 }));
+  }
+
+  saveDeckCards('k1', [{ id: 'c1', name: 'apple', mod: 12345 }]);
+  const loaded = loadDeckCards('k1');
+  check('mod 持久化往返', loaded[0].mod === 12345);
+
+  saveDeckCards('k2', [{ id: 'c1', name: 'old' }]);
+  const loaded2 = loadDeckCards('k2');
+  check('无 mod 字段加载为 0', loaded2[0].mod === 0);
+}
+
 console.log(`\n  通过 ${passed} / 失败 ${failed}`);
 process.exit(failed > 0 ? 1 : 0);

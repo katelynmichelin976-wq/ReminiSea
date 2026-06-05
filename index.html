@@ -4443,11 +4443,14 @@ const LS_DECK_PREFIX = 'yihai_deck_';
 
 function saveDeckIndex() {
   localStorage.setItem(LS_INDEX, JSON.stringify(
-    DECKS_META.filter(m => !m.builtin)  // built-in decks not persisted
+    DECKS_META.filter(m => !m.builtin).map(m => ({
+      key: m.key, name: m.name, deck_type: m.deck_type,
+      nameLang: m.nameLang, mod: m.mod || 0
+    }))
   ));
 }
 function saveDeckCards(key, cards) {
-  const slim = cards.map(c => ({ id: c.id, name: c.name, nameLang: c.nameLang || '', imgUrl: c._imgUrl || '', audUrl: c._audUrl || '', cardType: c.cardType || 'choice', ext: c.ext || {} }));
+  const slim = cards.map(c => ({ id: c.id, name: c.name, nameLang: c.nameLang || '', imgUrl: c._imgUrl || '', audUrl: c._audUrl || '', cardType: c.cardType || 'choice', ext: c.ext || {}, mod: c.mod || 0 }));
   localStorage.setItem(LS_DECK_PREFIX + key, JSON.stringify(slim));
 }
 
@@ -4602,6 +4605,7 @@ async function restoreDecks() {
       for (const c of raw) {
         try {
           const card = { ...c, img: '', audioUrl: '', details: [] };
+          card.mod = c.mod || 0;
           card.cardType = card.cardType || card.card_type || 'choice';
           card.ext = card.ext || {};
           // migrate: old format imgUrl/audUrl → _imgUrl/_audUrl
