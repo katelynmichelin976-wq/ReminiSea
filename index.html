@@ -9562,6 +9562,71 @@ async function deleteCardsBatch(deckKey, cardIds) {
   }
 }
 
+class SyncJob {
+  constructor(deckKey, opts = {}) {
+    this.deckKey = deckKey;
+    this.onProgress = opts.onProgress || (() => {});
+    this.phase = 'idle';
+    this.progress = { done: 0, total: 0 };
+    this._paused = false;
+    this._pausePromise = null;
+    this._pauseResolve = null;
+    this._cancelled = false;
+  }
+  pause() {
+    if (this._paused) return;
+    this._paused = true;
+    this._pausePromise = new Promise(r => { this._pauseResolve = r; });
+  }
+  resume() {
+    if (!this._paused) return;
+    this._paused = false;
+    if (this._pauseResolve) { this._pauseResolve(); this._pauseResolve = null; }
+  }
+  cancel() { this._cancelled = true; this.resume(); }
+  async _checkpoint() {
+    if (this._cancelled) throw new Error('cancelled');
+    if (this._paused) await this._pausePromise;
+  }
+  _setPhase(p, done = 0, total = 0) {
+    this.phase = p;
+    this.progress = { done, total };
+    this.onProgress(this);
+  }
+  async runStructurePhase() {
+    this._setPhase('structure', 0, 1);
+    const meta = DECKS_META.find(m => m.key === this.deckKey);
+    const pushedAt = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
+    if (meta && meta.mod && meta.mod > pushedAt) await upsertDeckRow(this.deckKey);
+    const remote = await fetchAllDeckCards(this.deckKey, 'card_id,updated_at');
+    const remoteMeta = (remote || []).map(r => ({
+      card_id: r.card_id,
+      updated_at: Date.parse(r.updated_at) || 0
+    }));
+    const cards = DECKS[this.deckKey] || [];
+    const deleted = getDeletedCards(this.deckKey);
+    const pulledAt = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
+    const diff = computeDeckDiff(cards, deleted, remoteMeta, pushedAt, pulledAt);
+    this._setPhase('structure', 1, 1);
+    return { diff, remoteRows: remote };
+  }
+  async run() {
+    try {
+      const { diff } = await this.runStructurePhase();
+      await this._checkpoint();
+      await this.runCardsPhase(diff);
+      await this._checkpoint();
+      this.runMediaPhase().catch(e => console.warn('[sync] media phase:', e.message));
+      this._setPhase('done', 1, 1);
+    } catch(e) {
+      this._setPhase('error', 0, 0);
+      throw e;
+    }
+  }
+  async runCardsPhase(diff) { /* Task 9 实现 */ }
+  async runMediaPhase() { /* Task 10 实现 */ }
+}
+
 async function uploadDeckToCloud(key) {
   if (!_syncEnabled || !_sb || !_cloudUserId) return;
   const meta = DECKS_META.find(m => m.key === key);
