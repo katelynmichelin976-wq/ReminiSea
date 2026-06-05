@@ -267,7 +267,18 @@ function nextMod() {
 - 牌组管理页进入时正确显示每行状态徽章
 - 旧版用户升级后首次同步不触发全量重传
 
-## 15. 实现顺序建议
+## 15. 跨计划顺序
+
+与 `docs/superpowers/plans/2026-06-05-deck-management.md`（牌组管理页 UI 计划）的关系：
+
+**采用「先同步后 UI」**：
+
+1. 本同步重设计先实现，状态徽章先接入现有 `showCloudDecks` 页面
+2. UI 计划暂停；待同步层稳定后回头修订 UI 计划，在 `renderDeckMgmtList` 调 `computeDeckSyncState(key)` 接入状态
+
+理由：本重设计要重构 `uploadDeckToCloud` 等同步入口函数；先把数据层稳定下来，UI 计划再消费稳定接口。
+
+## 16. 实现顺序建议
 
 1. 数据模型与水位迁移（`nextMod`、`setDeckLocalDirty`、localStorage key 迁移）
 2. `SyncJob` 类骨架 + Phase 1 结构同步
