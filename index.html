@@ -4713,6 +4713,7 @@ async function importYhspack(file) {
     saveDeckCards(key, cards);
 
     // upload structure to cloud (fire-and-forget; media deferred to next sync)
+    localStorage.setItem('yihaiSyncAt:' + key, new Date().toISOString());
     uploadDeckToCloud(key).catch(() => {});
 
     // refresh home list, select the just-imported deck
@@ -5229,6 +5230,7 @@ async function createEmptyDeck() {
   DECKS_META.push({ key: key, name: name.trim(), deck_type: 'personal' });
   saveDeckIndex();
   saveDeckCards(key, []);
+  localStorage.setItem('yihaiSyncAt:' + key, new Date().toISOString());
   uploadDeckToCloud(key).catch(() => {});
   renderDeckList();
   updateDeckStats();
@@ -9468,6 +9470,10 @@ async function refreshDeckUpdateBadges() {
     _pendingDeckUpdates.clear();
     for (const rd of data) {
       const lastSync = localStorage.getItem('yihaiSyncAt:' + rd.id) || '';
+      if (!lastSync && DECKS_META.some(m => m.key === rd.id)) {
+        localStorage.setItem('yihaiSyncAt:' + rd.id, new Date().toISOString());
+        continue;
+      }
       if (rd.updated_at > lastSync) _pendingDeckUpdates.add(rd.id);
     }
     if (_pendingDeckUpdates.size > 0) renderDeckList();
@@ -9664,6 +9670,7 @@ function showAbout() {
           logAppEvent('session_restore_sdk_signout', {});
           _syncEnabled    = false;
           _cloudUserEmail = '';
+          localStorage.removeItem('yihaiSessionBackup');
           updateCloudTabUI();
         }
       });
