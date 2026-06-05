@@ -2,6 +2,11 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.7.1 Key Changes
+
+- **修复下载个人牌组时图片不显示**：`downloadPersonalDeckFromCloud` 原本把每张卡的下载结果写进局部变量 `deckCards[i]`，而 `DECKS[deckId]` 是 Phase 1 创建的 placeholder 数组，两者不同对象，只有最后 `DECKS[deckId] = deckCards` 才合并，练习页读取 `DECKS[deckId]` 全是 `img:''`。修复：删除 `deckCards` 中间变量，改为 `const card = DECKS[deckId][i]` 直接引用，blob URL 写入 `card.img` 即刻反映在 `DECKS` 里。同时重建 `DECKS[deckId]` 时保留已有 `_imgUrl/_audUrl` 供断点续传判断。
+- **修复下载中途返回再进入云端牌组页进度丢失、误显已下载**：新增模块级 `_downloading` Map（`deckId → {done, total}`），`doCloudDeckAction` 开始时写入，完成后删除；`showCloudDecks` 渲染时优先检查 `_downloading`，正在下载则显示进度按钮（`id="dl-btn-{deckId}"`）并禁用，`onProgress` 通过 `getElementById` 找到当前 DOM 节点更新，不依赖可能已销毁的 `btnEl`。
+
 ## v5.7.0 Key Changes
 
 - **修复个人牌组本地有云端无时同步不上传**：新增 `uploadMissingPersonalDecks()`，登录/手动同步时查询 Supabase `decks` 表，本地存在但云端缺失的个人牌组自动调 `uploadDeckToCloud`。根因：`uploadPersonalDeckMedia` 仅在 `uploaded > 0` 时调 `uploadDeckToCloud`；若所有媒体已标记上传则跳过，云端牌组结构永远缺失。

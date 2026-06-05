@@ -57,7 +57,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.7.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.7.1**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.7.1：** 修复下载个人牌组时图片不显示 — 删除 `deckCards` 中间变量，改为 `DECKS[deckId][i]` 直接 in-place 更新，blob URL 写入后立即反映到渲染；修复下载中途返回再进入云端牌组页误显「已下载」— 新增 `_downloading` Map 跟踪进行中的下载，`showCloudDecks` 优先渲染进度状态
 
 **v5.7.0：** 个人牌组云端管理 — 修复本地有云端无时同步不上传（新增 `uploadMissingPersonalDecks`）；新增「云端牌组」管理页（账户页入口，下载/同步）；`downloadPersonalDeckFromCloud` 两阶段渲染（拉到卡片列表立即显示首页）；IDB miss 回退远端补下；断点续传（每 100 张 `saveDeckCards`）；进度显示（按钮实时 `done/total`）
 
