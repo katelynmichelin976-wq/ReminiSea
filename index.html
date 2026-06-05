@@ -9377,6 +9377,7 @@ async function uploadDeckToCloud(key) {
   if (!meta || meta.deck_type !== 'personal') return;
   const cards = DECKS[key] || [];
   try {
+    const updatedAt = new Date().toISOString();
     await _sb.from('decks').upsert({
       id: key,
       user_id: _cloudUserId,
@@ -9384,7 +9385,7 @@ async function uploadDeckToCloud(key) {
       deck_type: 'personal',
       card_count: cards.length,
       name_lang: meta.nameLang || 'zh-CN',
-      updated_at: new Date().toISOString()
+      updated_at: updatedAt
     }, { onConflict: 'id', ignoreDuplicates: false });
     await _sb.from('deck_cards').delete().eq('deck_id', key);
     if (cards.length > 0) {
@@ -9395,6 +9396,7 @@ async function uploadDeckToCloud(key) {
       for (let b = 0; b < rows.length; b += 500)
         await _sb.from('deck_cards').insert(rows.slice(b, b + 500));
     }
+    localStorage.setItem('yihaiSyncAt:' + key, updatedAt);
     console.log('[cloud] uploadDeckToCloud ok:', key, cards.length, 'cards');
   } catch(e) {
     console.warn('[cloud] uploadDeckToCloud fail:', e.message);

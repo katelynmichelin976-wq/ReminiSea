@@ -132,7 +132,7 @@ check('detectLocale zh-CN 回帰不変', detectLocale('zh-CN', SUPPORTED_LOCALES
 // I18N['ja'] 辞書完整性チェック（HTML ファイルから読み込み）
 const _fs = require('fs');
 const _path = require('path');
-const _html = _fs.readFileSync(_path.join(__dirname, '../yihai_v5.4.html'), 'utf8');
+const _html = _fs.readFileSync(_path.join(__dirname, '../index.html'), 'utf8');
 function _extractI18NKeys(html, locale) {
   const startMarker = `'${locale}': {`;
   const startIdx = html.indexOf(startMarker);
