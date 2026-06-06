@@ -463,6 +463,67 @@ let tStart;
     pass('Fix3: pushedAt 已推进到 pulledAt（不再卡老 ISO 时间）',
       wm.pushed === wm.pulled);
 
+    // ════ PHASE 10: mediaIncomplete 状态验证 ════
+    section('PHASE 10: computeDeckSyncState mediaIncomplete 分支');
+
+    const phase10Key = 'pwPhase10_' + Date.now();
+    await run(pageA, (key) => {
+      // 注入一张有 url 但无 _blob 的卡片（模拟已上传但本地未缓存）
+      DECKS[key] = [{ id: 'p10c1', name: 'test', nameLang: 'zh-CN',
+        cardType: 'choice', ext: {}, mod: 1000,
+        media: { img: { url: 'personal/uid/deck/p10c1_img.jpg', v: 0, _blob: '' } } }];
+      DECKS_META.push({ key, name: 'pwPhase10', deck_type: 'personal', nameLang: 'zh-CN', mod: 500 });
+      saveDeckIndex();
+      saveDeckCards(key, DECKS[key]);
+      // 设置水位：pushedAt/pulledAt > mod，使 localChanged=false、remoteAhead=false
+      localStorage.setItem('yihaiPushedAt:' + key, String(2000));
+      localStorage.setItem('yihaiPulledAt:' + key, String(2000));
+    }, phase10Key);
+
+    const stateMediaMissing = await run(pageA, (key) => {
+      const s = computeDeckSyncState(key);
+      return { status: s.status, mediaIncomplete: !!s.mediaIncomplete };
+    }, phase10Key);
+    pass('PHASE 10: url 有值 _blob 为空 → mediaIncomplete=true', stateMediaMissing.mediaIncomplete === true);
+    pass('PHASE 10: url 有值 _blob 为空时 status=clean（mediaIncomplete 是独立 flag）', stateMediaMissing.status === 'clean');
+
+    // 补上 _blob → mediaIncomplete 应变为 false
+    await run(pageA, (key) => {
+      DECKS[key][0].media.img._blob = 'blob:fake';
+    }, phase10Key);
+    const stateMediaLoaded = await run(pageA, (key) => {
+      const s = computeDeckSyncState(key);
+      return { status: s.status, mediaIncomplete: !!s.mediaIncomplete };
+    }, phase10Key);
+    pass('PHASE 10: _blob 补全后 → mediaIncomplete=false', stateMediaLoaded.mediaIncomplete === false);
+    pass('PHASE 10: _blob 补全后 status=clean', stateMediaLoaded.status === 'clean');
+
+    // 清理本地注入的 deck
+    await run(pageA, (key) => {
+      const idx = DECKS_META.findIndex(m => m.key === key);
+      if (idx >= 0) DECKS_META.splice(idx, 1);
+      delete DECKS[key];
+      saveDeckIndex();
+    }, phase10Key);
+
+    // ════ PHASE 11: runMediaPhase await — syncDeck 完成后 deckMediaComplete ════
+    section('PHASE 11: SyncJob.run() await runMediaPhase — 完成后 deckMediaComplete=true');
+
+    await run(pageA, async (key) => {
+      if (typeof syncDeck === 'function' && _syncEnabled) {
+        try { await syncDeck(key); } catch(e) {}
+      }
+    }, mediaDeckKey);
+
+    const mediaComplete = await run(pageA, (key) => {
+      const cards = DECKS[key] || [];
+      return cards.every(c => Object.keys(c.media || {}).every(slot => {
+        const s = c.media[slot];
+        return !s.url || !!s._blob;
+      }));
+    }, mediaDeckKey);
+    pass('PHASE 11: syncDeck() 完成后 deckMediaComplete=true', mediaComplete === true);
+
     // ════ 清理 ════
     section('清理云端测试数据');
     await run(pageA, async (keys) => {
