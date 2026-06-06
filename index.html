@@ -5388,14 +5388,14 @@ async function exportDeck() {
       var c = cards[i];
       var entry = { id: c.id, name: c.name, details: c.details || [] };
       var imgBlob = null, audBlob = null;
-      // prefer media from IndexedDB (user-created/imported cards)
-      if (c._imgUrl) {
-        var imgKey = currentDeck + '_' + c.id + '_img';
-        imgBlob = await loadMedia(imgKey).catch(function() { return null; });
+      if (c.media && c.media.img) {
+        imgBlob = await loadMedia(currentDeck + '_' + c.id + '_img').catch(function() { return null; });
+        if (!imgBlob && c.img && c.img.startsWith('blob:')) {
+          imgBlob = await fetch(c.img).then(function(r) { return r.blob(); }).catch(function() { return null; });
+        }
       } else if (c.img && c.img.startsWith('blob:')) {
         imgBlob = await fetch(c.img).then(function(r) { return r.blob(); }).catch(function() { return null; });
       } else if (c.img && c.img.length > 4) {
-        // inline or network images: reference by URL
         entry.image_url = c.img;
       }
       if (imgBlob) {
@@ -5404,9 +5404,11 @@ async function exportDeck() {
         zip.file(imgName, imgBlob);
         entry.image = imgName;
       }
-      if (c._audUrl) {
-        var audKey = currentDeck + '_' + c.id + '_aud';
-        audBlob = await loadMedia(audKey).catch(function() { return null; });
+      if (c.media && c.media.aud) {
+        audBlob = await loadMedia(currentDeck + '_' + c.id + '_aud').catch(function() { return null; });
+        if (!audBlob && c.audioUrl && c.audioUrl.startsWith('blob:')) {
+          audBlob = await fetch(c.audioUrl).then(function(r) { return r.blob(); }).catch(function() { return null; });
+        }
       } else if (c.audioUrl && c.audioUrl.startsWith('blob:')) {
         audBlob = await fetch(c.audioUrl).then(function(r) { return r.blob(); }).catch(function() { return null; });
       } else if (c.audioUrl && c.audioUrl.length > 4) {
@@ -5456,16 +5458,18 @@ async function shareDeck() {
     for (var i = 0; i < cards.length; i++) {
       var c = cards[i];
       var entry = { id: c.id, name: c.name, details: c.details || [] };
-      if (c._imgUrl) {
+      if (c.media && c.media.img) {
         var imgBlob = await loadMedia(currentDeck + '_' + c.id + '_img').catch(function() { return null; });
+        if (!imgBlob && c.img && c.img.startsWith('blob:')) imgBlob = await fetch(c.img).then(function(r) { return r.blob(); }).catch(function() { return null; });
         if (imgBlob) {
           var ext = imgBlob.type === 'image/png' ? 'png' : imgBlob.type === 'image/webp' ? 'webp' : 'jpg';
           zip.file(c.id + '.' + ext, imgBlob);
           entry.image = c.id + '.' + ext;
         }
       }
-      if (c._audUrl) {
+      if (c.media && c.media.aud) {
         var audBlob = await loadMedia(currentDeck + '_' + c.id + '_aud').catch(function() { return null; });
+        if (!audBlob && c.audioUrl && c.audioUrl.startsWith('blob:')) audBlob = await fetch(c.audioUrl).then(function(r) { return r.blob(); }).catch(function() { return null; });
         if (audBlob) {
           var ext = audBlob.type === 'audio/mpeg' ? 'mp3' : 'm4a';
           zip.file(c.id + '.' + ext, audBlob);
@@ -10054,54 +10058,6 @@ async function uploadMissingPersonalDecks() {
   return syncAllDirtyDecks();
 }
 
-async function uploadPersonalDeckMedia(deckId) {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return;
-  const meta = DECKS_META.find(m => m.key === deckId);
-  if (!meta || meta.deck_type !== 'personal') return;
-  const cards = DECKS[deckId];
-  if (!cards || !cards.length) return;
-
-  try {
-    let uploaded = 0;
-    await parallelMapLimit(cards, 3, async (c) => {
-      if (!c._imgUrl) {
-        const blob = await loadMedia(`${deckId}_${c.id}_img`).catch(() => null);
-        if (blob) {
-          const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
-          const path = `personal/${_cloudUserId}/${deckId}/${c.id}_img.${ext}`;
-          const { error } = await _sb.storage.from('ReminiSea').upload(path, blob, { upsert: true });
-          if (!error) { c._imgUrl = path; uploaded++; }
-          else console.warn('[cloud] media upload img fail:', c.id, error.message);
-        }
-      }
-
-      if (!c._audUrl) {
-        const blob = await loadMedia(`${deckId}_${c.id}_aud`).catch(() => null);
-        if (blob) {
-          const ext = {'audio/mpeg':'mp3','audio/ogg':'ogg','audio/webm':'webm','audio/aac':'aac'}[blob.type] || 'm4a';
-          const path = `personal/${_cloudUserId}/${deckId}/${c.id}_aud.${ext}`;
-          const { error } = await _sb.storage.from('ReminiSea').upload(path, blob, { upsert: true });
-          if (!error) { c._audUrl = path; uploaded++; }
-          else console.warn('[cloud] media upload aud fail:', c.id, error.message);
-        }
-      }
-    });
-
-    if (uploaded > 0) {
-      saveDeckCards(deckId, cards);
-      await uploadDeckToCloud(deckId);
-      showCloudToast(t('toast_media_synced', { n: uploaded }));
-      console.log('[cloud] uploadPersonalDeckMedia ok:', deckId, uploaded, 'files');
-    }
-  } catch(e) {
-    console.warn('[cloud] uploadPersonalDeckMedia fail:', e.message);
-  }
-}
-
-async function checkPersonalDeckUpdates() {
-  // deprecated v5.8: structure pull is now handled by SyncJob Phase 2; kept for backward compat one version, remove in v5.9
-  return syncAllDirtyDecks();
-}
 
 async function refreshDeckUpdateBadges() {
   if (!_syncEnabled || !_sb || !_cloudUserId) return;
