@@ -9842,6 +9842,51 @@ function parseWatermark(v) {
   return Date.parse(v) || 0;
 }
 
+// ── media slot helpers（v2）──────────────────────────────────────
+function hasMedia(card, slot) {
+  const s = card.media?.[slot];
+  return !!(s?.url || s?._blob);
+}
+function mediaLoaded(card, slot) {
+  if (!hasMedia(card, slot)) return true;
+  return !!(card.media[slot]._blob);
+}
+function cardMediaComplete(card) {
+  return Object.keys(card.media || {}).every(slot => mediaLoaded(card, slot));
+}
+function deckMediaComplete(cards) {
+  return cards.every(c => cardMediaComplete(c));
+}
+function serializeMedia(media) {
+  return Object.fromEntries(
+    Object.entries(media).map(([slot, s]) => [slot, { url: s.url || '', v: s.v ?? 0 }])
+  );
+}
+function mergeCard(local, remote) {
+  const merged = { ...local, ...remote };
+  merged.media = merged.media || {};
+  for (const slot of Object.keys(remote.media || {})) {
+    const rs = remote.media[slot];
+    const ls = local.media?.[slot] || {};
+    const sameVersion = rs.url === ls.url && rs.v === (ls.v ?? 0);
+    merged.media[slot] = {
+      url:   rs.url,
+      v:     rs.v ?? 0,
+      _blob: sameVersion ? (ls._blob || '') : '',
+    };
+  }
+  return merged;
+}
+function buildPath(userId, deckId, cardId, slot, v, ext) {
+  const base = `personal/${userId}/${deckId}/${cardId}_${slot}`;
+  return v > 0 ? `${base}_v${v}.${ext}` : `${base}.${ext}`;
+}
+function mimeToExt(mimeType, slot) {
+  if (slot === 'aud')
+    return ({ 'audio/mpeg': 'mp3', 'audio/ogg': 'ogg', 'audio/webm': 'webm', 'audio/aac': 'aac' })[mimeType] || 'm4a';
+  return ({ 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' })[mimeType] || 'jpg';
+}
+
 function computeDeckSyncState(deckKey) {
   const meta = DECKS_META.find(m => m.key === deckKey);
   if (!meta || meta.deck_type !== 'personal') return { status: 'clean' };
