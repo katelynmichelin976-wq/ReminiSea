@@ -3729,6 +3729,15 @@ async function purgeOldLogs() {
     var evtTx = db.transaction(EVT_STORE, 'readwrite');
     var evtReq = evtTx.objectStore(EVT_STORE).openCursor();
     evtReq.onsuccess = function(e) { var c = e.target.result; if (c && c.value.timestamp < cutoff30) { c.delete(); c.continue(); } };
+    // TRIAL_STORE：清除 30 天前已同步的条目
+    var trTx = db.transaction(TRIAL_STORE, 'readwrite');
+    var trReq = trTx.objectStore(TRIAL_STORE).openCursor();
+    trReq.onsuccess = function(e) {
+      var c = e.target.result;
+      if (!c) return;
+      if (c.value.synced_at && c.value.synced_at < cutoff30) c.delete();
+      c.continue();
+    };
   } catch(e) { log.warn('idb', 'purgeOldLogs failed', e.message); }
 }
 
@@ -4409,6 +4418,42 @@ function migrateSyncWatermarks() {
   }
 }
 
+async function deleteCardStatesForDeck(deckKey) {
+  try {
+    const db = await openSrsDb();
+    await new Promise((res, rej) => {
+      const prefix = deckKey + '::';
+      const tx = db.transaction(CS_STORE, 'readwrite');
+      const store = tx.objectStore(CS_STORE);
+      const req = store.openCursor();
+      req.onsuccess = e => {
+        const cursor = e.target.result;
+        if (!cursor) return;
+        if (cursor.key.startsWith(prefix)) cursor.delete();
+        cursor.continue();
+      };
+      tx.oncomplete = res;
+      tx.onerror = e => rej(e.target.error);
+    });
+  } catch(e) { console.warn('[gc] deleteCardStatesForDeck fail:', e.message); }
+}
+
+function gcOrphanSyncKeys() {
+  const deckKeys = new Set(DECKS_META.map(m => m.key));
+  const prefixes = ['yihaiPushedAt:', 'yihaiPulledAt:', 'yihaiPushedMediaAt:', 'yihaiSyncAt:', 'yihaiDeletedCards:'];
+  const toRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    const prefix = prefixes.find(p => k && k.startsWith(p));
+    if (prefix) {
+      const deckKey = k.slice(prefix.length);
+      if (!deckKeys.has(deckKey)) toRemove.push(k);
+    }
+  }
+  toRemove.forEach(k => localStorage.removeItem(k));
+  if (toRemove.length) console.log('[gc] 清理孤儿 sync keys:', toRemove.length);
+}
+
 // fallback pool: supplement distractors when deck has <4 cards
 const FALLBACK_WORDS = ['苹果','香蕉','椅子','水壶','钥匙','手机','眼镜','雨伞','毛巾','牙刷',
   '西瓜','胡萝卜','土豆','玉米','火车','汽车','飞机','冰箱','电视','桌子'];
@@ -4941,8 +4986,9 @@ async function deleteDeck(e, key) {
   const dismissLoading = showLoadingToast(t('toast_deleting'));
   // revoke ObjectURL to prevent memory leak
   (DECKS[key] || []).forEach(c => {
-    if (c.img && c.img.startsWith('blob:')) URL.revokeObjectURL(c.img);
-    if (c.audioUrl && c.audioUrl.startsWith('blob:')) URL.revokeObjectURL(c.audioUrl);
+    Object.values(c.media || {}).forEach(s => {
+      if (s._blob && s._blob.startsWith('blob:')) URL.revokeObjectURL(s._blob);
+    });
   });
   delete DECKS[key];
   DECKS_META = DECKS_META.filter(m => m.key !== key);
@@ -4954,7 +5000,11 @@ async function deleteDeck(e, key) {
     _sb.from('decks').delete().eq('id', key).then(null, () => {});
   }
   localStorage.removeItem('yihaiSyncAt:' + key);
+  localStorage.removeItem('yihaiPushedAt:' + key);
+  localStorage.removeItem('yihaiPulledAt:' + key);
+  localStorage.removeItem('yihaiPushedMediaAt:' + key);
   clearDeletedCards(key);
+  deleteCardStatesForDeck(key).catch(() => {});
   if (currentDeck === key) currentDeck = null;
   renderDeckList();
   updateDeckStats();
@@ -10274,6 +10324,7 @@ function showAbout() {
       migrateV5IfNeeded();
       await restoreDecks();
       migrateSyncWatermarks();
+      gcOrphanSyncKeys();
       if (!currentDeck && DECKS_META.length) {
         currentDeck = DECKS_META[0].key;
       }
