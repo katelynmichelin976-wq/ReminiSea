@@ -4141,7 +4141,10 @@ function applyEasyMode(cards, stateMap) {
     for (const card of cards) {
       const s = stateMap[card.id];
       if (!s || s.suspended || famIds.has(card.id)) continue;
-      if (s.srs_stage !== 'new' && s.srs_stage !== 'review') famPool.push(card);
+      if (s.srs_stage !== 'new' && s.srs_stage !== 'review') {
+        famPool.push(card);
+        famIds.add(card.id);
+      }
     }
   }
 
@@ -8425,9 +8428,14 @@ async function _writeSrs(q, rating, attempt) {
   const lapsesStreakBefore = state.lapses_streak;
   const lapsesBefore    = state.lapses_total;
 
-  // update CardState
-  const newState = processAnswer(state, rating, todayStr());
-  await saveCardState(newState);
+  // easy mode: do NOT update SRS state (companion practice only)
+  const isEasyMode = SRS_CONFIG.session_mode === 'easy';
+  const newState = isEasyMode ? { ...state } : processAnswer(state, rating, todayStr());
+
+  // update CardState (only if not easy mode)
+  if (!isEasyMode) {
+    await saveCardState(newState);
+  }
 
   // update in-memory _srsState (for subsequent card answers)
   q._srsState = newState;
