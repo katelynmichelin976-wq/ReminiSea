@@ -2,6 +2,13 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.8.2 Key Changes
+
+- **下载暂停持久化**：`downloadPersonalDeckFromCloud` 在检测到暂停状态前先调用 `saveDeckCards`，确保已下载卡片数据写入 localStorage；如果用户暂停后刷新页面或登出，下次恢复时不会看到空牌组。
+- **登出取消下载**：`doAccountLogout` 在清理 SDK 前先 resolve 所有 `_downloading` Map 中的 pause promise，再 clear Map；worker 在 resume 后检测 `_downloading.get(deckId) === undefined` 立即 return，避免线程永久 blocked 或用 null `_sb` 继续请求。
+- **媒体缺失状态**：`computeDeckSyncState` 新增 `mediaIncomplete` 检测（cards 中存在 `_imgUrl` 非空但 `img` 为空的卡片）；该标志通过返回值暴露给 `showCloudDecks`；`showCloudDecks` 据此显示「媒体缺失」徽章（蓝色）和「补全媒体」按钮（调 `doCloudDeckAction`，IDB 有缓存的卡片直接复用，只补下载缺失部分），取代错误的 SyncJob「同步」按钮。
+- **移除 Supabase CDN SRI**：jsdelivr 不同 CDN 节点对同一版本号（`@2.105.4`）分发内容不一致，导致 `integrity` hash 时好时坏；去掉 `integrity` 属性以绕过浏览器 SRI 校验。
+
 ## v5.8.0 Key Changes
 
 - **重设计动机**：v5.7 的 `uploadMissingPersonalDecks` 只判 deck ID 是否存在，本地修改/删除卡片不会传到云端，跨设备「我这台改了，对方收不到」；每次媒体同步即便没改也走 DELETE+INSERT 全量重传，3601 张卡逼近 30s watchdog；下载中断只能从头重来。

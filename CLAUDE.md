@@ -58,7 +58,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.8.1**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.8.2**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.8.2：** 云端牌组下载流程三项修复 — ①`downloadPersonalDeckFromCloud` 暂停前调用 `saveDeckCards` 持久化已下载卡片，防止刷新/登出后数据丢失；②`doAccountLogout` 登出时 resolve 所有暂停 promise 并清空 `_downloading`，避免下载线程永久 blocked；③`computeDeckSyncState` 检测 `_imgUrl` 有值但 blob 未加载（`img` 为空）时返回 `mediaIncomplete` 标志，云端牌组页显示「媒体缺失」徽章并提供「补全媒体」按钮（走下载路径复用 IDB 缓存）；移除 Supabase CDN SRI `integrity` 属性（jsdelivr 节点不一致导致时好时坏）。
 
 **v5.8.1：** 修 v5.8.0 上线后老设备升级首次同步卡在「双向 +100」+ 媒体缺失 — ①`runStructurePhase` 拉 `decks.updated_at` 并把 `meta._remoteUpdatedAt` / `pulledAt` 同步推到该值（消除 `decks.updated_at` 比 `max(deck_cards.updated_at)` 新时的 remoteAhead 假象）；②`runCardsPhase` 末尾 `pushedAt = max(pushedAt, pulledAt)`（pulled 的卡 mod 已等于云端 updated_at，等价"已推送"，避免 +100）；③pull merge 时若本地 in-memory `img`/`audioUrl` 空但 IDB 有 blob，从 IDB 复活生成 blob URL。`_pw_cross_device.js` 加 PHASE 9 老设备升级回归（+2 断言，共 34）。
 
