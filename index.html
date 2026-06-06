@@ -5635,7 +5635,7 @@ async function showCloudDecks() {
       if (job) badge = `<span style="color:#888">同步中 ${job.progress.done}/${job.progress.total}</span>`;
       else if (state.status === 'clean') badge = `<span style="color:#888">已同步</span>`;
       else if (state.status === 'localDirty') badge = `<span style="color:#d97706">待上传 ${state.pushCount}</span>`;
-      else if (state.status === 'remoteAhead') badge = `<span style="color:#2563eb">待下载</span>`;
+      else if (state.status === 'remoteAhead') badge = `<span style="color:#2563eb">${state.mediaIncomplete ? '媒体缺失' : '待下载'}</span>`;
       else if (state.status === 'bothChanged') badge = `<span style="color:#7c3aed">双向 +${state.pushCount}</span>`;
 
       let btn;
@@ -5649,6 +5649,8 @@ async function showCloudDecks() {
       } else if (job) {
         const pauseLabel = job._paused ? '继续' : '暂停';
         btn = `<button class="account-sync-btn" onclick="toggleSyncJobPause('${d.id}')">${pauseLabel}</button>`;
+      } else if (local && state.mediaIncomplete) {
+        btn = `<button class="account-sync-btn" onclick="doCloudDeckAction(${nameArg},this)">补全媒体</button>`;
       } else if (local) {
         btn = `<button class="account-sync-btn" onclick="doSyncDeckAction('${d.id}',this)">同步</button>`;
       } else {
@@ -9849,13 +9851,13 @@ function computeDeckSyncState(deckKey) {
   let status;
   if (localChanged && remoteAhead) status = 'bothChanged';
   else if (localChanged) status = 'localDirty';
-  else if (remoteAhead || mediaIncomplete) status = 'remoteAhead';
+  else if (remoteAhead) status = 'remoteAhead';
   else status = 'clean';
   if (status !== 'clean') {
     console.log('[diag:state]', deckKey, status, { pushCount, pushedAt, pulledAt, remoteUpdatedAt,
       localChanged, remoteAhead, metaMod: meta.mod, sampleCardMods: cards.slice(0,3).map(c => c.mod) });
   }
-  return status === 'bothChanged' || status === 'localDirty' ? { status, pushCount } : { status };
+  return status === 'bothChanged' || status === 'localDirty' ? { status, pushCount, mediaIncomplete } : { status, mediaIncomplete };
 }
 
 async function uploadMissingPersonalDecks() {
