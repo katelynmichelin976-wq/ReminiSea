@@ -209,10 +209,17 @@
           const cards = DECKS[meta.key] || [];
           let dWithImg = 0, dLoadedImg = 0, dWithAud = 0, dLoadedAud = 0;
           for (const c of cards) {
-            if (c._imgUrl) dWithImg++;
-            if (c.img && c.img.startsWith('blob:')) dLoadedImg++;
-            if (c._audUrl) dWithAud++;
-            if (c.audioUrl && c.audioUrl.startsWith('blob:')) dLoadedAud++;
+            // 优先读 media slot（v5.9+），兼容旧字段
+            const imgSlot = c.media?.img;
+            const audSlot = c.media?.aud;
+            const hasImgUrl = imgSlot ? !!imgSlot.url : !!c._imgUrl;
+            const imgLoaded = imgSlot ? !!imgSlot._blob : (c.img && c.img.startsWith('blob:'));
+            const hasAudUrl = audSlot ? !!audSlot.url : !!c._audUrl;
+            const audLoaded = audSlot ? !!audSlot._blob : (c.audioUrl && c.audioUrl.startsWith('blob:'));
+            if (hasImgUrl) dWithImg++;
+            if (imgLoaded) dLoadedImg++;
+            if (hasAudUrl) dWithAud++;
+            if (audLoaded) dLoadedAud++;
           }
           totalCards += cards.length;
           withImgUrl += dWithImg;
