@@ -4711,6 +4711,9 @@ async function restoreDecks() {
             const blob = await loadMedia(`${key}_${c.id}_${slot}`).catch(() => null);
             if (blob) card.media[slot]._blob = URL.createObjectURL(blob);
           }
+          // 同步渲染层旧字段（rendering code 仍引用 card.img / card.audioUrl）
+          card.img = card.media.img?._blob || '';
+          card.audioUrl = card.media.aud?._blob || '';
           cards.push(card);
         } catch(e) { console.warn('restoreDecks: skipping card', c.id, e.message); }
       }
@@ -9811,6 +9814,8 @@ class SyncJob {
           mod: remoteMod, media: remoteMedia,
         };
         const merged = local ? mergeCard(local, remoteCard) : remoteCard;
+        merged.img = merged.media?.img?._blob || merged.img || '';
+        merged.audioUrl = merged.media?.aud?._blob || merged.audioUrl || '';
         if (idx >= 0) cards[idx] = merged;
         else cards.push(merged);
       }
@@ -9871,12 +9876,16 @@ class SyncJob {
         const cached = await loadMedia(idbKey).catch(() => null);
         if (cached) {
           s._blob = URL.createObjectURL(cached);
+          if (slot === 'img') card.img = s._blob;
+          if (slot === 'aud') card.audioUrl = s._blob;
           continue;
         }
         const blob = await downloadMediaFromCDNorSupabase(s.url).catch(e => { console.warn('[sync] media download fail:', card.id, slot, e.message); return null; });
         if (!blob) continue;
         await saveMedia(idbKey, blob).catch(() => {});
         s._blob = URL.createObjectURL(blob);
+        if (slot === 'img') card.img = s._blob;
+        if (slot === 'aud') card.audioUrl = s._blob;
       }
 
       cardDone++;
@@ -10182,6 +10191,10 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
       await Promise.all(tasks);
       card._imgUrl = c.image_url || '';
       card._audUrl = c.audio_url || '';
+      // 同步到 media slot（供 saveDeckCards 序列化 + restoreDecks 恢复）
+      card.media = card.media || {};
+      if (c.image_url) card.media.img = { url: c.image_url, v: 0, _blob: card.img || '' };
+      if (c.audio_url) card.media.aud = { url: c.audio_url, v: 0, _blob: card.audioUrl || '' };
       done++;
       if (!imgOk || !audOk) console.warn('[diag:dl] card incomplete', { id: card.id, idx: i, imgOk, audOk });
       if (done % 25 === 0 || done === total) console.log('[diag:dl] progress', { deckId, done, total });
