@@ -5297,7 +5297,7 @@ async function saveCardFromForm() {
   const details = rawDetails.split('\n').filter(function(l) { return l.trim(); });
 
   // build card
-  const card = { id: id, name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: details, media: {}, mod: Date.now() };
+  const card = { id: id, name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: details, media: {} };
 
   // save image
   var savePromises = [];
@@ -5325,7 +5325,7 @@ async function saveCardFromForm() {
   // persist
   saveDeckCards(deckKey, deck);
   saveDeckIndex();
-  if (_syncEnabled) syncDeck(deckKey).catch(() => {});
+  uploadDeckToCloud(deckKey).catch(() => {});
 
   // wait for all media saves to complete
   Promise.all(savePromises).then(function() {
@@ -5947,14 +5947,11 @@ async function deleteCardFromDeck(cardId) {
   if (!card) return;
   if (card.img && card.img.startsWith('blob:')) URL.revokeObjectURL(card.img);
   if (card.audioUrl && card.audioUrl.startsWith('blob:')) URL.revokeObjectURL(card.audioUrl);
-  const deckMeta = DECKS_META.find(function(m) { return m.key === currentDeck; });
-  if (deckMeta && deckMeta.deck_type === 'personal') markCardDeleted(currentDeck, cardId);
   DECKS[currentDeck] = cards.filter(function(c) { return c.id !== cardId; });
   saveDeckCards(currentDeck, DECKS[currentDeck]);
   renderDeckCards();
   renderDeckList();
   showToastMsg(t('cc_card_deleted'));
-  if (deckMeta && deckMeta.deck_type === 'personal' && _syncEnabled) syncDeck(currentDeck).catch(function() {});
 }
 
 // ── custom input dialog ──────────────────────────────────────────
