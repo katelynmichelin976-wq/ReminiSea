@@ -5713,14 +5713,16 @@ function toggleSyncJobPause(deckId) {
 
 function toggleDownloadPause(deckId) {
   const s = _downloading.get(deckId);
-  if (!s) return;
+  if (!s) { console.warn('[diag:dl] pause clicked but no download state', deckId); return; }
   if (!s.paused) {
     s.paused = true;
     s.pausePromise = new Promise(resolve => { s.pauseResolve = resolve; });
+    console.log('[diag:dl] PAUSED', { deckId, done: s.done, total: s.total });
   } else {
     s.paused = false;
     if (s.pauseResolve) s.pauseResolve();
     s.pausePromise = null; s.pauseResolve = null;
+    console.log('[diag:dl] RESUMED', { deckId, done: s.done, total: s.total });
   }
   showCloudDecks();
 }
@@ -9841,10 +9843,16 @@ function computeDeckSyncState(deckKey) {
     || (meta.mod && meta.mod > pushedAt);
   const pushCount = cards.filter(c => c.mod && c.mod > pushedAt).length + deleted.length;
   const remoteAhead = remoteUpdatedAt && remoteUpdatedAt > pulledAt;
-  if (localChanged && remoteAhead) return { status: 'bothChanged', pushCount };
-  if (localChanged) return { status: 'localDirty', pushCount };
-  if (remoteAhead) return { status: 'remoteAhead' };
-  return { status: 'clean' };
+  let status;
+  if (localChanged && remoteAhead) status = 'bothChanged';
+  else if (localChanged) status = 'localDirty';
+  else if (remoteAhead) status = 'remoteAhead';
+  else status = 'clean';
+  if (status !== 'clean') {
+    console.log('[diag:state]', deckKey, status, { pushCount, pushedAt, pulledAt, remoteUpdatedAt,
+      localChanged, remoteAhead, metaMod: meta.mod, sampleCardMods: cards.slice(0,3).map(c => c.mod) });
+  }
+  return status === 'bothChanged' || status === 'localDirty' ? { status, pushCount } : { status };
 }
 
 async function uploadMissingPersonalDecks() {
@@ -9924,11 +9932,13 @@ async function refreshDeckUpdateBadges() {
 
 async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgress) {
   if (!_syncEnabled || !_sb) return;
+  console.log('[diag:dl] start', { deckId, deckName });
   try {
     const cards = await fetchAllDeckCards(deckId, 'card_id,name,image_url,audio_url,card_type,ext,updated_at');
-    if (!cards.length) return;
+    if (!cards.length) { console.log('[diag:dl] no cards on cloud', deckId); return; }
     const syncNow = new Date().toISOString();
     const total = cards.length;
+    console.log('[diag:dl] fetched cards', { deckId, total, withImg: cards.filter(c => c.image_url).length, withAud: cards.filter(c => c.audio_url).length });
 
     const makeCard = c => ({
       id: c.card_id, name: c.name, img: '', audioUrl: '', details: [],
@@ -9956,60 +9966,77 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
     await parallelMapLimit(cards, 3, async (c, i) => {
       const card = DECKS[deckId][i]; // 直接操作 DECKS，下载完立即反映到渲染
       const tasks = [];
+      let imgOk = !c.image_url, audOk = !c.audio_url;
       if (c.image_url) {
         if (card._imgUrl === c.image_url) {
           tasks.push(loadMedia(`${deckId}_${card.id}_img`)
             .then(async blob => {
-              if (blob) { card.img = URL.createObjectURL(blob); return; }
-              // IDB miss — 补充从远端下载
-              const fresh = await downloadMediaFromCDNorSupabase(c.image_url).catch(() => null);
-              if (fresh) { card.img = URL.createObjectURL(fresh); await saveMedia(`${deckId}_${card.id}_img`, fresh).catch(() => {}); }
+              if (blob) { card.img = URL.createObjectURL(blob); imgOk = true; return; }
+              const fresh = await downloadMediaFromCDNorSupabase(c.image_url).catch(e => { console.warn('[diag:dl] img refresh fail', card.id, e.message); return null; });
+              if (fresh) { card.img = URL.createObjectURL(fresh); await saveMedia(`${deckId}_${card.id}_img`, fresh).catch(e => console.warn('[diag:dl] img idb save fail', card.id, e.message)); imgOk = true; }
             })
-            .catch(() => {}));
+            .catch(e => console.warn('[diag:dl] img load fail', card.id, e.message)));
         } else {
           tasks.push(downloadMediaFromCDNorSupabase(c.image_url)
-            .then(async blob => { card.img = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_img`, blob).catch(() => {}); })
-            .catch(e => console.warn('[cloud] img failed:', e.message)));
+            .then(async blob => { card.img = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_img`, blob).catch(e => console.warn('[diag:dl] img idb save fail', card.id, e.message)); imgOk = true; })
+            .catch(e => console.warn('[diag:dl] img download fail', card.id, e.message)));
         }
       }
       if (c.audio_url) {
         if (card._audUrl === c.audio_url) {
           tasks.push(loadMedia(`${deckId}_${card.id}_aud`)
             .then(async blob => {
-              if (blob) { card.audioUrl = URL.createObjectURL(blob); return; }
-              // IDB miss — 补充从远端下载
-              const fresh = await downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url)).catch(() => null);
-              if (fresh) { card.audioUrl = URL.createObjectURL(fresh); await saveMedia(`${deckId}_${card.id}_aud`, fresh).catch(() => {}); }
+              if (blob) { card.audioUrl = URL.createObjectURL(blob); audOk = true; return; }
+              const fresh = await downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url)).catch(e => { console.warn('[diag:dl] aud refresh fail', card.id, e.message); return null; });
+              if (fresh) { card.audioUrl = URL.createObjectURL(fresh); await saveMedia(`${deckId}_${card.id}_aud`, fresh).catch(e => console.warn('[diag:dl] aud idb save fail', card.id, e.message)); audOk = true; }
             })
-            .catch(() => {}));
+            .catch(e => console.warn('[diag:dl] aud load fail', card.id, e.message)));
         } else {
           tasks.push(downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url))
-            .then(async blob => { card.audioUrl = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_aud`, blob).catch(() => {}); })
-            .catch(e => console.warn('[cloud] aud failed:', e.message)));
+            .then(async blob => { card.audioUrl = URL.createObjectURL(blob); await saveMedia(`${deckId}_${card.id}_aud`, blob).catch(e => console.warn('[diag:dl] aud idb save fail', card.id, e.message)); audOk = true; })
+            .catch(e => console.warn('[diag:dl] aud download fail', card.id, e.message)));
         }
       }
       await Promise.all(tasks);
       card._imgUrl = c.image_url || '';
       card._audUrl = c.audio_url || '';
       done++;
+      if (!imgOk || !audOk) console.warn('[diag:dl] card incomplete', { id: card.id, idx: i, imgOk, audOk });
+      if (done % 25 === 0 || done === total) console.log('[diag:dl] progress', { deckId, done, total });
       onProgress && onProgress(done, total);
-      // 每 100 张持久化一次，支持断点续传
       if (done % 100 === 0) saveDeckCards(deckId, DECKS[deckId]);
-      // 暂停支持：若被暂停则挂起 worker 直到 resume
       const dlState = _downloading.get(deckId);
-      if (dlState && dlState.pausePromise) await dlState.pausePromise;
+      if (dlState && dlState.pausePromise) {
+        console.log('[diag:dl] worker waiting on pause', { cardIdx: i });
+        await dlState.pausePromise;
+        console.log('[diag:dl] worker resumed', { cardIdx: i });
+      }
     });
     localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
     saveDeckCards(deckId, DECKS[deckId]);
+
+    // 拉云端 decks.updated_at 同步推 pulledAt（消除 cloud.decks.updated_at > max(card.updated_at) 时的 remoteAhead 假象）
+    const { data: deckRow } = await _sb.from('decks').select('updated_at').eq('id', deckId).maybeSingle();
+    const cloudDeckTs = Date.parse(deckRow?.updated_at) || 0;
     const maxMod = (cards || []).reduce((m, c) => Math.max(m, Date.parse(c.updated_at) || 0), 0);
-    if (maxMod) {
-      localStorage.setItem('yihaiPushedAt:' + deckId, String(maxMod));
-      localStorage.setItem('yihaiPulledAt:' + deckId, String(maxMod));
+    const finalMark = Math.max(maxMod, cloudDeckTs);
+    if (finalMark) {
+      localStorage.setItem('yihaiPushedAt:' + deckId, String(finalMark));
+      localStorage.setItem('yihaiPulledAt:' + deckId, String(finalMark));
     }
+    const metaUpd = DECKS_META.find(m => m.key === deckId);
+    if (metaUpd && deckRow?.updated_at) metaUpd._remoteUpdatedAt = deckRow.updated_at;
+
+    // 媒体完整性总结：扫一遍 DECKS 看 img/audioUrl 还有几张没 blob
+    const finalCards = DECKS[deckId] || [];
+    const missingImg = finalCards.filter(c => c._imgUrl && !c.img).length;
+    const missingAud = finalCards.filter(c => c._audUrl && !c.audioUrl).length;
+    console.log('[diag:dl] complete', { deckId, total: finalCards.length, missingImg, missingAud,
+      maxCardMod: maxMod, cloudDeckTs, finalWatermark: finalMark });
+
     renderDeckList();
-    console.log('[cloud] downloadPersonalDeckFromCloud ok:', deckId, DECKS[deckId].length, 'cards');
   } catch(e) {
-    console.warn('[cloud] downloadPersonalDeckFromCloud fail:', e.message);
+    console.error('[diag:dl] fatal', deckId, e.message, e.stack);
   }
 }
 
