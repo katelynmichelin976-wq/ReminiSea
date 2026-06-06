@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 当前版本
 | File | Purpose |
 |------|---------|
-| `index.html` | 主训练 App（v5.5.0，单 HTML 文件，Supabase 云同步） |
+| `index.html` | 主训练 App（v5.9.0，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -58,7 +58,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.8.2**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.9.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.9.0：** 个人牌组同步 v2 — media slot 模型（`media.{slot}.{url,v,_blob}`）替代旧 `_imgUrl`/`img` 字段；新增纯函数 `hasMedia`/`mediaLoaded`/`serializeMedia`/`mergeCard`/`buildPath`/`mimeToExt`；`deck_cards` 加 `media JSONB` 列并迁移存量 `image_url`/`audio_url` 数据；`saveDeckCards`/`restoreDecks` 序列化层全面迁移（兼容旧格式）；`computeDeckDiff` 字段名规范化（`.ts`）；`computeDeckSyncState` 改用 `deckMediaComplete` 判断媒体缺失；`upsertCardsBatch` 写 `media` JSONB、新增 `upsertSingleCard`；`runCardsPhase` pull 改用 `media` + `mergeCard`；`runMediaPhase` 重写为 slot 模型 + await + checkpoint/20（根治 fire-and-forget）；GC 补全（`deleteDeck` 清 4 个孤儿 key、`deleteCardStatesForDeck`、`gcOrphanSyncKeys`、`purgeOldLogs` 加 TRIAL_STORE）；修复 media slot 迁移后 `card.img`/`audioUrl` 渲染层字段丢失导致图片不显示；`yh_diag.js` 媒体统计对齐新格式；新增 `tests/yihai_v5.9_sync_test.js`（32 断言）+ `_pw_cross_device.js` PHASE 10/11（共 39 断言）。
 
 **v5.8.2：** 云端牌组下载流程三项修复 — ①`downloadPersonalDeckFromCloud` 暂停前调用 `saveDeckCards` 持久化已下载卡片，防止刷新/登出后数据丢失；②`doAccountLogout` 登出时 resolve 所有暂停 promise 并清空 `_downloading`，避免下载线程永久 blocked；③`computeDeckSyncState` 检测 `_imgUrl` 有值但 blob 未加载（`img` 为空）时返回 `mediaIncomplete` 标志，云端牌组页显示「媒体缺失」徽章并提供「补全媒体」按钮（走下载路径复用 IDB 缓存）；移除 Supabase CDN SRI `integrity` 属性（jsdelivr 节点不一致导致时好时坏）。
 

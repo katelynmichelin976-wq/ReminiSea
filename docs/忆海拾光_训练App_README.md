@@ -129,6 +129,18 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.9.0 — 2026-06-06
+
+**个人牌组同步 v2 — media slot 模型**
+
+- 卡片媒体字段重构为 `media.{slot}.{url, v, _blob}` 结构，支持多媒体 slot 和版本化替换
+- 同步引擎全面升级：`runCardsPhase` 使用 `mergeCard` 智能合并，`runMediaPhase` 改为 await（根治 fire-and-forget）
+- GC 补全：删除牌组时清理所有孤儿 sync key + IDB card state；启动时自动清理孤儿 key；日志清理补 TRIAL_STORE
+- 修复 media slot 迁移后图片不显示（`card.img`/`audioUrl` 未同步渲染层）
+- 新增 32 个单元测试（纯函数），跨设备测试新增 PHASE 10/11
+
+---
+
 ### v5.8.2 — 2026-06-06
 
 **云端牌组下载健壮性修复**

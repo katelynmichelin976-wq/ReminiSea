@@ -2,6 +2,23 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.9.0 Key Changes
+
+- **media slot 模型**：卡片媒体字段从 `_imgUrl`/`img`/`_audUrl`/`audioUrl` 迁移为 `media.{slot}.{url, v, _blob}` 结构。`url` 为 Storage 路径，`v` 为版本号（替换媒体时递增），`_blob` 为运行时 blob URL（不序列化）。
+- **新纯函数**：`hasMedia`/`mediaLoaded`/`cardMediaComplete`/`deckMediaComplete`/`serializeMedia`/`mergeCard`/`buildPath`/`mimeToExt`，均有单元测试覆盖（`yihai_v5.9_sync_test.js`，32 断言）。
+- **DB migration**：`deck_cards` 新增 `media jsonb DEFAULT '{}'` 列；存量 `image_url`/`audio_url` 数据迁移为 `media.img`/`media.aud` slot 格式；旧列保留向后兼容。
+- **序列化层**：`saveDeckCards` 改用 `serializeMedia`（strip `_blob`）；`restoreDecks` 新格式 + 兼容旧 `imgUrl`/`audUrl`，逐 slot 从 IDB 恢复 `_blob`，恢复后同步 `card.img`/`card.audioUrl` 供渲染层使用。
+- **computeDeckDiff**：`remoteCardMeta` 字段名由 `.updated_at`（ISO 字符串）规范为 `.ts`（epoch ms），消除命名歧义。
+- **computeDeckSyncState**：`mediaIncomplete` 改用 `deckMediaComplete(cards)` 判断（原逻辑只检测 `_imgUrl && !img`，slot 模型下失效）。
+- **upsertCardsBatch**：写 `media` JSONB 列（不再写 `image_url`/`audio_url`）；新增 `upsertSingleCard` 用于 Phase 3 逐卡上传后即时更新云端 `media.url`。
+- **runCardsPhase pull**：SELECT 改为 `media` 列；远端 `media` slot 补 `_blob`（IDB 优先）；用 `mergeCard` 合并（同 url+v 保留本地 `_blob`，否则清空待重下）；merge 后同步 `merged.img`/`merged.audioUrl`。
+- **runMediaPhase 重写**：slot 模型遍历；upload guard（`_blob` 有且 `url` 空时上传，`upsertSingleCard` 即时更新）；download（`url` 有且 `_blob` 空时下，IDB 缓存优先）；每 20 张 checkpoint + `saveDeckCards`；`run()` 改为 `await runMediaPhase()`（根治 fire-and-forget）；下载后同步 `card.img`/`card.audioUrl`。
+- **GC 补全**：`deleteDeck` 补清 `yihaiPushedAt`/`yihaiPulledAt`/`yihaiPushedMediaAt` 三个孤儿 key + 调 `deleteCardStatesForDeck`；新增 `gcOrphanSyncKeys` 启动时清理无对应牌组的 sync key；`purgeOldLogs` 补清 `TRIAL_STORE` 30 天前已同步条目。
+- **渲染层修复**：media slot 迁移后 `card.img`/`card.audioUrl` 未同步，导致图片不显示；在 `restoreDecks`/`runCardsPhase` pull/`runMediaPhase` download/`downloadPersonalDeckFromCloud` 四处补齐同步；`downloadPersonalDeckFromCloud` 同时写 `card.media` slot 防止 `saveDeckCards` 丢失路径。
+- **yh_diag.js**：媒体统计改用 `media.img.url`/`media.img._blob` 判断（兼容旧字段），适配新 slot 格式。
+- **测试**：`yihai_v5.9_sync_test.js`（32 断言）；`_pw_cross_device.js` 新增 PHASE 10（mediaIncomplete flag）+ PHASE 11（runMediaPhase await），共 39 断言；`run_all.js` 注册新套件（合计 8 套件 421 断言）。
+- **CLAUDE.md**：新增规则 17——序列化层改动必须验证端到端渲染路径（路径 A/B/C）。
+
 ## v5.8.2 Key Changes
 
 - **下载暂停持久化**：`downloadPersonalDeckFromCloud` 在检测到暂停状态前先调用 `saveDeckCards`，确保已下载卡片数据写入 localStorage；如果用户暂停后刷新页面或登出，下次恢复时不会看到空牌组。
