@@ -4793,7 +4793,7 @@ async function importYhspack(file) {
       if (!c.name) continue;
       const nf = normalizeField(c.name, deckLang);
       const card = { id: c.id || String(i), name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: [],
-                     cardType: c.cardType || c.card_type || 'choice', ext: c.ext || {}, mod: nextMod() };
+                     cardType: c.cardType || c.card_type || 'choice', ext: c.ext || {}, mod: nextMod(), media: {} };
 
       // image (derive MIME from extension, supports PNG/WebP/GIF)
       if (c.image) {
@@ -4806,6 +4806,7 @@ async function importYhspack(file) {
           const blob = new Blob([buf], { type: mime });
           setObjURL(card, 'img', blob);
           await saveMedia(`${key}_${card.id}_img`, blob).catch(() => {});
+          card.media.img = { url: '', v: 0, _blob: card.img };
         }
       }
 
@@ -4820,6 +4821,7 @@ async function importYhspack(file) {
           const blob = new Blob([buf], { type: mime });
           setObjURL(card, 'audioUrl', blob);
           await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
+          card.media.aud = { url: '', v: 0, _blob: card.audioUrl };
         }
       }
 
