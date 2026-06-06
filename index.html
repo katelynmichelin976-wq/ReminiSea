@@ -9737,7 +9737,7 @@ class SyncJob {
       await this._checkpoint();
       const ids = toPull.slice(b, b + 100).map(r => r.card_id);
       const { data, error } = await _sb.from('deck_cards')
-        .select('card_id,name,image_url,audio_url,sort_order,card_type,ext,updated_at')
+        .select('card_id,name,media,sort_order,card_type,ext,updated_at')
         .eq('deck_id', this.deckKey).in('card_id', ids);
       if (error) throw new Error('pull cards: ' + error.message);
       const cards = DECKS[this.deckKey] || (DECKS[this.deckKey] = []);
@@ -9745,31 +9745,25 @@ class SyncJob {
         const remoteMod = Date.parse(r.updated_at) || 0;
         const idx = cards.findIndex(c => c.id === r.card_id);
         const local = idx >= 0 ? cards[idx] : null;
-        const remoteImgUrl = r.image_url || '';
-        const remoteAudUrl = r.audio_url || '';
-        const sameImg = local && local._imgUrl === remoteImgUrl;
-        const sameAud = local && local._audUrl === remoteAudUrl;
-        const merged = {
+        const remoteMedia = r.media || {};
+        for (const slot of Object.keys(remoteMedia)) {
+          remoteMedia[slot]._blob = '';
+          const s = remoteMedia[slot];
+          if (s.url && !(local?.media?.[slot]?._blob)) {
+            const blob = await loadMedia(`${this.deckKey}_${r.card_id}_${slot}`).catch(() => null);
+            if (blob) s._blob = URL.createObjectURL(blob);
+          }
+        }
+        const remoteCard = {
           id: r.card_id, name: r.name, nameLang: local?.nameLang || '',
-          _imgUrl: remoteImgUrl, _audUrl: remoteAudUrl,
-          img:      sameImg ? (local.img      || '') : '',
-          audioUrl: sameAud ? (local.audioUrl || '') : '',
-          details: local?.details || [],
           cardType: r.card_type || 'choice', ext: r.ext || {},
-          mod: remoteMod
+          mod: remoteMod, media: remoteMedia,
         };
-        if (!merged.img && remoteImgUrl) {
-          const blob = await loadMedia(`${this.deckKey}_${merged.id}_img`).catch(() => null);
-          if (blob) merged.img = URL.createObjectURL(blob);
-        }
-        if (!merged.audioUrl && remoteAudUrl) {
-          const blob = await loadMedia(`${this.deckKey}_${merged.id}_aud`).catch(() => null);
-          if (blob) merged.audioUrl = URL.createObjectURL(blob);
-        }
+        const merged = local ? mergeCard(local, remoteCard) : remoteCard;
         if (idx >= 0) cards[idx] = merged;
         else cards.push(merged);
       }
-      const maxRemoteMod = data.reduce((m, r) => Math.max(m, Date.parse(r.updated_at) || 0), 0);
+      const maxRemoteMod = (data || []).reduce((m, r) => Math.max(m, Date.parse(r.updated_at) || 0), 0);
       const curPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
       if (maxRemoteMod > curPulled) localStorage.setItem('yihaiPulledAt:' + this.deckKey, String(maxRemoteMod));
       done += ids.length;
