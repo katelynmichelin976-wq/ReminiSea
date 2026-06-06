@@ -5297,7 +5297,7 @@ async function saveCardFromForm() {
   const details = rawDetails.split('\n').filter(function(l) { return l.trim(); });
 
   // build card
-  const card = { id: id, name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: details };
+  const card = { id: id, name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: details, media: {} };
 
   // save image
   var savePromises = [];
@@ -5306,6 +5306,7 @@ async function saveCardFromForm() {
     const blob = _ccImageBlob instanceof Blob ? _ccImageBlob : new Blob([_ccImageBlob], { type: mime });
     setObjURL(card, 'img', blob);
     savePromises.push(saveMedia(deckKey + '_' + id + '_img', blob).catch(function(e) { console.warn('saveMedia img', e); }));
+    card.media.img = { url: '', v: 0, _blob: card.img };
   }
 
   // save audio
@@ -5314,6 +5315,7 @@ async function saveCardFromForm() {
     const blob = _ccAudioBlob instanceof Blob ? _ccAudioBlob : new Blob([_ccAudioBlob], { type: mime });
     setObjURL(card, 'audioUrl', blob);
     savePromises.push(saveMedia(deckKey + '_' + id + '_aud', blob).catch(function(e) { console.warn('saveMedia aud', e); }));
+    card.media.aud = { url: '', v: 0, _blob: card.audioUrl };
   }
 
   // add to deck
