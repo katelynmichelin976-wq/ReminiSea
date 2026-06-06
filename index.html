@@ -4484,7 +4484,11 @@ function saveDeckIndex() {
   ));
 }
 function saveDeckCards(key, cards) {
-  const slim = cards.map(c => ({ id: c.id, name: c.name, nameLang: c.nameLang || '', imgUrl: c._imgUrl || '', audUrl: c._audUrl || '', cardType: c.cardType || 'choice', ext: c.ext || {}, mod: c.mod || 0 }));
+  const slim = cards.map(c => ({
+    id: c.id, name: c.name, nameLang: c.nameLang || '',
+    cardType: c.cardType || 'choice', ext: c.ext || {}, mod: c.mod || 0,
+    media: serializeMedia(c.media || {}),
+  }));
   localStorage.setItem(LS_DECK_PREFIX + key, JSON.stringify(slim));
 }
 
@@ -4638,19 +4642,30 @@ async function restoreDecks() {
       const cards = [];
       for (const c of raw) {
         try {
-          const card = { ...c, img: '', audioUrl: '', details: [] };
-          card.mod = c.mod || 0;
-          card.cardType = card.cardType || card.card_type || 'choice';
-          card.ext = card.ext || {};
-          // migrate: old format imgUrl/audUrl → _imgUrl/_audUrl
-          if (!card._imgUrl && c.imgUrl) card._imgUrl = c.imgUrl;
-          if (!card._audUrl && c.audUrl) card._audUrl = c.audUrl;
-          // restore images from IndexedDB
-          const imgBlob = await loadMedia(`${key}_${c.id}_img`).catch(() => null);
-          if (imgBlob) try { setObjURL(card, 'img', imgBlob); } catch(e) {}
-          // restore audio from IndexedDB
-          const audBlob = await loadMedia(`${key}_${c.id}_aud`).catch(() => null);
-          if (audBlob) try { setObjURL(card, 'audioUrl', audBlob); } catch(e) {}
+          const card = {
+            id: c.id, name: c.name || '', nameLang: c.nameLang || '',
+            cardType: c.cardType || c.card_type || 'choice',
+            ext: c.ext || {}, mod: c.mod || 0,
+            media: {},
+          };
+          // 格式迁移：旧 slim 格式 imgUrl/audUrl → media slot
+          let rawMedia = c.media || {};
+          if (!rawMedia.img && (c.imgUrl || c._imgUrl)) {
+            rawMedia = { ...rawMedia, img: { url: c.imgUrl || c._imgUrl || '', v: 0 } };
+          }
+          if (!rawMedia.aud && (c.audUrl || c._audUrl)) {
+            rawMedia = { ...rawMedia, aud: { url: c.audUrl || c._audUrl || '', v: 0 } };
+          }
+          // 逐 slot 从 IDB 恢复 blob
+          for (const slot of Object.keys(rawMedia)) {
+            const s = rawMedia[slot];
+            card.media[slot] = { url: s.url || '', v: s.v ?? 0, _blob: '' };
+            // 无论 url 是否有值都尝试从 IDB 恢复 blob：
+            //   - url 非空：已上传，IDB 是缓存
+            //   - url 为空：本地导入未上传，IDB 是唯一 blob 来源（_blob 必须恢复才能触发 Phase 3 上传 guard）
+            const blob = await loadMedia(`${key}_${c.id}_${slot}`).catch(() => null);
+            if (blob) card.media[slot]._blob = URL.createObjectURL(blob);
+          }
           cards.push(card);
         } catch(e) { console.warn('restoreDecks: skipping card', c.id, e.message); }
       }
