@@ -5582,6 +5582,8 @@ async function doAccountLogin() {
 
 async function doAccountLogout() {
   logAppEvent('logout', {});
+  for (const [, dl] of _downloading) { if (dl.pauseResolve) dl.pauseResolve(); }
+  _downloading.clear();
   try { if (_sb) await _sb.auth.signOut(); } catch(e) { console.warn('[sync] signOut error:', e.message); }
   _syncEnabled = false; _cloudUserEmail = ''; _sb = null;
   localStorage.removeItem('yihaiGlobalSyncTs');
@@ -9843,10 +9845,11 @@ function computeDeckSyncState(deckKey) {
     || (meta.mod && meta.mod > pushedAt);
   const pushCount = cards.filter(c => c.mod && c.mod > pushedAt).length + deleted.length;
   const remoteAhead = remoteUpdatedAt && remoteUpdatedAt > pulledAt;
+  const mediaIncomplete = cards.length > 0 && cards.some(c => c._imgUrl && !c.img);
   let status;
   if (localChanged && remoteAhead) status = 'bothChanged';
   else if (localChanged) status = 'localDirty';
-  else if (remoteAhead) status = 'remoteAhead';
+  else if (remoteAhead || mediaIncomplete) status = 'remoteAhead';
   else status = 'clean';
   if (status !== 'clean') {
     console.log('[diag:state]', deckKey, status, { pushCount, pushedAt, pulledAt, remoteUpdatedAt,
@@ -10007,9 +10010,11 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
       if (done % 100 === 0) saveDeckCards(deckId, DECKS[deckId]);
       const dlState = _downloading.get(deckId);
       if (dlState && dlState.pausePromise) {
+        saveDeckCards(deckId, DECKS[deckId]); // 暂停前持久化，防止刷新/登出丢数据
         console.log('[diag:dl] worker waiting on pause', { cardIdx: i });
         await dlState.pausePromise;
         console.log('[diag:dl] worker resumed', { cardIdx: i });
+        if (!_downloading.get(deckId)) return; // 登出时已取消
       }
     });
     localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
