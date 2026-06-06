@@ -274,6 +274,22 @@ ALTER TABLE cards_pool ADD COLUMN IF NOT EXISTS ext jsonb NOT NULL DEFAULT '{}':
 ALTER TABLE deck_cards ADD COLUMN IF NOT EXISTS card_type text NOT NULL DEFAULT 'choice';
 ALTER TABLE deck_cards ADD COLUMN IF NOT EXISTS ext jsonb NOT NULL DEFAULT '{}'::jsonb;
 
+-- media slot JSONB（added v5.9）: { img: {url, v}, aud: {url, v} }
+-- image_url / audio_url 列保留向后兼容，后续版本清理
+ALTER TABLE deck_cards ADD COLUMN IF NOT EXISTS media jsonb DEFAULT '{}'::jsonb;
+UPDATE deck_cards
+SET media = jsonb_strip_nulls(jsonb_build_object(
+  'img', CASE WHEN image_url IS NOT NULL AND image_url != ''
+              THEN jsonb_build_object('url', image_url, 'v', 0)
+              ELSE NULL END,
+  'aud', CASE WHEN audio_url IS NOT NULL AND audio_url != ''
+              THEN jsonb_build_object('url', audio_url, 'v', 0)
+              ELSE NULL END
+))
+WHERE (media IS NULL OR media = '{}'::jsonb)
+  AND ((image_url IS NOT NULL AND image_url != '')
+       OR (audio_url IS NOT NULL AND audio_url != ''));
+
 -- ── feedback 表（意见反馈，anon+authenticated 可写，无读权限）──────
 CREATE TABLE IF NOT EXISTS feedback (
   id            uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
