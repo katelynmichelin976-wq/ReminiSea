@@ -2777,7 +2777,6 @@ const MEDIA_CDN_BASE = '';
 
 let _sb = null;
 let _syncEnabled = false;
-let _pendingDeckUpdates = new Set();
 let _sessionRestoring = false;
 const _downloading = new Map(); // deckId → {done, total}，进行中的媒体下载
 let _deviceId = null;
@@ -10112,16 +10111,16 @@ async function refreshDeckUpdateBadges() {
       .eq('user_id', _cloudUserId)
       .eq('deck_type', 'personal');
     if (error || !data) return;
-    _pendingDeckUpdates.clear();
+    let changed = false;
     for (const rd of data) {
-      const lastSync = localStorage.getItem('yihaiSyncAt:' + rd.id) || '';
-      if (!lastSync && DECKS_META.some(m => m.key === rd.id)) {
-        localStorage.setItem('yihaiSyncAt:' + rd.id, new Date().toISOString());
-        continue;
+      const meta = DECKS_META.find(m => m.key === rd.id);
+      if (!meta) continue;
+      if (meta._remoteUpdatedAt !== rd.updated_at) {
+        meta._remoteUpdatedAt = rd.updated_at;
+        changed = true;
       }
-      if (rd.updated_at > lastSync) _pendingDeckUpdates.add(rd.id);
     }
-    if (_pendingDeckUpdates.size > 0) renderDeckList();
+    if (changed) renderDeckList();
   } catch(e) {}
 }
 
@@ -11071,7 +11070,7 @@ function renderDeckList() {
     return '<div class="deck-card" data-deck="'+m.key+'" data-swipeable>' +
       '<div class="deck-card-actions">'+swipeExport+swipeRename+swipeDel+'</div>' +
       '<div class="deck-card-inner'+(m.key === currentDeck ? ' selected' : '')+'" data-deck="'+m.key+'">' +
-        '<div class="deck-info"><div class="deck-name">'+esc(m.name)+(_pendingDeckUpdates.has(m.key) ? '<span class="deck-update-dot"></span>' : '')+'</div></div>' +
+        '<div class="deck-info"><div class="deck-name">'+esc(m.name)+(m.deck_type === 'personal' && computeDeckSyncState(m.key).status !== 'clean' ? '<span class="deck-update-dot"></span>' : '')+'</div></div>' +
         '<div class="deck-stats">' +
           '<div class="deck-stat"><span class="deck-stat-num due'+(dueVal===0?' zero':'')+'" data-deck="'+m.key+'">'+dueVal+'</span><span class="deck-stat-lbl">'+t('home_due_label')+'</span></div>' +
           '<div class="deck-stat"><span class="deck-stat-num new-c'+(newVal===0?' zero':'')+'" data-deck="'+m.key+'">'+newVal+'</span><span class="deck-stat-lbl">'+t('home_new_label')+'</span></div>' +
