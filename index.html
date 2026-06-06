@@ -5777,7 +5777,7 @@ async function doSyncDeckAction(deckId, btnEl) {
   if (getActiveSyncJob(deckId)) return;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '同步中…'; }
   try {
-    await syncDeck(deckId, { onProgress: () => showCloudDecks() });
+    await syncDeck(deckId);
     showCloudToast('同步完成');
   } catch(e) {
     showCloudToast('同步失败：' + e.message, true);
