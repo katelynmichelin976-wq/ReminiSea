@@ -5932,7 +5932,7 @@ async function renameCard(cardId) {
   if (!newName || newName.trim() === '' || newName.trim() === card.name) return;
   card.name = newName.trim();
   card.nameLang = normalizeField(card.name, DECKS_META.find(function(m) { return m.key === currentDeck; })).lang;
-  saveDeckCards(currentDeck);
+  saveDeckCards(currentDeck, DECKS[currentDeck]);
   renderDeckCards();
   renderDeckList();
   showToastMsg(t('toast_rename_done', { name: esc(card.name) }));
@@ -5948,7 +5948,7 @@ async function deleteCardFromDeck(cardId) {
   if (card.img && card.img.startsWith('blob:')) URL.revokeObjectURL(card.img);
   if (card.audioUrl && card.audioUrl.startsWith('blob:')) URL.revokeObjectURL(card.audioUrl);
   DECKS[currentDeck] = cards.filter(function(c) { return c.id !== cardId; });
-  saveDeckCards(currentDeck);
+  saveDeckCards(currentDeck, DECKS[currentDeck]);
   renderDeckCards();
   renderDeckList();
   showToastMsg(t('cc_card_deleted'));
