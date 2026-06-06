@@ -5954,7 +5954,7 @@ async function deleteCardFromDeck(cardId) {
   renderDeckCards();
   renderDeckList();
   showToastMsg(t('cc_card_deleted'));
-  if (deckMeta && deckMeta.deck_type === 'personal' && _syncEnabled) syncDeck(currentDeck).catch(function() {});
+  if (deckMeta && deckMeta.deck_type === 'personal' && _syncEnabled) syncDeck(currentDeck).catch(function(e) { console.warn('[sync] delete card sync fail:', e.message); });
 }
 
 // ── custom input dialog ──────────────────────────────────────────
@@ -9746,7 +9746,8 @@ class SyncJob {
     this._setPhase('structure', 0, 1);
     const meta = DECKS_META.find(m => m.key === this.deckKey);
     const pushedAt = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
-    if (meta && meta.mod && meta.mod > pushedAt) await upsertDeckRow(this.deckKey);
+    const deleted = getDeletedCards(this.deckKey);
+    if (meta && ((meta.mod && meta.mod > pushedAt) || deleted.length > 0)) await upsertDeckRow(this.deckKey);
     const { data: deckRow } = await _sb.from('decks')
       .select('updated_at').eq('id', this.deckKey).maybeSingle();
     if (meta && deckRow?.updated_at) {
@@ -9763,7 +9764,6 @@ class SyncJob {
       ts: Date.parse(r.updated_at) || 0,   // epoch ms，统一命名为 ts 避免与 ISO string 混淆
     }));
     const cards = DECKS[this.deckKey] || [];
-    const deleted = getDeletedCards(this.deckKey);
     const pulledAt = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
     const diff = computeDeckDiff(cards, deleted, remoteMeta, pushedAt, pulledAt);
     this._setPhase('structure', 1, 1);
