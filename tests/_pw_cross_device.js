@@ -438,6 +438,31 @@ let tStart;
     pass('Fix2: 媒体重传后 state 仍为 clean（pulledAt 已推进）',
       stateAfterReupload.status === 'clean');
 
+    // ════ PHASE 9: 老设备升级后首次同步不卡「双向 +N」(Fix 3 回归) ════
+    section('PHASE 9: 老设备升级 — pull 后 pushedAt 跟进 + meta._remoteUpdatedAt 刷新');
+    await run(pageA, async (key) => {
+      const meta = DECKS_META.find(m => m.key === key);
+      for (const c of DECKS[key]) c.mod = 0;
+      meta.mod = 0;
+      saveDeckIndex(); saveDeckCards(key, DECKS[key]);
+      const oldTs = '2026-06-05T05:57:02.584Z';
+      localStorage.setItem('yihaiPushedAt:' + key, oldTs);
+      localStorage.setItem('yihaiPulledAt:' + key, oldTs);
+    }, mediaDeckKey);
+
+    await run(pageA, async (key) => { await syncDeck(key); }, mediaDeckKey);
+
+    const stateAfterUpgrade = await run(pageA, (key) => computeDeckSyncState(key), mediaDeckKey);
+    pass('Fix3: 老设备升级后 sync → state=clean（不是 bothChanged +N）',
+      stateAfterUpgrade.status === 'clean');
+
+    const wm = await run(pageA, (key) => ({
+      pushed: localStorage.getItem('yihaiPushedAt:' + key),
+      pulled: localStorage.getItem('yihaiPulledAt:' + key)
+    }), mediaDeckKey);
+    pass('Fix3: pushedAt 已推进到 pulledAt（不再卡老 ISO 时间）',
+      wm.pushed === wm.pulled);
+
     // ════ 清理 ════
     section('清理云端测试数据');
     await run(pageA, async (keys) => {

@@ -58,7 +58,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.8.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.8.1**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.8.1：** 修 v5.8.0 上线后老设备升级首次同步卡在「双向 +100」+ 媒体缺失 — ①`runStructurePhase` 拉 `decks.updated_at` 并把 `meta._remoteUpdatedAt` / `pulledAt` 同步推到该值（消除 `decks.updated_at` 比 `max(deck_cards.updated_at)` 新时的 remoteAhead 假象）；②`runCardsPhase` 末尾 `pushedAt = max(pushedAt, pulledAt)`（pulled 的卡 mod 已等于云端 updated_at，等价"已推送"，避免 +100）；③pull merge 时若本地 in-memory `img`/`audioUrl` 空但 IDB 有 blob，从 IDB 复活生成 blob URL。`_pw_cross_device.js` 加 PHASE 9 老设备升级回归（+2 断言，共 34）。
 
 **v5.8.0：** 个人牌组同步重做 — 卡片级 `mod` 时间戳 + 删除墓碑 + `SyncJob` 三阶段（结构 → 卡片 → 媒体）增量同步 + 暂停续传 + 云端牌组页状态徽章；`deck_cards` 加 `unique(deck_id, card_id)` 约束（v5.8 migration via MCP）；`yihaiSyncAt:{key}` 拆为 `yihaiPushedAt` + `yihaiPulledAt` 双水位（带迁移）；新增 `tests/yihai_v5.8_sync_test.js`（24 断言）与 `_pw_cross_device.js` 增量/暂停/迁移/Fix 1/Fix 2 场景（+21 断言，合计 32）。**发布前修两个手工实测发现的 bug**：① `runCardsPhase` pull merge 整卡替换导致 blob URL 丢失 → 沿 `_imgUrl`/`_audUrl` 路径一致时保留本地 `img`/`audioUrl`；② `upsertDeckRow` 写 `decks.updated_at` 后不推水位 → 媒体重传后云端牌组页常驻「待下载」+ meta 单独修改永久 `localDirty` → 同步推进 `pushedAt`/`pulledAt` 并刷新 `meta._remoteUpdatedAt`。spec: `docs/superpowers/specs/2026-06-05-personal-deck-sync-design.md`；plan: `docs/superpowers/plans/2026-06-05-personal-deck-sync.md`。
 

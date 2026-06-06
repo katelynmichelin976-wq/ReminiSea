@@ -2753,7 +2753,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.8.0';
+const APP_VERSION = '5.8.1';
 document.title = '忆海拾光 v' + APP_VERSION;
 document.getElementById('home-version').textContent = 'v' + APP_VERSION;
 
@@ -9643,6 +9643,16 @@ class SyncJob {
     const meta = DECKS_META.find(m => m.key === this.deckKey);
     const pushedAt = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
     if (meta && meta.mod && meta.mod > pushedAt) await upsertDeckRow(this.deckKey);
+    const { data: deckRow } = await _sb.from('decks')
+      .select('updated_at').eq('id', this.deckKey).maybeSingle();
+    if (meta && deckRow?.updated_at) {
+      meta._remoteUpdatedAt = deckRow.updated_at;
+      const remoteTs = Date.parse(deckRow.updated_at) || 0;
+      const curPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
+      if (remoteTs > curPulled) {
+        localStorage.setItem('yihaiPulledAt:' + this.deckKey, String(remoteTs));
+      }
+    }
     const remote = await fetchAllDeckCards(this.deckKey, 'card_id,updated_at');
     const remoteMeta = (remote || []).map(r => ({
       card_id: r.card_id,
@@ -9710,6 +9720,14 @@ class SyncJob {
           cardType: r.card_type || 'choice', ext: r.ext || {},
           mod: remoteMod
         };
+        if (!merged.img && remoteImgUrl) {
+          const blob = await loadMedia(`${this.deckKey}_${merged.id}_img`).catch(() => null);
+          if (blob) merged.img = URL.createObjectURL(blob);
+        }
+        if (!merged.audioUrl && remoteAudUrl) {
+          const blob = await loadMedia(`${this.deckKey}_${merged.id}_aud`).catch(() => null);
+          if (blob) merged.audioUrl = URL.createObjectURL(blob);
+        }
         if (idx >= 0) cards[idx] = merged;
         else cards.push(merged);
       }
@@ -9727,6 +9745,12 @@ class SyncJob {
       clearDeletedCards(this.deckKey);
       done += 1;
       this._setPhase('cards', done, total);
+    }
+
+    const finalPushed = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
+    const finalPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
+    if (finalPulled > finalPushed) {
+      localStorage.setItem('yihaiPushedAt:' + this.deckKey, String(finalPulled));
     }
   }
   async runMediaPhase() {
