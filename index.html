@@ -9847,12 +9847,11 @@ class SyncJob {
       this._setPhase('cards', done, total);
     }
 
-    // 已完整比对云端，推进 pushedAt 到本地所有卡片 mod 最大值
-    // 避免"云端已是最新但 c.mod > pushedAt"导致 computeDeckSyncState 误报 localDirty
-    const maxLocalMod = (DECKS[this.deckKey] || []).reduce((m, c) => Math.max(m, c.mod || 0), 0);
-    const finalPushed = Math.max(parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey)), maxLocalMod);
+    const finalPushed = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
     const finalPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
-    localStorage.setItem('yihaiPushedAt:' + this.deckKey, String(Math.max(finalPushed, finalPulled)));
+    if (finalPulled > finalPushed) {
+      localStorage.setItem('yihaiPushedAt:' + this.deckKey, String(finalPulled));
+    }
   }
   async runMediaPhase() {
     if (!_syncEnabled || !_sb || !_cloudUserId) return;
