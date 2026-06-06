@@ -118,17 +118,17 @@ function check(desc, ok) {
 // Test 7: computeDeckDiff
 {
   function computeDeckDiff(localCards, deletedIds, remoteCardMeta, pushedAt, pulledAt) {
-    const localMap = new Map(localCards.map(c => [c.id, c]));
-    const remoteMap = new Map(remoteCardMeta.map(r => [r.card_id, r.updated_at]));
+    const localMap  = new Map(localCards.map(c => [c.id, c]));
+    const remoteMap = new Map(remoteCardMeta.map(r => [r.card_id, r.ts]));
     const toPush = localCards.filter(c => {
       if (!c.mod || c.mod <= pushedAt) return false;
-      const rUpd = remoteMap.get(c.id);
-      return !rUpd || c.mod > rUpd;
+      const rTs = remoteMap.get(c.id);
+      return rTs === undefined || c.mod > rTs;
     });
     const toPull = remoteCardMeta.filter(r => {
-      if (r.updated_at <= pulledAt) return false;
+      if (r.ts <= pulledAt) return false;
       const local = localMap.get(r.card_id);
-      return !local || r.updated_at > (local.mod || 0);
+      return !local || r.ts > (local.mod || 0);
     });
     const toDelete = deletedIds.filter(id => remoteMap.has(id));
     return { toPush, toPull, toDelete };
@@ -138,7 +138,7 @@ function check(desc, ok) {
     const r = computeDeckDiff(
       [{ id: 'c1', mod: 100 }, { id: 'c2', mod: 50 }],
       [],
-      [{ card_id: 'c2', updated_at: 50 }],
+      [{ card_id: 'c2', ts: 50 }],
       50, 50
     );
     check('A: toPush=[c1]', r.toPush.length === 1 && r.toPush[0].id === 'c1');
@@ -149,7 +149,7 @@ function check(desc, ok) {
     const r = computeDeckDiff(
       [{ id: 'c1', mod: 50 }],
       [],
-      [{ card_id: 'c1', updated_at: 50 }, { card_id: 'c2', updated_at: 100 }],
+      [{ card_id: 'c1', ts: 50 }, { card_id: 'c2', ts: 100 }],
       50, 50
     );
     check('B: toPull=[c2]', r.toPull.length === 1 && r.toPull[0].card_id === 'c2');
@@ -160,7 +160,7 @@ function check(desc, ok) {
     const r = computeDeckDiff(
       [{ id: 'c1', mod: 200 }],
       [],
-      [{ card_id: 'c1', updated_at: 150 }],
+      [{ card_id: 'c1', ts: 150 }],
       100, 100
     );
     check('C: 本地赢', r.toPush.length === 1 && r.toPull.length === 0);
@@ -170,7 +170,7 @@ function check(desc, ok) {
     const r = computeDeckDiff(
       [{ id: 'c1', mod: 150 }],
       [],
-      [{ card_id: 'c1', updated_at: 200 }],
+      [{ card_id: 'c1', ts: 200 }],
       100, 100
     );
     check('D: 云端赢', r.toPush.length === 0 && r.toPull.length === 1);
@@ -180,7 +180,7 @@ function check(desc, ok) {
     const r = computeDeckDiff(
       [],
       ['c1'],
-      [{ card_id: 'c1', updated_at: 100 }],
+      [{ card_id: 'c1', ts: 100 }],
       50, 50
     );
     check('E: toDelete=[c1]', r.toDelete.length === 1 && r.toDelete[0] === 'c1');

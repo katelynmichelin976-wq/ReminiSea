@@ -9685,7 +9685,7 @@ class SyncJob {
     const remote = await fetchAllDeckCards(this.deckKey, 'card_id,updated_at');
     const remoteMeta = (remote || []).map(r => ({
       card_id: r.card_id,
-      updated_at: Date.parse(r.updated_at) || 0
+      ts: Date.parse(r.updated_at) || 0,   // epoch ms，统一命名为 ts 避免与 ISO string 混淆
     }));
     const cards = DECKS[this.deckKey] || [];
     const deleted = getDeletedCards(this.deckKey);
@@ -9835,17 +9835,17 @@ async function uploadDeckToCloud(key) {
 }
 
 function computeDeckDiff(localCards, deletedIds, remoteCardMeta, pushedAt, pulledAt) {
-  const localMap = new Map(localCards.map(c => [c.id, c]));
-  const remoteMap = new Map(remoteCardMeta.map(r => [r.card_id, r.updated_at]));
+  const localMap  = new Map(localCards.map(c => [c.id, c]));
+  const remoteMap = new Map(remoteCardMeta.map(r => [r.card_id, r.ts]));
   const toPush = localCards.filter(c => {
     if (!c.mod || c.mod <= pushedAt) return false;
-    const rUpd = remoteMap.get(c.id);
-    return !rUpd || c.mod > rUpd;
+    const rTs = remoteMap.get(c.id);
+    return rTs === undefined || c.mod > rTs;
   });
   const toPull = remoteCardMeta.filter(r => {
-    if (r.updated_at <= pulledAt) return false;
+    if (r.ts <= pulledAt) return false;
     const local = localMap.get(r.card_id);
-    return !local || r.updated_at > (local.mod || 0);
+    return !local || r.ts > (local.mod || 0);
   });
   const toDelete = deletedIds.filter(id => remoteMap.has(id));
   return { toPush, toPull, toDelete };
@@ -9915,7 +9915,7 @@ function computeDeckSyncState(deckKey) {
     || (meta.mod && meta.mod > pushedAt);
   const pushCount = cards.filter(c => c.mod && c.mod > pushedAt).length + deleted.length;
   const remoteAhead = remoteUpdatedAt && remoteUpdatedAt > pulledAt;
-  const mediaIncomplete = cards.length > 0 && cards.some(c => c._imgUrl && !c.img);
+  const mediaIncomplete = !deckMediaComplete(cards);
   let status;
   if (localChanged && remoteAhead) status = 'bothChanged';
   else if (localChanged) status = 'localDirty';
