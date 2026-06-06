@@ -367,6 +367,77 @@ let tStart;
     }, migDeckKey);
     pass('迁移: 迁移后 toPush 为空（水位已对齐）', diff.toPush === 0);
 
+    // ════ PHASE 7: pull 保留本地媒体 blob（Fix 1 回归）════
+    section('PHASE 7: pull 保留本地媒体 — mod=0 触发 toPull 不应清掉 img/audioUrl');
+    const mediaDeckKey = 'pwMediaDeck' + Date.now();
+    await run(pageA, async (key) => {
+      const imgBlob = new Blob([new Uint8Array([0x89,0x50,0x4E,0x47])], { type: 'image/png' });
+      const audBlob = new Blob([new Uint8Array([0xFF,0xFB])], { type: 'audio/mpeg' });
+      await saveMedia(`${key}_mc1_img`, imgBlob);
+      await saveMedia(`${key}_mc1_aud`, audBlob);
+      const imgPath = `personal/${_cloudUserId}/${key}/mc1_img.png`;
+      const audPath = `personal/${_cloudUserId}/${key}/mc1_aud.mp3`;
+      await _sb.storage.from('ReminiSea').upload(imgPath, imgBlob, { upsert: true });
+      await _sb.storage.from('ReminiSea').upload(audPath, audBlob, { upsert: true });
+      const card = {
+        id: 'mc1', name: 'media-test', nameLang: 'zh-CN',
+        img: URL.createObjectURL(imgBlob), audioUrl: URL.createObjectURL(audBlob),
+        _imgUrl: imgPath, _audUrl: audPath,
+        details: [], cardType: 'choice', ext: {}, mod: nextMod()
+      };
+      DECKS[key] = [card];
+      DECKS_META.push({ key, name: 'pwMedia', deck_type: 'personal', nameLang: 'zh-CN', mod: nextMod() });
+      saveDeckIndex();
+      saveDeckCards(key, DECKS[key]);
+      await syncDeck(key);
+    }, mediaDeckKey);
+
+    const beforePullState = await run(pageA, (key) => {
+      const c = DECKS[key][0];
+      return { imgIsBlob: c.img?.startsWith('blob:'), audIsBlob: c.audioUrl?.startsWith('blob:') };
+    }, mediaDeckKey);
+    pass('Fix1: pull 前 img/audioUrl 都是 blob URL',
+      beforePullState.imgIsBlob && beforePullState.audIsBlob);
+
+    await run(pageA, async (key) => {
+      // 触发真正的 pull：清水位 + 把 meta.mod/card.mod 设为 0
+      // （避免 upsertDeckRow 在 Phase 1 把 pulledAt 推到 now 反而跳过 toPull）
+      const meta = DECKS_META.find(m => m.key === key);
+      meta.mod = 0;
+      DECKS[key][0].mod = 0;
+      saveDeckIndex();
+      saveDeckCards(key, DECKS[key]);
+      localStorage.setItem('yihaiPulledAt:' + key, '0');
+      await syncDeck(key);
+    }, mediaDeckKey);
+
+    const afterPullState = await run(pageA, (key) => {
+      const c = DECKS[key][0];
+      return {
+        imgIsBlob: c.img?.startsWith('blob:'),
+        audIsBlob: c.audioUrl?.startsWith('blob:'),
+        imgUrl: c._imgUrl, audUrl: c._audUrl
+      };
+    }, mediaDeckKey);
+    pass('Fix1: pull 后 img 仍是 blob URL（_imgUrl 相同保留）', afterPullState.imgIsBlob);
+    pass('Fix1: pull 后 audioUrl 仍是 blob URL（_audUrl 相同保留）', afterPullState.audIsBlob);
+    pass('Fix1: pull 后 _imgUrl 不丢', !!afterPullState.imgUrl);
+
+    // ════ PHASE 8: 媒体上传不应造成 remoteAhead 假象（Fix 2 回归）════
+    section('PHASE 8: 媒体重传后 state 仍为 clean — pulledAt 跟随 cloud.updated_at');
+    const stateBeforeReupload = await run(pageA, (key) => computeDeckSyncState(key), mediaDeckKey);
+    pass('Fix2: 媒体重传前 state=clean', stateBeforeReupload.status === 'clean');
+
+    await run(pageA, async (key) => {
+      DECKS[key][0]._imgUrl = '';
+      saveDeckCards(key, DECKS[key]);
+      await uploadPersonalDeckMedia(key);
+    }, mediaDeckKey);
+
+    const stateAfterReupload = await run(pageA, (key) => computeDeckSyncState(key), mediaDeckKey);
+    pass('Fix2: 媒体重传后 state 仍为 clean（pulledAt 已推进）',
+      stateAfterReupload.status === 'clean');
+
     // ════ 清理 ════
     section('清理云端测试数据');
     await run(pageA, async (keys) => {
@@ -374,7 +445,7 @@ let tStart;
         try { await _sb.from('deck_cards').delete().eq('deck_id', k); } catch(e) {}
         try { await _sb.from('decks').delete().eq('id', k); } catch(e) {}
       }
-    }, [incDeckKey, pauseDeckKey, migDeckKey]);
+    }, [incDeckKey, pauseDeckKey, migDeckKey, mediaDeckKey]);
     pass('清理: 完成', true);
 
     console.log(`\n  总耗时: ${((ts() - tStart) / 1000).toFixed(1)}s`);
