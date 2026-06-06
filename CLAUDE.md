@@ -210,6 +210,11 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 71, voice 17（run_all.j
 14. **DP 仅本地** — `daily_progress` 不跨设备同步，只记本地。
 15. **`_writeSrs` 改动后必须跑 Playwright** — 运行时错误会导致 TrialLog 静默丢失，单测覆盖不到 IDB 写入路径。
 16. **Supabase 功能测试必须走真实 RLS 路径** — 测试不能 mock 掉网络层；anon 和已登录角色都要覆盖，上线前验证 RLS 策略覆盖所有预期角色。
+17. **序列化层改动必须验证端到端渲染路径** — 改动 `saveDeckCards` / `restoreDecks` / `runCardsPhase` / `runMediaPhase` 任意一处后，必须手动或自动验证以下三条路径，缺一不可：
+    - **路径 A（本地渲染）**：导入含图片的 `.yhspack` → 首页卡片列表出现 `<img>` 且可见
+    - **路径 B（持久化）**：导入 → 触发 `saveDeckCards` → 刷新页面 → 图片仍然显示（走 `restoreDecks` + IDB 恢复路径）
+    - **路径 C（跨设备）**：同步上传 → 另一设备登录/重登 → 图片显示（走 `runMediaPhase` download 路径）
+    - 不得仅凭 JS 内存中 `c.img` 有值来判断"图片正常"——必须验证 DOM 中真实出现 `<img src="blob:...">`。
 
 ## Coding & Editing Rules
 
