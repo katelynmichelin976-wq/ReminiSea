@@ -1703,11 +1703,19 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
       <span data-i18n="nav_home">首 页</span>
     </button>
+    <button class="tab-item" onclick="showDecks()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+      <span data-i18n="nav_decks">牌 组</span>
+    </button>
     <button class="tab-item action" onclick="onFabTap()">
       <div class="tab-fab">
         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
       </div>
       <span data-i18n="nav_start_practice">开始练习</span>
+    </button>
+    <button class="tab-item" onclick="openStats()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+      <span data-i18n="nav_stats">统 计</span>
     </button>
     <button class="tab-item" onclick="showScreen('screen-mine'); updateMineProfile()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
@@ -1893,6 +1901,32 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       <div class="card-detail-body" id="card-detail-body"></div>
     </div>
   </div>
+
+  <!-- Tab Bar (stats active) -->
+  <div class="home-tabbar">
+    <button class="tab-item" onclick="closeStats()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
+      <span data-i18n="nav_home">首 页</span>
+    </button>
+    <button class="tab-item" onclick="closeStats(); showDecks()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+      <span data-i18n="nav_decks">牌 组</span>
+    </button>
+    <button class="tab-item action" onclick="onFabTap()">
+      <div class="tab-fab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+      </div>
+      <span data-i18n="nav_start_practice">开始练习</span>
+    </button>
+    <button class="tab-item active" onclick="openStats()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+      <span data-i18n="nav_stats">统 计</span>
+    </button>
+    <button class="tab-item" onclick="closeStats(); showScreen('screen-mine'); updateMineProfile()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
+      <span data-i18n="nav_mine">我 的</span>
+    </button>
+  </div>
 </div>
 
 <!-- ══════════════ MINE SCREEN ══════════════ -->
@@ -1970,13 +2004,21 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/><path d="M9 21V13h6v8"/></svg>
       <span data-i18n="nav_home">首 页</span>
     </button>
+    <button class="tab-item" onclick="showDecks()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+      <span data-i18n="nav_decks">牌 组</span>
+    </button>
     <button class="tab-item action" onclick="onFabTap()">
       <div class="tab-fab">
         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
       </div>
       <span data-i18n="nav_start_practice">开始练习</span>
     </button>
-    <button class="tab-item active">
+    <button class="tab-item" onclick="openStats()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+      <span data-i18n="nav_stats">统 计</span>
+    </button>
+    <button class="tab-item active" onclick="showScreen('screen-mine'); updateMineProfile()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.8 3.6-6.5 8-6.5s8 2.7 8 6.5"/></svg>
       <span data-i18n="nav_mine">我 的</span>
     </button>
