@@ -58,7 +58,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.9.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.10.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.10.0：** 牌组管理页 — 新增独立 `screen-decks`（三段：本地/云端/精选）；Tab Bar 扩展为 5 项（首页/牌组/练习/统计/我的）；`saveCard` 移除自动上传，本地操作与云端完全解耦；首页黄点可点击跳转云端 Tab；`renderCloudDecksTab` 迁移自 `showCloudDecks`；5 个 locale 补充 7 个 i18n key；`_pw_deck_mgmt.js` 新增 15 断言冒烟测试。
 
 **v5.9.0：** 个人牌组同步 v2 — media slot 模型（`media.{slot}.{url,v,_blob}`）替代旧 `_imgUrl`/`img` 字段；新增纯函数 `hasMedia`/`mediaLoaded`/`serializeMedia`/`mergeCard`/`buildPath`/`mimeToExt`；`deck_cards` 加 `media JSONB` 列并迁移存量 `image_url`/`audio_url` 数据；`saveDeckCards`/`restoreDecks` 序列化层全面迁移（兼容旧格式）；`computeDeckDiff` 字段名规范化（`.ts`）；`computeDeckSyncState` 改用 `deckMediaComplete` 判断媒体缺失；`upsertCardsBatch` 写 `media` JSONB、新增 `upsertSingleCard`；`runCardsPhase` pull 改用 `media` + `mergeCard`；`runMediaPhase` 重写为 slot 模型 + await + checkpoint/20（根治 fire-and-forget）；GC 补全（`deleteDeck` 清 4 个孤儿 key、`deleteCardStatesForDeck`、`gcOrphanSyncKeys`、`purgeOldLogs` 加 TRIAL_STORE）；修复 media slot 迁移后 `card.img`/`audioUrl` 渲染层字段丢失导致图片不显示；`yh_diag.js` 媒体统计对齐新格式；新增 `tests/yihai_v5.9_sync_test.js`（32 断言）+ `_pw_cross_device.js` PHASE 10/11（共 39 断言）。
 

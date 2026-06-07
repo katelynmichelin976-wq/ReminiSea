@@ -2,6 +2,16 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.10.0 Key Changes
+
+- **牌组管理页（screen-decks）**：新增独立全屏牌组管理入口，三段式：本地 Tab（左滑重命名/导出/删除）/ 云端 Tab（同步状态徽章 + 同步/下载/补全媒体操作）/ 精选 Tab（占位）。`renderLocalDecksTab()` 复用现有 deck-card + swipe 逻辑；`renderCloudDecksTab()` 迁移自 `showCloudDecks()`。
+- **Tab Bar 扩展为 5 项**：首页 / 牌组 / ▶练习 / 统计 / 我的。`screen-home`、`screen-mine`、`screen-stats` 均同步更新。
+- **本地操作解耦**：`saveCard` 删除 `uploadDeckToCloud` 自动上传调用——新建/修改卡片只操作本地，所有云端交互统一收归牌组页云端 Tab。
+- **首页黄点导航**：个人牌组同步状态黄点（`deck-update-dot`）可点击，直接跳转到牌组页云端 Tab（`showDecks('cloud')`）。
+- **账户页入口迁移**：「查看云端牌组」按钮改为 `showDecks('cloud')`，不再进入独立 `screen-cloud-decks`。
+- **i18n 补充**：5 个 locale（zh-CN/zh-Hant/en/es/ja）新增 `nav_decks`/`nav_stats`/`decks_tab_*`/`decks_local_hint`/`decks_featured_coming` 等 7 个 key。
+- **smoke test 修复**：`_pw_ui_smoke.js` 移除已删 `uploadPersonalDeckMedia` 检查，改为 `renderCloudDecksTab` 存在性检查；新增 `_pw_deck_mgmt.js`（15 断言，覆盖 Tab Bar/导航/段选/列表）。
+
 ## v5.9.0 Key Changes
 
 - **media slot 模型**：卡片媒体字段从 `_imgUrl`/`img`/`_audUrl`/`audioUrl` 迁移为 `media.{slot}.{url, v, _blob}` 结构。`url` 为 Storage 路径，`v` 为版本号（替换媒体时递增），`_blob` 为运行时 blob URL（不序列化）。
