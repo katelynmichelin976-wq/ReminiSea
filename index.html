@@ -5859,6 +5859,27 @@ function doAccountSync() {
     .finally(function() { if (btn) btn.disabled = false; });
 }
 
+// ── 牌组管理页导航 ──────────────────────────────────────────────
+function showDecks(tab) {
+  showScreen('screen-decks');
+  switchDecksTab(tab || 'local');
+}
+
+function switchDecksTab(tab) {
+  document.querySelectorAll('.decks-seg-btn').forEach(function(btn, i) {
+    var tabs = ['local', 'cloud', 'featured'];
+    btn.classList.toggle('active', tabs[i] === tab);
+  });
+  document.querySelectorAll('.decks-panel').forEach(function(panel) {
+    panel.classList.remove('active');
+  });
+  var panelEl = document.getElementById('decks-panel-' + tab);
+  if (panelEl) panelEl.classList.add('active');
+
+  if (tab === 'local') renderLocalDecksTab();
+  if (tab === 'cloud') renderCloudDecksTab();
+}
+
 async function showCloudDecks() {
   if (!_syncEnabled || !_sb || !_cloudUserId) { showCloudToast('请先登录', true); return; }
   showScreen('screen-cloud-decks');
