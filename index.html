@@ -5920,6 +5920,82 @@ function renderLocalDecksTab() {
   }
 }
 
+async function renderCloudDecksTab() {
+  var listEl = document.getElementById('decks-cloud-list');
+  if (!listEl) return;
+  if (!_syncEnabled || !_sb || !_cloudUserId) {
+    listEl.innerHTML = '<div style="color:var(--text3);padding:48px 16px;text-align:center">请先登录以查看云端牌组</div>';
+    return;
+  }
+  listEl.innerHTML = '<div style="color:var(--text3);padding:32px 0;text-align:center">加载中…</div>';
+  try {
+    var result = await _sb.from('decks')
+      .select('id,name,name_lang,card_count,updated_at')
+      .eq('user_id', _cloudUserId)
+      .eq('deck_type', 'personal')
+      .order('updated_at', { ascending: false });
+    if (result.error) throw new Error(result.error.message);
+    var cloudDecks = result.data || [];
+    if (!cloudDecks.length) {
+      listEl.innerHTML = '<div style="color:var(--text3);padding:48px 16px;text-align:center">云端暂无个人牌组</div>';
+      return;
+    }
+    cloudDecks.forEach(function(cd) {
+      var m = DECKS_META.find(function(x) { return x.key === cd.id; });
+      if (m) m._remoteUpdatedAt = cd.updated_at;
+    });
+    listEl.innerHTML = cloudDecks.map(function(d) {
+      var dl = _downloading.get(d.id);
+      var job = getActiveSyncJob(d.id);
+      var local = DECKS_META.find(function(m) { return m.key === d.id; });
+      var state = local ? computeDeckSyncState(d.id) : { status: 'remoteAhead', mediaIncomplete: false };
+      var nameArg = "'" + d.id + "','" + esc(d.name).replace(/'/g, '&#39;') + "','" + (d.name_lang || 'zh-CN') + "'";
+
+      var badgeHtml = '';
+      if (job)                               badgeHtml = '<span style="color:var(--text3)">同步中 ' + job.progress.done + '/' + job.progress.total + '</span>';
+      else if (state.status === 'clean')     badgeHtml = '<span style="color:var(--text3)">已同步</span>';
+      else if (state.status === 'localDirty') badgeHtml = '<span style="color:#d97706">待上传 ' + state.pushCount + '</span>';
+      else if (state.status === 'remoteAhead') badgeHtml = '<span style="color:#2563eb">' + (state.mediaIncomplete ? '媒体缺失' : '待下载') + '</span>';
+      else if (state.status === 'bothChanged') badgeHtml = '<span style="color:#7c3aed">双向 +' + state.pushCount + '</span>';
+      else if (state.status === 'mediaIncomplete') badgeHtml = '<span style="color:#2563eb">媒体缺失</span>';
+
+      var btnHtml;
+      if (dl) {
+        var txt = dl.total > 0 ? dl.done + '/' + dl.total : '…';
+        var pauseLabel = dl.paused ? '继续' : '暂停';
+        btnHtml = '<div class="decks-dl-prog">' +
+          '<span id="dl-prog-' + d.id + '" class="decks-dl-num">' + txt + '</span>' +
+          '<button class="decks-sync-btn" onclick="toggleDownloadPause(\'' + d.id + '\')">' + pauseLabel + '</button>' +
+          '</div>';
+      } else if (job) {
+        var pLabel = job._paused ? '继续' : '暂停';
+        btnHtml = '<button class="decks-sync-btn" onclick="toggleSyncJobPause(\'' + d.id + '\')">' + pLabel + '</button>';
+      } else if (local && state.mediaIncomplete) {
+        btnHtml = '<button class="decks-sync-btn" onclick="doCloudDeckAction(' + nameArg + ',this)">补全媒体</button>';
+      } else if (local) {
+        btnHtml = '<button class="decks-sync-btn" onclick="doSyncDeckAction(\'' + d.id + '\',this)">同步</button>';
+      } else {
+        btnHtml = '<button class="decks-sync-btn primary" onclick="doCloudDeckAction(' + nameArg + ',this)">下载</button>';
+      }
+
+      var subText = dl
+        ? (dl.paused ? '已暂停' : '下载中…')
+        : (d.card_count || 0) + ' 张卡片' + (local ? ' · ' : '') + (local ? badgeHtml : '');
+      if (!dl && !local) subText = (d.card_count || 0) + ' 张卡片 · 未下载';
+
+      return '<div class="decks-cloud-row">' +
+        '<div>' +
+          '<div class="decks-cloud-row-name">' + esc(d.name) + '</div>' +
+          '<div class="decks-cloud-row-sub">' + subText + '</div>' +
+        '</div>' +
+        btnHtml +
+        '</div>';
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div style="color:#c00;padding:32px 16px;text-align:center">加载失败：' + esc(e.message) + '</div>';
+  }
+}
+
 async function showCloudDecks() {
   if (!_syncEnabled || !_sb || !_cloudUserId) { showCloudToast('请先登录', true); return; }
   showScreen('screen-cloud-decks');
