@@ -5325,7 +5325,6 @@ async function saveCardFromForm() {
   // persist
   saveDeckCards(deckKey, deck);
   saveDeckIndex();
-  uploadDeckToCloud(deckKey).catch(() => {});
 
   // wait for all media saves to complete
   Promise.all(savePromises).then(function() {
