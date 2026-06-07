@@ -5880,6 +5880,46 @@ function switchDecksTab(tab) {
   if (tab === 'cloud') renderCloudDecksTab();
 }
 
+function renderLocalDecksTab() {
+  var grid = document.getElementById('decks-local-grid');
+  if (!grid) return;
+  if (!DECKS_META.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-title">' + t('deck_empty_title') + '</div><div class="empty-state-sub">' + t('deck_empty_sub') + '</div></div>';
+    return;
+  }
+  grid.innerHTML = DECKS_META.map(function(m) {
+    var swipeExport = '<button class="swipe-action-btn swipe-export" onclick="event.stopPropagation();currentDeck=\'' + m.key + '\';exportDeck()">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+      '<span>' + t('common_export') + '</span></button>';
+    var swipeRename = '<button class="swipe-action-btn swipe-rename" onclick="event.stopPropagation();renameDeck(\'' + m.key + '\')">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+      '<span>' + t('common_rename') + '</span></button>';
+    var swipeDel = m.builtin ? '' :
+      '<button class="swipe-action-btn swipe-del" onclick="event.stopPropagation();deleteDeck(event,\'' + m.key + '\')">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
+      '<span>' + t('common_delete') + '</span></button>';
+    var syncDot = (m.deck_type === 'personal' && computeDeckSyncState(m.key).status !== 'clean')
+      ? '<span class="deck-update-dot"></span>' : '';
+    return '<div class="deck-card" data-deck="' + m.key + '" data-swipeable>' +
+      '<div class="deck-card-actions">' + swipeExport + swipeRename + swipeDel + '</div>' +
+      '<div class="deck-card-inner" data-deck="' + m.key + '" onclick="showDeckDetailFor(\'' + m.key + '\')">' +
+        '<div class="deck-info"><div class="deck-name">' + esc(m.name) + syncDot + '</div></div>' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text3)"><polyline points="9 18 15 12 9 6"/></svg>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  if (!grid._swipeInit) {
+    initDeckSwipe(grid);
+    grid._swipeInit = true;
+  }
+  var scrollEl = document.getElementById('decks-scroll');
+  if (scrollEl && !scrollEl._swipeScrollInit) {
+    scrollEl.addEventListener('scroll', closeAllSwipedCards, { passive: true });
+    scrollEl._swipeScrollInit = true;
+  }
+}
+
 async function showCloudDecks() {
   if (!_syncEnabled || !_sb || !_cloudUserId) { showCloudToast('请先登录', true); return; }
   showScreen('screen-cloud-decks');
