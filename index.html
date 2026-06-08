@@ -4057,6 +4057,38 @@ async function getAllCardStates(deckKey) {
   });
 }
 
+// ── EasyState IDB CRUD (v5.11) ────────────────────────────────────
+async function getEasyState(deckKey, cardId) {
+  const db = await openSrsDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(EASY_STORE, 'readonly');
+    const req = tx.objectStore(EASY_STORE).get([deckKey, cardId]);
+    req.onsuccess = () => res(req.result || null);
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+async function putEasyState(s) {
+  const db = await openSrsDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(EASY_STORE, 'readwrite');
+    tx.objectStore(EASY_STORE).put(s);
+    tx.oncomplete = () => res();
+    tx.onerror    = () => rej(tx.error);
+  });
+}
+
+async function getAllEasyStates(deckKey) {
+  const db = await openSrsDb();
+  return new Promise((res, rej) => {
+    const tx  = db.transaction(EASY_STORE, 'readonly');
+    const idx = tx.objectStore(EASY_STORE).index('deck_key');
+    const req = idx.getAll(IDBKeyRange.only(deckKey));
+    req.onsuccess = () => res(req.result || []);
+    req.onerror   = () => rej(req.error);
+  });
+}
+
 // Playwright test seam (_playwright_multi_user_sync_test.js called via page.evaluate)
 async function getOrCreateCardState(deckKey, cardId) {
   let state = await getCardState(deckKey, cardId);
