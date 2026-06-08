@@ -55,5 +55,56 @@ function classifyEasyCard(state) {
   check('[0,0,0] → learning', classifyEasyCard({ history: [0, 0, 0] }) === 'learning');
 }
 
+// ── learningWeaknessKey (for L slot: weakest first) ───────────────
+// Sort tuple (ASC): [lastIsCorrect (0 first), -zeroCount (more zeros first), last_seen ASC]
+function learningWeaknessKey(s) {
+  const h = s.history || [];
+  const lastIsCorrect = h.length ? h[h.length - 1] : 1;
+  const zeroCount = h.filter(x => x === 0).length;
+  return [lastIsCorrect, -zeroCount, s.last_seen || 0];
+}
+
+function cmpKey(a, b) {
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] < b[i]) return -1;
+    if (a[i] > b[i]) return 1;
+  }
+  return 0;
+}
+
+{
+  const a = { history: [1, 1, 0], last_seen: 100 };  // last=0, zeros=1
+  const b = { history: [1, 0, 1], last_seen: 50  };  // last=1, zeros=1
+  const c = { history: [0, 0, 1], last_seen: 200 }; // last=1, zeros=2
+  const sorted = [b, c, a].sort((x, y) =>
+    cmpKey(learningWeaknessKey(x), learningWeaknessKey(y))
+  );
+  check('weakness: last==0 排首', sorted[0] === a);
+  check('weakness: 同 lastIsCorrect 时 zeros 多者优先', sorted[1] === c);
+  check('weakness: 最后 last_seen ASC', sorted[2] === b);
+}
+
+// ── learningStabilityKey (for C slot fallback: most stable first) ─
+// Sort tuple (ASC): [-lastIsCorrect (1 first), zeroCount ASC (fewer zeros first),
+//                    -last_warmup (recent warmup deprio), last_seen ASC]
+function learningStabilityKey(s) {
+  const h = s.history || [];
+  const lastIsCorrect = h.length ? h[h.length - 1] : 0;
+  const zeroCount = h.filter(x => x === 0).length;
+  return [-lastIsCorrect, zeroCount, -(s.last_warmup || 0), s.last_seen || 0];
+}
+
+{
+  const a = { history: [0, 1, 1], last_seen: 100, last_warmup: 0 };  // last=1, zeros=1
+  const b = { history: [1, 1, 0], last_seen: 50,  last_warmup: 0 };  // last=0, zeros=1
+  const c = { history: [1, 1],    last_seen: 80,  last_warmup: 0 };  // last=1, zeros=0
+  const sorted = [a, b, c].sort((x, y) =>
+    cmpKey(learningStabilityKey(x), learningStabilityKey(y))
+  );
+  check('stability: zeros 最少且 last==1 优先', sorted[0] === c);
+  check('stability: last==1 但 zeros 多者次之', sorted[1] === a);
+  check('stability: last==0 排末', sorted[2] === b);
+}
+
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);
 process.exit(failed > 0 ? 1 : 0);
