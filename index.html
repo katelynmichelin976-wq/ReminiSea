@@ -8773,6 +8773,20 @@ function onSel(e, idx, btn) {
     wrongCount++;
     _correctStreak = 0;
     if (wrongCount === 1) {
+      // easy mode without retry: jump straight to reveal
+      const skipRetry = (SRS_CONFIG.session_mode === 'easy' && !SRS_CONFIG.easy_retry_on_wrong);
+      if (skipRetry) {
+        if (currentMode !== 'browse' && q._srsState) {
+          _pendingAttempt = {
+            attemptNumber : 1,
+            isCorrect     : false,
+            distractorId  : btn.dataset.cardId || null,
+          };
+          _cardAnswerRating = 'again';
+        }
+        revealAnswer();
+        return;
+      }
       // record the wrongly selected card id (for TrialLog distractor_chosen)
       if (currentMode !== 'browse' && q._srsState) {
         _pendingAttempt = {
