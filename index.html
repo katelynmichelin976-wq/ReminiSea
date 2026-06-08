@@ -3106,6 +3106,10 @@ async function syncTrialLog(entry) {
       srs_stage_after: entry.srs_stage_after,
       interval_after: entry.interval_after,
       ease_after: entry.ease_after,
+      lapses_streak_after: entry.lapses_streak_after,
+      lapses_total_after: entry.lapses_total_after,
+      review_mode_after: entry.review_mode_after,
+      step_index_after: entry.step_index_after,
       due_ts: entry.due_ts,
       due_date: entry.due_date || '',
       suspended: entry.suspended || false,
@@ -3150,6 +3154,8 @@ async function uploadTrialBatch(entries) {
         lapses_streak_before: e.lapses_streak_before, lapses_total_before: e.lapses_total_before,
         review_mode_before: e.review_mode_before, srs_stage_after: e.srs_stage_after,
         interval_after: e.interval_after, ease_after: e.ease_after,
+        lapses_streak_after: e.lapses_streak_after, lapses_total_after: e.lapses_total_after,
+        review_mode_after: e.review_mode_after, step_index_after: e.step_index_after,
         due_ts: e.due_ts, due_date: e.due_date || '',
         suspended: e.suspended || false, suspended_reason: e.suspended_reason || '',
         session_mode: e.session_mode || 'normal', timestamp: e.timestamp
@@ -3276,13 +3282,6 @@ async function syncPendingData(deckKey) {
       try { await syncTrialLog(t); } catch(e) { console.warn('[sync] backfill trial skip:', t.trial_id); }
     });
 
-    // 2. retry all CardState for current deck (upsert, safe retry)
-    if (deckKey) {
-      const states = await getAllCardStates(deckKey);
-      await parallelMapLimit(states, 10, async s => {
-        try { await syncCardState(s); } catch(e) { /* single failure does not affect others */ }
-      });
-    }
   } catch(e) { console.warn('[sync] backfill error:', e.message); }
 }
 
@@ -4297,7 +4296,7 @@ function applyEasyMode(cards, stateMap) {
   const SESSION_SIZE = SRS_CONFIG.easy_session_size || 20;
   const today = todayStr();
 
-  const famPool = [], unfPool = [];
+  let unfPool = []; const famPool = [];
   for (const card of cards) {
     const s = stateMap[card.id];
     if (!s || s.suspended) continue;
@@ -4332,6 +4331,13 @@ function applyEasyMode(cards, stateMap) {
         famIds.add(card.id);
       }
     }
+  }
+
+  // remove cards that were pulled into famPool by relaxation, so they don't
+  // appear again from unfPool (bug: "cucumber appears twice in easy session")
+  {
+    const famIds2 = new Set(famPool.map(c => c.id));
+    unfPool = unfPool.filter(c => !famIds2.has(c.id));
   }
 
   // unfamiliar count: floor((SESSION_SIZE - 5) / 4), e.g. 20→3
@@ -8921,6 +8927,10 @@ async function _writeSrs(q, rating, attempt) {
     srs_stage_after      : newState.srs_stage,
     interval_after       : newState.interval,
     ease_after           : newState.ease_factor,
+    lapses_streak_after  : newState.lapses_streak,
+    lapses_total_after   : newState.lapses_total,
+    review_mode_after    : newState.review_mode,
+    step_index_after     : newState.step_index,
 
     response_time_ms     : responseMs,
     active_gap_ms        : activeGapMs,
@@ -11127,14 +11137,14 @@ async function unsuspendCard(stateKey, action) {
   if (!state) return;
 
   if (action === 'reset') {
-    // rebuild fresh CardState, no history fields retained
     const fresh = newCardState(deckKey, cardId);
     await saveCardState(fresh);
+    syncCardState(fresh);
   } else {
-    // just unsuspend, keep all SRS progress
     state.suspended        = false;
     state.suspended_reason = '';
     await saveCardState(state);
+    syncCardState(state);
   }
 
   document.getElementById('card-detail-overlay').classList.remove('open');
