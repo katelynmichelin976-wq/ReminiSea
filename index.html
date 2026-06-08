@@ -380,17 +380,24 @@ body {
   font-size: 12px; color: var(--text3); text-align: center;
   padding: 8px 16px 4px;
 }
-/* 云端 Tab — 复用 .deck-card-inner 视觉规范，仅保留行内排版差异 */
+/* 云端 Tab */
 .decks-cloud-row {
-  background: var(--surf);
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 14px 18px 14px 34px;
-  border-bottom: 0.5px solid var(--bd);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--bd);
 }
-.decks-cloud-row:last-child { border-bottom: none; }
-.decks-cloud-row > div:first-child { flex: 1; min-width: 0; }
-.decks-cloud-row-name { font-weight: 600; color: var(--text); font-size: 18px; }
+.decks-cloud-row-name { font-weight: 600; color: var(--text); font-size: 15px; }
 .decks-cloud-row-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+/* 牌组管理页（本地 + 云端 Tab）统一无圆角平铺风格；首页 home 的 .deck-grid 卡片风不受影响 */
+.decks-panel .deck-grid {
+  background: none; border: none; box-shadow: none; border-radius: 0;
+}
+.decks-panel .deck-card-inner {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--bd);
+}
+.decks-panel .deck-card:last-child .deck-card-inner { border-bottom: none; }
+.decks-panel .deck-name { font-size: 15px; }
+.decks-panel .deck-card-inner::before { display: none; }
 .decks-sync-btn {
   background: var(--surf2); border: 1px solid var(--bd); border-radius: 14px;
   font-size: 13px; color: var(--text2); padding: 5px 14px;
@@ -2401,7 +2408,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 
     <!-- 云端面板 -->
     <div class="decks-panel" id="decks-panel-cloud">
-      <div class="deck-grid" id="decks-cloud-list"></div>
+      <div id="decks-cloud-list"></div>
     </div>
 
     <!-- 精选面板 -->
@@ -11623,11 +11630,13 @@ function renderDeckList() {
       '</div>' +
     '</div>';
   }).join('');
-  // close swiped cards on scroll
-  var scrollEl = document.querySelector('.home-scroll');
-  if (scrollEl && !scrollEl._swipeScrollInit) {
-    scrollEl.addEventListener('scroll', closeAllSwipedCards, { passive: true });
-    scrollEl._swipeScrollInit = true;
+  // 仅绑选中（home 已无左滑，所以不调 initDeckSwipe）
+  if (!grid._clickInit) {
+    grid.addEventListener('click', function(e) {
+      var inner = e.target.closest('.deck-card-inner');
+      if (inner) selectDeck(inner);
+    }, { passive: true });
+    grid._clickInit = true;
   }
 }
 
