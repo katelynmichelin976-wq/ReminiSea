@@ -36,5 +36,24 @@ function computeEasyStructure(T) {
   check('T=20: total length == T', 3 + i.k * 4 + i.r === 20);
 }
 
+// ── classifyEasyCard ──────────────────────────────────────────────
+function classifyEasyCard(state) {
+  if (!state) return 'unseen';
+  const h = state.history || [];
+  if (h.length === 3 && h.every(x => x === 1)) return 'confident';
+  return 'learning';
+}
+
+{
+  check('null → unseen', classifyEasyCard(null) === 'unseen');
+  check('undefined → unseen', classifyEasyCard(undefined) === 'unseen');
+  check('empty history → learning', classifyEasyCard({ history: [] }) === 'learning');
+  check('[1] → learning', classifyEasyCard({ history: [1] }) === 'learning');
+  check('[1,1] → learning', classifyEasyCard({ history: [1, 1] }) === 'learning');
+  check('[1,1,1] → confident', classifyEasyCard({ history: [1, 1, 1] }) === 'confident');
+  check('[1,0,1] → learning', classifyEasyCard({ history: [1, 0, 1] }) === 'learning');
+  check('[0,0,0] → learning', classifyEasyCard({ history: [0, 0, 0] }) === 'learning');
+}
+
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);
 process.exit(failed > 0 ? 1 : 0);
