@@ -317,6 +317,209 @@ async function createTestYhspack() {
       pass('normal 模式队列顺序（条件不足，跳过）', true);
     }
 
+    // ════ PHASE Easy: easy 模式 + EasyState IDB ════
+    section('PHASE Easy: easy 模式 + EasyState IDB');
+
+    // 切换到 easy 模式，session_size = CARD_COUNT（5），retry=true
+    await run(page, (cnt) => {
+      setSrsMode('easy');
+      SRS_CONFIG.easy_session_size = cnt;
+      SRS_CONFIG.easy_retry_on_wrong = true;
+    }, CARD_COUNT);
+
+    // 重置每日进度，让 easy 模式能启动
+    await run(page, () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const fresh = { date: today, reviewed_today: 0, daily_new_today: 0,
+                      first_fail_today: 0, first_hard_today: 0, first_pass_today: 0 };
+      localStorage.setItem('yihaiDailyProgress', JSON.stringify(fresh));
+      Object.keys(localStorage).forEach(k => { if (k.startsWith('yh_fr_')) localStorage.removeItem(k); });
+      if (typeof _dailyRemovedToday !== 'undefined') {
+        Object.keys(_dailyRemovedToday).forEach(k => delete _dailyRemovedToday[k]);
+      }
+    });
+
+    await run(page, () => goHome());
+    await wait(page, 500);
+    await run(page, (id) => { currentDeck = id; }, DECK_ID);
+
+    // 读取 easy 模式前的 card_states（验证 easy 模式不修改 SRS）
+    const preEasyStates = await run(page, async (id) => {
+      const db = await new Promise((res, rej) => {
+        const r = indexedDB.open('yihai_srs');
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      });
+      const all = await new Promise(res => {
+        const r = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
+        r.onsuccess = () => res(r.result);
+      });
+      return all.filter(s => s.deck_key === id).map(s => ({ card_id: s.card_id, stage: s.srs_stage }));
+    }, DECK_ID);
+
+    // 启动 easy 练习
+    await run(page, () => { _launchBusy = false; onFabTap(); });
+    await wait(page, 1500);
+
+    const inEasyQuiz = await run(page, () =>
+      document.getElementById('screen-quiz')?.classList.contains('active')
+    );
+    pass('Easy: 进入练习屏', !!inEasyQuiz);
+
+    // 答题循环 — 全部答对（最多 20 轮）
+    let easyAnswered = 0;
+    for (let i = 0; i < 20; i++) {
+      const done = await run(page, () =>
+        document.getElementById('screen-finish')?.classList.contains('active') ||
+        document.getElementById('screen-home')?.classList.contains('active')
+      );
+      if (done) break;
+
+      const answered = await run(page, () => {
+        const q = Qs[qIdx];
+        if (!q) return false;
+        const isRevealed = document.getElementById('content')?.classList.contains('revealed');
+        if (isRevealed) return 'revealed';
+        const opts = Array.from(document.querySelectorAll('#opts .opt'));
+        if (opts.length === 0) return false;
+        const correctBtn = opts.find(b => parseInt(b.dataset.idx) === q.correct);
+        if (correctBtn) {
+          correctBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+          return true;
+        }
+        opts[0].dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        return true;
+      });
+
+      if (!answered) { await wait(page, 300); continue; }
+      if (answered === 'revealed') {
+        await run(page, () => { const btn = document.getElementById('nxtbtn'); if (btn) btn.click(); });
+        easyAnswered++;
+        await wait(page, 400);
+        continue;
+      }
+      await wait(page, 600);
+      const isRevealed = await run(page, () =>
+        document.getElementById('content')?.classList.contains('revealed')
+      );
+      if (isRevealed) {
+        await run(page, () => { const btn = document.getElementById('nxtbtn'); if (btn) btn.click(); });
+        easyAnswered++;
+        await wait(page, 400);
+      }
+    }
+
+    pass('Easy: session 全部答完 > 0 张', easyAnswered > 0);
+
+    // 等待回到首页 / 完成屏
+    await run(page, () => goHome());
+    await wait(page, 500);
+
+    // 验证 EasyState IDB 写入
+    const easyStates1 = await run(page, (id) => getAllEasyStates(id), DECK_ID);
+    pass('Easy: EasyState 写入 IDB', easyStates1.length > 0);
+    pass('Easy: 全部 history 含 1', easyStates1.every(s => s.history.length >= 1));
+    pass('Easy: 全部 history 首尾为 1（全答对）',
+      easyStates1.every(s => s.history.every(v => v === 1))
+    );
+
+    // 验证 SRS card_states 未被 easy 模式修改（stage 不变）
+    const postEasyStates = await run(page, async (id) => {
+      const db = await new Promise((res, rej) => {
+        const r = indexedDB.open('yihai_srs');
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      });
+      const all = await new Promise(res => {
+        const r = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
+        r.onsuccess = () => res(r.result);
+      });
+      return all.filter(s => s.deck_key === id).map(s => ({ card_id: s.card_id, stage: s.srs_stage }));
+    }, DECK_ID);
+
+    const stagesUnchanged = preEasyStates.every(pre => {
+      const post = postEasyStates.find(p => p.card_id === pre.card_id);
+      return post && post.stage === pre.stage;
+    });
+    pass('Easy: card_states srs_stage 未被 easy 模式修改', stagesUnchanged);
+
+    // ── 第二次 easy session：故意先答错，再答对 ──
+    await run(page, () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const fresh = { date: today, reviewed_today: 0, daily_new_today: 0,
+                      first_fail_today: 0, first_hard_today: 0, first_pass_today: 0 };
+      localStorage.setItem('yihaiDailyProgress', JSON.stringify(fresh));
+      Object.keys(localStorage).forEach(k => { if (k.startsWith('yh_fr_')) localStorage.removeItem(k); });
+      if (typeof _dailyRemovedToday !== 'undefined') {
+        Object.keys(_dailyRemovedToday).forEach(k => delete _dailyRemovedToday[k]);
+      }
+    });
+
+    await run(page, () => goHome());
+    await wait(page, 500);
+    await run(page, (id) => { currentDeck = id; }, DECK_ID);
+    await run(page, () => { _launchBusy = false; onFabTap(); });
+    await wait(page, 1500);
+
+    // 第一题故意答错，其余答对（最多 20 轮）
+    let wrongDone = false;
+    for (let i = 0; i < 20; i++) {
+      const done = await run(page, () =>
+        document.getElementById('screen-finish')?.classList.contains('active') ||
+        document.getElementById('screen-home')?.classList.contains('active')
+      );
+      if (done) break;
+
+      const answered = await run(page, (wd) => {
+        const q = Qs[qIdx];
+        if (!q) return false;
+        const isRevealed = document.getElementById('content')?.classList.contains('revealed');
+        if (isRevealed) return 'revealed';
+        const opts = Array.from(document.querySelectorAll('#opts .opt'));
+        if (opts.length === 0) return false;
+        if (!wd && qIdx === 0 && opts.length >= 2) {
+          // 第一题故意点错误选项（非 correct 的第一个）
+          const wrongBtn = opts.find(b => parseInt(b.dataset.idx) !== q.correct);
+          if (wrongBtn) {
+            wrongBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+            return 'wrong';
+          }
+        }
+        const correctBtn = opts.find(b => parseInt(b.dataset.idx) === q.correct);
+        if (correctBtn) {
+          correctBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+          return true;
+        }
+        opts[0].dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        return true;
+      }, wrongDone);
+
+      if (answered === 'wrong') { wrongDone = true; await wait(page, 600); continue; }
+      if (!answered) { await wait(page, 300); continue; }
+      if (answered === 'revealed') {
+        await run(page, () => { const btn = document.getElementById('nxtbtn'); if (btn) btn.click(); });
+        await wait(page, 400);
+        continue;
+      }
+      await wait(page, 600);
+      const isRevealed = await run(page, () =>
+        document.getElementById('content')?.classList.contains('revealed')
+      );
+      if (isRevealed) {
+        await run(page, () => { const btn = document.getElementById('nxtbtn'); if (btn) btn.click(); });
+        await wait(page, 400);
+      }
+    }
+
+    await run(page, () => goHome());
+    await wait(page, 500);
+
+    // 验证第二次 session 后存在 history 含 0 的 EasyState（答错记录）
+    const easyStates2 = await run(page, (id) => getAllEasyStates(id), DECK_ID);
+    const hasWrongHistory = easyStates2.some(s => s.history.includes(0));
+    pass('Easy: 第二次 session 答错记录写入 history', hasWrongHistory);
+
+    // 恢复 normal 模式
+    await run(page, () => setSrsMode('normal'));
+
     // ════ PHASE 7: 清理 ════
     section('PHASE 7: 清理');
     await run(page, async () => {
