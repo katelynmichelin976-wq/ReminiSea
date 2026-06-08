@@ -337,3 +337,49 @@ alter table easy_card_states enable row level security;
 
 create policy "users select own easy states"
   on easy_card_states for select using (auth.uid() = user_id);
+
+create or replace function on_easy_trial_insert()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.session_mode <> 'easy' then
+    return new;
+  end if;
+
+  if coalesce(new.attempt_number, 1) <> 1 then
+    update easy_card_states
+       set last_seen  = greatest(last_seen, new.timestamp),
+           updated_at = now()
+     where user_id = new.user_id
+       and deck_key = new.deck_key
+       and card_id  = new.card_id;
+    return new;
+  end if;
+
+  insert into easy_card_states (user_id, deck_key, card_id, seen, history, last_seen)
+  values (
+    new.user_id, new.deck_key, new.card_id, 1,
+    array[case when new.is_correct then 1 else 0 end]::integer[],
+    new.timestamp
+  )
+  on conflict (user_id, deck_key, card_id) do update
+    set seen      = easy_card_states.seen + 1,
+        history   = (
+          easy_card_states.history
+          || array[case when new.is_correct then 1 else 0 end]::integer[]
+        )[ greatest(1, array_length(easy_card_states.history, 1) + 1 - 2) :
+           array_length(easy_card_states.history, 1) + 1 ],
+        last_seen = greatest(easy_card_states.last_seen, new.timestamp),
+        updated_at = now();
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_easy_trial_insert on sync_trials;
+create trigger trg_easy_trial_insert
+  after insert on sync_trials
+  for each row execute function on_easy_trial_insert();
