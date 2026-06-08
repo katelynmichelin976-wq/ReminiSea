@@ -2829,7 +2829,9 @@ const SRS_CONFIG = {
 
   // practice modes: 'normal'=SRS full queue + applyCurve (was 'survival') | 'easy'=companion mode (full deck, consolidate, no lapse on wrong)
   session_mode             : 'normal',
-  easy_session_size        : 20,             // easy mode cards per session (configurable)
+  easy_session_size        : 19,             // user-configurable; preset 15/19/23
+  easy_confident_window    : 3,              // fixed (not UI-exposed)
+  easy_retry_on_wrong      : true,           // A/B test default later
 };
 
 // ── SRS_CONFIG persistent overrides (restore user edits from localStorage) ─
@@ -2855,6 +2857,9 @@ if (!['normal', 'easy'].includes(SRS_CONFIG.session_mode)) {
   SRS_CONFIG.session_mode = 'normal';
   localStorage.setItem('srs_session_mode', 'normal');
 }
+const _persistedT = parseInt(localStorage.getItem('easySessionSize') || '0', 10);
+if ([15, 19, 23].includes(_persistedT)) SRS_CONFIG.easy_session_size = _persistedT;
+if (localStorage.getItem('easyRetryOnWrong') === '0') SRS_CONFIG.easy_retry_on_wrong = false;
 
 function saveSrsConfigKey(key, value) {
   if (Array.isArray(value)) {
