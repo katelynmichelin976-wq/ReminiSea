@@ -4089,6 +4089,42 @@ async function getAllEasyStates(deckKey) {
   });
 }
 
+// ── Easy 模式跨设备 pull（v5.11） ─────────────────────────────────
+async function pullEasyStates() {
+  if (!_syncEnabled || !_sb || !_cloudUserId) return { pulled: 0 };
+  const since = parseInt(localStorage.getItem('yihaiEasyPulledAt') || '0', 10);
+  const sinceIso = new Date(since).toISOString();
+  let resp;
+  try {
+    resp = await _sb
+      .from('easy_card_states')
+      .select('deck_key, card_id, seen, history, last_seen, updated_at')
+      .gt('updated_at', sinceIso)
+      .order('updated_at', { ascending: true });
+  } catch (e) {
+    console.warn('[easy] pull error:', e?.message);
+    return { pulled: 0 };
+  }
+  if (resp.error || !resp.data) return { pulled: 0 };
+
+  let maxTs = since;
+  for (const row of resp.data) {
+    const local = await getEasyState(row.deck_key, row.card_id);
+    await putEasyState({
+      deck_key:    row.deck_key,
+      card_id:     row.card_id,
+      seen:        row.seen,
+      history:     row.history || [],
+      last_seen:   row.last_seen,
+      last_warmup: local ? (local.last_warmup || 0) : 0,
+    });
+    const ts = new Date(row.updated_at).getTime();
+    if (ts > maxTs) maxTs = ts;
+  }
+  if (maxTs > since) localStorage.setItem('yihaiEasyPulledAt', String(maxTs));
+  return { pulled: resp.data.length };
+}
+
 // Playwright test seam (_playwright_multi_user_sync_test.js called via page.evaluate)
 async function getOrCreateCardState(deckKey, cardId) {
   let state = await getCardState(deckKey, cardId);
