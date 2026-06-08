@@ -129,6 +129,15 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.11.0 — 2026-06-08
+
+**Easy 模式重设计 + 同步性能修复**
+
+- **Easy 模式**：独立 `EasyState` 数据层（IDB v7→v8 `easyCardStates` store + Supabase `easy_card_states` 表 + 服务器 trigger 跨设备同步）；三级分类 confident / learning / unseen（`history === [1,1,1]` 才 confident）；session 结构 `[warmup CCC] + (L CCC)×k + tail r×C` 按总张数 T 自适应（默认 19，预设 chip 15/19/23）；L 槽 unseen → learning「最弱」→ 远 confident，C 槽 confident → learning「最稳」伪 confident 兜底；首错以 `_pendingAttempt` 为唯一真相源记 0；不写 `sync_card_states`；新增 `easy_retry_on_wrong` toggle 控制选项排除重试
+- **同步性能修复（v5.9 退化）**：`runMediaPhase` 每 slot 单 `upsertSingleCard` 改为 checkpoint 批量 `upsertCardsMediaBatch`，500 卡牌组 PostgREST 写次数从 1000 降为 25，根治 v5.9.0 引入的「每张卡每个 slot 打一次后台请求」慢同步问题
+- **诊断面板**：加 Easy 模式统计（最常出现次数 / confident / learning / unseen）
+- **测试**：新 `_pw_easy.js`（28 断言）+ `_pw_easy_sync.js`（18 断言）；`yihai_v5.11_easy_test.js`（38 断言）；`_pw_srs_e2e.js` +7、`_pw_cross_device.js` 修复 v5.9 删函数遗留的 PHASE 8 错误并加回归
+
 ### v5.10.0 post — 2026-06-08
 
 **触发器自洽 + 手动操作即时云同步**
