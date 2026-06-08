@@ -27,11 +27,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v5.0_i18n_test.js` | i18n 纯函数单测（31 cases） |
 | `tests/yihai_v5.2_voice_test.js` | 语音辅助迁移逻辑单测（17 cases） |
 | `tests/yihai_v5.8_sync_test.js` | 个人牌组同步纯函数单测（mod/diff/syncState/水位迁移，24 cases） |
-| `tests/run_all.js` | 单元测试统一入口（7 套件，389 断言） |
+| `tests/yihai_v5.9_sync_test.js` | v5.9 media slot 序列化纯函数单测（32 cases） |
+| `tests/yihai_v5.11_easy_test.js` | Easy 模式纯函数单测（结构公式/分类/弱度稳度排序/槽位 picker/queue 集成，38 cases） |
+| `tests/run_all.js` | 单元测试统一入口（9 套件，459 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音/openSrsDb/练习模式，64 断言，无需登录） |
-| `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/队列顺序，14 断言，无需登录） |
+| `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/队列顺序/Easy 模式 EasyState IDB，21 断言，无需登录） |
 | `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登/双客户端防护/feedback E2E，32 断言） |
-| `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备/增量上传/暂停续传/水位迁移，26 断言） |
+| `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备/增量上传/暂停续传/水位迁移/Easy 模式 EasyState 同步，33 断言） |
 | `tests/_pw_session_restore.js` | 会话恢复流程（SDK失败/无backup/token失效/backup损坏/pathD/登录超时，13 断言，无需登录） |
 | `tests/_pw_sync_guard.js` | runSync 30s watchdog（REST挂起/IDB blocked 时 modal 自动关闭+toast，7 断言，无需登录） |
 | `tests/_pw_feedback.js` | 意见反馈模块（函数存在性/sheet 开关/表单校验，11 断言，无需登录） |
@@ -194,7 +196,7 @@ Current counts: SRS 85, v4.4 98, v4.8 46, v4.9 48, i18n 71, voice 17（run_all.j
 
 **练习模式（`SRS_CONFIG.session_mode`）：**
 - `normal`：完整 SRS 模式 — 全量到期积压，按 `due_ts` 升序出牌（Anki 默认顺序，无重排）
-- `easy`：轻松陪伴模式 — 全牌组出 `easy_session_size`（默认 20）张，[热身 3 熟悉] + [3:1 熟/不熟穿插] + [收尾 2 熟悉]；答错强制写 Hard 不降级；每张只出一次（session 内不重入队列）
+- `easy`：陪伴模式（v5.11 重设计）— 独立 EasyState 数据层（IDB `easyCardStates` + 服务器 trigger 跨设备同步），结构 `[warmup CCC] + (L CCC)×k + tail r×C` 按总张数 T 自适应（T=19 时 k=4 r=0）；C 槽冷启动用 learning「最稳」伪 confident 兜底；L 槽 unseen 优先 → learning「最弱」 → 远 confident；首答错记 0（即使二次答对）；不写 `sync_card_states`。配置：`easy_session_size`（15/19/23，默认 19）、`easy_retry_on_wrong`（默认 true）
 
 **参数命名规则：** 所有 SRS 参数对齐 Anki 命名，不加后缀。
 
