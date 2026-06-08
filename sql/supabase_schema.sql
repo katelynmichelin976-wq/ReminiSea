@@ -313,3 +313,27 @@ DO $$ BEGIN
     ALTER TABLE deck_cards ADD CONSTRAINT deck_cards_deck_card_uk UNIQUE (deck_id, card_id);
   END IF;
 END $$;
+
+-- ═══════════════════════════════════════════
+-- v5.11: Easy 模式跨设备同步
+-- ═══════════════════════════════════════════
+
+create table if not exists easy_card_states (
+  id          bigint generated always as identity primary key,
+  user_id     uuid    not null references auth.users(id) on delete cascade,
+  deck_key    text    not null,
+  card_id     text    not null,
+  seen        integer not null default 0,
+  history     integer[] not null default '{}',
+  last_seen   bigint  not null default 0,
+  updated_at  timestamptz not null default now(),
+  unique(user_id, deck_key, card_id)
+);
+
+create index if not exists idx_easy_card_states_user_updated
+  on easy_card_states(user_id, updated_at);
+
+alter table easy_card_states enable row level security;
+
+create policy "users select own easy states"
+  on easy_card_states for select using (auth.uid() = user_id);
