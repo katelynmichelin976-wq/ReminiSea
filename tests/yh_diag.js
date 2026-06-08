@@ -17,7 +17,7 @@
 (function () {
   if (window._yhDiag) { window._yhDiag.toggle(); return; }
 
-  const DB_NAME = 'yihai_srs', DB_VER = 7;
+  const DB_NAME = 'yihai_srs', DB_VER = 8;
   const TABS = ['📊 状态', '📋 事件', '⚠️ 日志', '🃏 卡片', '⚙️ 设置'];
 
   // ── 面板骨架 ──────────────────────────────────────────────
@@ -140,11 +140,12 @@
     body.innerHTML = '<div style="color:#475569;font-size:12px">加载中…</div>';
     try {
       const db = await openDb();
-      const [states, trials, events, logs] = await Promise.all([
+      const [states, trials, events, logs, easyStates] = await Promise.all([
         readStore(db, 'card_states'),
         readStore(db, 'trials'),
         readStore(db, 'app_events'),
         readStore(db, 'yh_logs'),
+        readStore(db, 'easyCardStates'),
       ]);
       db.close();
 
@@ -180,6 +181,7 @@
       const warnLogs     = logs.filter(l => l.level==='warn').length;
 
       body.appendChild(kv('card_states', states.length + ' 条'));
+      body.appendChild(kv('easyCardStates', easyStates.length + ' 条'));
       body.appendChild(kv('trials', trials.length + ' 条'));
       body.appendChild(kv('app_events',
         events.length + ' 条' + (unsyncedEvt ? badge('未同步 ' + unsyncedEvt, '#7c3aed') : badge('全已同步','#15803d'))));
@@ -250,6 +252,43 @@
         }
       } else {
         body.appendChild(el('div', 'color:#475569;font-size:12px', 'DECKS 未加载'));
+      }
+
+      // 轻松模式统计
+      body.appendChild(sec('轻松模式统计'));
+      if (typeof DECKS !== 'undefined' && typeof DECKS_META !== 'undefined') {
+        try {
+          const byDeck = {};
+          for (const s of easyStates) {
+            const dk = s.deck_key || '(未知)';
+            (byDeck[dk] = byDeck[dk] || []).push(s);
+          }
+          let anyDeck = false;
+          for (const meta of (DECKS_META || [])) {
+            const dk = meta.key;
+            const cards = DECKS[dk] || [];
+            if (!cards.length) continue;
+            anyDeck = true;
+            const states = byDeck[dk] || [];
+            let confident = 0, learning = 0, maxSeen = 0;
+            for (const s of states) {
+              const h = s.history || [];
+              if (h.length === 3 && h.every(x => x === 1)) confident++;
+              else if (h.length > 0) learning++;
+              if ((s.seen || 0) > maxSeen) maxSeen = s.seen;
+            }
+            const seenIds = new Set(states.map(s => s.card_id));
+            const unseen = cards.filter(c => !seenIds.has(c.id)).length;
+            body.appendChild(el('div', 'font-size:11px;color:#94a3b8;padding:2px 0',
+              '📂 ' + meta.name + ': 最常出现 ' + maxSeen +
+              ' | ⭐ ' + confident + ' | 📖 ' + learning + ' | 🆕 ' + unseen));
+          }
+          if (!anyDeck) body.appendChild(el('div', 'color:#475569;font-size:12px', '（无牌组）'));
+        } catch(e) {
+          body.appendChild(el('div', 'color:#475569;font-size:12px', 'Easy 统计读取失败: ' + e.message));
+        }
+      } else {
+        body.appendChild(el('div', 'color:#475569;font-size:12px', 'easyCardStates 未初始化'));
       }
 
       // 存储占用（来自浏览器 Storage API）
