@@ -3954,6 +3954,16 @@ async function purgeOldLogs() {
       c.continue();
     };
   } catch(e) { log.warn('idb', 'purgeOldLogs failed', e.message); }
+  if (_syncEnabled && _sb && _cloudUserId) {
+    try {
+      const cutoffIso = new Date(Date.now() - 30 * 86400000).toISOString();
+      await _sb.from('device_registry')
+        .delete()
+        .eq('user_id', _cloudUserId)
+        .lt('last_seen', cutoffIso)
+        .neq('device_id', _deviceId);
+    } catch(e) { log.warn('sync', 'purge device_registry failed', e.message); }
+  }
 }
 
 // ── CardState CRUD ───────────────────────────────────────────────
