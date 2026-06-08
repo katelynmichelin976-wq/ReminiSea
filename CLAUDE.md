@@ -32,8 +32,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/run_all.js` | 单元测试统一入口（9 套件，459 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户屏/设置/i18n/函数存在性/语言选择器/语音/openSrsDb/练习模式，64 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端（导入/.yhspack/5天练习/IDB验证/统计/session_mode/队列顺序/Easy 模式 EasyState IDB，21 断言，无需登录） |
+| `tests/_pw_easy.js` | Easy 模式综合（设置 chip/toggle/持久化/单局/retry=off/多局 confident 池/IDB schema，28 断言，无需登录） |
+| `tests/_pw_easy_sync.js` | Easy 模式跨设备同步（A 练→trigger 维护云端→B pull/last_warmup 仅本地/双向累加 seen，18 断言，需登录） |
 | `tests/_pw_cloud_sync.js` | 云端流程（登录/decks下载/同步/session restore/user_id隔离/登出/重登/双客户端防护/feedback E2E，32 断言） |
-| `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备/增量上传/暂停续传/水位迁移/Easy 模式 EasyState 同步，33 断言） |
+| `tests/_pw_cross_device.js` | 跨设备同步（设备A练习→同步→设备B接收/review不被覆写/DP不跨设备/增量上传/暂停续传/水位迁移，30 断言；Easy 同步独立到 `_pw_easy_sync.js`） |
 | `tests/_pw_session_restore.js` | 会话恢复流程（SDK失败/无backup/token失效/backup损坏/pathD/登录超时，13 断言，无需登录） |
 | `tests/_pw_sync_guard.js` | runSync 30s watchdog（REST挂起/IDB blocked 时 modal 自动关闭+toast，7 断言，无需登录） |
 | `tests/_pw_feedback.js` | 意见反馈模块（函数存在性/sheet 开关/表单校验，11 断言，无需登录） |
