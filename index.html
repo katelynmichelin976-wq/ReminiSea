@@ -845,6 +845,9 @@ body {
 .sheet-row-col { flex-direction:column; align-items:flex-start; gap:6px; }
 .sheet-mode-desc { font-size:12px; font-weight:400; color:var(--text3); margin-left:8px; }
 .sheet-mode-check { color:var(--blue); font-size:18px; font-weight:700; }
+.chip-group { display:flex; gap:6px; }
+.chip { padding:4px 12px; border:1px solid var(--bd); border-radius:16px; background:var(--surf); color:var(--text); font-size:13px; cursor:pointer; font-family:inherit; }
+.chip.active { background:var(--blue); border-color:var(--blue); color:#fff; }
 .stoggle { position:relative; width:44px; height:26px; flex-shrink:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .stoggle input { opacity:0; width:0; height:0; position:absolute; }
 .stoggle-track { position:absolute; inset:0; background:var(--bd2); border-radius:13px; transition:background .25s; }
@@ -2544,6 +2547,14 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
           <div class="sheet-row" style="cursor:pointer" onclick="setSrsMode('easy')">
             <span class="sheet-row-lbl"><span data-i18n="settings_mode_easy">轻松</span><span class="sheet-mode-desc" data-i18n="settings_mode_easy_desc">全牌组巩固，答错不降级</span></span>
             <span class="sheet-mode-check" id="mode-check-easy"></span>
+          </div>
+          <div class="sheet-row" id="easySizeRow" style="display:none;">
+            <span class="sheet-row-lbl" data-i18n="settings_easy_size">题数</span>
+            <div class="chip-group" data-easy-size>
+              <button type="button" class="chip" data-size="15">15</button>
+              <button type="button" class="chip" data-size="19">19</button>
+              <button type="button" class="chip" data-size="23">23</button>
+            </div>
           </div>
         </div>
         <div class="sheet-section">
@@ -10667,6 +10678,7 @@ function openSettings(){
   populateVoiceList();
   loadDailyGoalUI();
   _updateSettingsLangVal();
+  refreshEasySizeRow();
 }
 function closeSettings(){
   document.getElementById('settings-overlay').classList.remove('open');
@@ -11393,7 +11405,29 @@ function setSrsMode(mode) {
     const el = document.getElementById('mode-check-' + m);
     if (el) el.textContent = m === mode ? '✓' : '';
   });
+  refreshEasySizeRow();
 }
+
+function refreshEasySizeRow() {
+  const row = document.getElementById('easySizeRow');
+  if (!row) return;
+  row.style.display = (SRS_CONFIG.session_mode === 'easy') ? '' : 'none';
+  const group = row.querySelector('[data-easy-size]');
+  if (!group) return;
+  group.querySelectorAll('.chip').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.size, 10) === SRS_CONFIG.easy_session_size);
+  });
+}
+
+document.querySelectorAll('[data-easy-size] .chip').forEach(b => {
+  b.addEventListener('click', () => {
+    const n = parseInt(b.dataset.size, 10);
+    if (![15, 19, 23].includes(n)) return;
+    SRS_CONFIG.easy_session_size = n;
+    localStorage.setItem('easySessionSize', String(n));
+    refreshEasySizeRow();
+  });
+});
 
 function onDailyGoalChange(val) {
   const num = parseInt(val) || 50;
@@ -11421,6 +11455,7 @@ function openSettingsWithSrs() {
   syncSrsSettingsUI();
   loadDailyGoalUI();
   _updateSettingsLangVal();
+  refreshEasySizeRow();
 }
 
 // ── home 3rd column (today done) ─────────────────────────────────
