@@ -4395,81 +4395,142 @@ function applyCurve(queue) {
   return result;
 }
 
-// easy mode: full deck pool, familiar-first ordering, no SRS due filter
-// familiar = srs_stage 'review' AND lapses_total < 3
-// order: [3 warmup familiar] + [3:1 interleave middle] + [2 cooldown familiar]
-// wrong answer in session → forced 'hard' (handled at SRS write call site)
-function applyEasyMode(cards, stateMap) {
-  const SESSION_SIZE = SRS_CONFIG.easy_session_size || 20;
-  const today = todayStr();
+function computeEasyStructure(T) {
+  if (T < 7) return { kind: 'flat', size: T, warmup: 0, k: 0, r: 0 };
+  const k = Math.floor((T - 3) / 4);
+  const r = T - 3 - 4 * k;
+  return { kind: 'structured', size: T, warmup: 3, k, r };
+}
 
-  let unfPool = []; const famPool = [];
-  for (const card of cards) {
-    const s = stateMap[card.id];
-    if (!s || s.suspended) continue;
-    const isFamiliar = s.srs_stage === 'review' && (s.lapses_total || 0) < 3;
-    (isFamiliar ? famPool : unfPool).push(card);
+function classifyEasyCard(state) {
+  if (!state) return 'unseen';
+  const h = state.history || [];
+  if (h.length === 3 && h.every(x => x === 1)) return 'confident';
+  return 'learning';
+}
+
+function learningWeaknessKey(s) {
+  const h = s.history || [];
+  const lastIsCorrect = h.length ? h[h.length - 1] : 1;
+  const zeroCount = h.filter(x => x === 0).length;
+  return [lastIsCorrect, -zeroCount, s.last_seen || 0];
+}
+
+function cmpKey(a, b) {
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] < b[i]) return -1;
+    if (a[i] > b[i]) return 1;
+  }
+  return 0;
+}
+
+function learningStabilityKey(s) {
+  const h = s.history || [];
+  const lastIsCorrect = h.length ? h[h.length - 1] : 0;
+  const zeroCount = h.filter(x => x === 0).length;
+  return [-lastIsCorrect, zeroCount, -(s.last_warmup || 0), s.last_seen || 0];
+}
+
+function pickLSlotCandidates(pools) {
+  const list = [];
+  for (const c of [...pools.unseen].sort(() => Math.random() - 0.5)) list.push({ card: c, role: 'L', tier: 'unseen' });
+  const learnSorted = [...pools.learning].sort((x, y) =>
+    cmpKey(learningWeaknessKey(x.state), learningWeaknessKey(y.state)));
+  for (const e of learnSorted) list.push({ card: e.card, role: 'L', tier: 'learning' });
+  const confSorted = [...pools.confident].sort((x, y) =>
+    (x.state.last_seen || 0) - (y.state.last_seen || 0));
+  for (const e of confSorted) list.push({ card: e.card, role: 'L', tier: 'confident' });
+  return list;
+}
+
+function pickCSlotCandidates(pools, roleHint) {
+  const list = [];
+  const confSort = roleHint === 'warmup'
+    ? (a, b) => ((a.state.last_warmup || 0) - (b.state.last_warmup || 0))
+                || ((a.state.last_seen || 0) - (b.state.last_seen || 0))
+    : (a, b) => (a.state.last_seen || 0) - (b.state.last_seen || 0);
+  for (const e of [...pools.confident].sort(confSort)) list.push({ card: e.card, tier: 'confident' });
+  const learnSorted = [...pools.learning].sort((x, y) =>
+    cmpKey(learningStabilityKey(x.state), learningStabilityKey(y.state)));
+  for (const e of learnSorted) list.push({ card: e.card, tier: 'learning' });
+  for (const c of pools.unseen) list.push({ card: c, tier: 'unseen' });
+  return list;
+}
+
+function buildEasyQueue({ cards, stateMap, T }) {
+  const deckSize = cards.length;
+  const struct = computeEasyStructure(T);
+
+  const conf = [], learn = [], unseen = [];
+  for (const c of cards) {
+    const st = stateMap[c.id];
+    const cls = classifyEasyCard(st);
+    if (cls === 'confident') conf.push({ card: c, state: st });
+    else if (cls === 'learning') learn.push({ card: c, state: st });
+    else unseen.push(c);
+  }
+  const pools = { confident: conf, learning: learn, unseen };
+
+  if (struct.kind === 'flat' || deckSize < 7) {
+    const all = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(T, deckSize));
+    return all.map(c => ({ card: c, _easyRole: 'core', _easySlot: 'L' }));
   }
 
-  // sort familiar: SRS-due today first, rest random
-  for (let i = famPool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [famPool[i], famPool[j]] = [famPool[j], famPool[i]];
-  }
-  famPool.sort((a, b) => {
-    const aDue = (stateMap[a.id].due_date && stateMap[a.id].due_date <= today) ? 0 : 1;
-    const bDue = (stateMap[b.id].due_date && stateMap[b.id].due_date <= today) ? 0 : 1;
-    return aDue - bDue;
-  });
-  // shuffle unfamiliar
-  for (let i = unfPool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [unfPool[i], unfPool[j]] = [unfPool[j], unfPool[i]];
-  }
-
-  // if familiar cards are scarce, relax: include non-new non-review cards
-  if (famPool.length < SESSION_SIZE - 1) {
-    const famIds = new Set(famPool.map(c => c.id));
-    for (const card of cards) {
-      const s = stateMap[card.id];
-      if (!s || s.suspended || famIds.has(card.id)) continue;
-      if (s.srs_stage !== 'new' && s.srs_stage !== 'review') {
-        famPool.push(card);
-        famIds.add(card.id);
+  const usedIds = new Set();
+  const result = [];
+  const takeFrom = (cands) => {
+    for (const item of cands) {
+      const card = item.card;
+      if (!usedIds.has(card.id)) {
+        usedIds.add(card.id);
+        return card;
       }
+    }
+    return null;
+  };
+
+  for (let i = 0; i < struct.warmup; i++) {
+    const c = takeFrom(pickCSlotCandidates(pools, 'warmup'));
+    if (c) result.push({ card: c, _easyRole: 'warmup', _easySlot: 'C' });
+  }
+
+  for (let g = 0; g < struct.k; g++) {
+    const lCard = takeFrom(pickLSlotCandidates(pools));
+    if (lCard) result.push({ card: lCard, _easyRole: 'core', _easySlot: 'L' });
+    for (let i = 0; i < 3; i++) {
+      const cCard = takeFrom(pickCSlotCandidates(pools, 'core'));
+      if (cCard) result.push({ card: cCard, _easyRole: 'core', _easySlot: 'C' });
     }
   }
 
-  // remove cards that were pulled into famPool by relaxation, so they don't
-  // appear again from unfPool (bug: "cucumber appears twice in easy session")
-  {
-    const famIds2 = new Set(famPool.map(c => c.id));
-    unfPool = unfPool.filter(c => !famIds2.has(c.id));
+  for (let i = 0; i < struct.r; i++) {
+    const c = takeFrom(pickCSlotCandidates(pools, 'tail'));
+    if (c) result.push({ card: c, _easyRole: 'tail', _easySlot: 'C' });
   }
 
-  // unfamiliar count: floor((SESSION_SIZE - 5) / 4), e.g. 20→3
-  const unfCount = Math.max(0, Math.min(unfPool.length, Math.floor((SESSION_SIZE - 5) / 4)));
-  const selUnf = unfPool.slice(0, unfCount);
-  const selFam = famPool.slice(0, SESSION_SIZE - selUnf.length);
+  return result;
+}
 
-  // build ordered result: [warmup 3] + [3:1 interleave] + [cooldown 2]
-  const fam = [...selFam];
-  const unf = [...selUnf];
-  const warmupCount   = Math.min(3, fam.length);
-  const cooldownCount = fam.length >= warmupCount + 2 ? 2 : Math.max(0, fam.length - warmupCount);
-  const warmup   = fam.splice(0, warmupCount);
-  const cooldown = fam.length >= cooldownCount ? fam.splice(-cooldownCount) : fam.splice(0);
-  const result   = [...warmup];
-  let fi = 0, ui = 0;
-  while (fi < fam.length || ui < unf.length) {
-    for (let k = 0; k < 3 && fi < fam.length; k++, fi++) result.push(fam[fi]);
-    if (ui < unf.length) result.push(unf[ui++]);
-  }
-  result.push(...cooldown);
+async function applyEasyMode(cards, stateMap) {
+  const deckKey = currentDeck;
+  const T = SRS_CONFIG.easy_session_size || 19;
 
-  return result.map(card => {
+  const states = await getAllEasyStates(deckKey);
+  const easyMap = {};
+  for (const s of states) easyMap[s.card_id] = s;
+
+  const queue = buildEasyQueue({ cards, stateMap: easyMap, T });
+
+  return queue.map(({ card, _easyRole, _easySlot }) => {
     const { options, correct } = buildOptions(card, cards);
-    return { ...card, options, correct, _srsState: stateMap[card.id] };
+    return {
+      ...card,
+      options,
+      correct,
+      _srsState: stateMap[card.id],
+      _easyRole,
+      _easySlot,
+    };
   });
 }
 
@@ -4579,7 +4640,7 @@ async function buildSessionQueue(deckKey) {
   const mode = SRS_CONFIG.session_mode || 'normal';
   let finalQueue;
   if (mode === 'easy') {
-    finalQueue = applyEasyMode(cards, stateMap);
+    finalQueue = await applyEasyMode(cards, stateMap);
   } else {
     finalQueue = queue;
   }
