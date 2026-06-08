@@ -2,6 +2,18 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.11.0（未发布）— Easy 模式重设计
+
+- **独立数据层 EasyState**：IDB 新 store `easyCardStates`（DB v7→v8，复合键 `['deck_key','card_id']`，`deck_key` index），字段 `seen / history(≤3) / last_seen / last_warmup`，与 `sync_card_states` 完全隔离。
+- **三级分类**：`unseen`（无记录）/ `learning`（见过未稳）/ `confident`（`history === [1,1,1]`）。任意一次首答错立即跌回 learning。
+- **Session 结构**：用户配总张数 T（默认 19，预设 chip 15/19/23），算法 `[warmup CCC] + (L CCC)×k + [tail r×C]`，公式 `k = floor((T-3)/4), r = T-3-4k`。T<7 或 deckSize<7 走 flat 兜底。
+- **槽位选择**：L 槽 unseen 优先（随机）→ learning 最弱（lastIsCorrect/zeros/last_seen 复合键）→ 远 confident 兜底。C 槽 confident → learning 最稳（伪 confident 兜底，冷启动主路径）→ unseen 极端兜底。session 内 `usedIds` 去重。
+- **写入唯一真相源 attempt**：`_writeSrs` 新增 `isEasyMode` 分支末尾 EasyState 写入。首错记 0 即使后续重试答对（`attempt.attemptNumber===1 && attempt.isCorrect===true` 为对，其余记错）；hard 视为错。
+- **跨设备同步（trigger 维护）**：新表 `easy_card_states` + RLS（仅 SELECT 自己的），新 PG trigger `on_easy_trial_insert` 在 sync_trials INSERT 时 upsert（first attempt 才推 history，array slice 保留最近 3），`SECURITY DEFINER`。客户端 `pullEasyStates` 在 runSync trials upload 后调用，`yihaiEasyPulledAt` 增量水位；put 时保留本地 `last_warmup`（不入云）。
+- **配置项变更**：`easy_session_size` 默认 19；新增 `easy_confident_window:3`（固定不暴露）、`easy_retry_on_wrong:true`（设置页 toggle 控制；false 时首错直接 revealAnswer 跳过选项排除）。localStorage hydration 同步加入。
+- **诊断面板**：`yh_diag.js` Tab 0 新增「轻松模式统计」per-deck 段，显示最常出现次数 / confident / learning / unseen；同时 `DB_VER` 升 8 防止 onblocked。
+- **测试**：新单测 `yihai_v5.11_easy_test.js`（38 断言：T 公式 / 分类 / 弱度·稳度 / L·C picker / buildEasyQueue 集成）；`_pw_srs_e2e.js` +7 断言（Easy IDB 写入 / sync_card_states 不写 / 首错记 0）；`_pw_cross_device.js` +7 断言（A→B EasyState 传播 / last_warmup 仅本地 / 云端 easy_card_states 验证）。单测合计 9 套件 459 断言。
+
 ## v5.10.0 post — #402
 
 - **触发器自洽维护 `sync_card_states`**：`_writeSrs` trial entry 补 `lapses_streak_after` / `lapses_total_after` / `review_mode_after` / `step_index_after`，来自 `processAnswer` 算出的 `newState`。`syncTrialLog` / `uploadTrialBatch` 显式字段列表同步补充。
