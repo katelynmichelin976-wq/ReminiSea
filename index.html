@@ -3496,7 +3496,14 @@ async function runSync(opts) {
     var cfgItems = await cloudPullConfig();
     syncStats.config = cfgItems;
     await cloudPushConfig();
-    // 3. download cloud CardState (incremental merge)
+    // 3. pull easy mode states
+    try {
+      const easy = await pullEasyStates();
+      if (easy.pulled > 0) console.log('[sync] easy pulled', easy.pulled);
+    } catch (e) {
+      console.warn('[sync] pullEasyStates failed', e?.message);
+    }
+    // 4. download cloud CardState (incremental merge)
     updateProg(t('sync_states_prog'),60);
     if (options.deckKey) {
       syncStats.states_merged = await syncCardStatesFromCloud(options.deckKey);
