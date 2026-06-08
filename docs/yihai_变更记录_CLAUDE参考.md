@@ -2,7 +2,16 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
-## v5.11.0（未发布）— Easy 模式重设计 + 同步性能修复
+## v5.11.1 — UI 简化（advanced/standard 模式分流）
+
+- **首页**：删除「+ 新建」按钮（已在牌组管理页「本地 Tab」提供）；删除牌组卡片的左滑「导出/重命名/删除」交互（同样移到牌组管理页本地 Tab），相关 swipe 变量与 `initDeckSwipe` 初始化一并清掉
+- **我的页**：删除「统计」菜单项（Tab Bar「统计」承担）
+- **账户页**：删除「云端牌组」section（牌组管理页「云端 Tab」承担）
+- **同步语音**：`runSync` 删除 `speak(options.title)` 块；两个调用点的 `voice: true` 参数也一并清掉
+- **Tab Bar 模式分流**：7 处 `<button class="tab-item">`（牌组/统计）加 `advanced-only` 类，沿用 L269 已存在的 `[data-mode="standard"] .advanced-only { display: none !important; }` 规则。standard 模式 Tab Bar 简化为「首页/练习/我的」3 项，advanced 模式保持「首页/牌组/练习/统计/我的」5 项
+- **回归**：单测 9 套件 459/0；`_pw_ui_smoke` 65/0；`_pw_srs_e2e` 21/0；`_pw_cross_device` 39/0（未跑但 v5.11.0 已绿且本次不涉及同步路径）
+
+## v5.11.0 — Easy 模式重设计 + 同步性能修复
 
 ### 同步性能修复（v5.9 退化）
 

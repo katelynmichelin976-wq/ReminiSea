@@ -62,9 +62,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.11.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.11.1**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 **v5.10.0 post（#402）：** 触发器自洽维护 `sync_card_states` — `_writeSrs` trial entry 补 `lapses_streak_after`/`lapses_total_after`/`review_mode_after`/`step_index_after`（来自 `processAnswer` 算出的 `newState`）；`syncTrialLog`/`uploadTrialBatch` 显式字段列表同步补充；DB Migration 011 加 4 列并重建触发器 `fn_trial_to_card_state`（改用 `_after` 值，COALESCE 兼容旧 trial）；`syncPendingData` 删除全量 card state backfill；`unsuspendCard` reset/resume 后即时调用 `syncCardState()`。
+
+**v5.11.1：** UI 简化 — 删首页「+ 新建」按钮 + 牌组卡片左滑操作（导出/重命名/删除集中在牌组管理页）；删我的页「统计」入口与账户页「云端牌组」section；取消同步开始时「正在同步」语音播报；Tab Bar「牌组」「统计」按钮加 `advanced-only` 类（standard 模式简化为 首页/练习/我的 3 项，advanced 模式保持 5 项不变）。
 
 **v5.11.0：** Easy 模式重设计 + 同步性能修复 — ① **`runMediaPhase` 每 slot 单 upsert 改为 checkpoint 批量 upsert**（删 `upsertSingleCard`，新增 `upsertCardsMediaBatch`），500 卡牌组同步从 ~1000 次 PostgREST 写降为 ~25 次，根治 v5.9 引入的「每张卡都打一次后台请求」慢同步。② Easy 模式重设计 — 独立 EasyState 数据层（IDB v7→v8 `easyCardStates` store + 服务器 trigger 维护跨设备同步表 `easy_card_states`）；三级分类（unseen/learning/confident，`history === [1,1,1]` 才 confident）；session 结构 `[warmup CCC] + (L CCC)×k + [tail r×C]` 按 T 自适应（默认 19，预设 chip 15/19/23）；L 槽 unseen→learning「最弱」→远 confident，C 槽 confident→learning「最稳」伪 confident 兜底；首错以 `attempt` 为唯一真相源记 0；不写 `sync_card_states`；新增 `easy_retry_on_wrong` toggle；诊断面板加 Easy 视图；新单测 `yihai_v5.11_easy_test.js`（38 断言），`_pw_srs_e2e.js` +7，`_pw_cross_device.js` +7。spec: `docs/superpowers/specs/2026-06-08-easy-mode-redesign.md`；plan: `docs/superpowers/plans/2026-06-08-easy-mode-redesign.md`。
 
