@@ -1,0 +1,11 @@
+const fs = require('fs');
+let content = fs.readFileSync('C:/code/yihai_v5.3.html', 'utf8');
+content = content.replace('忆海拾光 v5.3.3</title>', '忆海拾光 v5.4.0</title>');
+content = content.replace('>v5.3.3</span>', '>v5.4.0</span>');
+content = content.replace("const APP_VERSION = '5.3.3'", "const APP_VERSION = '5.4.0'");
+const count533 = (content.match(/5\.3\.3/g) || []).length;
+const count540 = (content.match(/5\.4\.0/g) || []).length;
+console.log('Remaining 5.3.3 occurrences (expect 0):', count533);
+console.log('New 5.4.0 occurrences (expect 3+):', count540);
+fs.writeFileSync('C:/code/yihai_v5.4.html', content, 'utf8');
+console.log('Written yihai_v5.4.html');

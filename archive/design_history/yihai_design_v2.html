@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="忆海拾光">
+<title>忆海拾光 · 记忆相册 设计稿 v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+
+/* ════════════════════════════════════════════════
+   设计令牌 — 暖金·相册
+   ════════════════════════════════════════════════ */
+:root {
+  /* 纸色 */
+  --bg:        #fdf8f0;
+  --bg2:       #f5ede0;
+  --surf:      #fffef8;
+  --surf2:     #f2ebe0;
+
+  /* 墨色 */
+  --ink:       #2a1c0e;
+  --ink2:      #6b4c2a;
+  --ink3:      #7a5428;  /* 加深：对比度 5.6:1 on --bg，WCAG AA ✓ */
+  --ink4:      #c8a882;
+  --ink5:      #e2d0b8;
+
+  /* 琥珀金 — 主色 */
+  --amber:     #c07030;
+  --amber-dk:  #9a5520;
+  --amber-lt:  #fdf4e8;
+  --amber-bd:  rgba(192,112,48,0.22);
+  --amber-sh:  0 6px 24px rgba(192,112,48,0.30);
+
+  /* 翡翠 — 已认识/成就 */
+  --jade:      #3a7a58;
+  --jade-dk:   #2a5c40;
+  --jade-lt:   #eef6f1;
+  --jade-bd:   rgba(58,122,88,0.22);
+
+  /* 玫红 — 错误/提示 */
+  --rose:      #c04040;
+  --rose-lt:   #fdf2f0;
+
+  /* 赭石 — 学习中 */
+  --terra:     #c06828;
+  --terra-lt:  #fef0e6;
+
+  /* 边框/阴影 */
+  --bd:        rgba(107,76,42,0.14);
+  --bd-soft:   rgba(107,76,42,0.07);
+  --sh:        0 2px 20px rgba(42,28,14,0.07), 0 1px 4px rgba(42,28,14,0.04);
+  --sh-sm:     0 1px 8px rgba(42,28,14,0.05);
+
+  /* 圆角 */
+  --r:    20px;
+  --rsm:  14px;
+  --rxs:  8px;
+
+  /* 字体 */
+  --fd: 'Ma Shan Zheng', 'Noto Serif SC', serif;
+  --fs: 'Noto Serif SC', 'PingFang SC', serif;
+  --fn: 'Playfair Display', serif;
+
+  /* 内容列最大宽度：手机用 520px，平板覆盖为 100% */
+  --cmax: 520px;
+
+  /* 安全区 */
+  --safe-top:    env(safe-area-inset-top, 44px);
+  --safe-bottom: env(safe-area-inset-bottom, 34px);
+  --pad:         18px;
+}
+
+
+/* ════════════════════════════════════════════════
+   分辨率适配 — 全视口方案
+   旧版思路：html/body 填满视口，screens 绝对定位铺满，
+   内部内容区用 max-width 居中，宽屏自然留边
+   ════════════════════════════════════════════════ */
+html {
+  height: -webkit-fill-available;
+  background: var(--bg);
+}
+html, body { overflow: hidden; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--fs);
+  -webkit-font-smoothing: antialiased;
+  width: 100%;
+  height: 100dvh;
+  height: -webkit-fill-available;
+  position: relative;
+}
+
+/* 平板及以上：内容适当放大，间距增加 */
+@media (min-width: 600px) {
+  :root { --pad: 26px; --cmax: 100%; }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea { -webkit-user-select: text; user-select: text; }
+img { -webkit-user-drag: none; pointer-events: none; }
+
+/* 纸纹叠层（不影响交互，纯视觉） */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.028'/%3E%3C/svg%3E");
+  background-size: 200px;
+  pointer-events: none;
+  z-index: 9000;
+}
+
+
+/* ════════════════════════════════════════════════
+   屏幕切换系统
+   ════════════════════════════════════════════════ */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  transform: translateX(28px);
+  overflow: hidden;
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(0);
+}
+.screen.exit-left { transform: translateX(-28px); opacity: 0; }
+
+/* 通用可滚动内容区 */
+.scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-body::-webkit-scrollbar { display: none; }
+
+/* 内容居中包裹（宽屏用） */
+.inner {
+  width: 100%;
+  max-width: var(--cmax);
+  margin: 0 auto;
+  padding: 0 var(--pad);
+}
+
+
+/* ════════════════════════════════════════════════
+   演示导航条
+   ════════════════════════════════════════════════ */
+#demo-nav {
+  position: fixed;
+  bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: var(--cmax);
+  background: rgba(30,18,6,0.88);
+  backdrop-filter: blur(14px) saturate(1.6);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  z-index: 9999;
+  display: flex;
+  padding: 9px 10px;
+  padding-bottom: calc(9px + env(safe-area-inset-bottom, 18px));
+  gap: 5px;
+}
+.d-btn {
+  flex: 1; padding: 8px 2px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px;
+  color: rgba(255,255,255,0.5);
+  font-family: var(--fs);
+  font-size: 11px;
+  cursor: pointer; text-align: center;
+  transition: all 0.15s;
+  line-height: 1.3;
+}
+.d-btn:active { transform: scale(0.92); }
+.d-btn.on {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: white; font-weight: 700;
+}
+
+/* 导航底部占位（防止内容被覆盖） */
+.nav-spacer { flex-shrink: 0; }
+
+
+/* ════════════════════════════════════════════════
+   通用组件
+   ════════════════════════════════════════════════ */
+.page-topbar {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; align-items: center;
+  padding: calc(var(--safe-top) + 6px) var(--pad) 14px;
+  gap: 12px;
+}
+.page-title {
+  flex: 1;
+  font-family: var(--fd);
+  font-size: 26px;
+  color: var(--ink);
+  letter-spacing: 3px;
+}
+.btn-icon {
+  width: 44px; height: 44px;  /* WCAG touch target ≥44px */
+  border: 1px solid var(--bd);
+  border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; cursor: pointer; color: var(--ink2);
+  box-shadow: var(--sh-sm);
+  transition: background 0.15s, transform 0.15s; flex-shrink: 0;
+}
+.btn-icon:active { transform: scale(0.88); }
+
+.btn-back {
+  width: 44px; height: 44px;  /* WCAG touch target ≥44px */
+  border: 1.5px solid var(--bd);
+  border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--ink2);
+  cursor: pointer; box-shadow: var(--sh-sm);
+  transition: background 0.15s, transform 0.15s; flex-shrink: 0;
+  font-family: var(--fn);
+}
+.btn-back:active { transform: scale(0.88); }
+
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--bd) 15%, var(--bd) 85%, transparent 100%);
+  flex-shrink: 0;
+  margin: 0 var(--pad);
+}
+
+.section-label {
+  font-size: 10px; font-weight: 700;
+  color: var(--ink3); letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.btn-primary {
+  width: 100%; padding: 17px;
+  background: var(--amber);
+  color: white; border: none;
+  border-radius: var(--rsm);
+  font-family: var(--fs);
+  font-size: 18px; font-weight: 700;
+  cursor: pointer; letter-spacing: 3px;
+  box-shadow: var(--amber-sh);
+  transition: all 0.18s;
+}
+.btn-primary:active { transform: scale(0.97); background: var(--amber-dk); box-shadow: none; }
+
+.btn-outline {
+  padding: 15px 20px;
+  background: var(--surf);
+  color: var(--ink2); border: 1.5px solid var(--bd);
+  border-radius: var(--rsm);
+  font-family: var(--fs);
+  font-size: 16px; font-weight: 600;
+  cursor: pointer; letter-spacing: 1px;
+  transition: all 0.18s;
+}
+.btn-outline:active { transform: scale(0.97); background: var(--surf2); }
+
+
+/* ════════════════════════════════════════════════
+   首页（相册列表）
+   ════════════════════════════════════════════════ */
+#screen-home .page-topbar { padding-bottom: 10px; }
+
+/* 今日问候卡 */
+.greeting-card {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 0 var(--pad) 16px;
+}
+.greeting-inner {
+  background: var(--amber-lt);
+  border: 1px solid var(--amber-bd);
+  border-radius: var(--r);
+  padding: 16px 20px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 2px 12px rgba(192,112,48,0.1);
+}
+.greeting-icon { font-size: 36px; flex-shrink: 0; }
+.greeting-text { flex: 1; }
+.greeting-date { font-size: 12px; color: var(--amber); letter-spacing: 2px; margin-bottom: 3px; }
+.greeting-msg  { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.4; }
+.greeting-sub  { font-size: 12px; color: var(--ink3); margin-top: 3px; }
+
+/* 成就行 */
+.achievement-row {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 0 var(--pad) 18px;
+  display: flex; gap: 10px;
+}
+.ach-item {
+  flex: 1;
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--rsm);
+  padding: 12px 10px;
+  text-align: center;
+  box-shadow: var(--sh-sm);
+}
+.ach-num {
+  font-family: var(--fn);
+  font-size: 28px; font-weight: 700;
+  color: var(--amber); line-height: 1;
+  margin-bottom: 3px;
+}
+.ach-lbl { font-size: 10px; color: var(--ink3); letter-spacing: 2px; }
+
+/* 相册列表 */
+.album-list {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 0 var(--pad);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.album-card {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: var(--sh);
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: fadeSlideUp 0.38s ease both;
+}
+.album-card:nth-child(1) { animation-delay: 0.04s; }
+.album-card:nth-child(2) { animation-delay: 0.10s; }
+.album-card:nth-child(3) { animation-delay: 0.16s; }
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.album-card:active { transform: scale(0.984); }
+.album-card.selected { border-color: var(--amber-bd); box-shadow: 0 4px 28px rgba(192,112,48,0.14); }
+
+/* 缩略图条 */
+.album-thumb-row {
+  display: flex;
+  background: var(--bg2);
+  height: 64px; overflow: hidden;
+}
+.album-thumb {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  border-right: 1px solid var(--bd-soft);
+}
+.album-thumb:last-child { border-right: none; }
+
+/* 相册信息区 */
+.album-info {
+  padding: 14px 16px 16px;
+}
+.album-name {
+  font-size: 17px; font-weight: 600;
+  color: var(--ink); margin-bottom: 6px;
+}
+.album-meta {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--ink3);
+  margin-bottom: 12px;
+}
+.meta-sep { color: var(--ink5); }
+.badge-waiting {
+  padding: 2px 8px;
+  border-radius: 12px; font-size: 12px; font-weight: 700;
+  background: var(--amber-lt); color: var(--amber);
+  font-family: var(--fn);
+}
+.badge-ok {
+  padding: 2px 8px;
+  border-radius: 12px; font-size: 12px; font-weight: 700;
+  background: var(--jade-lt); color: var(--jade);
+}
+
+/* 相册操作按钮 */
+.album-actions {
+  display: flex; gap: 9px;
+}
+.album-btn-browse {
+  flex: 1; padding: 12px;
+  background: var(--amber);
+  color: white; border: none; border-radius: var(--rxs);
+  font-family: var(--fs); font-size: 15px; font-weight: 700;
+  cursor: pointer; letter-spacing: 2px;
+  box-shadow: 0 4px 14px rgba(192,112,48,0.28);
+  transition: all 0.15s;
+}
+.album-btn-browse:active { transform: scale(0.96); }
+.album-btn-quiz {
+  padding: 12px 16px;
+  background: var(--surf);
+  color: var(--ink2); border: 1.5px solid var(--bd);
+  border-radius: var(--rxs);
+  font-family: var(--fs); font-size: 14px; font-weight: 600;
+  cursor: pointer; letter-spacing: 1px;
+  transition: all 0.15s;
+}
+.album-btn-quiz:active { transform: scale(0.96); }
+
+/* 底部云端条 */
+.cloud-bar {
+  flex-shrink: 0;
+  background: var(--surf);
+  border-top: 1px solid var(--bd-soft);
+  padding: 10px var(--pad);
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--ink3);
+  width: 100%;
+}
+.cloud-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--jade);
+  flex-shrink: 0;
+}
+
+
+/* ════════════════════════════════════════════════
+   浏览屏（主屏）— 相册翻阅
+   ════════════════════════════════════════════════ */
+.browse-header {
+  flex-shrink: 0;
+}
+.browse-topbar {
+  padding: calc(var(--safe-top) + 6px) var(--pad) 12px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; align-items: center; gap: 12px;
+}
+.browse-title { flex: 1; }
+.browse-album-name {
+  font-size: 16px; font-weight: 600;
+  color: var(--ink); line-height: 1.2;
+}
+.browse-progress-txt {
+  font-family: var(--fn);
+  font-size: 13px; color: var(--ink3); margin-top: 2px;
+}
+
+/* 进度条 */
+.browse-prog-track {
+  height: 2px; background: var(--bd-soft);
+  margin: 0 var(--pad);
+  border-radius: 1px; overflow: hidden;
+  flex-shrink: 0;
+}
+.browse-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), #e08030);
+  border-radius: 1px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* 照片展示区 */
+.browse-body {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding: 4px var(--pad) 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* 相片框：不设 max-width，让相片占满横向 */
+.photo-wrap {
+  width: 100%;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.photo-frame {
+  width: 100%;
+  background: #fffefb;
+  /* 宝丽来相片风格 */
+  padding: 8px 8px 40px;
+  border-radius: 4px;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.08),
+    0 6px 20px rgba(0,0,0,0.10),
+    0 16px 48px rgba(0,0,0,0.07);
+  border: 1px solid rgba(200,170,120,0.18);
+  position: relative;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.photo-img {
+  aspect-ratio: 1;
+  width: 100%;
+  background: var(--bg2);
+  border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(120px, 42vw, 200px);
+  overflow: hidden;
+  position: relative;
+}
+/* 内阴影模拟真实照片质感 */
+.photo-img::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06), inset 0 2px 8px rgba(0,0,0,0.04);
+  pointer-events: none;
+}
+/* 相片下方文字区（宝丽来白边） */
+.photo-caption {
+  position: absolute;
+  left: 8px; right: 8px; bottom: 0;
+  height: 40px;
+  display: flex; align-items: center;
+  gap: 0; flex-direction: column;
+  justify-content: center;
+}
+.photo-name {
+  font-family: var(--fd);
+  font-size: 22px; color: var(--ink);
+  letter-spacing: 5px; line-height: 1;
+  text-align: center;
+}
+.photo-pinyin {
+  font-size: 11px; color: var(--ink3);
+  letter-spacing: 4px; margin-top: 3px;
+  text-align: center;
+}
+
+/* 浏览导航控制区 */
+.browse-controls {
+  flex-shrink: 0;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 8px var(--pad) calc(4px + var(--safe-bottom));
+}
+.browse-nav-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 8px;
+}
+.btn-nav {
+  width: 48px; height: 48px;
+  border: 1.5px solid var(--bd);
+  border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: var(--ink2);
+  cursor: pointer; box-shadow: var(--sh-sm);
+  transition: all 0.15s; flex-shrink: 0;
+  font-family: var(--fn);
+}
+.btn-nav:active { transform: scale(0.88); }
+.btn-nav:disabled { opacity: 0.3; pointer-events: none; }
+
+/* 认识按钮 */
+.btn-recognize {
+  flex: 1; height: 50px;
+  background: var(--jade);
+  color: white; border: none;
+  border-radius: var(--rsm);
+  font-family: var(--fs);
+  font-size: 17px; font-weight: 700;
+  cursor: pointer; letter-spacing: 2px;
+  box-shadow: 0 5px 20px rgba(58,122,88,0.30);
+  transition: all 0.18s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-recognize:active { transform: scale(0.97); }
+.btn-recognize.recognized {
+  background: var(--jade-dk);
+  box-shadow: none;
+}
+
+/* 下方练一练入口 */
+.browse-quiz-hint {
+  display: flex; align-items: center; gap: 10px;
+}
+.quiz-hint-line { flex: 1; height: 1px; background: var(--bd-soft); }
+.quiz-hint-btn {
+  padding: 10px 18px;
+  border: 1px solid var(--bd);
+  border-radius: 20px;
+  background: var(--surf);
+  color: var(--ink3);
+  font-family: var(--fs);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; letter-spacing: 1px;
+  transition: all 0.15s;
+}
+.quiz-hint-btn:active { color: var(--amber); border-color: var(--amber-bd); }
+
+
+/* ════════════════════════════════════════════════
+   练习屏（辅屏）
+   ════════════════════════════════════════════════ */
+.quiz-header { flex-shrink: 0; }
+.quiz-topbar {
+  padding: calc(var(--safe-top) + 6px) var(--pad) 12px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; align-items: center; gap: 12px;
+}
+
+/* SRS 三色角标 */
+.srs-row { display: flex; gap: 6px; }
+.srs-b {
+  padding: 4px 10px; border-radius: 14px;
+  font-family: var(--fn); font-size: 13px; font-weight: 700;
+}
+.srs-new   { background: var(--amber-lt); color: var(--amber); }
+.srs-learn { background: var(--terra-lt); color: var(--terra); }
+.srs-rev   { background: var(--jade-lt);  color: var(--jade); }
+
+.quiz-prog-track {
+  height: 3px; background: var(--bd-soft);
+  margin: 0 var(--pad); border-radius: 2px; overflow: hidden;
+  flex-shrink: 0;
+}
+.quiz-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), #e08030);
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* 练习主体：不滚动，靠 flex + clamp 适配各机型 */
+.quiz-body {
+  flex: 1;
+  overflow: hidden;
+  padding: 10px var(--pad) calc(68px + env(safe-area-inset-bottom, 16px));
+  display: flex; flex-direction: column; gap: 8px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  align-self: center;
+}
+
+/* 目标卡：宽度驱动（填满横向 1:1），答题后压缩 */
+.quiz-card {
+  flex-shrink: 0;
+  align-self: center;
+  /* 占满横向：min(全容器宽, 55vh) 保证竖屏时图像约占屏幕一半 */
+  width: min(100%, 50vh);
+  height: auto;
+  aspect-ratio: 1;
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(150px, 53vw, 260px);
+  box-shadow: var(--sh);
+  position: relative; overflow: hidden;
+  transition: width 0.38s cubic-bezier(0.4,0,0.2,1),
+              font-size 0.38s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.18s, transform 0.18s;
+}
+.quiz-card.compact {
+  width: clamp(72px, 14vw, 92px);
+  font-size: clamp(30px, 8vw, 44px);
+}
+.quiz-card::after {
+  content: ''; position: absolute; inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(107,76,42,0.06);
+  border-radius: var(--r); pointer-events: none;
+}
+
+.quiz-question {
+  text-align: center; font-size: 13px;
+  color: var(--ink3); letter-spacing: 2px;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+.quiz-question.hidden { opacity: 0; }
+
+/* 选项区：2×2 格布局，答题后折叠 */
+.opts {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  overflow: hidden;
+  max-height: 400px; opacity: 1;
+  transition: max-height 0.38s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.25s ease;
+}
+.opts.collapsed { max-height: 0; opacity: 0; pointer-events: none; }
+
+.opt {
+  background: var(--surf);
+  border: 1.5px solid var(--bd);
+  border-radius: var(--rsm);
+  padding: clamp(8px, 1.8vh, 14px) 10px;
+  font-family: var(--fs);
+  font-size: clamp(16px, 4vw, 22px);
+  font-weight: 600; color: var(--ink);
+  cursor: pointer; text-align: center;
+  transition: all 0.15s;
+  box-shadow: var(--sh-sm);
+  line-height: 1.25; min-height: 44px;
+  display: flex; align-items: center; justify-content: center;
+}
+.opt:active:not(.correct):not(.wrong):not(.dim) {
+  transform: scale(0.97); background: var(--surf2);
+}
+.opt.correct { background: var(--jade-lt); border-color: var(--jade); color: var(--jade); }
+.opt.wrong   { background: var(--rose-lt); border-color: var(--rose); color: var(--rose); }
+.opt.dim     { opacity: 0.32; pointer-events: none; }
+
+/* 答案区：答题后展开，内含鼓励语 + 答案面板 + 继续按钮 */
+.answer-zone {
+  display: flex; flex-direction: column; gap: 10px;
+  overflow: hidden;
+  max-height: 0; opacity: 0;
+  transition: max-height 0.42s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
+}
+.answer-zone.open { max-height: 600px; opacity: 1; }
+
+/* 鼓励语 */
+.encouragement {
+  text-align: center;
+  font-family: var(--fd);
+  font-size: 20px; color: var(--jade); letter-spacing: 3px;
+  animation: popSoft 0.4s cubic-bezier(0.22,0.61,0.36,1);
+  flex-shrink: 0;
+}
+.encouragement.miss {
+  color: var(--ink3); font-size: 15px;
+  font-family: var(--fs); letter-spacing: 1px;
+}
+@keyframes popSoft {
+  0%  { transform: scale(0.7); opacity: 0; }
+  70% { transform: scale(1.08); }
+  100%{ transform: scale(1); opacity: 1; }
+}
+
+/* 答案面板 */
+.answer-panel {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  box-shadow: var(--sh);
+  flex-shrink: 0;
+}
+.answer-word {
+  font-size: clamp(28px, 7vw, 38px);
+  font-weight: 700; color: var(--ink);
+  letter-spacing: 5px; margin-bottom: 4px;
+}
+.answer-pinyin {
+  font-size: 14px; color: var(--ink3);
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.answer-divider { height: 1px; background: var(--bd-soft); margin-bottom: 10px; }
+.answer-desc { font-size: 13px; color: var(--ink2); line-height: 1.8; font-weight: 400; }
+
+.next-btn {
+  flex-shrink: 0;
+  background: var(--amber); color: white; border: none;
+  border-radius: var(--rsm); padding: clamp(14px, 2.8vh, 18px);
+  font-family: var(--fs); font-size: 18px; font-weight: 700;
+  cursor: pointer; letter-spacing: 3px;
+  box-shadow: var(--amber-sh);
+  transition: transform 0.18s, background 0.18s;
+}
+.next-btn:active { transform: scale(0.97); background: var(--amber-dk); }
+
+
+/* ════════════════════════════════════════════════
+   完成屏
+   ════════════════════════════════════════════════ */
+.finish-body {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: calc(var(--safe-top) + 20px) var(--pad) 20px;
+  text-align: center;
+}
+.finish-anim {
+  font-size: 80px;
+  animation: bigBounce 0.7s cubic-bezier(0.22,0.61,0.36,1) both;
+  margin-bottom: 20px;
+}
+@keyframes bigBounce {
+  0%   { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(4deg); }
+  80%  { transform: scale(0.95) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.finish-title {
+  font-family: var(--fd);
+  font-size: 42px; letter-spacing: 8px;
+  color: var(--ink); margin-bottom: 8px;
+}
+.finish-msg { font-size: 14px; color: var(--ink3); letter-spacing: 2px; margin-bottom: 10px; }
+.finish-family-msg {
+  font-size: 15px; color: var(--amber);
+  font-weight: 600; letter-spacing: 1px;
+  margin-bottom: 32px;
+}
+.accent-line {
+  width: 64px; height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+  margin: 0 auto 32px;
+}
+.finish-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; width: 100%; margin-bottom: 32px;
+}
+.fc {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--rsm);
+  padding: 16px 8px;
+  box-shadow: var(--sh-sm);
+}
+.fc-num {
+  font-family: var(--fn); font-size: 38px; font-weight: 700;
+  line-height: 1; margin-bottom: 5px;
+}
+.fc-lbl { font-size: 11px; color: var(--ink3); font-weight: 600; letter-spacing: 2px; }
+.fc.good .fc-num { color: var(--jade); }
+.fc.neu  .fc-num { color: var(--amber); }
+.fc.acc  .fc-num { color: var(--amber); }
+
+
+/* ════════════════════════════════════════════════
+   记录屏（原统计）
+   ════════════════════════════════════════════════ */
+.rec-body {
+  flex: 1;
+  overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  padding-bottom: calc(72px + var(--safe-bottom));
+}
+.rec-body::-webkit-scrollbar { display: none; }
+.rec-inner {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 16px var(--pad) 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--bd-soft);
+  flex-shrink: 0;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 0 var(--pad);
+}
+.tab {
+  padding: 10px 18px;
+  font-size: 13px; font-weight: 600;
+  color: var(--ink3); cursor: pointer;
+  border-bottom: 2.5px solid transparent;
+  transition: all 0.15s; letter-spacing: 1px;
+}
+.tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+/* KPI */
+.kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.kpi {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--rsm);
+  padding: 14px 8px; text-align: center;
+  box-shadow: var(--sh-sm);
+}
+.kpi-num {
+  font-family: var(--fn); font-size: 30px; font-weight: 700;
+  color: var(--ink); line-height: 1; margin-bottom: 4px;
+}
+.kpi-lbl { font-size: 10px; color: var(--ink3); font-weight: 600; letter-spacing: 2px; }
+
+/* 柱状图 */
+.chart-card {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--r);
+  padding: 18px; box-shadow: var(--sh-sm);
+}
+.chart-ttl {
+  font-size: 11px; font-weight: 700;
+  color: var(--ink3); letter-spacing: 3px;
+  text-transform: uppercase; margin-bottom: 18px;
+}
+.bars { display: flex; align-items: flex-end; gap: 5px; height: 90px; }
+.bar-col {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end; gap: 5px; height: 100%;
+}
+.bar {
+  width: 100%; border-radius: 4px 4px 0 0;
+  background: var(--amber); opacity: 0.5; min-height: 3px;
+}
+.bar.today { opacity: 1; }
+.bar-lbl { font-size: 9px; color: var(--ink4); white-space: nowrap; }
+
+/* 成就条 */
+.achievement-card {
+  background: var(--amber-lt);
+  border: 1px solid var(--amber-bd);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 2px 12px rgba(192,112,48,0.08);
+}
+.ach-icon { font-size: 36px; flex-shrink: 0; }
+.ach-body { flex: 1; }
+.ach-main { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+.ach-sub  { font-size: 12px; color: var(--ink3); line-height: 1.5; }
+
+/* 相册概览 */
+.ov-list { display: flex; flex-direction: column; gap: 9px; }
+.ov-item {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--rsm);
+  padding: 14px 16px;
+  box-shadow: var(--sh-sm);
+  display: flex; align-items: center; gap: 12px;
+}
+.ov-emoji { font-size: 24px; flex-shrink: 0; }
+.ov-name { flex: 1; font-size: 15px; font-weight: 600; color: var(--ink); }
+.ov-stat { font-size: 12px; color: var(--ink3); text-align: right; line-height: 1.5; }
+
+
+/* ════════════════════════════════════════════════
+   设置抽屉
+   ════════════════════════════════════════════════ */
+#settings-overlay {
+  position: absolute; inset: 0; z-index: 500;
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.25s;
+}
+#settings-overlay.open { pointer-events: all; opacity: 1; }
+.ov-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(42,28,14,0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.settings-sheet {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  border-radius: 28px 28px 0 0;
+  max-height: 82vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -6px 40px rgba(42,28,14,0.14);
+  transform: translateY(100%);
+  transition: transform 0.36s cubic-bezier(0.32,0.72,0,1);
+}
+#settings-overlay.open .settings-sheet { transform: translateY(0); }
+.sheet-handle {
+  width: 42px; height: 4px;
+  background: var(--bd); border-radius: 2px;
+  margin: 13px auto 0; flex-shrink: 0;
+}
+.sheet-head {
+  display: flex; align-items: center;
+  padding: 10px 20px 8px; flex-shrink: 0;
+}
+.sheet-title {
+  flex: 1; font-family: var(--fd);
+  font-size: 24px; color: var(--ink); letter-spacing: 3px;
+}
+.sheet-x {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--bd); background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--ink3); cursor: pointer;
+  box-shadow: var(--sh-sm);
+}
+.sheet-x:active { transform: scale(0.88); }
+
+.stab-bar {
+  display: flex; overflow-x: auto; scrollbar-width: none;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--bd-soft); flex-shrink: 0;
+}
+.stab-bar::-webkit-scrollbar { display: none; }
+.stab {
+  padding: 10px 14px; font-size: 13px; font-weight: 600;
+  color: var(--ink3); cursor: pointer; white-space: nowrap;
+  border-bottom: 2.5px solid transparent; transition: all 0.15s;
+}
+.stab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+.sheet-body {
+  flex: 1; overflow-y: auto; scrollbar-width: none;
+  padding: 16px 20px calc(20px + env(safe-area-inset-bottom, 20px));
+}
+.sheet-body::-webkit-scrollbar { display: none; }
+
+.s-sec { margin-bottom: 22px; }
+.s-sec-ttl {
+  font-size: 10px; font-weight: 700; color: var(--ink3);
+  letter-spacing: 4px; text-transform: uppercase; margin-bottom: 8px;
+}
+.s-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--rxs);
+  margin-bottom: 7px;
+  box-shadow: var(--sh-sm);
+}
+.s-lbl { font-size: 14px; font-weight: 500; color: var(--ink); flex: 1; }
+.s-sub { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+.s-val { font-family: var(--fn); font-size: 20px; font-weight: 700; color: var(--amber); }
+
+/* 拨动开关 */
+.tog {
+  width: 48px; height: 28px; border-radius: 14px;
+  background: var(--ink4); position: relative;
+  cursor: pointer; transition: background 0.22s; flex-shrink: 0;
+}
+.tog.on { background: var(--amber); }
+.tog::after {
+  content: ''; position: absolute;
+  width: 22px; height: 22px; border-radius: 50%; background: white;
+  top: 3px; left: 3px;
+  transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.2);
+}
+.tog.on::after { transform: translateX(20px); }
+
+
+/* ════════════════════════════════════════════════
+   工具
+   ════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════
+   无障碍增强
+   ════════════════════════════════════════════════ */
+
+/* Focus 环：键盘导航可见 */
+:focus-visible {
+  outline: 3px solid var(--amber);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.btn-icon:focus-visible,
+.btn-back:focus-visible,
+.btn-nav:focus-visible { border-radius: 50%; }
+
+/* cursor:pointer 补全（非 button 元素） */
+.deck-card, .album-card, .opt { cursor: pointer; }
+
+/* prefers-reduced-motion：禁用所有过渡和动画 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[hidden] { display: none !important; }
+
+</style>
+</head>
+<body>
+
+<!-- ╔═══════════════════════════════════╗
+     ║           首  页                 ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-home" class="screen active">
+
+  <div class="page-topbar">
+    <div style="flex:1">
+      <div style="font-family:var(--fd);font-size:32px;color:var(--ink);letter-spacing:4px;line-height:1">忆海拾光</div>
+      <div style="font-size:11px;color:var(--ink3);letter-spacing:3px;margin-top:5px">记忆相册 · 温暖陪伴</div>
+    </div>
+    <button class="btn-icon" onclick="openSettings()" aria-label="设置">⚙️</button>
+    <button class="btn-icon" onclick="showScreen('screen-records')" aria-label="回忆记录">📊</button>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="scroll-body">
+
+    <!-- 今日问候 -->
+    <div class="greeting-card" style="padding-top:18px">
+      <div class="greeting-inner">
+        <div class="greeting-icon">☀️</div>
+        <div class="greeting-text">
+          <div class="greeting-date">2026年5月17日 · 周日</div>
+          <div class="greeting-msg">下午好，今天感觉怎么样？</div>
+          <div class="greeting-sub">家人在等你一起翻阅相册 💛</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 今日小成就 -->
+    <div class="achievement-row">
+      <div class="ach-item">
+        <div class="ach-num">17</div>
+        <div class="ach-lbl">今日认识</div>
+      </div>
+      <div class="ach-item">
+        <div class="ach-num">5</div>
+        <div class="ach-lbl">连续天数</div>
+      </div>
+      <div class="ach-item">
+        <div class="ach-num">83%</div>
+        <div class="ach-lbl">记忆率</div>
+      </div>
+    </div>
+
+    <!-- 相册列表 -->
+    <div style="width:100%;max-width:var(--cmax);margin:0 auto;padding:0 var(--pad)">
+      <div class="section-label">我的相册</div>
+    </div>
+
+    <div class="album-list">
+
+      <div class="album-card" onclick="">
+        <div class="album-thumb-row">
+          <div class="album-thumb">🍎</div>
+          <div class="album-thumb">🥕</div>
+          <div class="album-thumb">🥦</div>
+          <div class="album-thumb">🍊</div>
+          <div class="album-thumb">🍇</div>
+        </div>
+        <div class="album-info">
+          <div class="album-name">蔬菜水果相册</div>
+          <div class="album-meta">
+            <span>共 48 张</span>
+            <span class="meta-sep">·</span>
+            <span>上次翻阅：今天</span>
+            <span class="badge-waiting">12 张待翻</span>
+          </div>
+          <div class="album-actions">
+            <button class="album-btn-browse" onclick="showScreen('screen-browse')">翻阅相册</button>
+            <button class="album-btn-quiz" onclick="showScreen('screen-quiz')">练一练</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="album-card" onclick="">
+        <div class="album-thumb-row">
+          <div class="album-thumb">🏠</div>
+          <div class="album-thumb">🪑</div>
+          <div class="album-thumb">🛁</div>
+          <div class="album-thumb">🪞</div>
+          <div class="album-thumb">🛏️</div>
+        </div>
+        <div class="album-info">
+          <div class="album-name">日常生活用品</div>
+          <div class="album-meta">
+            <span>共 32 张</span>
+            <span class="meta-sep">·</span>
+            <span>上次翻阅：昨天</span>
+            <span class="badge-waiting">7 张待翻</span>
+          </div>
+          <div class="album-actions">
+            <button class="album-btn-browse" onclick="showScreen('screen-browse')">翻阅相册</button>
+            <button class="album-btn-quiz" onclick="showScreen('screen-quiz')">练一练</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="album-card" onclick="">
+        <div class="album-thumb-row">
+          <div class="album-thumb">👴</div>
+          <div class="album-thumb">👵</div>
+          <div class="album-thumb">👨</div>
+          <div class="album-thumb">👩</div>
+          <div class="album-thumb">👦</div>
+        </div>
+        <div class="album-info">
+          <div class="album-name">家庭成员称谓</div>
+          <div class="album-meta">
+            <span>共 20 张</span>
+            <span class="meta-sep">·</span>
+            <span>上次翻阅：今天</span>
+            <span class="badge-ok">✓ 今日已完成</span>
+          </div>
+          <div class="album-actions">
+            <button class="album-btn-browse" onclick="showScreen('screen-browse')">翻阅相册</button>
+            <button class="album-btn-quiz" onclick="showScreen('screen-quiz')">练一练</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /album-list -->
+
+    <div style="height:calc(72px + env(safe-area-inset-bottom,20px))"></div>
+  </div><!-- /scroll-body -->
+
+  <div class="cloud-bar">
+    <div class="cloud-dot"></div>
+    <span>已同步 · zyhacl@gmail.com</span>
+    <span style="margin-left:auto;color:var(--ink5)">2 分钟前</span>
+  </div>
+
+</div><!-- /screen-home -->
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║       浏览屏（主屏）             ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-browse" class="screen">
+
+  <div class="browse-header">
+    <div class="browse-topbar">
+      <button class="btn-back" onclick="showScreen('screen-home')" aria-label="返回首页">‹</button>
+      <div class="browse-title">
+        <div class="browse-album-name">蔬菜水果相册</div>
+        <div class="browse-progress-txt" id="browse-progress-txt">第 3 张 / 共 20 张</div>
+      </div>
+      <button class="btn-icon" onclick="openCardDetail()" style="font-size:15px" aria-label="查看卡片详情">ℹ️</button>
+    </div>
+    <div class="browse-prog-track">
+      <div class="browse-prog-fill" id="browse-prog-fill" style="width:15%"></div>
+    </div>
+  </div>
+
+  <div class="browse-body">
+    <div class="photo-wrap">
+      <div class="photo-frame" id="photo-frame">
+        <div class="photo-img" id="photo-img">🍎</div>
+        <div class="photo-caption">
+          <div class="photo-name" id="photo-name">苹 果</div>
+          <div class="photo-pinyin" id="photo-pinyin">píng guǒ</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="browse-controls">
+    <div class="browse-nav-row">
+      <button class="btn-nav" id="browse-prev" onclick="browseNav(-1)" aria-label="上一张">‹</button>
+      <button class="btn-recognize" id="btn-recognize" onclick="doRecognize()">
+        <span id="recognize-icon">❤️</span>
+        <span id="recognize-txt">认识！</span>
+      </button>
+      <button class="btn-nav" id="browse-next" onclick="browseNav(1)" aria-label="下一张">›</button>
+    </div>
+    <div class="browse-quiz-hint">
+      <div class="quiz-hint-line"></div>
+      <button class="quiz-hint-btn" onclick="showScreen('screen-quiz')">✏️ 练一练这本相册</button>
+      <div class="quiz-hint-line"></div>
+    </div>
+  </div>
+
+</div><!-- /screen-browse -->
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║       练习屏（辅屏）             ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-quiz" class="screen">
+
+  <div class="quiz-header">
+    <div class="quiz-topbar">
+      <button class="btn-back" onclick="showScreen('screen-home')" aria-label="返回首页">‹</button>
+      <div class="srs-row">
+        <span class="srs-b srs-new">5</span>
+        <span class="srs-b srs-learn">3</span>
+        <span class="srs-b srs-rev">9</span>
+      </div>
+      <div style="margin-left:auto;font-size:12px;color:var(--ink3)">蔬菜水果</div>
+    </div>
+    <div class="quiz-prog-track">
+      <div class="quiz-prog-fill" id="quiz-prog" style="width:30%"></div>
+    </div>
+  </div>
+
+  <div class="quiz-body">
+    <div class="quiz-card" id="quiz-card">🍎</div>
+    <div class="quiz-question" id="quiz-question">这是什么？</div>
+
+    <!-- 选项区：答题后折叠 -->
+    <div class="opts" id="opts-zone">
+      <div class="opt" onclick="pickOpt(this, true)">苹 果</div>
+      <div class="opt" onclick="pickOpt(this, false)">西 瓜</div>
+      <div class="opt" onclick="pickOpt(this, false)">香 蕉</div>
+      <div class="opt" onclick="pickOpt(this, false)">橙 子</div>
+    </div>
+
+    <!-- 答案区：答题后展开 -->
+    <div class="answer-zone" id="answer-zone">
+      <div class="encouragement" id="encourage"></div>
+      <div class="answer-panel" id="answer-panel">
+        <div class="answer-word" id="ans-word">苹 果</div>
+        <div class="answer-pinyin" id="ans-pinyin">píng guǒ</div>
+        <div class="answer-divider"></div>
+        <div class="answer-desc" id="ans-desc">蔷薇科苹果属落叶乔木，果实圆形，味甜中带酸，富含膳食纤维与维生素 C。</div>
+      </div>
+      <button class="next-btn" onclick="quizNext()">继 续 →</button>
+    </div>
+  </div>
+
+</div><!-- /screen-quiz -->
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           完成屏                 ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-finish" class="screen">
+  <div class="finish-body">
+    <div class="finish-anim">🌟</div>
+    <div class="finish-title">太棒了！</div>
+    <div class="finish-msg">今天的练习完成了</div>
+    <div class="finish-family-msg">家人都为您感到骄傲！💛</div>
+    <div class="accent-line"></div>
+    <div class="finish-grid">
+      <div class="fc good">
+        <div class="fc-num">17</div>
+        <div class="fc-lbl">记起了</div>
+      </div>
+      <div class="fc neu">
+        <div class="fc-num">3</div>
+        <div class="fc-lbl">还在想</div>
+      </div>
+      <div class="fc acc">
+        <div class="fc-num">85%</div>
+        <div class="fc-lbl">记忆率</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;width:100%">
+      <button class="btn-primary" onclick="showScreen('screen-browse')">继续翻相册</button>
+      <button class="btn-outline" style="width:100%;text-align:center" onclick="showScreen('screen-home')">回到首页</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║           记录屏                 ║
+     ╚═══════════════════════════════════╝ -->
+<div id="screen-records" class="screen">
+
+  <div class="page-topbar">
+    <button class="btn-back" onclick="showScreen('screen-home')" aria-label="返回首页">‹</button>
+    <div class="page-title">回忆记录</div>
+  </div>
+
+  <div style="width:100%;max-width:var(--cmax);margin:0 auto;flex-shrink:0">
+    <div class="tab-bar" id="rec-tabs">
+      <div class="tab active" onclick="activateTab(this,'rec-tabs')">今日</div>
+      <div class="tab" onclick="activateTab(this,'rec-tabs')">历史</div>
+      <div class="tab" onclick="activateTab(this,'rec-tabs')">相册</div>
+    </div>
+  </div>
+
+  <div class="rec-body">
+    <div class="rec-inner">
+
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="kpi-num" style="color:var(--jade)">85%</div>
+          <div class="kpi-lbl">记忆率</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-num" style="color:var(--amber)">20</div>
+          <div class="kpi-lbl">已翻阅</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-num">5🔥</div>
+          <div class="kpi-lbl">连续天</div>
+        </div>
+      </div>
+
+      <div class="achievement-card">
+        <div class="ach-icon">🏆</div>
+        <div class="ach-body">
+          <div class="ach-main">连续 5 天坚持翻阅</div>
+          <div class="ach-sub">您的记忆力越来越好了！<br>家人都为您感到高兴 💛</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-ttl">近七日翻阅数量</div>
+        <div class="bars">
+          <div class="bar-col"><div class="bar" style="height:44%"></div><div class="bar-lbl">周一</div></div>
+          <div class="bar-col"><div class="bar" style="height:70%"></div><div class="bar-lbl">周二</div></div>
+          <div class="bar-col"><div class="bar" style="height:52%"></div><div class="bar-lbl">周三</div></div>
+          <div class="bar-col"><div class="bar" style="height:88%"></div><div class="bar-lbl">周四</div></div>
+          <div class="bar-col"><div class="bar" style="height:30%"></div><div class="bar-lbl">周五</div></div>
+          <div class="bar-col"><div class="bar" style="height:76%"></div><div class="bar-lbl">周六</div></div>
+          <div class="bar-col"><div class="bar today" style="height:58%"></div><div class="bar-lbl">今天</div></div>
+        </div>
+      </div>
+
+      <div class="section-label">相册进展</div>
+      <div class="ov-list">
+        <div class="ov-item">
+          <div class="ov-emoji">🍎</div>
+          <div class="ov-name">蔬菜水果相册</div>
+          <div class="ov-stat">记起 17/20<br><span style="color:var(--jade)">85% ✓</span></div>
+        </div>
+        <div class="ov-item">
+          <div class="ov-emoji">🏠</div>
+          <div class="ov-name">日常生活用品</div>
+          <div class="ov-stat">记起 12/15<br><span style="color:var(--amber)">80%</span></div>
+        </div>
+        <div class="ov-item">
+          <div class="ov-emoji">👨‍👩‍👧</div>
+          <div class="ov-name">家庭成员称谓</div>
+          <div class="ov-stat">记起 10/10<br><span style="color:var(--jade)">100% 🌟</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /screen-records -->
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║         设置抽屉                 ║
+     ╚═══════════════════════════════════╝ -->
+<div id="settings-overlay">
+  <div class="ov-backdrop" onclick="closeSettings()"></div>
+  <div class="settings-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">设 置</div>
+      <div class="sheet-x" onclick="closeSettings()">✕</div>
+    </div>
+    <div class="stab-bar">
+      <div class="stab active" onclick="activateTab(this,'stab-bar-0')">通用</div>
+      <div class="stab" onclick="activateTab(this,'stab-bar-0')">语音</div>
+      <div class="stab" onclick="activateTab(this,'stab-bar-0')">文字</div>
+      <div class="stab" onclick="activateTab(this,'stab-bar-0')">SRS</div>
+      <div class="stab" onclick="activateTab(this,'stab-bar-0')">云端</div>
+    </div>
+    <div class="sheet-body">
+      <div class="s-sec">
+        <div class="s-sec-ttl">显示</div>
+        <div class="s-row">
+          <div><div class="s-lbl">深色模式</div><div class="s-sub">夜间使用更舒适</div></div>
+          <div class="tog" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="s-row">
+          <div><div class="s-lbl">震动反馈</div><div class="s-sub">答题时振动提示</div></div>
+          <div class="tog on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="s-row">
+          <div><div class="s-lbl">语音朗读</div><div class="s-sub">翻阅时自动朗读名称</div></div>
+          <div class="tog on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+      <div class="s-sec">
+        <div class="s-sec-ttl">练习</div>
+        <div class="s-row">
+          <div><div class="s-lbl">自动翻页</div><div class="s-sub">正确后 1.5 秒自动继续</div></div>
+          <div class="tog on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="s-row">
+          <div class="s-lbl">每日新卡上限</div>
+          <div class="s-val">20</div>
+        </div>
+      </div>
+      <div class="s-sec">
+        <div class="s-sec-ttl">帐户</div>
+        <div class="s-row">
+          <div>
+            <div class="s-lbl">zyhacl@gmail.com</div>
+            <div class="s-sub">已连接 · 数据安全同步中</div>
+          </div>
+          <div style="font-size:12px;color:var(--jade);font-weight:600">在线</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║       卡片详情（浏览中）         ║
+     ╚═══════════════════════════════════╝ -->
+<div id="card-detail-ov" style="position:absolute;inset:0;z-index:400;pointer-events:none;opacity:0;transition:opacity 0.25s">
+  <div style="position:absolute;inset:0;background:rgba(42,28,14,0.3);backdrop-filter:blur(3px)"
+       onclick="closeCardDetail()"></div>
+  <div id="cd-sheet" style="position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:28px 28px 0 0;
+       max-height:65vh;display:flex;flex-direction:column;box-shadow:0 -6px 40px rgba(42,28,14,0.12);
+       transform:translateY(100%);transition:transform 0.36s cubic-bezier(0.32,0.72,0,1)">
+    <div class="sheet-handle"></div>
+    <div style="display:flex;align-items:center;padding:14px 20px 10px;gap:14px">
+      <div style="font-size:44px" id="cd-emoji">🍎</div>
+      <div style="flex:1">
+        <div style="font-size:26px;font-weight:700;color:var(--ink);letter-spacing:4px" id="cd-word">苹 果</div>
+        <div style="font-size:13px;color:var(--ink3);letter-spacing:3px;margin-top:3px" id="cd-pinyin">píng guǒ</div>
+      </div>
+      <div class="sheet-x" onclick="closeCardDetail()">✕</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;scrollbar-width:none;padding:0 20px calc(20px + env(safe-area-inset-bottom,20px))">
+      <div style="height:1px;background:var(--bd-soft);margin-bottom:12px"></div>
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd-soft);font-size:14px">
+          <span style="color:var(--ink3);width:72px;flex-shrink:0">记忆状态</span>
+          <span style="color:var(--ink);font-weight:500">复习中 · 间隔 7 天</span>
+        </div>
+        <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd-soft);font-size:14px">
+          <span style="color:var(--ink3);width:72px;flex-shrink:0">下次翻阅</span>
+          <span style="color:var(--ink);font-weight:500">明天</span>
+        </div>
+        <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd-soft);font-size:14px">
+          <span style="color:var(--ink3);width:72px;flex-shrink:0">认识次数</span>
+          <span style="color:var(--jade);font-weight:700;font-family:var(--fn);font-size:18px">20</span>
+        </div>
+        <div style="display:flex;gap:12px;padding:12px 0;font-size:14px">
+          <span style="color:var(--ink3);width:72px;flex-shrink:0">所属相册</span>
+          <span style="color:var(--ink);font-weight:500">蔬菜水果相册</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ╔═══════════════════════════════════╗
+     ║          演示导航条              ║
+     ╚═══════════════════════════════════╝ -->
+<div id="demo-nav">
+  <button class="d-btn on"  onclick="nav('screen-home',this)">首页</button>
+  <button class="d-btn" onclick="nav('screen-browse',this)">翻阅</button>
+  <button class="d-btn" onclick="nav('screen-quiz',this)">练习</button>
+  <button class="d-btn" onclick="nav('screen-finish',this)">完成</button>
+  <button class="d-btn" onclick="nav('screen-records',this)">记录</button>
+  <button class="d-btn" onclick="openSettings();highlightBtn(this)">设置</button>
+</div>
+
+
+<script>
+/* ─── 屏幕切换 ─── */
+const SCREEN_NAV = {
+  'screen-home':    0,
+  'screen-browse':  1,
+  'screen-quiz':    2,
+  'screen-finish':  3,
+  'screen-records': 4,
+};
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const btns = document.querySelectorAll('.d-btn');
+  btns.forEach((b, i) => b.classList.toggle('on', i === SCREEN_NAV[id]));
+}
+function nav(id, btn) { showScreen(id); }
+function highlightBtn(btn) {
+  document.querySelectorAll('.d-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+/* ─── 设置 ─── */
+function openSettings() {
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+  // 恢复导航高亮
+  const active = document.querySelector('.screen.active');
+  if (active) {
+    const btns = document.querySelectorAll('.d-btn');
+    btns.forEach((b, i) => b.classList.toggle('on', i === SCREEN_NAV[active.id]));
+  }
+}
+
+/* ─── 卡片详情 ─── */
+function openCardDetail() {
+  const ov = document.getElementById('card-detail-ov');
+  ov.style.pointerEvents = 'all'; ov.style.opacity = '1';
+  document.getElementById('cd-sheet').style.transform = 'translateY(0)';
+}
+function closeCardDetail() {
+  const ov = document.getElementById('card-detail-ov');
+  ov.style.opacity = '0'; ov.style.pointerEvents = 'none';
+  document.getElementById('cd-sheet').style.transform = 'translateY(100%)';
+}
+
+/* ─── Tab 激活 ─── */
+function activateTab(tab, groupClass) {
+  const parent = tab.closest('.tab-bar, .stab-bar');
+  if (parent) {
+    parent.querySelectorAll('.tab, .stab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  }
+}
+
+/* ─── 浏览屏数据 ─── */
+const BROWSE_CARDS = [
+  { emoji:'🍎', name:'苹 果', pinyin:'píng guǒ' },
+  { emoji:'🥕', name:'胡萝卜', pinyin:'hú luó bo' },
+  { emoji:'🥦', name:'西兰花', pinyin:'xī lán huā' },
+  { emoji:'🍊', name:'橙 子', pinyin:'chéng zǐ' },
+  { emoji:'🍇', name:'葡 萄', pinyin:'pú tao' },
+  { emoji:'🍓', name:'草 莓', pinyin:'cǎo méi' },
+  { emoji:'🌽', name:'玉 米', pinyin:'yù mǐ' },
+  { emoji:'🥬', name:'青 菜', pinyin:'qīng cài' },
+];
+let browseIdx = 0;
+let recognized = new Set();
+
+function browseRender() {
+  const card = BROWSE_CARDS[browseIdx];
+  const frame = document.getElementById('photo-frame');
+  frame.style.opacity = '0';
+  frame.style.transform = 'scale(0.92)';
+  setTimeout(() => {
+    document.getElementById('photo-img').textContent = card.emoji;
+    document.getElementById('photo-name').textContent = card.name;
+    document.getElementById('photo-pinyin').textContent = card.pinyin;
+    document.getElementById('cd-emoji').textContent = card.emoji;
+    document.getElementById('cd-word').textContent = card.name;
+    document.getElementById('cd-pinyin').textContent = card.pinyin;
+
+    const pct = Math.round(((browseIdx + 1) / BROWSE_CARDS.length) * 100);
+    document.getElementById('browse-prog-fill').style.width = pct + '%';
+    document.getElementById('browse-progress-txt').textContent =
+      '第 ' + (browseIdx + 1) + ' 张 / 共 ' + BROWSE_CARDS.length + ' 张';
+
+    // 认识按钮状态
+    const recBtn = document.getElementById('btn-recognize');
+    const icon = document.getElementById('recognize-icon');
+    const txt = document.getElementById('recognize-txt');
+    if (recognized.has(browseIdx)) {
+      recBtn.classList.add('recognized');
+      icon.textContent = '✓'; txt.textContent = '已认识';
+    } else {
+      recBtn.classList.remove('recognized');
+      icon.textContent = '❤️'; txt.textContent = '认识！';
+    }
+
+    document.getElementById('browse-prev').disabled = browseIdx === 0;
+    document.getElementById('browse-next').disabled = browseIdx === BROWSE_CARDS.length - 1;
+
+    frame.style.opacity = '1';
+    frame.style.transform = 'scale(1)';
+  }, 180);
+}
+
+// 初始化过渡
+document.getElementById('photo-frame').style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+
+function browseNav(dir) {
+  const next = browseIdx + dir;
+  if (next < 0 || next >= BROWSE_CARDS.length) return;
+  browseIdx = next;
+  browseRender();
+}
+
+function doRecognize() {
+  if (recognized.has(browseIdx)) {
+    recognized.delete(browseIdx);
+  } else {
+    recognized.add(browseIdx);
+    // 短暂动画反馈
+    const btn = document.getElementById('btn-recognize');
+    btn.style.transform = 'scale(1.08)';
+    setTimeout(() => { btn.style.transform = ''; }, 200);
+  }
+  browseRender();
+  // 自动翻到下一张（如果是新认识）
+  if (recognized.has(browseIdx) && browseIdx < BROWSE_CARDS.length - 1) {
+    setTimeout(() => browseNav(1), 600);
+  }
+}
+
+browseRender();
+
+/* ─── 练习屏数据 ─── */
+const QUIZ_CARDS = [
+  { emoji:'🍎', word:'苹 果', pinyin:'píng guǒ', opts:['苹 果','西 瓜','香 蕉','橙 子'], ci:0, desc:'蔷薇科苹果属落叶乔木，味甜带酸，营养丰富。' },
+  { emoji:'🥦', word:'西兰花', pinyin:'xī lán huā', opts:['白 菜','西兰花','菠 菜','花椰菜'], ci:1, desc:'十字花科蔬菜，富含维生素 C 和抗氧化物质。' },
+  { emoji:'🍇', word:'葡 萄', pinyin:'pú tao', opts:['蓝 莓','樱 桃','葡 萄','草 莓'], ci:2, desc:'葡萄科多年生落叶藤本植物，甘甜多汁。' },
+  { emoji:'🥕', word:'胡萝卜', pinyin:'hú luó bo', opts:['南 瓜','红 薯','胡萝卜','土 豆'], ci:2, desc:'伞形科二年生草本，富含 β-胡萝卜素。' },
+];
+let quizIdx = 0;
+let quizAnswered = false;
+
+function quizRender() {
+  quizAnswered = false;
+  const card = QUIZ_CARDS[quizIdx];
+
+  // 卡片换图动画
+  const qc = document.getElementById('quiz-card');
+  qc.style.opacity = '0'; qc.style.transform = 'scale(0.88)';
+  setTimeout(() => {
+    qc.textContent = card.emoji;
+    qc.style.opacity = '1'; qc.style.transform = 'scale(1)';
+  }, 170);
+
+  // 重置卡片尺寸
+  qc.classList.remove('compact');
+
+  // 填充答案内容（提前写入，展开时已就绪）
+  document.getElementById('ans-word').textContent = card.word;
+  document.getElementById('ans-pinyin').textContent = card.pinyin;
+  document.getElementById('ans-desc').textContent = card.desc;
+
+  // 重建选项
+  const optsZone = document.getElementById('opts-zone');
+  optsZone.innerHTML = '';
+  optsZone.classList.remove('collapsed');
+  card.opts.forEach((txt, i) => {
+    const d = document.createElement('div');
+    d.className = 'opt';
+    d.textContent = txt;
+    d.onclick = function() { pickOpt(this, i === card.ci); };
+    optsZone.appendChild(d);
+  });
+
+  // 收起答案区，恢复问题提示
+  document.getElementById('answer-zone').classList.remove('open');
+  document.getElementById('quiz-question').classList.remove('hidden');
+
+  const pct = Math.round((quizIdx / QUIZ_CARDS.length) * 100) + 10;
+  document.getElementById('quiz-prog').style.width = Math.min(pct, 90) + '%';
+}
+
+function pickOpt(opt, correct) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+
+  const card = QUIZ_CARDS[quizIdx];
+
+  // 标色
+  document.querySelectorAll('.opt').forEach((o, i) => {
+    if (o === opt)          o.classList.add(correct ? 'correct' : 'wrong');
+    else if (i === card.ci) o.classList.add('correct');
+    else                    o.classList.add('dim');
+  });
+
+  // 写鼓励语
+  const enc = document.getElementById('encourage');
+  if (correct) {
+    enc.className = 'encouragement';
+    enc.textContent = '✨ 认识！太棒了！';
+  } else {
+    enc.className = 'encouragement miss';
+    enc.textContent = '没关系，慢慢想… 是 ' + card.word;
+  }
+
+  // 短暂停留后：折叠选项 → 压缩卡片 → 展开答案区
+  setTimeout(() => {
+    document.getElementById('opts-zone').classList.add('collapsed');
+    document.getElementById('quiz-card').classList.add('compact');
+    document.getElementById('quiz-question').classList.add('hidden');
+    document.getElementById('answer-zone').classList.add('open');
+  }, 320);
+}
+
+function quizNext() {
+  quizIdx = (quizIdx + 1) % QUIZ_CARDS.length;
+  if (Math.random() < 0.3) { showScreen('screen-finish'); return; }
+  quizRender();
+}
+
+quizRender();
+</script>
+</body>
+</html>

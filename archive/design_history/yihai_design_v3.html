@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="忆海拾光">
+<title>忆海拾光 · 设计稿 v3 · 老人版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════════════════
+   设计令牌 — 朱砂·温故 v3
+   主色：朱砂红  辅色：翡翠绿  字体：Noto Serif SC（含数字）
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg:    #f7f3ec;
+  --bg2:   #ede8de;
+  --surf:  #fefcf7;
+  --surf2: #f2ede2;
+
+  --ink:   #1a1208;
+  --ink2:  #5a4832;
+  --ink3:  #7a6048;
+  --ink4:  #c4b09a;
+
+  --red:    #c23b3b;
+  --red-dk: #9e2e2e;
+  --red-lt: #fdf1ef;
+  --red-bd: rgba(194,59,59,0.22);
+  --red-sh: 0 6px 22px rgba(194,59,59,0.32);
+
+  --jade:    #2a7a58;
+  --jade-dk: #1e5c40;
+  --jade-lt: #eaf5f0;
+
+  --amber:    #b07820;
+  --amber-lt: #fdf6e3;
+
+  --bd:      rgba(90,72,50,0.14);
+  --bd-soft: rgba(90,72,50,0.07);
+  --sh:    0 2px 24px rgba(26,18,8,0.07), 0 1px 4px rgba(26,18,8,0.04);
+  --sh-sm: 0 1px 8px rgba(26,18,8,0.05);
+
+  --r:   20px;
+  --rsm: 14px;
+  --rxs:  8px;
+
+  --fd: 'Ma Shan Zheng', 'Noto Serif SC', serif;
+  --fs: 'Noto Serif SC', 'PingFang SC', serif;
+
+  --cmax: 520px;
+  --pad:  20px;
+  --safe-top:    env(safe-area-inset-top, 44px);
+  --safe-bottom: env(safe-area-inset-bottom, 34px);
+}
+
+@media (min-width: 600px) {
+  :root { --pad: 28px; --cmax: 100%; }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none; user-select: none;
+}
+input, textarea { -webkit-user-select: text; user-select: text; }
+img { -webkit-user-drag: none; pointer-events: none; }
+
+html { height: -webkit-fill-available; background: var(--bg); }
+html, body { overflow: hidden; }
+body {
+  margin: 0; width: 100%;
+  height: 100dvh; height: -webkit-fill-available;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--fs);
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+/* 纸纹叠层 */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.030'/%3E%3C/svg%3E");
+  background-size: 300px;
+  pointer-events: none; z-index: 9000;
+}
+
+/* ═══ 屏幕切换 ═══ */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  opacity: 0; pointer-events: none;
+  transform: translateX(24px);
+  transition: opacity 0.28s cubic-bezier(0.4,0,0.2,1),
+              transform 0.28s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+.screen.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+
+/* ═══ 演示导航 ═══ */
+#demo-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: var(--cmax);
+  background: rgba(20,14,8,0.90);
+  backdrop-filter: blur(14px) saturate(1.5);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  z-index: 9999; display: flex;
+  padding: 9px 10px calc(9px + env(safe-area-inset-bottom, 14px));
+  gap: 5px;
+}
+.d-btn {
+  flex: 1; padding: 8px 4px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px;
+  color: rgba(255,255,255,0.5);
+  font-family: var(--fs); font-size: 12px;
+  cursor: pointer; text-align: center; transition: all 0.15s;
+}
+.d-btn:active { transform: scale(0.92); }
+.d-btn.on { background: var(--red); border-color: var(--red); color: white; font-weight: 700; }
+
+/* ═══ 通用组件 ═══ */
+.btn-back {
+  width: 52px; height: 52px;
+  border: 1.5px solid var(--bd); border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; color: var(--ink2);
+  cursor: pointer; box-shadow: var(--sh-sm);
+  transition: all 0.15s; flex-shrink: 0;
+}
+.btn-back:active { transform: scale(0.88); }
+
+.btn-icon {
+  width: 52px; height: 52px;
+  border: 1px solid var(--bd); border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; color: var(--ink2);
+  box-shadow: var(--sh-sm); transition: all 0.15s; flex-shrink: 0;
+}
+.btn-icon:active { transform: scale(0.88); }
+
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--bd) 15%, var(--bd) 85%, transparent);
+  margin: 0 var(--pad); flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   首页 — 老人模式：一本当前相册 + 两个大按钮
+   ═══════════════════════════════════════════════ */
+.home-topbar {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; align-items: center;
+  padding: calc(var(--safe-top) + 10px) var(--pad) 12px;
+}
+.home-logo {
+  flex: 1;
+  font-family: var(--fd);
+  font-size: 36px; color: var(--ink);
+  letter-spacing: 3px; line-height: 1;
+}
+.home-stamp {
+  width: 46px; height: 46px;
+  border: 2px solid var(--red); border-radius: 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--red); cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.home-stamp:active { transform: scale(0.9); }
+
+.home-greeting {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 0 var(--pad) 16px;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.greet-icon { font-size: 30px; flex-shrink: 0; margin-top: 2px; }
+.greet-main { font-size: 19px; font-weight: 500; color: var(--ink); letter-spacing: 0.5px; line-height: 1.4; }
+.greet-date { font-size: 14px; color: var(--ink3); margin-top: 3px; letter-spacing: 1px; }
+
+.home-scroll {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  padding-bottom: calc(68px + var(--safe-bottom));
+}
+.home-scroll::-webkit-scrollbar { display: none; }
+
+/* 当前相册大卡 */
+.featured-wrap {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 0 var(--pad) 20px;
+}
+.featured-card {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: var(--sh);
+  animation: slideUpIn 0.35s ease both;
+}
+@keyframes slideUpIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.thumb-strip {
+  display: flex; height: 84px;
+  background: var(--bg2);
+}
+.thumb-cell {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  border-right: 1px solid var(--bd-soft);
+}
+.thumb-cell:last-child { border-right: none; }
+.featured-body { padding: 18px 20px 22px; }
+.featured-name {
+  font-size: 24px; font-weight: 700; color: var(--ink);
+  letter-spacing: 1px; margin-bottom: 6px;
+}
+.featured-status {
+  font-size: 16px; color: var(--ink3);
+  margin-bottom: 22px; line-height: 1.5;
+}
+.featured-status.done { color: var(--jade); font-weight: 600; }
+.featured-actions { display: flex; gap: 12px; }
+
+.btn-browse-big {
+  flex: 3; padding: 22px 12px;
+  background: var(--red); color: white; border: none;
+  border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 22px; font-weight: 700;
+  cursor: pointer; letter-spacing: 4px;
+  box-shadow: var(--red-sh); transition: all 0.18s;
+}
+.btn-browse-big:active { transform: scale(0.97); background: var(--red-dk); box-shadow: none; }
+
+.btn-quiz-sm {
+  flex: 2; padding: 22px 12px;
+  background: var(--surf); color: var(--ink2);
+  border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 18px; font-weight: 600;
+  cursor: pointer; letter-spacing: 2px; transition: all 0.18s;
+}
+.btn-quiz-sm:active { transform: scale(0.97); background: var(--surf2); }
+
+/* 其他相册 */
+.other-wrap {
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 0 var(--pad);
+}
+.section-lbl {
+  font-size: 13px; font-weight: 700; color: var(--ink3);
+  letter-spacing: 3px; margin-bottom: 10px;
+}
+.other-list { display: flex; flex-direction: column; gap: 10px; }
+.other-card {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft); border-radius: var(--rsm);
+  padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; transition: all 0.15s; box-shadow: var(--sh-sm);
+  animation: slideUpIn 0.38s ease both;
+}
+.other-card:nth-child(1) { animation-delay: 0.07s; }
+.other-card:nth-child(2) { animation-delay: 0.14s; }
+.other-card:active { transform: scale(0.984); }
+.other-thumbs { display: flex; gap: 4px; flex-shrink: 0; }
+.other-info { flex: 1; }
+.other-name { font-size: 19px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+.other-meta { font-size: 14px; color: var(--ink3); }
+.other-done { font-size: 14px; font-weight: 600; color: var(--jade); }
+.other-arrow { font-size: 22px; color: var(--ink4); font-family: var(--fs); }
+
+.caregiver-row {
+  width: 100%; max-width: var(--cmax); margin: 18px auto 0;
+  padding: 0 var(--pad); text-align: center;
+}
+.caregiver-btn {
+  background: none; border: none;
+  color: var(--ink4); font-family: var(--fs);
+  font-size: 13px; letter-spacing: 2px;
+  cursor: pointer; padding: 10px 20px;
+}
+
+/* ═══════════════════════════════════════════════
+   浏览屏 — 宝丽来相册（老人友好：大字，大按钮）
+   ═══════════════════════════════════════════════ */
+.browse-header { flex-shrink: 0; }
+.browse-topbar {
+  padding: calc(var(--safe-top) + 6px) var(--pad) 12px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; align-items: center; gap: 12px;
+}
+.browse-title { flex: 1; }
+.browse-album-name { font-size: 18px; font-weight: 600; color: var(--ink); }
+.browse-progress-txt {
+  font-size: 15px; color: var(--ink3); margin-top: 2px;
+  font-weight: 500;
+}
+.browse-prog-track {
+  height: 3px; background: var(--bd-soft);
+  margin: 0 var(--pad); border-radius: 2px; overflow: hidden; flex-shrink: 0;
+}
+.browse-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), #e05555);
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.browse-body {
+  flex: 1; overflow: hidden;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding: 4px var(--pad) 0;
+}
+.photo-wrap { width: 100%; flex-shrink: 0; }
+
+/* 宝丽来相框 */
+.photo-frame {
+  width: 100%;
+  background: #fffefb;
+  padding: 8px 8px 44px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08),
+              0 6px 24px rgba(0,0,0,0.11),
+              0 18px 52px rgba(0,0,0,0.07);
+  border: 1px solid rgba(200,170,120,0.2);
+  position: relative;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+.photo-img {
+  aspect-ratio: 1; width: 100%;
+  background: var(--bg2); border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(120px, 42vw, 210px);
+  overflow: hidden; position: relative;
+}
+.photo-img::after {
+  content: ''; position: absolute; inset: 0; border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06), inset 0 2px 8px rgba(0,0,0,0.04);
+  pointer-events: none;
+}
+.photo-caption {
+  position: absolute; left: 8px; right: 8px; bottom: 0;
+  height: 44px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+/* 老人友好：相片名字 26px（v2 是 22px）*/
+.photo-name {
+  font-family: var(--fd);
+  font-size: 26px; color: var(--ink);
+  letter-spacing: 5px; line-height: 1; text-align: center;
+}
+.photo-pinyin {
+  font-size: 13px; color: var(--ink3);
+  letter-spacing: 4px; margin-top: 2px; text-align: center;
+}
+
+.browse-controls {
+  flex-shrink: 0;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  padding: 10px var(--pad) calc(6px + var(--safe-bottom));
+}
+.browse-nav-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.btn-nav {
+  width: 56px; height: 56px;
+  border: 1.5px solid var(--bd); border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; color: var(--ink2);
+  cursor: pointer; box-shadow: var(--sh-sm);
+  transition: all 0.15s; flex-shrink: 0;
+}
+.btn-nav:active { transform: scale(0.88); }
+.btn-nav:disabled { opacity: 0.3; pointer-events: none; }
+
+.btn-recognize {
+  flex: 1; height: 64px;
+  background: var(--jade); color: white; border: none;
+  border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 20px; font-weight: 700;
+  cursor: pointer; letter-spacing: 2px;
+  box-shadow: 0 5px 22px rgba(42,122,88,0.32);
+  transition: all 0.18s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-recognize:active { transform: scale(0.97); background: var(--jade-dk); }
+.btn-recognize.recognized { background: var(--jade-dk); box-shadow: none; }
+
+/* ═══════════════════════════════════════════════
+   练习屏 — 全宽图像 + 2×2 大选项 + 温暖反馈
+   ═══════════════════════════════════════════════ */
+.quiz-header { flex-shrink: 0; }
+.quiz-topbar {
+  padding: calc(var(--safe-top) + 6px) var(--pad) 12px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+  display: flex; align-items: center; gap: 12px;
+}
+.quiz-counter {
+  font-family: var(--fs);
+  font-size: 18px; font-weight: 700; color: var(--ink2);
+}
+.quiz-deck-label {
+  margin-left: auto;
+  font-size: 15px; color: var(--ink3);
+  max-width: 110px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.quiz-prog-track {
+  height: 4px; background: var(--bd-soft);
+  margin: 0 var(--pad); border-radius: 2px; overflow: hidden; flex-shrink: 0;
+}
+.quiz-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), #e05555);
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.quiz-body {
+  flex: 1; overflow: hidden;
+  padding: 8px var(--pad) calc(72px + env(safe-area-inset-bottom, 14px));
+  display: flex; flex-direction: column; gap: 10px;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+}
+
+/* 目标卡：min(全容器宽, 50vh) — 竖屏约占一半高度 */
+.quiz-card {
+  flex-shrink: 0; align-self: center;
+  width: min(100%, 50vh);
+  height: auto; aspect-ratio: 1;
+  background: var(--surf);
+  border: 1px solid var(--bd-soft); border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(150px, 53vw, 260px);
+  box-shadow: var(--sh);
+  position: relative; overflow: hidden;
+  transition: width 0.38s cubic-bezier(0.4,0,0.2,1),
+              font-size 0.38s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.18s;
+}
+.quiz-card.compact {
+  width: clamp(72px, 14vw, 92px);
+  font-size: clamp(30px, 8vw, 44px);
+}
+.quiz-card::after {
+  content: ''; position: absolute; inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(90,72,50,0.06);
+  border-radius: var(--r); pointer-events: none;
+}
+
+/* 老人友好：题目 22px（v2 是 13px）*/
+.quiz-question {
+  text-align: center;
+  font-size: 22px; font-weight: 500;
+  color: var(--ink2); letter-spacing: 2px;
+  flex-shrink: 0; transition: opacity 0.2s;
+}
+.quiz-question.hidden { opacity: 0; }
+
+/* 2×2 选项格 */
+.opts {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  overflow: hidden; max-height: 400px; opacity: 1;
+  transition: max-height 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease;
+}
+.opts.collapsed { max-height: 0; opacity: 0; pointer-events: none; }
+
+/* 老人友好：选项 22-28px，最小高度 60px */
+.opt {
+  background: var(--surf);
+  border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  padding: clamp(12px, 2.2vh, 16px) 10px;
+  font-family: var(--fs);
+  font-size: clamp(20px, 5vw, 28px);
+  font-weight: 600; color: var(--ink);
+  cursor: pointer; text-align: center;
+  transition: all 0.15s;
+  box-shadow: var(--sh-sm);
+  line-height: 1.25; min-height: 60px;
+  display: flex; align-items: center; justify-content: center;
+}
+.opt:active:not(.correct):not(.wrong):not(.dim) {
+  transform: scale(0.97); background: var(--surf2);
+}
+.opt.correct { background: var(--jade-lt); border-color: var(--jade); color: var(--jade); }
+.opt.wrong   { background: var(--red-lt);  border-color: var(--red);  color: var(--red); }
+.opt.dim     { opacity: 0.28; pointer-events: none; }
+
+/* 答案区：折叠 → 展开 */
+.answer-zone {
+  display: flex; flex-direction: column; gap: 10px;
+  overflow: hidden; max-height: 0; opacity: 0;
+  transition: max-height 0.42s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
+}
+.answer-zone.open { max-height: 600px; opacity: 1; }
+
+/* 鼓励语：大字温暖文字，不用图标替代文字 */
+.encouragement {
+  text-align: center;
+  font-family: var(--fd);
+  font-size: 28px; letter-spacing: 3px; color: var(--jade);
+  flex-shrink: 0;
+  animation: popSoft 0.4s cubic-bezier(0.22,0.61,0.36,1);
+}
+.encouragement.miss {
+  color: var(--ink2); font-family: var(--fs);
+  font-size: 20px; letter-spacing: 1px;
+}
+@keyframes popSoft {
+  0%  { transform: scale(0.72); opacity: 0; }
+  68% { transform: scale(1.08); }
+  100%{ transform: scale(1); opacity: 1; }
+}
+
+/* 答案面板：正文 16px（老人友好）*/
+.answer-panel {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft); border-radius: var(--r);
+  padding: 16px 20px; box-shadow: var(--sh); flex-shrink: 0;
+}
+.answer-word {
+  font-size: clamp(28px, 7vw, 42px);
+  font-weight: 700; color: var(--ink);
+  letter-spacing: 5px; margin-bottom: 4px;
+}
+.answer-pinyin { font-size: 16px; color: var(--ink3); letter-spacing: 4px; margin-bottom: 12px; }
+.answer-divider { height: 1px; background: var(--bd-soft); margin-bottom: 10px; }
+.answer-desc { font-size: 16px; color: var(--ink2); line-height: 1.9; }
+
+.next-btn {
+  flex-shrink: 0;
+  background: var(--red); color: white; border: none;
+  border-radius: var(--rsm);
+  padding: clamp(16px, 2.8vh, 20px);
+  font-family: var(--fs); font-size: 20px; font-weight: 700;
+  cursor: pointer; letter-spacing: 3px;
+  box-shadow: var(--red-sh);
+  transition: transform 0.18s, background 0.18s;
+}
+.next-btn:active { transform: scale(0.97); background: var(--red-dk); }
+
+/* ═══════════════════════════════════════════════
+   完成屏
+   ═══════════════════════════════════════════════ */
+.finish-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: calc(var(--safe-top) + 20px) var(--pad) 20px;
+  text-align: center;
+  width: 100%; max-width: var(--cmax); margin: 0 auto;
+}
+.finish-anim {
+  font-size: 88px;
+  animation: popIn 0.65s cubic-bezier(0.22,0.61,0.36,1) both;
+  margin-bottom: 18px;
+}
+@keyframes popIn {
+  0%  { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+  65% { transform: scale(1.14) rotate(4deg); }
+  100%{ transform: scale(1) rotate(0); opacity: 1; }
+}
+.finish-title {
+  font-family: var(--fd);
+  font-size: 52px; letter-spacing: 8px; color: var(--ink);
+  margin-bottom: 10px;
+}
+.finish-family {
+  font-size: 20px; color: var(--amber); font-weight: 600;
+  letter-spacing: 1px; margin-bottom: 6px; line-height: 1.6;
+}
+.finish-sub { font-size: 16px; color: var(--ink3); letter-spacing: 2px; margin-bottom: 28px; }
+
+.red-line {
+  width: 64px; height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+  margin: 0 auto 28px;
+}
+
+.finish-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; width: 100%; margin-bottom: 32px;
+}
+.fc {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft); border-radius: var(--rsm);
+  padding: 18px 8px; box-shadow: var(--sh-sm);
+}
+/* 数字用 Noto Serif SC 700（无 Playfair Display）*/
+.fc-num {
+  font-family: var(--fs);
+  font-size: 38px; font-weight: 700;
+  line-height: 1; margin-bottom: 6px;
+}
+.fc-lbl { font-size: 13px; color: var(--ink3); font-weight: 600; letter-spacing: 2px; }
+.fc.good .fc-num { color: var(--jade); }
+.fc.bad  .fc-num { color: var(--red); }
+.fc.neu  .fc-num { color: var(--amber); }
+
+.btn-red-lg {
+  width: 100%; padding: 20px;
+  background: var(--red); color: white; border: none;
+  border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 20px; font-weight: 700;
+  cursor: pointer; letter-spacing: 4px;
+  box-shadow: var(--red-sh); transition: all 0.18s;
+}
+.btn-red-lg:active { transform: scale(0.97); background: var(--red-dk); }
+.btn-ghost {
+  width: 100%; padding: 18px;
+  background: none; color: var(--ink2);
+  border: 1.5px solid var(--bd); border-radius: var(--rsm);
+  font-family: var(--fs); font-size: 17px; font-weight: 600;
+  cursor: pointer; letter-spacing: 1px; transition: all 0.18s; margin-top: 12px;
+}
+.btn-ghost:active { background: var(--surf2); }
+
+/* ═══ 无障碍 ═══ */
+:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+.opt, .other-card, .featured-card { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+[hidden] { display: none !important; }
+
+</style>
+</head>
+<body>
+
+<!-- ╔═══════════════════╗
+     ║       首 页       ║
+     ╚═══════════════════╝ -->
+<div id="screen-home" class="screen active">
+
+  <div class="home-topbar">
+    <div class="home-logo">忆海拾光</div>
+    <div class="home-stamp" onclick="openSettings()" role="button" aria-label="设置">
+      <span style="font-family:var(--fd);font-size:18px;color:var(--red)">忆</span>
+      <span style="font-size:9px;letter-spacing:0;margin-top:1px">老人版</span>
+    </div>
+  </div>
+
+  <div class="home-greeting">
+    <span class="greet-icon">☀️</span>
+    <div>
+      <div class="greet-main">下午好，翻翻您的相册吧</div>
+      <div class="greet-date">2026年5月18日 · 周一</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="home-scroll">
+
+    <!-- 当前相册：大卡 -->
+    <div class="featured-wrap">
+      <div class="featured-card">
+        <div class="thumb-strip">
+          <div class="thumb-cell">🍎</div>
+          <div class="thumb-cell">🥕</div>
+          <div class="thumb-cell">🥦</div>
+          <div class="thumb-cell">🍊</div>
+          <div class="thumb-cell">🍇</div>
+        </div>
+        <div class="featured-body">
+          <div class="featured-name">蔬菜水果相册</div>
+          <div class="featured-status done">今天认识了 17 张，辛苦了 ✓</div>
+          <div class="featured-actions">
+            <button class="btn-browse-big" onclick="showScreen('screen-browse')">翻 相 册</button>
+            <button class="btn-quiz-sm"    onclick="showScreen('screen-quiz')">练一练</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 其他相册 -->
+    <div class="other-wrap">
+      <div class="section-lbl">其他相册</div>
+      <div class="other-list">
+        <div class="other-card" onclick="showScreen('screen-browse')">
+          <div class="other-thumbs">
+            <span style="font-size:28px">🏠</span>
+            <span style="font-size:28px">🪑</span>
+            <span style="font-size:28px">🛁</span>
+          </div>
+          <div class="other-info">
+            <div class="other-name">日常生活用品</div>
+            <div class="other-meta">共 32 张 · 昨天翻过</div>
+          </div>
+          <div class="other-arrow">›</div>
+        </div>
+        <div class="other-card" onclick="showScreen('screen-browse')">
+          <div class="other-thumbs">
+            <span style="font-size:28px">👴</span>
+            <span style="font-size:28px">👵</span>
+            <span style="font-size:28px">👨</span>
+          </div>
+          <div class="other-info">
+            <div class="other-name">家庭成员称谓</div>
+            <div class="other-done">今日已完成 ✓</div>
+          </div>
+          <div class="other-arrow">›</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="caregiver-row">
+      <button class="caregiver-btn" onclick="openSettings()">照护者模式 ···</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ╔═══════════════════╗
+     ║      浏 览 屏     ║
+     ╚═══════════════════╝ -->
+<div id="screen-browse" class="screen">
+
+  <div class="browse-header">
+    <div class="browse-topbar">
+      <button class="btn-back" onclick="showScreen('screen-home')" aria-label="返回首页">‹</button>
+      <div class="browse-title">
+        <div class="browse-album-name">蔬菜水果相册</div>
+        <div class="browse-progress-txt" id="browse-progress-txt">第 3 张 / 共 20 张</div>
+      </div>
+      <button class="btn-icon" style="font-size:15px" aria-label="查看详情">ℹ️</button>
+    </div>
+    <div class="browse-prog-track">
+      <div class="browse-prog-fill" id="browse-prog-fill" style="width:15%"></div>
+    </div>
+  </div>
+
+  <div class="browse-body">
+    <div class="photo-wrap">
+      <div class="photo-frame" id="photo-frame">
+        <div class="photo-img" id="photo-img">🍎</div>
+        <div class="photo-caption">
+          <div class="photo-name"   id="photo-name">苹 果</div>
+          <div class="photo-pinyin" id="photo-pinyin">píng guǒ</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="browse-controls">
+    <div class="browse-nav-row">
+      <button class="btn-nav" id="browse-prev" onclick="browseNav(-1)" aria-label="上一张">‹</button>
+      <button class="btn-recognize" id="btn-recognize" onclick="doRecognize()">
+        <span id="recognize-icon">❤️</span>
+        <span id="recognize-txt">认 识！</span>
+      </button>
+      <button class="btn-nav" id="browse-next" onclick="browseNav(1)" aria-label="下一张">›</button>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════╗
+     ║      练 习 屏     ║
+     ╚═══════════════════╝ -->
+<div id="screen-quiz" class="screen">
+
+  <div class="quiz-header">
+    <div class="quiz-topbar">
+      <button class="btn-back" onclick="showScreen('screen-home')" aria-label="返回首页">‹</button>
+      <div class="quiz-counter" id="quiz-counter">第 3 题</div>
+      <div class="quiz-deck-label">蔬菜水果</div>
+    </div>
+    <div class="quiz-prog-track">
+      <div class="quiz-prog-fill" id="quiz-prog" style="width:30%"></div>
+    </div>
+  </div>
+
+  <div class="quiz-body">
+    <div class="quiz-card" id="quiz-card">🥕</div>
+    <div class="quiz-question" id="quiz-question">这是什么？</div>
+
+    <div class="opts" id="opts-zone">
+      <div class="opt" onclick="pickOpt(this)" data-correct="false">南 瓜</div>
+      <div class="opt" onclick="pickOpt(this)" data-correct="false">红 薯</div>
+      <div class="opt" onclick="pickOpt(this)" data-correct="true">胡萝卜</div>
+      <div class="opt" onclick="pickOpt(this)" data-correct="false">土 豆</div>
+    </div>
+
+    <div class="answer-zone" id="answer-zone">
+      <div class="encouragement" id="encourage"></div>
+      <div class="answer-panel">
+        <div class="answer-word"   id="ans-word">胡 萝 卜</div>
+        <div class="answer-pinyin" id="ans-pinyin">hú luó bo</div>
+        <div class="answer-divider"></div>
+        <div class="answer-desc"   id="ans-desc">伞形科植物，根肉质鲜橙，富含胡萝卜素与维生素 A，有益眼睛，也是家常蔬菜。</div>
+      </div>
+      <button class="next-btn" onclick="quizNext()">继 续 →</button>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔═══════════════════╗
+     ║      完 成 屏     ║
+     ╚═══════════════════╝ -->
+<div id="screen-finish" class="screen">
+  <div class="finish-body">
+    <div class="finish-anim">🌟</div>
+    <div class="finish-title">太棒了！</div>
+    <div class="finish-family">家人都为您感到骄傲 💛</div>
+    <div class="finish-sub">今天的练习完成了</div>
+    <div class="red-line"></div>
+    <div class="finish-grid">
+      <div class="fc good"><div class="fc-num">17</div><div class="fc-lbl">记起了</div></div>
+      <div class="fc bad"> <div class="fc-num">3</div> <div class="fc-lbl">还在想</div></div>
+      <div class="fc neu"> <div class="fc-num">85%</div><div class="fc-lbl">记忆率</div></div>
+    </div>
+    <button class="btn-red-lg" onclick="showScreen('screen-browse')">继续翻相册</button>
+    <button class="btn-ghost"  onclick="showScreen('screen-home')">回到首页</button>
+  </div>
+</div>
+
+
+<!-- 演示导航条 -->
+<div id="demo-nav">
+  <button class="d-btn on" onclick="nav('screen-home',this)">首页</button>
+  <button class="d-btn"    onclick="nav('screen-browse',this)">翻阅</button>
+  <button class="d-btn"    onclick="nav('screen-quiz',this)">练习</button>
+  <button class="d-btn"    onclick="nav('screen-finish',this)">完成</button>
+</div>
+
+
+<script>
+/* ─── 屏幕切换 ─── */
+const SCREEN_IDX = {
+  'screen-home': 0, 'screen-browse': 1, 'screen-quiz': 2, 'screen-finish': 3
+};
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const btns = document.querySelectorAll('.d-btn');
+  btns.forEach((b, i) => b.classList.toggle('on', i === SCREEN_IDX[id]));
+}
+function nav(id) { showScreen(id); }
+function openSettings() { alert('照护者模式（此处打开设置面板）'); }
+
+/* ─── 浏览屏 ─── */
+const CARDS = [
+  { emoji: '🍎', name: '苹 果',   pinyin: 'píng guǒ' },
+  { emoji: '🥕', name: '胡萝卜',  pinyin: 'hú luó bo' },
+  { emoji: '🥦', name: '西兰花',  pinyin: 'xī lán huā' },
+  { emoji: '🍊', name: '橙 子',   pinyin: 'chéng zi' },
+  { emoji: '🍇', name: '葡 萄',   pinyin: 'pú táo' },
+];
+let browseIdx = 0;
+
+function browseNav(dir) {
+  browseIdx = (browseIdx + dir + CARDS.length) % CARDS.length;
+  const c = CARDS[browseIdx];
+  const frame = document.getElementById('photo-frame');
+  frame.style.opacity = '0';
+  frame.style.transform = 'translateX(' + (dir > 0 ? '20px' : '-20px') + ')';
+  setTimeout(() => {
+    document.getElementById('photo-img').textContent    = c.emoji;
+    document.getElementById('photo-name').textContent   = c.name;
+    document.getElementById('photo-pinyin').textContent = c.pinyin;
+    document.getElementById('browse-progress-txt').textContent =
+      '第 ' + (browseIdx + 1) + ' 张 / 共 ' + CARDS.length + ' 张';
+    document.getElementById('browse-prog-fill').style.width =
+      ((browseIdx + 1) / CARDS.length * 100) + '%';
+    frame.style.opacity = '1';
+    frame.style.transform = 'translateX(0)';
+    const btn = document.getElementById('btn-recognize');
+    btn.classList.remove('recognized');
+    document.getElementById('recognize-icon').textContent = '❤️';
+    document.getElementById('recognize-txt').textContent  = '认 识！';
+  }, 200);
+}
+
+function doRecognize() {
+  const btn = document.getElementById('btn-recognize');
+  btn.classList.add('recognized');
+  document.getElementById('recognize-icon').textContent = '✓';
+  document.getElementById('recognize-txt').textContent  = '记住了';
+}
+
+/* ─── 练习屏 ─── */
+function pickOpt(el) {
+  const zone = document.getElementById('opts-zone');
+  if (zone.querySelector('.correct, .wrong')) return;
+  const correct = el.dataset.correct === 'true';
+  el.classList.add(correct ? 'correct' : 'wrong');
+  zone.querySelectorAll('.opt').forEach(o => {
+    if (o === el) return;
+    if (o.dataset.correct === 'true') o.classList.add('correct');
+    else o.classList.add('dim');
+  });
+
+  const enc = document.getElementById('encourage');
+  if (correct) {
+    enc.textContent = '答对了！真棒！';
+    enc.className = 'encouragement';
+  } else {
+    enc.textContent = '没关系，再看看就记住了';
+    enc.className = 'encouragement miss';
+  }
+
+  setTimeout(() => {
+    zone.classList.add('collapsed');
+    document.getElementById('quiz-card').classList.add('compact');
+    document.getElementById('quiz-question').classList.add('hidden');
+    document.getElementById('answer-zone').classList.add('open');
+  }, 380);
+}
+
+function quizNext() {
+  const zone = document.getElementById('opts-zone');
+  zone.classList.remove('collapsed');
+  zone.querySelectorAll('.opt').forEach(o => o.classList.remove('correct','wrong','dim'));
+  document.getElementById('quiz-card').classList.remove('compact');
+  document.getElementById('quiz-question').classList.remove('hidden');
+  document.getElementById('answer-zone').classList.remove('open');
+}
+</script>
+</body>
+</html>

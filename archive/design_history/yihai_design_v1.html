@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>忆海拾光 · 设计原型 v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+
+/* ════════════════════════════════════════
+   设计系统 · 温故知新
+   ════════════════════════════════════════ */
+:root {
+  /* 纸色系 */
+  --bg:        #f7f3ec;
+  --bg2:       #ede8de;
+  --surf:      #fefcf7;
+  --surf2:     #f2ede2;
+
+  /* 墨色系 */
+  --ink:       #1a1208;
+  --ink2:      #5a4832;
+  --ink3:      #9a8268;
+  --ink4:      #c4b09a;
+
+  /* 朱砂红 — 主行动色 */
+  --red:       #c23b3b;
+  --red-dk:    #9e2e2e;
+  --red-lt:    #fdf1ef;
+  --red-bd:    rgba(194,59,59,0.25);
+
+  /* 翡翠绿 — 正确/成功 */
+  --jade:      #2a7a58;
+  --jade-lt:   #ebf5f0;
+  --jade-bd:   rgba(42,122,88,0.25);
+
+  /* 琥珀金 — 新卡/次要信息 */
+  --gold:      #b07820;
+  --gold-lt:   #fdf6e3;
+
+  /* 赭石橙 — 学习中 */
+  --amber:     #c76a1a;
+  --amber-lt:  #fef0e4;
+
+  /* 边框与阴影 */
+  --bd:        rgba(90,72,50,0.14);
+  --bd-soft:   rgba(90,72,50,0.07);
+  --sh:        0 2px 24px rgba(26,18,8,0.07), 0 1px 4px rgba(26,18,8,0.04);
+  --sh-sm:     0 1px 8px rgba(26,18,8,0.05);
+  --sh-btn:    0 6px 20px rgba(194,59,59,0.35);
+
+  /* 圆角 */
+  --r:    20px;
+  --rsm:  14px;
+  --rxs:  8px;
+
+  /* 字体 */
+  --font-display: 'Ma Shan Zheng', 'Noto Serif SC', serif;
+  --font-serif:   'Noto Serif SC', 'PingFang SC', serif;
+  --font-num:     'Playfair Display', serif;
+
+  /* 安全区 */
+  --safe-top:    env(safe-area-inset-top, 44px);
+  --safe-bottom: env(safe-area-inset-bottom, 34px);
+  --pad:         20px;
+  --gap:         12px;
+}
+
+/* ════════ 基础重置 ════════ */
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+input, textarea { -webkit-user-select: text; user-select: text; }
+
+html, body {
+  height: 100%; overflow: hidden;
+  max-width: 430px; margin: 0 auto;
+  background: #d4cbbe;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-serif);
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  box-shadow: 0 0 80px rgba(0,0,0,0.25);
+  overflow: hidden;
+}
+
+/* 纸纹叠加 */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-size: 300px;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ════════ 屏幕系统 ════════ */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  opacity: 0;
+  transform: translateX(24px);
+  pointer-events: none;
+  transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+.screen.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: all;
+}
+.screen.from-left {
+  transform: translateX(-24px);
+}
+
+/* ════════ 演示导航条 ════════ */
+#demo-nav {
+  position: fixed;
+  bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  background: rgba(20,14,8,0.9);
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  z-index: 9999;
+  display: flex;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 16px));
+  gap: 5px;
+}
+.d-btn {
+  flex: 1; padding: 8px 2px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.55);
+  font-family: var(--font-serif);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  -webkit-user-select: none;
+}
+.d-btn:active { transform: scale(0.95); }
+.d-btn.on {
+  background: var(--red);
+  border-color: var(--red);
+  color: white;
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════
+   首页
+   ═══════════════════════════════════ */
+.home-header {
+  padding: calc(var(--safe-top) + 10px) var(--pad) 16px;
+  flex-shrink: 0;
+}
+
+.home-topbar {
+  display: flex; align-items: flex-start;
+  gap: 12px;
+}
+
+.home-title-block { flex: 1; }
+
+.home-title {
+  font-family: var(--font-display);
+  font-size: 34px;
+  color: var(--ink);
+  letter-spacing: 3px;
+  line-height: 1.05;
+}
+
+.home-tagline {
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: 4px;
+  margin-top: 5px;
+  font-weight: 400;
+}
+
+/* 朱砂印章风格版本号 */
+.home-stamp {
+  width: 42px; height: 42px;
+  border: 2px solid var(--red);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+  color: var(--red);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-align: center;
+  margin-top: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.home-stamp:active { transform: scale(0.9); }
+.stamp-ver { font-family: var(--font-num); font-size: 11px; font-weight: 700; }
+
+.home-icon-row {
+  display: flex; gap: 8px; align-items: center;
+  margin-top: 12px;
+}
+.icon-btn {
+  width: 40px; height: 40px;
+  border: 1px solid var(--bd);
+  border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--ink2);
+  box-shadow: var(--sh-sm);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.icon-btn:active { transform: scale(0.9); background: var(--surf2); }
+
+.home-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--bd) 20%, var(--bd) 80%, transparent 100%);
+  flex-shrink: 0;
+  margin: 0 var(--pad);
+}
+
+.home-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px var(--pad) calc(80px + var(--safe-bottom));
+  scrollbar-width: none;
+}
+.home-body::-webkit-scrollbar { display: none; }
+
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink3);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* 牌组卡片 */
+.deck-list { display: flex; flex-direction: column; gap: 10px; }
+
+.deck-card {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--sh-sm);
+  position: relative;
+  overflow: hidden;
+  animation: slideUpIn 0.35s ease both;
+}
+.deck-card:nth-child(1) { animation-delay: 0.04s; }
+.deck-card:nth-child(2) { animation-delay: 0.1s; }
+.deck-card:nth-child(3) { animation-delay: 0.16s; }
+@keyframes slideUpIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 左侧色条 */
+.deck-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 16px; bottom: 16px;
+  width: 3px;
+  background: var(--bd-soft);
+  border-radius: 0 2px 2px 0;
+  transition: all 0.2s;
+}
+.deck-card.selected::before {
+  background: var(--red);
+  top: 0; bottom: 0;
+  border-radius: 0;
+}
+.deck-card.selected {
+  border-color: rgba(194,59,59,0.18);
+  box-shadow: 0 4px 28px rgba(194,59,59,0.1);
+}
+.deck-card:active { transform: scale(0.984); }
+
+.deck-card-top {
+  display: flex; align-items: flex-start;
+  gap: 8px; margin-bottom: 10px;
+}
+.deck-name {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.deck-badges {
+  display: flex; gap: 5px; flex-shrink: 0;
+  flex-wrap: wrap; justify-content: flex-end;
+}
+.badge {
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-num);
+  white-space: nowrap;
+}
+.badge-due  { background: var(--red-lt);   color: var(--red); }
+.badge-new  { background: var(--gold-lt);  color: var(--gold); }
+.badge-done { background: var(--jade-lt);  color: var(--jade); }
+
+.deck-meta {
+  font-size: 12px;
+  color: var(--ink3);
+  display: flex; align-items: center; gap: 6px;
+}
+.meta-dot { color: var(--ink4); }
+
+/* 主操作按钮区 */
+.home-actions {
+  display: flex; gap: 10px;
+  margin-top: 18px;
+}
+.btn-primary {
+  flex: 1; padding: 17px;
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: var(--rsm);
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--sh-btn);
+  transition: all 0.18s;
+  letter-spacing: 3px;
+  -webkit-user-select: none;
+}
+.btn-primary:active { transform: scale(0.97); background: var(--red-dk); box-shadow: none; }
+
+.btn-outline {
+  padding: 17px 20px;
+  background: var(--surf);
+  color: var(--ink2);
+  border: 1.5px solid var(--bd);
+  border-radius: var(--rsm);
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  letter-spacing: 1px;
+  -webkit-user-select: none;
+}
+.btn-outline:active { transform: scale(0.97); background: var(--surf2); }
+
+/* 云端状态条 */
+.cloud-bar {
+  flex-shrink: 0;
+  background: var(--surf);
+  border-top: 1px solid var(--bd-soft);
+  padding: 10px var(--pad) calc(10px + var(--safe-bottom));
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.cloud-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--jade);
+  flex-shrink: 0;
+}
+
+
+/* ═══════════════════════════════════
+   练习屏
+   ═══════════════════════════════════ */
+.quiz-header {
+  flex-shrink: 0;
+  padding: calc(var(--safe-top) + 6px) var(--pad) 0;
+}
+
+.quiz-topbar {
+  display: flex; align-items: center;
+  gap: 12px; margin-bottom: 14px;
+}
+
+.back-btn {
+  width: 38px; height: 38px;
+  border: 1.5px solid var(--bd);
+  border-radius: 50%;
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--ink2);
+  box-shadow: var(--sh-sm);
+  flex-shrink: 0;
+  transition: all 0.15s;
+  -webkit-user-select: none;
+}
+.back-btn:active { transform: scale(0.9); }
+
+/* SRS 三色计数 */
+.srs-counter {
+  display: flex; gap: 7px; align-items: center;
+}
+.srs-badge {
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 700;
+}
+.srs-new    { background: var(--gold-lt);  color: var(--gold); }
+.srs-learn  { background: var(--amber-lt); color: var(--amber); }
+.srs-review { background: var(--jade-lt);  color: var(--jade); }
+
+.quiz-deck-name {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink3);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 进度条 */
+.progress-track {
+  height: 3px;
+  background: var(--bd-soft);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), #e05555);
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quiz-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 var(--pad) calc(20px + var(--safe-bottom));
+  display: flex; flex-direction: column; gap: 14px;
+}
+.quiz-body::-webkit-scrollbar { display: none; }
+
+/* 目标卡 */
+.target-card {
+  aspect-ratio: 1;
+  width: 100%;
+  max-height: 230px;
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 96px;
+  box-shadow: var(--sh);
+  position: relative;
+  overflow: hidden;
+  align-self: center;
+  transition: opacity 0.2s, transform 0.2s;
+}
+/* 内阴影 */
+.target-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: var(--r);
+  box-shadow: inset 0 0 0 1px rgba(90,72,50,0.07);
+  pointer-events: none;
+}
+
+.card-question {
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink3);
+  letter-spacing: 2px;
+}
+
+/* 选项区 */
+.opts-zone {
+  display: flex; flex-direction: column; gap: 9px;
+}
+
+.opt {
+  background: var(--surf);
+  border: 1.5px solid var(--bd);
+  border-radius: var(--rsm);
+  padding: 16px 20px;
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  box-shadow: var(--sh-sm);
+  line-height: 1.2;
+  position: relative;
+  overflow: hidden;
+  -webkit-user-select: none;
+}
+.opt:active:not(.correct):not(.wrong):not(.dim) {
+  transform: scale(0.97);
+  background: var(--surf2);
+}
+.opt.correct {
+  background: var(--jade-lt);
+  border-color: var(--jade);
+  color: var(--jade);
+}
+.opt.wrong {
+  background: var(--red-lt);
+  border-color: var(--red);
+  color: var(--red);
+}
+.opt.dim {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* 回答面板 */
+.answer-panel {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--r);
+  padding: 20px;
+  box-shadow: var(--sh);
+  animation: slideUpIn 0.25s ease;
+}
+.answer-word {
+  font-size: 44px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+  line-height: 1;
+  letter-spacing: 4px;
+}
+.answer-pinyin {
+  font-size: 16px;
+  color: var(--ink3);
+  letter-spacing: 3px;
+  margin-bottom: 12px;
+  font-weight: 400;
+}
+.answer-line {
+  height: 1px;
+  background: var(--bd-soft);
+  margin-bottom: 12px;
+}
+.answer-detail {
+  font-size: 14px;
+  color: var(--ink2);
+  line-height: 1.9;
+  font-weight: 400;
+}
+
+/* 继续按钮 */
+.next-btn {
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: var(--rsm);
+  padding: 18px;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--sh-btn);
+  letter-spacing: 3px;
+  transition: all 0.18s;
+  animation: slideUpIn 0.25s ease;
+  -webkit-user-select: none;
+}
+.next-btn:active { transform: scale(0.97); background: var(--red-dk); }
+
+
+/* ═══════════════════════════════════
+   完成屏
+   ═══════════════════════════════════ */
+.finish-body {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: calc(var(--safe-top) + 20px) var(--pad) calc(80px + var(--safe-bottom));
+  text-align: center;
+}
+
+.finish-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+  animation: popIn 0.6s cubic-bezier(0.22,0.61,0.36,1) both;
+}
+@keyframes popIn {
+  0%   { transform: scale(0.4) rotate(-10deg); opacity: 0; }
+  70%  { transform: scale(1.12) rotate(3deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.finish-title {
+  font-family: var(--font-display);
+  font-size: 40px;
+  color: var(--ink);
+  letter-spacing: 6px;
+  margin-bottom: 8px;
+}
+.finish-sub {
+  font-size: 13px;
+  color: var(--ink3);
+  letter-spacing: 3px;
+  margin-bottom: 32px;
+}
+
+/* 朱砂线分隔 */
+.red-line {
+  width: 60px; height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+  margin: 0 auto 32px;
+}
+
+.finish-stats-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; width: 100%;
+  margin-bottom: 36px;
+}
+.fstat {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--rsm);
+  padding: 16px 8px;
+  box-shadow: var(--sh-sm);
+}
+.fstat-num {
+  font-family: var(--font-num);
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.fstat-lbl {
+  font-size: 11px;
+  color: var(--ink3);
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+.fstat.good .fstat-num { color: var(--jade); }
+.fstat.bad  .fstat-num { color: var(--red); }
+.fstat.neu  .fstat-num { color: var(--gold); }
+
+
+/* ═══════════════════════════════════
+   统计屏
+   ═══════════════════════════════════ */
+.stats-header {
+  flex-shrink: 0;
+  padding: calc(var(--safe-top) + 6px) var(--pad) 0;
+}
+.stats-topbar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px;
+}
+.stats-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--ink);
+  letter-spacing: 3px;
+  flex: 1;
+}
+
+/* 选项卡 */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--bd-soft);
+  margin: 0 var(--pad);
+  flex-shrink: 0;
+}
+.tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink3);
+  cursor: pointer;
+  border-bottom: 2.5px solid transparent;
+  transition: all 0.15s;
+  letter-spacing: 1px;
+  -webkit-user-select: none;
+}
+.tab.active { color: var(--red); border-bottom-color: var(--red); }
+
+.stats-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 16px var(--pad) calc(80px + var(--safe-bottom));
+  display: flex; flex-direction: column; gap: 14px;
+}
+.stats-body::-webkit-scrollbar { display: none; }
+
+/* KPI 卡片 */
+.kpi-row {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.kpi {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--rsm);
+  padding: 14px 8px;
+  text-align: center;
+  box-shadow: var(--sh-sm);
+}
+.kpi-num {
+  font-family: var(--font-num);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.kpi-lbl {
+  font-size: 10px;
+  color: var(--ink3);
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* 图表卡 */
+.chart-card {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--r);
+  padding: 18px;
+  box-shadow: var(--sh-sm);
+}
+.chart-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink3);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+.bars-wrap {
+  display: flex; align-items: flex-end;
+  gap: 5px;
+  height: 88px;
+}
+.bar-col {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  gap: 5px;
+  height: 100%;
+}
+.bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: var(--red);
+  opacity: 0.55;
+  min-height: 3px;
+  transition: height 0.5s ease;
+}
+.bar.today { opacity: 1; }
+.bar-lbl {
+  font-size: 9px;
+  color: var(--ink4);
+  white-space: nowrap;
+}
+
+/* 牌组概览列表 */
+.ov-list { display: flex; flex-direction: column; gap: 9px; }
+.ov-item {
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--rsm);
+  padding: 14px 16px;
+  box-shadow: var(--sh-sm);
+  display: flex; align-items: center; gap: 12px;
+}
+.ov-name { flex: 1; font-size: 15px; font-weight: 600; color: var(--ink); }
+.ov-stat { font-size: 12px; color: var(--ink3); text-align: right; }
+
+
+/* ═══════════════════════════════════
+   设置抽屉
+   ═══════════════════════════════════ */
+#settings-overlay {
+  position: absolute; inset: 0;
+  z-index: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+#settings-overlay.open {
+  pointer-events: all;
+  opacity: 1;
+}
+.overlay-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(26,18,8,0.35);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.settings-sheet {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  border-radius: 28px 28px 0 0;
+  max-height: 82vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -6px 40px rgba(26,18,8,0.15);
+  transform: translateY(100%);
+  transition: transform 0.36s cubic-bezier(0.32,0.72,0,1);
+}
+#settings-overlay.open .settings-sheet {
+  transform: translateY(0);
+}
+.sheet-handle {
+  width: 42px; height: 4px;
+  background: var(--bd);
+  border-radius: 2px;
+  margin: 13px auto 0;
+  flex-shrink: 0;
+}
+.sheet-head {
+  display: flex; align-items: center;
+  padding: 10px 20px 8px;
+  flex-shrink: 0;
+}
+.sheet-head-title {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--ink);
+  letter-spacing: 3px;
+}
+.sheet-close {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--bd);
+  background: var(--surf);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--ink3);
+  cursor: pointer; box-shadow: var(--sh-sm);
+  -webkit-user-select: none;
+}
+.sheet-close:active { transform: scale(0.9); }
+
+.sheet-tabs {
+  display: flex; overflow-x: auto; scrollbar-width: none;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--bd-soft);
+  flex-shrink: 0;
+}
+.sheet-tabs::-webkit-scrollbar { display: none; }
+
+.s-tab {
+  padding: 10px 14px;
+  font-size: 13px; font-weight: 600;
+  color: var(--ink3);
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2.5px solid transparent;
+  transition: all 0.15s;
+  -webkit-user-select: none;
+}
+.s-tab.active { color: var(--red); border-bottom-color: var(--red); }
+
+.sheet-body {
+  flex: 1; overflow-y: auto;
+  scrollbar-width: none;
+  padding: 16px 20px calc(20px + env(safe-area-inset-bottom, 20px));
+}
+.sheet-body::-webkit-scrollbar { display: none; }
+
+.s-section { margin-bottom: 22px; }
+.s-section-title {
+  font-size: 10px; font-weight: 700;
+  color: var(--ink3);
+  letter-spacing: 4px; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.s-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: var(--surf);
+  border: 1px solid var(--bd-soft);
+  border-radius: var(--rxs);
+  margin-bottom: 7px;
+  box-shadow: var(--sh-sm);
+}
+.s-row-lbl { font-size: 14px; font-weight: 500; color: var(--ink); flex: 1; }
+.s-row-sub { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+
+/* 拨动开关 */
+.toggle {
+  width: 46px; height: 27px;
+  border-radius: 14px;
+  background: var(--ink4);
+  position: relative; cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  -webkit-user-select: none;
+}
+.toggle.on { background: var(--red); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 21px; height: 21px;
+  border-radius: 50%;
+  background: white;
+  top: 3px; left: 3px;
+  transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.2);
+}
+.toggle.on::after { transform: translateX(19px); }
+
+/* 数值显示 */
+.s-val {
+  font-family: var(--font-num);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--red);
+}
+
+
+/* ═══════════════════════════════════
+   卡片详情抽屉
+   ═══════════════════════════════════ */
+#card-detail-overlay {
+  position: absolute; inset: 0;
+  z-index: 400;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+#card-detail-overlay.open {
+  pointer-events: all;
+  opacity: 1;
+}
+.cd-sheet {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  border-radius: 28px 28px 0 0;
+  max-height: 70vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -6px 40px rgba(26,18,8,0.15);
+  transform: translateY(100%);
+  transition: transform 0.36s cubic-bezier(0.32,0.72,0,1);
+}
+#card-detail-overlay.open .cd-sheet { transform: translateY(0); }
+.cd-head {
+  display: flex; gap: 12px; align-items: center;
+  padding: 16px 20px 0;
+  flex-shrink: 0;
+}
+.cd-emoji { font-size: 40px; }
+.cd-title-block { flex: 1; }
+.cd-word { font-size: 28px; font-weight: 700; color: var(--ink); letter-spacing: 2px; }
+.cd-pinyin { font-size: 14px; color: var(--ink3); letter-spacing: 2px; margin-top: 2px; }
+.cd-body {
+  flex: 1; overflow-y: auto; scrollbar-width: none;
+  padding: 16px 20px calc(20px + env(safe-area-inset-bottom, 20px));
+}
+.cd-body::-webkit-scrollbar { display: none; }
+.cd-row {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--bd-soft);
+  font-size: 14px;
+}
+.cd-row:last-child { border-bottom: none; }
+.cd-key { color: var(--ink3); width: 60px; flex-shrink: 0; letter-spacing: 1px; }
+.cd-v   { color: var(--ink); font-weight: 500; }
+
+
+/* ═══════════════════════════════════
+   工具
+   ═══════════════════════════════════ */
+[hidden] { display: none !important; }
+.mt8 { margin-top: 8px; }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ 首页 ═══════════════════ -->
+<div id="screen-home" class="screen active">
+
+  <div class="home-header">
+    <div class="home-topbar">
+      <div class="home-title-block">
+        <div class="home-title">忆海拾光</div>
+        <div class="home-tagline">认知训练 · 每日坚持</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <button class="icon-btn" onclick="showScreen('screen-stats')" title="数据统计">📊</button>
+        <button class="icon-btn" onclick="handleImport()" title="导入牌组">📥</button>
+        <div class="home-stamp" onclick="openSettings()">
+          <span class="stamp-ver">忆</span>
+          <span style="font-size:8px;letter-spacing:0">v4.11</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="home-icon-row">
+      <button class="icon-btn" onclick="openSettings()" title="设置">⚙️</button>
+      <div style="flex:1;font-size:12px;color:var(--ink3);letter-spacing:1px">
+        今日待复习 <span style="color:var(--red);font-weight:700;font-family:var(--font-num)">17</span> 张
+      </div>
+      <button class="icon-btn" onclick="alert('刷新')" title="刷新">🔄</button>
+    </div>
+  </div>
+
+  <div class="home-divider"></div>
+
+  <div class="home-body">
+    <div class="section-label" style="margin-bottom:14px">我的牌组</div>
+    <div class="deck-list" id="deck-list">
+
+      <div class="deck-card selected" onclick="selectDeck(this)">
+        <div class="deck-card-top">
+          <div class="deck-name">蔬菜水果本地版</div>
+          <div class="deck-badges">
+            <span class="badge badge-due">到期 12</span>
+            <span class="badge badge-new">新卡 5</span>
+          </div>
+        </div>
+        <div class="deck-meta">
+          <span>共 48 张</span>
+          <span class="meta-dot">·</span>
+          <span>上次练习：今天</span>
+        </div>
+      </div>
+
+      <div class="deck-card" onclick="selectDeck(this)">
+        <div class="deck-card-top">
+          <div class="deck-name">日常生活用品</div>
+          <div class="deck-badges">
+            <span class="badge badge-due">到期 7</span>
+          </div>
+        </div>
+        <div class="deck-meta">
+          <span>共 32 张</span>
+          <span class="meta-dot">·</span>
+          <span>上次练习：昨天</span>
+        </div>
+      </div>
+
+      <div class="deck-card" onclick="selectDeck(this)">
+        <div class="deck-card-top">
+          <div class="deck-name">家庭成员称谓</div>
+          <div class="deck-badges">
+            <span class="badge badge-done">✓ 已完成</span>
+          </div>
+        </div>
+        <div class="deck-meta">
+          <span>共 20 张</span>
+          <span class="meta-dot">·</span>
+          <span>上次练习：今天</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="home-actions" id="home-actions" style="margin-top:18px">
+      <button class="btn-primary" onclick="showScreen('screen-quiz')">开始练习</button>
+      <button class="btn-outline" onclick="showScreen('screen-stats')">浏览</button>
+    </div>
+  </div>
+
+  <div class="cloud-bar">
+    <div class="cloud-dot"></div>
+    <span>已同步 · zyhacl@gmail.com</span>
+    <span style="margin-left:auto;color:var(--ink4)">2 分钟前</span>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════ 练习屏 ═══════════════════ -->
+<div id="screen-quiz" class="screen">
+
+  <div class="quiz-header">
+    <div class="quiz-topbar">
+      <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+      <div class="srs-counter">
+        <span class="srs-badge srs-new">5</span>
+        <span class="srs-badge srs-learn">3</span>
+        <span class="srs-badge srs-review">9</span>
+      </div>
+      <div class="quiz-deck-name">蔬菜水果</div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="quiz-progress" style="width:35%"></div>
+    </div>
+  </div>
+
+  <div class="quiz-body">
+    <div class="target-card" id="target-card">🍎</div>
+    <div class="card-question">这是什么？</div>
+
+    <div class="opts-zone" id="opts-zone">
+      <div class="opt" onclick="selectOpt(this, true)">苹 果</div>
+      <div class="opt" onclick="selectOpt(this, false)">西 瓜</div>
+      <div class="opt" onclick="selectOpt(this, false)">香 蕉</div>
+      <div class="opt" onclick="selectOpt(this, false)">橙 子</div>
+    </div>
+
+    <div class="answer-panel" id="answer-panel" hidden>
+      <div class="answer-word">苹 果</div>
+      <div class="answer-pinyin">píng guǒ</div>
+      <div class="answer-line"></div>
+      <div class="answer-detail">蔷薇科苹果属落叶乔木。果实圆形，皮色红或青绿，味甜中带酸，富含膳食纤维与维生素 C。</div>
+    </div>
+
+    <button class="next-btn" id="next-btn" hidden onclick="nextCard()">继 续 →</button>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════ 完成屏 ═══════════════════ -->
+<div id="screen-finish" class="screen">
+
+  <div class="finish-body">
+    <div class="finish-icon">🎉</div>
+    <div class="finish-title">今日完成</div>
+    <div class="finish-sub">坚持训练，保持活跃</div>
+    <div class="red-line"></div>
+
+    <div class="finish-stats-grid">
+      <div class="fstat good">
+        <div class="fstat-num">17</div>
+        <div class="fstat-lbl">答对</div>
+      </div>
+      <div class="fstat bad">
+        <div class="fstat-num">3</div>
+        <div class="fstat-lbl">答错</div>
+      </div>
+      <div class="fstat neu">
+        <div class="fstat-num">85%</div>
+        <div class="fstat-lbl">正确率</div>
+      </div>
+    </div>
+
+    <button class="btn-primary" style="width:100%;letter-spacing:4px"
+            onclick="showScreen('screen-home')">返回首页</button>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════ 统计屏 ═══════════════════ -->
+<div id="screen-stats" class="screen">
+
+  <div class="stats-header">
+    <div class="stats-topbar">
+      <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+      <div class="stats-title">数据统计</div>
+    </div>
+  </div>
+
+  <div class="tab-bar" id="stats-tabs">
+    <div class="tab active" onclick="activateTab(this)">今日</div>
+    <div class="tab" onclick="activateTab(this)">历史</div>
+    <div class="tab" onclick="activateTab(this)">牌组</div>
+    <div class="tab" onclick="activateTab(this)">卡片</div>
+  </div>
+
+  <div class="stats-body">
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-num" style="color:var(--jade)">85%</div>
+        <div class="kpi-lbl">正确率</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-num">20</div>
+        <div class="kpi-lbl">已复习</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-num" style="color:var(--gold)">3.2s</div>
+        <div class="kpi-lbl">均响应</div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">近七日复习量</div>
+      <div class="bars-wrap">
+        <div class="bar-col">
+          <div class="bar" style="height:42%"></div>
+          <div class="bar-lbl">周一</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar" style="height:68%"></div>
+          <div class="bar-lbl">周二</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar" style="height:52%"></div>
+          <div class="bar-lbl">周三</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar" style="height:85%"></div>
+          <div class="bar-lbl">周四</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar" style="height:28%"></div>
+          <div class="bar-lbl">周五</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar" style="height:74%"></div>
+          <div class="bar-lbl">周六</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar today" style="height:56%"></div>
+          <div class="bar-lbl">今天</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">牌组概览</div>
+    <div class="ov-list">
+      <div class="ov-item">
+        <div class="ov-name">蔬菜水果本地版</div>
+        <div class="ov-stat">17/20 · 85%</div>
+      </div>
+      <div class="ov-item">
+        <div class="ov-name">日常生活用品</div>
+        <div class="ov-stat">12/15 · 80%</div>
+      </div>
+      <div class="ov-item">
+        <div class="ov-name">家庭成员称谓</div>
+        <div class="ov-stat">8/10 · 100%</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════ 设置抽屉 ═══════════════════ -->
+<div id="settings-overlay">
+  <div class="overlay-backdrop" onclick="closeSettings()"></div>
+  <div class="settings-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-head-title">设 置</div>
+      <div class="sheet-close" onclick="closeSettings()">✕</div>
+    </div>
+    <div class="sheet-tabs">
+      <div class="s-tab active" onclick="activateSTab(this)">通用</div>
+      <div class="s-tab" onclick="activateSTab(this)">语音</div>
+      <div class="s-tab" onclick="activateSTab(this)">文字</div>
+      <div class="s-tab" onclick="activateSTab(this)">SRS</div>
+      <div class="s-tab" onclick="activateSTab(this)">云端</div>
+    </div>
+    <div class="sheet-body">
+
+      <div class="s-section">
+        <div class="s-section-title">显示</div>
+        <div class="s-row">
+          <div>
+            <div class="s-row-lbl">深色模式</div>
+            <div class="s-row-sub">夜间使用更舒适</div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="s-row">
+          <div>
+            <div class="s-row-lbl">震动反馈</div>
+            <div class="s-row-sub">答题时振动提示</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-section-title">练习</div>
+        <div class="s-row">
+          <div>
+            <div class="s-row-lbl">自动翻页</div>
+            <div class="s-row-sub">正确后 1.5 秒自动继续</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="s-row">
+          <div class="s-row-lbl">每日新卡上限</div>
+          <div class="s-val">20</div>
+        </div>
+        <div class="s-row">
+          <div class="s-row-lbl">每日复习上限</div>
+          <div class="s-val">200</div>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-section-title">帐户</div>
+        <div class="s-row">
+          <div>
+            <div class="s-row-lbl">zyhacl@gmail.com</div>
+            <div class="s-row-sub">已连接 · 数据安全同步中</div>
+          </div>
+          <div style="font-size:12px;color:var(--jade);font-weight:600">在线</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 卡片详情抽屉 ═══════════════════ -->
+<div id="card-detail-overlay">
+  <div class="overlay-backdrop" onclick="closeCardDetail()"></div>
+  <div class="cd-sheet">
+    <div class="sheet-handle"></div>
+    <div class="cd-head">
+      <div class="cd-emoji">🍎</div>
+      <div class="cd-title-block">
+        <div class="cd-word">苹 果</div>
+        <div class="cd-pinyin">píng guǒ</div>
+      </div>
+      <div class="sheet-close" onclick="closeCardDetail()">✕</div>
+    </div>
+    <div class="cd-body">
+      <div class="cd-row">
+        <span class="cd-key">状态</span>
+        <span class="cd-v">复习中 · 间隔 7 天</span>
+      </div>
+      <div class="cd-row">
+        <span class="cd-key">到期</span>
+        <span class="cd-v">2026-05-18（明天）</span>
+      </div>
+      <div class="cd-row">
+        <span class="cd-key">总答题</span>
+        <span class="cd-v">23 次</span>
+      </div>
+      <div class="cd-row">
+        <span class="cd-key">正确率</span>
+        <span class="cd-v" style="color:var(--jade)">87%</span>
+      </div>
+      <div class="cd-row">
+        <span class="cd-key">失误</span>
+        <span class="cd-v">3 次</span>
+      </div>
+      <div class="cd-row">
+        <span class="cd-key">牌组</span>
+        <span class="cd-v">蔬菜水果本地版</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 演示导航 ═══════════════════ -->
+<div id="demo-nav">
+  <button class="d-btn on" onclick="nav('screen-home',this)">首页</button>
+  <button class="d-btn" onclick="nav('screen-quiz',this)">练习</button>
+  <button class="d-btn" onclick="nav('screen-finish',this)">完成</button>
+  <button class="d-btn" onclick="nav('screen-stats',this)">统计</button>
+  <button class="d-btn" onclick="openSettings();navHighlight(this)">设置</button>
+</div>
+
+
+<script>
+/* ─── 屏幕切换 ─── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const s = document.getElementById(id);
+  s.classList.add('active');
+  // sync demo nav
+  const map = { 'screen-home':0,'screen-quiz':1,'screen-finish':2,'screen-stats':3 };
+  const btns = document.querySelectorAll('.d-btn');
+  btns.forEach((b,i) => b.classList.toggle('on', i === map[id]));
+}
+function nav(screenId, btn) {
+  showScreen(screenId);
+}
+function navHighlight(btn) {
+  document.querySelectorAll('.d-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+/* ─── 首页：选中牌组 ─── */
+function selectDeck(card) {
+  document.querySelectorAll('.deck-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+}
+
+/* ─── 导入 ─── */
+function handleImport() {
+  alert('导入牌组（演示：此处会打开文件选择器）');
+}
+
+/* ─── 设置抽屉 ─── */
+function openSettings() {
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+  // 恢复导航高亮
+  const active = document.querySelector('.screen.active');
+  if (active) {
+    const map = { 'screen-home':0,'screen-quiz':1,'screen-finish':2,'screen-stats':3 };
+    const btns = document.querySelectorAll('.d-btn');
+    btns.forEach((b,i) => b.classList.toggle('on', i === map[active.id]));
+  }
+}
+
+/* ─── 卡片详情 ─── */
+function openCardDetail() {
+  document.getElementById('card-detail-overlay').classList.add('open');
+}
+function closeCardDetail() {
+  document.getElementById('card-detail-overlay').classList.remove('open');
+}
+
+/* ─── 练习：选项 ─── */
+let _answered = false;
+const CARDS = [
+  { emoji:'🍊', word:'橙 子', pinyin:'chéng zǐ', opts:['橙 子','香 蕉','苹 果','西 瓜'], correct:0 },
+  { emoji:'🥦', word:'西 兰 花', pinyin:'xī lán huā', opts:['白 菜','西 兰 花','菠 菜','花 椰 菜'], correct:1 },
+  { emoji:'🍇', word:'葡 萄', pinyin:'pú tao', opts:['蓝 莓','樱 桃','葡 萄','草 莓'], correct:2 },
+  { emoji:'🥕', word:'胡 萝 卜', pinyin:'hú luó bo', opts:['南 瓜','红 薯','胡 萝 卜','土 豆'], correct:2 },
+  { emoji:'🍓', word:'草 莓', pinyin:'cǎo méi', opts:['荔 枝','草 莓','蓝 莓','覆 盆 子'], correct:1 },
+];
+let _cardIdx = 0;
+
+function selectOpt(opt, isCorrect) {
+  if (_answered) return;
+  _answered = true;
+  const opts = document.querySelectorAll('.opt');
+  const card = CARDS[_cardIdx];
+  opts.forEach((o, i) => {
+    if (o === opt) {
+      o.classList.add(isCorrect ? 'correct' : 'wrong');
+    } else if (i === card.correct) {
+      o.classList.add('correct');
+    } else {
+      o.classList.add('dim');
+    }
+  });
+  const panel = document.getElementById('answer-panel');
+  const nextBtn = document.getElementById('next-btn');
+  panel.removeAttribute('hidden');
+  nextBtn.removeAttribute('hidden');
+
+  // 进度增量
+  const fill = document.getElementById('quiz-progress');
+  const pct = parseInt(fill.style.width) + 5;
+  fill.style.width = Math.min(pct, 95) + '%';
+}
+
+function nextCard() {
+  _answered = false;
+  _cardIdx = (_cardIdx + 1) % CARDS.length;
+  const card = CARDS[_cardIdx];
+
+  // 重置选项
+  const optsZone = document.getElementById('opts-zone');
+  optsZone.innerHTML = '';
+  card.opts.forEach((txt, i) => {
+    const div = document.createElement('div');
+    div.className = 'opt';
+    div.textContent = txt;
+    div.onclick = function() { selectOpt(this, i === card.correct); };
+    optsZone.appendChild(div);
+  });
+
+  // 隐藏面板
+  document.getElementById('answer-panel').setAttribute('hidden', '');
+  document.getElementById('next-btn').setAttribute('hidden', '');
+
+  // 更新答案面板内容
+  const panel = document.getElementById('answer-panel');
+  panel.querySelector('.answer-word').textContent = card.word;
+  panel.querySelector('.answer-pinyin').textContent = card.pinyin;
+
+  // 换卡动画
+  const tc = document.getElementById('target-card');
+  tc.style.opacity = '0';
+  tc.style.transform = 'scale(0.85)';
+  setTimeout(() => {
+    tc.textContent = card.emoji;
+    tc.style.opacity = '1';
+    tc.style.transform = 'scale(1)';
+  }, 180);
+
+  // 随机跳到完成屏（演示用）
+  if (Math.random() < 0.25) {
+    setTimeout(() => showScreen('screen-finish'), 400);
+  }
+}
+
+// 给目标卡片加过渡
+document.getElementById('target-card').style.transition = 'opacity 0.18s, transform 0.18s';
+
+/* ─── Tab 通用激活 ─── */
+function activateTab(tab) {
+  tab.closest('.tab-bar').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+}
+function activateSTab(tab) {
+  tab.closest('.sheet-tabs').querySelectorAll('.s-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+}
+</script>
+</body>
+</html>

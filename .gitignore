@@ -25,3 +25,16 @@ node_modules/
 
 # Artifacts from misnamed files (Windows path issue)
 C*codetests_debug_stats.js
+
+# Tool & agent ephemeral directories
+.agents/
+.codegraph/
+.playwright-mcp/
+.superpowers/
+
+# Large test data — keep small fixtures only (_easy_test, flip_demo)
+tests/test_data/4000*.apkg
+tests/test_data/4000*.yhspack
+tests/test_data/家人.apkg
+tests/test_data/家人.yhspack
+tests/test_data/蔬菜水果本地版.yhspack
