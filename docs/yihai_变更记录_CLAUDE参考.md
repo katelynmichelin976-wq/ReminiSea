@@ -2,6 +2,14 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.10.0 post — #402
+
+- **触发器自洽维护 `sync_card_states`**：`_writeSrs` trial entry 补 `lapses_streak_after` / `lapses_total_after` / `review_mode_after` / `step_index_after`，来自 `processAnswer` 算出的 `newState`。`syncTrialLog` / `uploadTrialBatch` 显式字段列表同步补充。
+- **DB Migration 011**：`sync_trials` 加 4 列；重建 `fn_trial_to_card_state` 触发器，改用 `_after` 值（`COALESCE` 兼容旧 trial 降级到 `_before`）。`sync_card_states` 中 `lapses_streak` / `lapses_total` / `review_mode` / `step_index` 现在由触发器完整维护，不再依赖 JS 补偿。
+- **`syncPendingData` 简化**：删除全量 card state backfill（触发器已自洽，补传 trial 时触发器同步更新状态）。
+- **`unsuspendCard` 即时云同步**：reset / resume 后直接调用 `syncCardState()`，手动操作（无 trial 路径）立即同步云端，不再依赖下次 backfill。
+- **职责分离确立**：trial → 触发器维护所有 SRS 状态（含 lapses）；`syncCardState()` 仅负责无 trial 操作（挂起/重置）；`synced_at` 不参与跨设备合并（合并逻辑全程用 `updated_at`）。
+
 ## v5.10.0 Key Changes
 
 - **牌组管理页（screen-decks）**：新增独立全屏牌组管理入口，三段式：本地 Tab（左滑重命名/导出/删除）/ 云端 Tab（同步状态徽章 + 同步/下载/补全媒体操作）/ 精选 Tab（占位）。`renderLocalDecksTab()` 复用现有 deck-card + swipe 逻辑；`renderCloudDecksTab()` 迁移自 `showCloudDecks()`。

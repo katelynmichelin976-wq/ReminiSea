@@ -129,6 +129,16 @@ new → learning（学习中）→ review（复习中/已掌握）
 
 ## 版本历史
 
+### v5.10.0 post — 2026-06-08
+
+**触发器自洽 + 手动操作即时云同步**
+
+- `sync_trials` 补 4 个 `_after` 字段（`lapses_streak_after` / `lapses_total_after` / `review_mode_after` / `step_index_after`），触发器改从 `_after` 读取，`sync_card_states` 由 DB 完整自洽维护
+- `unsuspendCard` 重置/解挂后即时调用 `syncCardState()`，无 trial 路径的状态变更不再延迟到下次 backfill
+- `syncPendingData` 移除全量 card state backfill（触发器已覆盖所有 trial 路径）
+
+---
+
 ### v5.9.0 — 2026-06-06
 
 **个人牌组同步 v2 — media slot 模型**
