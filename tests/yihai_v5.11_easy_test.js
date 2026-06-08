@@ -106,5 +106,61 @@ function learningStabilityKey(s) {
   check('stability: last==0 排末', sorted[2] === b);
 }
 
+// ── pickLSlotCandidates ──────────────────────────────────────────
+// Order matters: unseen first (random), then learning by weakness, then far confident
+function pickLSlotCandidates(pools) {
+  const list = [];
+  // shuffled unseen
+  for (const c of [...pools.unseen].sort(() => Math.random() - 0.5)) list.push({ card: c, role: 'L', tier: 'unseen' });
+  // learning by weakness
+  const learnSorted = [...pools.learning].sort((x, y) =>
+    cmpKey(learningWeaknessKey(x.state), learningWeaknessKey(y.state)));
+  for (const e of learnSorted) list.push({ card: e.card, role: 'L', tier: 'learning' });
+  // far confident fallback
+  const confSorted = [...pools.confident].sort((x, y) =>
+    (x.state.last_seen || 0) - (y.state.last_seen || 0));
+  for (const e of confSorted) list.push({ card: e.card, role: 'L', tier: 'confident' });
+  return list;
+}
+
+// ── pickCSlotCandidates ──────────────────────────────────────────
+// roleHint: 'warmup' | 'core' | 'tail'
+function pickCSlotCandidates(pools, roleHint) {
+  const list = [];
+  const confSort = roleHint === 'warmup'
+    ? (a, b) => ((a.state.last_warmup || 0) - (b.state.last_warmup || 0))
+                || ((a.state.last_seen || 0) - (b.state.last_seen || 0))
+    : (a, b) => (a.state.last_seen || 0) - (b.state.last_seen || 0);
+  for (const e of [...pools.confident].sort(confSort)) list.push({ card: e.card, tier: 'confident' });
+  // learning fallback by stability
+  const learnSorted = [...pools.learning].sort((x, y) =>
+    cmpKey(learningStabilityKey(x.state), learningStabilityKey(y.state)));
+  for (const e of learnSorted) list.push({ card: e.card, tier: 'learning' });
+  // unseen 仅极端兜底（不洗牌；调用方需要判断）
+  for (const c of pools.unseen) list.push({ card: c, tier: 'unseen' });
+  return list;
+}
+
+{
+  const pools = {
+    confident: [],
+    learning: [
+      { card: { id: 'a' }, state: { history: [1, 1], last_seen: 10, last_warmup: 0 } },
+      { card: { id: 'b' }, state: { history: [0, 0, 0], last_seen: 5, last_warmup: 0 } },
+    ],
+    unseen: [{ id: 'u1' }, { id: 'u2' }],
+  };
+  const lCands = pickLSlotCandidates(pools);
+  const ids = lCands.map(x => x.card.id);
+  check('L 槽：unseen 排前 2', ids[0].startsWith('u') && ids[1].startsWith('u'));
+  check('L 槽：最弱 learning 排第 3 (b: zeros=3)', ids[2] === 'b');
+  check('L 槽：次弱 learning 排第 4 (a)', ids[3] === 'a');
+
+  const cCands = pickCSlotCandidates(pools, 'warmup');
+  const cIds = cCands.map(x => x.card.id);
+  check('C 槽（冷启动）：最稳 learning 排首 (a: lastIsCorrect=1, zeros=0)', cIds[0] === 'a');
+  check('C 槽（冷启动）：次稳 (b)', cIds[1] === 'b');
+}
+
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);
 process.exit(failed > 0 ? 1 : 0);
