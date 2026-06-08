@@ -2556,6 +2556,14 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
               <button type="button" class="chip" data-size="23">23</button>
             </div>
           </div>
+          <div class="sheet-row" id="easyRetryRow" style="display:none;">
+            <span class="sheet-row-lbl" data-i18n="settings_easy_retry">答错重试</span>
+            <label class="stoggle">
+              <input type="checkbox" id="easyRetryToggle">
+              <div class="stoggle-track"></div>
+              <div class="stoggle-thumb"></div>
+            </label>
+          </div>
         </div>
         <div class="sheet-section">
           <div class="sheet-section-lbl" data-i18n="settings_section_storage">存储维护</div>
@@ -10679,6 +10687,7 @@ function openSettings(){
   loadDailyGoalUI();
   _updateSettingsLangVal();
   refreshEasySizeRow();
+  refreshEasyRetryRow();
 }
 function closeSettings(){
   document.getElementById('settings-overlay').classList.remove('open');
@@ -11406,6 +11415,7 @@ function setSrsMode(mode) {
     if (el) el.textContent = m === mode ? '✓' : '';
   });
   refreshEasySizeRow();
+  refreshEasyRetryRow();
 }
 
 function refreshEasySizeRow() {
@@ -11419,6 +11429,19 @@ function refreshEasySizeRow() {
   });
 }
 
+function refreshEasyRetryRow() {
+  const row = document.getElementById('easyRetryRow');
+  if (!row) return;
+  row.style.display = (SRS_CONFIG.session_mode === 'easy') ? '' : 'none';
+  const tog = document.getElementById('easyRetryToggle');
+  if (tog) tog.checked = !!SRS_CONFIG.easy_retry_on_wrong;
+}
+
+document.getElementById('easyRetryToggle')?.addEventListener('change', e => {
+  SRS_CONFIG.easy_retry_on_wrong = e.target.checked;
+  localStorage.setItem('easyRetryOnWrong', e.target.checked ? '1' : '0');
+});
+
 document.querySelectorAll('[data-easy-size] .chip').forEach(b => {
   b.addEventListener('click', () => {
     const n = parseInt(b.dataset.size, 10);
@@ -11426,6 +11449,7 @@ document.querySelectorAll('[data-easy-size] .chip').forEach(b => {
     SRS_CONFIG.easy_session_size = n;
     localStorage.setItem('easySessionSize', String(n));
     refreshEasySizeRow();
+    refreshEasyRetryRow();
   });
 });
 
@@ -11456,6 +11480,7 @@ function openSettingsWithSrs() {
   loadDailyGoalUI();
   _updateSettingsLangVal();
   refreshEasySizeRow();
+  refreshEasyRetryRow();
 }
 
 // ── home 3rd column (today done) ─────────────────────────────────
