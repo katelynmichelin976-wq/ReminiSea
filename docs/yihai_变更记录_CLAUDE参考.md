@@ -2,7 +2,15 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
-## v5.11.0（未发布）— Easy 模式重设计
+## v5.11.0（未发布）— Easy 模式重设计 + 同步性能修复
+
+### 同步性能修复（v5.9 退化）
+
+- **根因**：v5.9.0 重写 `runMediaPhase` 时，每个 slot 上传完都立即调 `upsertSingleCard`（PostgREST 单行 UPDATE）。一张含 img+aud 双 slot 的卡 → 4 次后台请求（2 Storage + 2 upsert）。500 卡 = 2000+ 后台请求，妈妈牌组同步从秒级退化到分钟级。
+- **修复**：删 `upsertSingleCard`；新增 `upsertCardsMediaBatch`（仅写 media 列 + updated_at，安全保留 sort_order）；`runMediaPhase` 累积 `pendingMediaUpsert` Set，在现有 checkpoint（每 20 张）+ 末尾各 flush 一次，把 N 次 upsert 降为 ⌈N/20⌉ 次。
+- **效果**：500 卡 PostgREST 写从 1000 次降为 25 次（×40）。Storage 上传次数不变（本就受文件数限制）。中断恢复语义保持（每 checkpoint 已 flush）。
+
+### Easy 模式重设计
 
 - **独立数据层 EasyState**：IDB 新 store `easyCardStates`（DB v7→v8，复合键 `['deck_key','card_id']`，`deck_key` index），字段 `seen / history(≤3) / last_seen / last_warmup`，与 `sync_card_states` 完全隔离。
 - **三级分类**：`unseen`（无记录）/ `learning`（见过未稳）/ `confident`（`history === [1,1,1]`）。任意一次首答错立即跌回 learning。
