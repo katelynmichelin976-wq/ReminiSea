@@ -2909,7 +2909,8 @@ function minsToTs(mins) {
 
 // ── IndexedDB: yihai_srs (v5: user_id multi-user isolation) ──────
 const SRS_DB_NAME    = 'yihai_srs';
-const SRS_DB_VER     = 7;
+const SRS_DB_VER     = 8;
+const EASY_STORE     = 'easyCardStates';
 const CS_STORE       = 'card_states';
 const TRIAL_STORE    = 'trials';
 const EVT_STORE      = 'app_events';
@@ -3632,6 +3633,13 @@ function openSrsDb() {
         if (!db.objectStoreNames.contains(VOICE_SLOT_STORE)) {
           db.createObjectStore(VOICE_SLOT_STORE, { keyPath: 'slotName' });
         }
+      }
+      if (oldVer < 8) {
+        if (!db.objectStoreNames.contains(EASY_STORE)) {
+          const s = db.createObjectStore(EASY_STORE, { keyPath: ['deck_key', 'card_id'] });
+          s.createIndex('deck_key', 'deck_key', { unique: false });
+        }
+        console.log('[idb] upgraded yihai_srs v7→v8: easyCardStates store created');
       }
     };
     req.onsuccess = e => { _srsDb = e.target.result; _srsDbPromise = null; res(_srsDb); };
