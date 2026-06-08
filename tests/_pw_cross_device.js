@@ -423,19 +423,24 @@ let tStart;
     pass('Fix1: pull 后 audioUrl 仍是 blob URL（_audUrl 相同保留）', afterPullState.audIsBlob);
     pass('Fix1: pull 后 _imgUrl 不丢', !!afterPullState.imgUrl);
 
-    // ════ PHASE 8: 媒体上传不应造成 remoteAhead 假象（Fix 2 回归）════
-    section('PHASE 8: 媒体重传后 state 仍为 clean — pulledAt 跟随 cloud.updated_at');
+    // ════ PHASE 8: 同步动作不应造成 remoteAhead 假象（v5.8.1 Fix 2 回归，v5.9 适配）════
+    // 原意：cloud.decks.updated_at 因同步动作 bump 时，本地 pulledAt 必须同步推进，
+    //       否则牌组管理页常驻「待下载」/ 首页常驻黄点。
+    // v5.9 媒体路径已改 media slot，但水位推进逻辑仍由 upsertDeckRow / runCardsPhase 末尾负责，
+    // 用「卡片改动 → syncDeck → cloud updated_at 推进」覆盖即可，无需依赖已废弃的 uploadPersonalDeckMedia
+    section('PHASE 8: 同步后 state 仍为 clean — pulledAt 跟随 cloud.updated_at');
     const stateBeforeReupload = await run(pageA, (key) => computeDeckSyncState(key), mediaDeckKey);
-    pass('Fix2: 媒体重传前 state=clean', stateBeforeReupload.status === 'clean');
+    pass('Fix2: 同步前 state=clean', stateBeforeReupload.status === 'clean');
 
     await run(pageA, async (key) => {
-      DECKS[key][0]._imgUrl = '';
+      const card = DECKS[key][0];
+      card.mod = Date.now();
       saveDeckCards(key, DECKS[key]);
-      await uploadPersonalDeckMedia(key);
+      await syncDeck(key);
     }, mediaDeckKey);
 
     const stateAfterReupload = await run(pageA, (key) => computeDeckSyncState(key), mediaDeckKey);
-    pass('Fix2: 媒体重传后 state 仍为 clean（pulledAt 已推进）',
+    pass('Fix2: 卡片改动同步后 state 仍为 clean（pulledAt 已推进）',
       stateAfterReupload.status === 'clean');
 
     // ════ PHASE 9: 老设备升级后首次同步不卡「双向 +N」(Fix 3 回归) ════
