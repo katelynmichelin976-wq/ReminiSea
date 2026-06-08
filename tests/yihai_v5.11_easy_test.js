@@ -162,5 +162,98 @@ function pickCSlotCandidates(pools, roleHint) {
   check('C 槽（冷启动）：次稳 (b)', cIds[1] === 'b');
 }
 
+// ── buildEasyQueue ────────────────────────────────────────────────
+// Input:  { cards: [{id,...}], stateMap: {id → state}, T }
+// Output: [{ card, _easyRole: 'warmup'|'core'|'tail', _easySlot: 'C'|'L' }]
+function buildEasyQueue({ cards, stateMap, T }) {
+  const deckSize = cards.length;
+  const struct = computeEasyStructure(T);
+
+  // Build pools
+  const conf = [], learn = [], unseen = [];
+  for (const c of cards) {
+    const st = stateMap[c.id];
+    const cls = classifyEasyCard(st);
+    if (cls === 'confident') conf.push({ card: c, state: st });
+    else if (cls === 'learning') learn.push({ card: c, state: st });
+    else unseen.push(c);
+  }
+  const pools = { confident: conf, learning: learn, unseen };
+
+  // Flat fallback
+  if (struct.kind === 'flat' || deckSize < 7) {
+    const all = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(T, deckSize));
+    return all.map(c => ({ card: c, _easyRole: 'core', _easySlot: 'L' }));
+  }
+
+  const usedIds = new Set();
+  const result = [];
+  const takeFrom = (cands) => {
+    for (const item of cands) {
+      const card = item.card;
+      if (!usedIds.has(card.id)) {
+        usedIds.add(card.id);
+        return card;
+      }
+    }
+    return null;
+  };
+
+  // 1. warmup × 3 (all C)
+  for (let i = 0; i < struct.warmup; i++) {
+    const c = takeFrom(pickCSlotCandidates(pools, 'warmup'));
+    if (c) result.push({ card: c, _easyRole: 'warmup', _easySlot: 'C' });
+  }
+
+  // 2. k × (L + CCC)
+  for (let g = 0; g < struct.k; g++) {
+    const lCard = takeFrom(pickLSlotCandidates(pools));
+    if (lCard) result.push({ card: lCard, _easyRole: 'core', _easySlot: 'L' });
+    for (let i = 0; i < 3; i++) {
+      const cCard = takeFrom(pickCSlotCandidates(pools, 'core'));
+      if (cCard) result.push({ card: cCard, _easyRole: 'core', _easySlot: 'C' });
+    }
+  }
+
+  // 3. tail × r (all C)
+  for (let i = 0; i < struct.r; i++) {
+    const c = takeFrom(pickCSlotCandidates(pools, 'tail'));
+    if (c) result.push({ card: c, _easyRole: 'tail', _easySlot: 'C' });
+  }
+
+  return result;
+}
+
+{
+  // 冷启动场景：所有卡 unseen
+  const cards = Array.from({ length: 30 }, (_, i) => ({ id: 'c' + i }));
+  const q1 = buildEasyQueue({ cards, stateMap: {}, T: 19 });
+  check('冷启动 T=19：队列长度 19', q1.length === 19);
+  check('冷启动：所有 19 张 unseen 充槽', q1.every(x => x.card));
+  check('冷启动：session 内去重', new Set(q1.map(x => x.card.id)).size === 19);
+
+  // 稳态：足够 confident
+  const stateMap = {};
+  cards.forEach(c => {
+    stateMap[c.id] = { history: [1, 1, 1], last_seen: Math.random() * 1000, last_warmup: 0 };
+  });
+  const q2 = buildEasyQueue({ cards, stateMap, T: 19 });
+  check('稳态 T=19：长度 19', q2.length === 19);
+  check('warmup × 3 标 warmup', q2.slice(0, 3).every(x => x._easyRole === 'warmup'));
+  check('tail r=0 时无 tail', q2.every(x => x._easyRole !== 'tail'));
+  // 全 confident 时 L 槽 fallback 到 confident（far）
+  check('全 confident：L 槽走 confident fallback', q2.filter(x => x._easySlot === 'L').length === 4);
+
+  // 牌组 <7
+  const tiny = Array.from({ length: 5 }, (_, i) => ({ id: 't' + i }));
+  const q3 = buildEasyQueue({ cards: tiny, stateMap: {}, T: 19 });
+  check('牌组 5 < 7：flat 5 张', q3.length === 5);
+
+  // T=10 (k=1, r=3)
+  const q4 = buildEasyQueue({ cards, stateMap, T: 10 });
+  check('T=10: 长度 10', q4.length === 10);
+  check('T=10: tail r=3 末三 tail', q4.slice(-3).every(x => x._easyRole === 'tail'));
+}
+
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);
 process.exit(failed > 0 ? 1 : 0);
