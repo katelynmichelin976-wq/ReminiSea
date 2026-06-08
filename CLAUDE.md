@@ -62,9 +62,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.11.1**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.11.2**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
 **v5.10.0 post（#402）：** 触发器自洽维护 `sync_card_states` — `_writeSrs` trial entry 补 `lapses_streak_after`/`lapses_total_after`/`review_mode_after`/`step_index_after`（来自 `processAnswer` 算出的 `newState`）；`syncTrialLog`/`uploadTrialBatch` 显式字段列表同步补充；DB Migration 011 加 4 列并重建触发器 `fn_trial_to_card_state`（改用 `_after` 值，COALESCE 兼容旧 trial）；`syncPendingData` 删除全量 card state backfill；`unsuspendCard` reset/resume 后即时调用 `syncCardState()`。
+
+**v5.11.2：** 首页交互 + 管理页样式细化 — 首页牌组点击改为仅切换选中态（红色高亮 + 左侧 accent 条），不再导航到详情页；删 navChevron 按钮与 `.album-nav-btn` CSS；补 click handler（修 v5.11.1 删左滑时连带去掉 `initDeckSwipe` 导致选中失效）；`import` 路径补 `showDeckDetail()` 保留旧行为；登录按钮与密码框加 `margin-top: 14px` 间距；牌组管理页（`.decks-panel`）本地/云端 Tab 统一为无圆角平铺风格（disable `.deck-grid` 容器装饰、`.deck-card-inner` padding 14×16、name 15px、隐藏 selected accent bar），首页 home 圆角卡片风不受影响。
 
 **v5.11.1：** UI 简化 — 删首页「+ 新建」按钮 + 牌组卡片左滑操作（导出/重命名/删除集中在牌组管理页）；删我的页「统计」入口与账户页「云端牌组」section；取消同步开始时「正在同步」语音播报；Tab Bar「牌组」「统计」按钮加 `advanced-only` 类（standard 模式简化为 首页/练习/我的 3 项，advanced 模式保持 5 项不变）。
 

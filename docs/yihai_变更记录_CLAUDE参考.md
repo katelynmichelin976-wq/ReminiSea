@@ -2,6 +2,14 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.11.2 — 首页交互 + 管理页样式细化
+
+- **首页牌组点击**：`selectDeck` 移除 `showDeckDetail()` 调用，点击改为仅切换选中态（`.selected` → 红色背景 + 左侧 accent 条）；`import` 路径在 `selectDeck` 后显式补 `showDeckDetail()` 保留旧行为
+- **首页 navChevron 删除**：移除右侧 `.album-nav-btn` 按钮 + 对应 CSS（v5.11.1 改 `advanced-only` 后已无实际价值）
+- **首页点击修复**：v5.11.1 删左滑时一并删除了 `initDeckSwipe(grid)` 导致 click handler 丢失，补回纯 click 监听 `grid.addEventListener('click', e => selectDeck(closest('.deck-card-inner')))`
+- **登录表单间距**：新增 `.account-field + .account-btn { margin-top: 14px }` 让密码 input 与登录按钮分隔
+- **牌组管理页平铺风格**：撤回 v5.11.1 给云端 list 加 `.deck-grid` 容器的改动；改用 `.decks-panel` 作用域覆盖，让该页内的 `.deck-grid` 与 `.deck-card-inner` 显示为无圆角平铺行（disable 背景/边框/阴影/border-radius、padding 14×16、name 15px、隐藏 selected accent bar），与原云端 list 风格一致；**首页 home 的圆角卡片风不受影响**
+
 ## v5.11.1 — UI 简化（advanced/standard 模式分流）
 
 - **首页**：删除「+ 新建」按钮（已在牌组管理页「本地 Tab」提供）；删除牌组卡片的左滑「导出/重命名/删除」交互（同样移到牌组管理页本地 Tab），相关 swipe 变量与 `initDeckSwipe` 初始化一并清掉
