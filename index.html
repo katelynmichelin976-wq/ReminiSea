@@ -10253,15 +10253,18 @@ async function upsertCardsBatch(deckKey, cards) {
   }
 }
 
-async function upsertSingleCard(deckKey, card) {
-  const { error } = await _sb.from('deck_cards')
-    .update({
-      media: serializeMedia(card.media || {}),
-      updated_at: new Date(card.mod || Date.now()).toISOString()
-    })
-    .eq('deck_id', deckKey)
-    .eq('card_id', card.id);
-  if (error) throw new Error('upsertSingleCard: ' + error.message);
+async function upsertCardsMediaBatch(deckKey, cards) {
+  if (!cards.length) return;
+  const rows = cards.map(c => ({
+    deck_id: deckKey, card_id: c.id,
+    media: serializeMedia(c.media || {}),
+    updated_at: new Date(c.mod || Date.now()).toISOString()
+  }));
+  for (let b = 0; b < rows.length; b += 100) {
+    const { error } = await _sb.from('deck_cards')
+      .upsert(rows.slice(b, b + 100), { onConflict: 'deck_id,card_id' });
+    if (error) throw new Error('upsertCardsMediaBatch: ' + error.message);
+  }
 }
 
 async function deleteCardsBatch(deckKey, cardIds) {
@@ -10422,6 +10425,17 @@ class SyncJob {
     const cards = DECKS[this.deckKey] || [];
     this._setPhase('media', 0, cards.length);
     let cardDone = 0;
+    // 累积本批已上传新 url 的卡，到 checkpoint 时一次性 batch upsert，
+    // 避免每个 slot 都触发一次 PostgREST 单行写（v5.9 引入的性能退化，v5.11 修复）
+    const pendingMediaUpsert = new Set();
+
+    const flushMediaUpsert = async () => {
+      if (!pendingMediaUpsert.size) return;
+      const batch = Array.from(pendingMediaUpsert);
+      pendingMediaUpsert.clear();
+      await upsertCardsMediaBatch(this.deckKey, batch)
+        .catch(e => console.warn('[sync] runMediaPhase batch upsert fail:', e.message));
+    };
 
     for (const card of cards) {
       await this._checkpoint();
@@ -10440,7 +10454,7 @@ class SyncJob {
           const { error } = await _sb.storage.from('ReminiSea').upload(path, blob, { upsert: true });
           if (error) { console.warn('[sync] media upload fail:', card.id, slot, error.message); continue; }
           s.url = path;
-          await upsertSingleCard(this.deckKey, card).catch(e => console.warn('[sync] upsertSingleCard fail:', e.message));
+          pendingMediaUpsert.add(card);          // 留到 checkpoint 批量 upsert
         }
       }
 
@@ -10470,12 +10484,14 @@ class SyncJob {
       // checkpoint 每 20 张
       if (cardDone % 20 === 0) {
         saveDeckCards(this.deckKey, cards);
+        await flushMediaUpsert();   // 把这一批已上传的 url 批量写入 deck_cards
         await this._checkpoint();   // 检查取消/暂停（暂停前已 saveDeckCards）
       }
     }
 
-    // 最终持久化
+    // 最终持久化 + 最后一批 flush
     saveDeckCards(this.deckKey, cards);
+    await flushMediaUpsert();
     if (deckMediaComplete(cards)) {
       localStorage.setItem('yihaiPushedMediaAt:' + this.deckKey, String(Date.now()));
     }
