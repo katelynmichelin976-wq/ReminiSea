@@ -9138,6 +9138,31 @@ async function _writeSrs(q, rating, attempt) {
 
   await writeTrialLog(entry);
   // cloud sync triggered silently in writeTrialLog / saveCardState
+
+  if (isEasyMode) {
+    try {
+      const a = attempt || { attemptNumber: 1, isCorrect: (rating === 'good' || rating === 'easy') };
+      const firstTryCorrect = (a.attemptNumber === 1 && a.isCorrect === true);
+
+      const prev = await getEasyState(deckKey, state.card_id);
+      const es = prev || {
+        deck_key:    deckKey,
+        card_id:     state.card_id,
+        seen:        0,
+        history:     [],
+        last_seen:   0,
+        last_warmup: 0,
+      };
+      es.seen++;
+      es.last_seen = Date.now();
+      es.history.push(firstTryCorrect ? 1 : 0);
+      if (es.history.length > 3) es.history.shift();
+      if (q._easyRole === 'warmup') es.last_warmup = Date.now();
+      await putEasyState(es);
+    } catch (e) {
+      console.warn('[easy] writeEasyState failed', e?.message);
+    }
+  }
 }
 
 // ── finish screen ────────────────────────────────────────────────
