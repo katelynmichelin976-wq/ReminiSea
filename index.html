@@ -1365,6 +1365,15 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 .account-btn-primary { background: var(--ocean); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
 .account-btn-primary:disabled { opacity: 0.5; }
 .account-btn-danger { background: none; border: 1.5px solid var(--bd2); color: var(--text2); }
+.account-aux-links {
+  display: flex; justify-content: space-between; margin-top: 12px;
+  padding: 0 4px; font-size: 14px;
+}
+.account-link {
+  color: var(--text3); cursor: pointer; text-decoration: underline;
+  -webkit-tap-highlight-color: transparent;
+}
+.account-link:active { color: var(--ocean); }
 .account-msg { font-size: 13px; margin-top: 10px; text-align: center; }
 
 /* ── State B: restoring ── */
@@ -2325,6 +2334,10 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <input class="account-field" type="email" id="account-email" data-i18n-placeholder="account_email_ph" placeholder="邮箱" autocomplete="email" inputmode="email">
         <input class="account-field" type="password" id="account-password" data-i18n-placeholder="account_pwd_ph" placeholder="密码" autocomplete="current-password">
         <button class="account-btn account-btn-primary" id="account-login-btn" onclick="doAccountLogin()" data-i18n="account_login_btn">登 录</button>
+        <div class="account-aux-links">
+          <a class="account-link" onclick="openRegisterSheet()" data-i18n="account_link_register">注册新账号</a>
+          <a class="account-link" onclick="openResetRequestSheet()" data-i18n="account_link_forgot">忘记密码?</a>
+        </div>
         <div class="account-msg" id="account-msg" style="display:none"></div>
       </div>
     </div>
@@ -2371,6 +2384,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       </div>
 
       <div class="account-section">
+        <button class="account-btn" onclick="openChangePasswordSheet()" data-i18n="change_pwd_menu">修改密码</button>
         <button class="account-btn account-btn-danger" onclick="doAccountLogout()" data-i18n="account_logout_btn">退出登录</button>
       </div>
     </div>
