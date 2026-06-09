@@ -2449,6 +2449,25 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
+<!-- 设置新密码 screen（从邮件链接进入） -->
+<div class="screen" id="screen-reset-password">
+  <div class="account-topbar">
+    <button class="back-btn" onclick="goHome()" data-i18n-aria="common_back" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="account-topbar-title" data-i18n="reset_set_title">设置新密码</span>
+    <div style="width:30px"></div>
+  </div>
+  <div class="account-body">
+    <div class="account-section">
+      <input class="account-field" type="password" id="rp-new" data-i18n-placeholder="reset_new_pwd_ph" placeholder="新密码（至少 6 位）" autocomplete="new-password">
+      <input class="account-field" type="password" id="rp-new2" data-i18n-placeholder="reset_new_pwd_confirm" placeholder="确认新密码" autocomplete="new-password">
+      <button class="account-btn account-btn-primary" id="rp-submit-btn" onclick="doApplyResetPassword()" data-i18n="reset_set_btn">保存</button>
+      <div class="account-msg" id="rp-msg" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ DECKS SCREEN ══════════════ -->
 <div class="screen" id="screen-decks">
 
@@ -6250,6 +6269,39 @@ async function doChangePassword() {
     }
     showCloudToast(t('change_pwd_done_toast'));
     closeChangePasswordSheet();
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = t('reset_set_btn');
+  }
+}
+
+async function doApplyResetPassword() {
+  var newPwd  = document.getElementById('rp-new').value;
+  var newPwd2 = document.getElementById('rp-new2').value;
+  var msgEl   = document.getElementById('rp-msg');
+  var btnEl   = document.getElementById('rp-submit-btn');
+  if (newPwd.length < 6) {
+    msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('auth_pwd_too_short'); return;
+  }
+  if (newPwd !== newPwd2) {
+    msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('auth_pwd_mismatch'); return;
+  }
+  btnEl.disabled = true;
+  btnEl.textContent = t('reg_btn_pending');
+  try {
+    if (!_sb) _sb = _createSupabaseClient();
+    var sessRes = await _sb.auth.getSession();
+    if (!sessRes.data || !sessRes.data.session) {
+      msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('reset_link_expired');
+      setTimeout(function() { showAccount(); }, 2000);
+      return;
+    }
+    var upd = await _sb.auth.updateUser({ password: newPwd });
+    if (upd.error) {
+      msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('auth_send_fail') + ': ' + upd.error.message; return;
+    }
+    showCloudToast(t('reset_done_toast'));
+    showAccount();
   } finally {
     btnEl.disabled = false;
     btnEl.textContent = t('reset_set_btn');
