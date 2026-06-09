@@ -5,7 +5,7 @@
  *
  * 覆盖：导航骨架、账户屏三态 DOM、设置入口、i18n 切换、核心函数存在性、语言选择器
  * 无需登录，无需 Supabase
- * 58 断言
+ * 68 断言
  */
 const { chromium } = require('playwright');
 const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
@@ -264,6 +264,18 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     pass('mode-check-survival 已删除', (await page.$('#mode-check-survival')) === null);
     await run(page, () => document.getElementById('settings-overlay').classList.remove('open'));
     await wait(page, 200);
+
+    // ════ PHASE 14: Auth UI 用户管理入口 ════
+    section('PHASE 14: Auth UI 用户管理入口');
+    await run(page, () => showAccount());
+    await wait(page, 300);
+    pass('账户屏「注册新账号」链接存在', await run(page, () =>
+      !!Array.from(document.querySelectorAll('.account-link')).find(a => a.dataset.i18n === 'account_link_register')
+    ));
+    pass('账户屏「忘记密码?」链接存在', await run(page, () =>
+      !!Array.from(document.querySelectorAll('.account-link')).find(a => a.dataset.i18n === 'account_link_forgot')
+    ));
+    pass('注册 overlay DOM 已注入', await run(page, () => !!document.getElementById('register-overlay')));
 
   } finally {
     const { passed, failed } = getCounts();
