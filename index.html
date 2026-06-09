@@ -10437,7 +10437,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
 
   try {
     // 1. get cards from deck_cards (ordered, paginated)
-    const ordered = await fetchAllDeckCards(deckId, 'card_id,name,media,image_url,audio_url');
+    const ordered = await fetchAllDeckCards(deckId, 'card_id,name,media');
     if (!ordered.length) { showCloudToast(t('sync_deck_empty'), true); return; }
 
     const key = deckId;
@@ -10446,8 +10446,8 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
     const deckCards = [];
     await parallelMapLimit(ordered, 3, async (c, i) => {
       const card = { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [], media: {} };
-      const imgUrl = c.media?.img?.url || c.image_url || '';
-      const audUrl = c.media?.aud?.url || c.audio_url || '';
+      const imgUrl = c.media?.img?.url || '';
+      const audUrl = c.media?.aud?.url || '';
       const tasks = [];
       if (imgUrl) {
         tasks.push(
@@ -10510,7 +10510,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('sync_syncing'); }
 
   function slotUrl(row, slot) {
-    return row.media?.[slot]?.url || (slot === 'img' ? row.image_url : row.audio_url) || '';
+    return row.media?.[slot]?.url || '';
   }
 
   // download one media slot, save to IDB, return blob URL
@@ -10543,7 +10543,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
     const newIds = serverIds.filter(id => !localMap[id]);
     const existingIds = serverIds.filter(id => localMap[id]);
 
-    const SELECT = 'card_id,name,media,image_url,audio_url';
+    const SELECT = 'card_id,name,media';
 
     // 4. for existing cards: delta query (only pull updated_at > lastSyncAt)
     let changedMap = {};
