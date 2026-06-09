@@ -213,13 +213,14 @@ async function waitSyncDone(page, maxMs) {
     }, CROSS_PARAMS);
     pass('Device B 本地值 == 云端值（全 4 个 cross key）', bLocalMatch);
 
-    // 断言 Device B 运行时全局变量映射正确
+    // 断言 Device B 运行时映射正确
+    // phraseWrong 无全局变量映射（wrong_hint 在 playVoiceSlot 内直接读 localStorage），改断 localStorage 值
     const globalsB = await run(pageB, () => ({
-      phraseWrong: typeof PHRASE_WRONG    !== 'undefined' ? PHRASE_WRONG    : null,
-      optDelay:    typeof OPT_READ_DELAY  !== 'undefined' ? OPT_READ_DELAY  : null,
+      phraseWrongLs: localStorage.getItem('phraseWrong'),
+      optDelay:      typeof OPT_READ_DELAY !== 'undefined' ? OPT_READ_DELAY : null,
     }));
-    pass('Device B PHRASE_WRONG 全局变量映射正确',
-      globalsB.phraseWrong === 'cross-再试试');
+    pass('Device B phraseWrong localStorage 映射正确',
+      globalsB.phraseWrongLs === 'cross-再试试');
     pass('Device B OPT_READ_DELAY 全局变量映射正确（6.5s → 6500ms）',
       globalsB.optDelay === 6500);
 

@@ -27,6 +27,19 @@ async function waitSyncDone(page) {
   return false;
 }
 
+/** 等待 DECKS_META 包含目标 deck — runSync watchdog 30s 后会强置 _syncInFlight=false，但下载仍在后台继续 */
+async function waitDeckInMeta(page, deckName, maxMs) {
+  const iters = Math.ceil((maxMs || 120000) / 500);
+  for (let i = 0; i < iters; i++) {
+    const found = await run(page, (name) =>
+      typeof DECKS_META !== 'undefined' && DECKS_META.some(m => m.name && m.name.includes(name))
+    , deckName);
+    if (found) return true;
+    await wait(page, 500);
+  }
+  return false;
+}
+
 (async () => {
   if (!TEST_PASSWORD) { console.error('FATAL: 请设置 TEST_PASSWORD 环境变量'); process.exit(1); }
 
@@ -66,8 +79,8 @@ async function waitSyncDone(page) {
     });
     pass('decks 表有预设牌组', presetsOnServer.length > 0);
 
-    // 登录后自动触发 runSync({ decks: true }) — 等待其完成（含媒体下载，最长 120s）
-    pass('登录同步完成', await waitSyncDone(page));
+    // 登录后自动触发 runSync({ decks: true }) — 等 DECKS_META 出现目标 deck（watchdog 30s 不影响后台下载，最长 120s）
+    pass('云端 deck 加入 DECKS_META', await waitDeckInMeta(page, TEST_DECK_NAME, 120000));
 
     await run(page, () => goHome());
     await wait(page, 500);
