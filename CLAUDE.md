@@ -67,9 +67,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.11.2**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.12.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
-**v5.12.0（未发布）：** 用户管理 — 账户屏未登录态加「注册新账号」「忘记密码?」文字链接 + 已登录态加「修改密码」按钮；3 个底部 sheet（注册 / 找回密码 / 改密）+ 1 个全屏 `screen-reset-password`；hash 路由识别 `#/email-confirmed` 与 `#/reset-password`；改密路径强制老密 `signInWithPassword` 验证；5 locale × 32 i18n keys；新单测 `_pw_user_mgmt.js`（22 断言）；`_pw_ui_smoke.js` +3 断言。spec: `docs/superpowers/specs/2026-06-09-user-mgmt-design.md`；plan: `docs/superpowers/plans/2026-06-09-user-mgmt.md`。
+**v5.12.0：** 用户管理 + 跨设备同步 fix + 媒体 JSONB 收尾 — ① **用户管理**：账户屏未登录态加「注册新账号」「忘记密码?」文字链接 + 已登录态加「修改密码」按钮；3 个底部 sheet（注册 / 找回密码 / 改密）+ 1 个全屏 `screen-reset-password`；hash 路由识别 `#/email-confirmed` 与 `#/reset-password`；改密路径强制老密 `signInWithPassword` 验证；5 locale × 32 i18n keys；新单测 `_pw_user_mgmt.js`（22 断言）+ `_pw_ui_smoke.js` +3 断言。② **个人牌组本地/云端解耦**：导入/重命名/新建牌组不再自动上传，进 `localDirty` 等手动同步；牌组管理页本地 Tab 加「同步」按钮（`doSyncDeckAction`）。③ **跨设备同步 fix**：`saveCardFromForm` 新卡补 `mod` + `meta.mod`（否则 `computeDeckDiff` 跳过 toPush 致跨设备看不到）；`runStructurePhase` 拉云端 name + `computeDeckDiff` 加 `localDelete` 处理远端删除传播；`runMediaPhase` 用 `.update()` 替代 `.upsert()` 修 23502 NOT NULL 报错。④ **媒体 JSONB 收尾 refactor**：`downloadDeckFromCloud` / `syncDeckFromCloud` 迁移至 media JSONB；删除 `deck_cards` 旧媒体列 fallback、`restoreDecks` 旧媒体格式迁移代码、历史版本迁移代码。⑤ **测试稳定性**：`_pw_cloud_sync.js` PHASE 3 等 DECKS_META 含目标 deck（绕开 watchdog 30s flake）；`_pw_config_sync.js` Device B 断 `localStorage('phraseWrong')`（`PHRASE_WRONG` 全局已删）。
 
 **v5.11.2：** 首页交互 + 管理页样式细化 — 首页牌组点击改为仅切换选中态（红色高亮 + 左侧 accent 条），不再导航到详情页；删 navChevron 按钮；补 click handler 修 v5.11.1 删左滑时连带丢失选中；登录按钮与密码框加间距；牌组管理页（`.decks-panel`）本地/云端 Tab 统一为无圆角平铺风格（首页 home 圆角卡片风不受影响）。
 
