@@ -6308,6 +6308,24 @@ async function doApplyResetPassword() {
   }
 }
 
+function handleAuthHashRoute() {
+  var h = location.hash || '';
+  if (h.startsWith('#/email-confirmed')) {
+    history.replaceState(null, '', location.pathname);
+    if (typeof showCloudToast === 'function') showCloudToast(t('auth_email_confirmed_toast'));
+    var emailLast = localStorage.getItem('yihaiLastCloudEmail') || '';
+    var emailEl = document.getElementById('account-email');
+    if (emailEl && emailLast) emailEl.value = emailLast;
+    if (typeof showAccount === 'function') showAccount();
+    return;
+  }
+  if (h.startsWith('#/reset-password')) {
+    history.replaceState(null, '', location.pathname);
+    if (typeof showScreen === 'function') showScreen('screen-reset-password');
+    return;
+  }
+}
+
 function doAccountSync() {
   const btn = document.getElementById('account-sync-btn');
   if (btn) btn.disabled = true;
@@ -11265,6 +11283,7 @@ function showAbout() {
     }
   }
   setTimeout(_tryInitCloud, 100);
+  setTimeout(handleAuthHashRoute, 200);
 })();
 
 // ════════════════════════════════════════════════════════════════
