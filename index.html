@@ -5192,7 +5192,7 @@ async function importYhspack(file) {
     saveDeckIndex();
     saveDeckCards(key, cards);
 
-    syncDeck(key).catch(() => {});
+    // 本地操作不自动上传；牌组进入 localDirty 由用户在牌组管理页手动同步
 
     // refresh home list, select the just-imported deck
     renderDeckList();
@@ -5373,7 +5373,7 @@ async function renameDeck(key) {
   meta.name = newName.trim();
   meta.mod = nextMod();
   saveDeckIndex();
-  if (meta.deck_type === 'personal' && _syncEnabled) syncDeck(key).catch(() => {});
+  // 本地操作不自动上传；改名进入 localDirty 等用户手动同步
   renderDeckList();
   // if deck detail screen is showing this deck, sync name update
   if (currentDeck === key) {
@@ -5716,7 +5716,7 @@ async function createEmptyDeck() {
   DECKS_META.push({ key: key, name: name.trim(), deck_type: 'personal', mod: nextMod() });
   saveDeckIndex();
   saveDeckCards(key, []);
-  syncDeck(key).catch(() => {});
+  // 本地操作不自动上传；新建牌组进入 localDirty 等用户手动同步
   renderDeckList();
   updateDeckStats();
   showCloudToast(t('home_deck_created', { name: name.trim() }));
