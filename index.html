@@ -6231,18 +6231,31 @@ async function doApplyResetPassword() {
   }
 }
 
-function handleAuthHashRoute() {
-  var h = location.hash || '';
-  if (h.startsWith('#/email-confirmed')) {
+function handleAuthHashRoute(h) {
+  h = h !== undefined ? h : (location.hash || '');
+  if (h.startsWith('#/email-confirmed') || h.includes('type=signup')) {
     history.replaceState(null, '', location.pathname);
     if (typeof showCloudToast === 'function') showCloudToast(t('auth_email_confirmed_toast'));
+    if (_sb) {
+      _sb.auth.getSession().then(function(result) {
+        var session = result && result.data && result.data.session;
+        if (session) {
+          _cloudUserEmail = session.user.email;
+          _cloudUserId    = session.user.id;
+          _syncEnabled    = true;
+          localStorage.setItem('yihaiSessionBackup', JSON.stringify(session));
+          if (typeof updateCloudTabUI === 'function') updateCloudTabUI();
+          if (typeof renderAccount === 'function') renderAccount();
+        }
+      });
+    }
     var emailLast = localStorage.getItem('yihaiLastCloudEmail') || '';
     var emailEl = document.getElementById('account-email');
     if (emailEl && emailLast) emailEl.value = emailLast;
     if (typeof showAccount === 'function') showAccount();
     return;
   }
-  if (h.startsWith('#/reset-password')) {
+  if (h.startsWith('#/reset-password') || h.includes('type=recovery')) {
     history.replaceState(null, '', location.pathname);
     if (typeof showScreen === 'function') showScreen('screen-reset-password');
     return;
@@ -11293,6 +11306,7 @@ function showAbout() {
 
   // 2. cloud init — runs after Supabase SDK loads
   async function initCloud() {
+    var _initHash = location.hash || '';
     window.addEventListener('offline', function() {
       if (_sb) { try { _sb.auth.stopAutoRefresh(); } catch(e) {} }
       if (_syncEnabled) { _syncEnabled = false; updateCloudTabUI(); }
@@ -11302,6 +11316,19 @@ function showAbout() {
 
     if (_sb) {
       _sb.auth.onAuthStateChange(function(event, session) {
+        if (event === 'PASSWORD_RECOVERY') {
+          history.replaceState(null, '', location.pathname);
+          showScreen('screen-reset-password');
+          return;
+        }
+        if (event === 'SIGNED_IN' && session) {
+          _cloudUserEmail = session.user.email;
+          _cloudUserId    = session.user.id;
+          _syncEnabled    = true;
+          localStorage.setItem('yihaiSessionBackup', JSON.stringify(session));
+          updateCloudTabUI();
+          return;
+        }
         if (event === 'TOKEN_REFRESHED' && session) {
           _cloudUserEmail = session.user.email;
           _cloudUserId    = session.user.id;
@@ -11334,7 +11361,8 @@ function showAbout() {
     }
   }
   setTimeout(_tryInitCloud, 100);
-  setTimeout(handleAuthHashRoute, 200);
+  var _capturedHash = location.hash || '';
+  setTimeout(function() { handleAuthHashRoute(_capturedHash); }, 200);
 })();
 
 // ════════════════════════════════════════════════════════════════
