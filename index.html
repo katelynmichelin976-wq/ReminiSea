@@ -2059,6 +2059,29 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
+<!-- ══════════════ REGISTER SHEET ══════════════ -->
+<div class="feedback-overlay" id="register-overlay" style="display:none">
+  <div class="feedback-sheet" id="register-sheet">
+    <div class="sheet-handle-row">
+      <div class="sheet-handle"></div>
+      <button class="sheet-close-btn" onclick="closeRegisterSheet()" data-i18n-aria="common_close">×</button>
+    </div>
+    <div style="padding:10px 16px 14px;font-size:18px;font-weight:700;color:var(--text)" id="reg-title" data-i18n="reg_sheet_title">注册新账号</div>
+    <div style="padding:0 16px 24px">
+      <input class="account-field" type="email" id="reg-email" data-i18n-placeholder="reg_email_ph" placeholder="邮箱地址" autocomplete="email" inputmode="email">
+      <input class="account-field" type="password" id="reg-pwd" data-i18n-placeholder="reg_pwd_ph" placeholder="密码（至少 6 位）" autocomplete="new-password">
+      <input class="account-field" type="password" id="reg-pwd2" data-i18n-placeholder="reg_pwd_confirm_ph" placeholder="确认密码" autocomplete="new-password">
+      <button class="account-btn account-btn-primary" id="reg-submit-btn" onclick="doRegister()" data-i18n="reg_btn" style="margin-top:14px">注册</button>
+      <div class="account-msg" id="reg-msg" style="display:none;margin-top:10px"></div>
+      <div id="reg-pending-block" style="display:none;text-align:center;padding:16px 0 8px">
+        <div data-i18n="reg_wait_title" style="font-weight:600;margin-bottom:8px">验证邮件已发送</div>
+        <div id="reg-wait-body" style="color:var(--text3);font-size:13px;margin-bottom:12px"></div>
+        <button class="account-btn" onclick="doResendVerification()" data-i18n="reg_resend_btn">重发邮件</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ theme picker ══════════════ -->
 <div class="screen screen-theme" id="screen-theme">
   <div class="theme-topbar">
@@ -6036,6 +6059,85 @@ async function doAccountLogout() {
   updateCloudTabUI();
   renderAccount();
   updateMineProfile();
+}
+
+function openRegisterSheet() {
+  var overlay = document.getElementById('register-overlay');
+  if (!overlay) return;
+  var emailEl = document.getElementById('account-email');
+  if (emailEl) document.getElementById('reg-email').value = emailEl.value;
+  document.getElementById('reg-pwd').value = '';
+  document.getElementById('reg-pwd2').value = '';
+  document.getElementById('reg-msg').style.display = 'none';
+  document.getElementById('reg-pending-block').style.display = 'none';
+  document.getElementById('reg-title').style.display = '';
+  document.getElementById('reg-email').style.display = '';
+  document.getElementById('reg-pwd').style.display = '';
+  document.getElementById('reg-pwd2').style.display = '';
+  document.getElementById('reg-submit-btn').style.display = '';
+  overlay.style.display = '';
+  overlay.onclick = function(e) { if (e.target === overlay) closeRegisterSheet(); };
+}
+function closeRegisterSheet() {
+  var overlay = document.getElementById('register-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+async function doRegister() {
+  var email = document.getElementById('reg-email').value.trim();
+  var pwd   = document.getElementById('reg-pwd').value;
+  var pwd2  = document.getElementById('reg-pwd2').value;
+  var msgEl = document.getElementById('reg-msg');
+  var btnEl = document.getElementById('reg-submit-btn');
+
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('auth_email_invalid'); return;
+  }
+  if (pwd.length < 6) {
+    msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('auth_pwd_too_short'); return;
+  }
+  if (pwd !== pwd2) {
+    msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('auth_pwd_mismatch'); return;
+  }
+
+  btnEl.disabled = true;
+  btnEl.textContent = t('reg_btn_pending');
+  msgEl.style.display = 'none';
+
+  try {
+    if (!_sb) _sb = _createSupabaseClient();
+    var redirectTo = location.origin + location.pathname + '#/email-confirmed';
+    var result = await _sb.auth.signUp({ email: email, password: pwd, options: { emailRedirectTo: redirectTo } });
+    var error = result.error;
+    if (error) {
+      if (error.message && error.message.toLowerCase().includes('already')) {
+        msgEl.style.display = ''; msgEl.style.color = '#9B3A2A';
+        msgEl.textContent = t('reg_already_registered');
+      } else {
+        msgEl.style.display = ''; msgEl.style.color = '#9B3A2A';
+        msgEl.textContent = t('auth_send_fail') + ': ' + error.message;
+      }
+      return;
+    }
+    document.getElementById('reg-title').style.display = 'none';
+    document.getElementById('reg-email').style.display = 'none';
+    document.getElementById('reg-pwd').style.display = 'none';
+    document.getElementById('reg-pwd2').style.display = 'none';
+    document.getElementById('reg-submit-btn').style.display = 'none';
+    document.getElementById('reg-wait-body').textContent = t('reg_wait_body', { email: email });
+    document.getElementById('reg-pending-block').style.display = '';
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = t('reg_btn');
+  }
+}
+
+async function doResendVerification() {
+  var email = document.getElementById('reg-email').value.trim();
+  if (!email || !_sb) return;
+  var redirectTo = location.origin + location.pathname + '#/email-confirmed';
+  await _sb.auth.resend({ type: 'signup', email: email, options: { emailRedirectTo: redirectTo } }).catch(function() {});
+  showCloudToast(t('reg_wait_title'));
 }
 
 function doAccountSync() {
