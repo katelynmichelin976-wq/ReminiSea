@@ -6758,6 +6758,7 @@ function stopAllPromptTimers() {
 // start speech prompt sequence after entering a card
 function startCardPrompts(pickedOpts, optLang, cardType) {
   clearPromptTimers();
+  if (!VOICE_ASSIST_ENABLED) return;
   _ttsPromptActive = true;
   // Phase 1: quiz prompt
   tQuizPromptTimer = setTimeout(() => {
@@ -9262,7 +9263,7 @@ function onSel(e, idx, btn) {
         btn.style.transform = 'scale(.9)';
         setTimeout(() => btn.remove(), 300);
       });
-      playVoiceSlot('wrong_hint', t('voice_default_wrong_hint'), getLocale());
+      if (VOICE_ASSIST_ENABLED) playVoiceSlot('wrong_hint', t('voice_default_wrong_hint'), getLocale());
     } else {
       // 2nd wrong → Again
       if (currentMode !== 'browse' && q._srsState) {
