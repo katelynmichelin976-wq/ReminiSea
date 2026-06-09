@@ -9004,7 +9004,7 @@ const CARD_RENDERERS = {
         btn.className = 'opt';
         btn.dataset.idx    = i;
         btn.dataset.cardId = cardId || '';
-        btn.innerHTML = `<div class="otxt">${name}</div>`;
+        btn.innerHTML = `<div class="otxt">${esc(name)}</div>`;
         let touchStart = 0;
         btn.addEventListener('touchstart', () => { touchStart = Date.now(); }, { passive: true });
         btn.addEventListener('touchend', e => {
@@ -9167,7 +9167,7 @@ function revealBrowse(q) {
   (q.details||[]).forEach((txt, i) => {
     const item = document.createElement('div');
     item.className = 'detail-item';
-    item.innerHTML = `<div class="detail-dot"></div><div class="detail-txt">${txt}</div>`;
+    item.innerHTML = `<div class="detail-dot"></div><div class="detail-txt">${esc(txt)}</div>`;
     detailsEl.appendChild(item);
   });
 
@@ -9310,7 +9310,7 @@ function revealAnswer() {
   (q.details||[]).forEach((txt,i)=>{
     const item=document.createElement('div');
     item.className='detail-item';
-    item.innerHTML=`<div class="detail-dot"></div><div class="detail-txt">${txt}</div>`;
+    item.innerHTML=`<div class="detail-dot"></div><div class="detail-txt">${esc(txt)}</div>`;
     detailsEl.appendChild(item);
     setTimeout(()=>item.classList.add('show'), 350+i*120);
   });
