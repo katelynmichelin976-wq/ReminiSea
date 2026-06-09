@@ -40,6 +40,14 @@ const DEPRECATED_KEYS = [
   'phrase_opt_hint', 'phraseSelect',
 ];
 
+// 跨设备测试参数（PHASE 3 用；提到模块作用域便于 finally cleanup 引用）
+const CROSS_PARAMS = {
+  phraseWrong:               'cross-再试试',
+  optReadDelay:              '6.5',
+  voiceAssistEnabled:        '0',
+  phraseQuizPromptRecognize: 'cross-认识吗',
+};
+
 async function waitSyncDone(page, maxMs) {
   const iters = Math.ceil((maxMs || 120000) / 500);
   for (let i = 0; i < iters; i++) {
@@ -168,14 +176,7 @@ async function waitSyncDone(page, maxMs) {
     // ════ PHASE 3: 跨设备语音参数传播 ════
     section('PHASE 3: 跨设备语音参数传播');
 
-    // 4 个参数值与 VOICE_PARAMS 有意不同，便于区分跨设备新写入
-    const CROSS_PARAMS = {
-      phraseWrong:               'cross-再试试',
-      optReadDelay:              '6.5',
-      voiceAssistEnabled:        '0',
-      phraseQuizPromptRecognize: 'cross-认识吗',
-    };
-
+    // CROSS_PARAMS 在模块作用域定义，便于 finally cleanup 引用
     // Device A（当前 page，已登录）写入参数并 push
     await run(page, (params) => {
       Object.entries(params).forEach(([k, v]) => localStorage.setItem(k, v));
@@ -235,6 +236,26 @@ async function waitSyncDone(page, maxMs) {
     console.log('  [SKIP] 依赖语音录音云端存储功能，实现后填充');
 
   } finally {
+    // Cleanup: 清云端 sync_config + localStorage，避免污染测试账号
+    // （否则 voiceMuted=1 / pw-test-* 等异常值会随登录拉到任何后续设备）
+    try {
+      const allTestKeys = [
+        ...Object.keys(VOICE_PARAMS),
+        ...Object.keys(CROSS_PARAMS),
+        ...DEPRECATED_KEYS,
+      ];
+      await run(page, async (keys) => {
+        keys.forEach(k => localStorage.removeItem(k));
+        try {
+          if (typeof _sb !== 'undefined' && _sb && typeof _cloudUserId !== 'undefined' && _cloudUserId) {
+            await _sb.from('sync_config').delete().eq('user_id', _cloudUserId);
+          }
+        } catch (e) { /* swallow */ }
+      }, allTestKeys);
+      console.log('  [CLEANUP] sync_config 与 localStorage 已清理');
+    } catch (e) {
+      console.warn('  [CLEANUP] 失败:', e.message);
+    }
     if (ctxB) await ctxB.close().catch(() => {});
     const { passed, failed } = getCounts();
     section('结果');
