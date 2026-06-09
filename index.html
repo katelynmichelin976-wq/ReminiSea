@@ -10317,7 +10317,7 @@ class SyncJob {
     const pushedAt = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
     if (meta && meta.mod && meta.mod > pushedAt) await upsertDeckRow(this.deckKey);
     const { data: deckRow } = await _sb.from('decks')
-      .select('updated_at').eq('id', this.deckKey).maybeSingle();
+      .select('updated_at, name, name_lang').eq('id', this.deckKey).maybeSingle();
     if (meta && deckRow?.updated_at) {
       meta._remoteUpdatedAt = deckRow.updated_at;
       const remoteTs = Date.parse(deckRow.updated_at) || 0;
@@ -10325,6 +10325,13 @@ class SyncJob {
       if (remoteTs > curPulled) {
         localStorage.setItem('yihaiPulledAt:' + this.deckKey, String(remoteTs));
       }
+    }
+    // 拉云端 name 到本地（仅本地未改时；本地未上传的 rename 由 push 路径优先）
+    if (meta && deckRow?.name && (!meta.mod || meta.mod <= pushedAt)) {
+      let changed = false;
+      if (meta.name !== deckRow.name) { meta.name = deckRow.name; changed = true; }
+      if (deckRow.name_lang && meta.nameLang !== deckRow.name_lang) { meta.nameLang = deckRow.name_lang; changed = true; }
+      if (changed) saveDeckIndex();
     }
     const remote = await fetchAllDeckCards(this.deckKey, 'card_id,updated_at');
     const remoteMeta = (remote || []).map(r => ({
@@ -10414,6 +10421,28 @@ class SyncJob {
       clearDeletedCards(this.deckKey);
       done += 1;
       this._setPhase('cards', done, total);
+    }
+
+    // 远端被删的卡片：本地跟随移除（+ 清媒体）
+    const { localDelete } = diff;
+    if (localDelete && localDelete.length) {
+      await this._checkpoint();
+      const delIds = new Set(localDelete.map(c => c.id));
+      const cards = DECKS[this.deckKey] || [];
+      for (const c of cards) {
+        if (!delIds.has(c.id)) continue;
+        Object.values(c.media || {}).forEach(s => {
+          if (s._blob && s._blob.startsWith('blob:')) URL.revokeObjectURL(s._blob);
+        });
+        try {
+          const db = await openDB();
+          const tx = db.transaction(IDB_STORE, 'readwrite');
+          const st = tx.objectStore(IDB_STORE);
+          for (const slot of Object.keys(c.media || {})) st.delete(`${this.deckKey}_${c.id}_${slot}`);
+        } catch (e) { /* ignore */ }
+      }
+      DECKS[this.deckKey] = cards.filter(c => !delIds.has(c.id));
+      saveDeckCards(this.deckKey, DECKS[this.deckKey]);
     }
 
     const finalPushed = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
@@ -10560,7 +10589,13 @@ function computeDeckDiff(localCards, deletedIds, remoteCardMeta, pushedAt, pulle
     return !local || r.ts > (local.mod || 0);
   });
   const toDelete = deletedIds.filter(id => remoteMap.has(id));
-  return { toPush, toPull, toDelete };
+  // 远端已删除：本地有 + 远端没 + 本地已同步过（c.mod ≤ pushedAt）→ B 本地应跟删
+  const localDelete = localCards.filter(c => {
+    if (remoteMap.has(c.id)) return false;
+    if (!c.mod || c.mod > pushedAt) return false;  // 本地未同步的新增不删
+    return true;
+  });
+  return { toPush, toPull, toDelete, localDelete };
 }
 
 function parseWatermark(v) {
