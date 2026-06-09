@@ -5645,8 +5645,8 @@ async function saveCardFromForm() {
   const rawDetails = document.getElementById('cc-details').value;
   const details = rawDetails.split('\n').filter(function(l) { return l.trim(); });
 
-  // build card
-  const card = { id: id, name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: details, media: {} };
+  // build card（mod 必须设：computeDeckDiff 用 c.mod > pushedAt 判 toPush；缺则新卡永不上传）
+  const card = { id: id, name: nf.text, nameLang: nf.lang, img: '', audioUrl: '', details: details, media: {}, mod: nextMod() };
 
   // save image
   var savePromises = [];
@@ -5670,6 +5670,9 @@ async function saveCardFromForm() {
   // add to deck
   deck.push(card);
   DECKS[deckKey] = deck;
+
+  // bump meta.mod 让 decks.updated_at 在同步时跟进，B 端才能通过 remoteAhead 判定显示黄点
+  if (meta) meta.mod = nextMod();
 
   // persist
   saveDeckCards(deckKey, deck);
