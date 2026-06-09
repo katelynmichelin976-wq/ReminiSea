@@ -67,7 +67,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.12.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.12.1**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.12.1：** 安全 + 行为修复 patch — ① **XSS fix**：答题热路径选项按钮（L9007）与答案详情（L9170/L9313）的 `${name}` / `${txt}` 模板插值未走 `esc()`，恶意卡片名（如 `<img onerror=...>`）可执行脚本读取 localStorage 中 Supabase 会话 token；3 处加 `esc()` 包裹，零行为变化。② **语音辅助门控**：`startCardPrompts`（quiz_prompt + speakOptHint）与 `wrong_hint` 漏 gate `VOICE_ASSIST_ENABLED`，关闭后选项朗读和答错安慰仍响；早返回 + 加 gate 修复。③ **找回密码 hash 路由**：兼容 Supabase 默认 `type=recovery` / `type=signup` URL fragment + `PASSWORD_RECOVERY` / `SIGNED_IN` 事件；邮件确认后自动恢复 session 进账户屏。④ **高级模式 FAB 清理**：去掉 advanced 模式下 FAB 切换为「开始制卡」的行为，两模式 FAB 一致「开始练习」，制卡入口保留在牌组详情页右上角「+」。⑤ **测试卫生**：`_pw_config_sync.js` finally 加 cleanup 清云端 `sync_config`，避免 `voiceMuted=1` / `pw-test-*` 污染测试账号。
 
 **v5.12.0：** 用户管理 + 跨设备同步 fix + 媒体 JSONB 收尾 — ① **用户管理**：账户屏未登录态加「注册新账号」「忘记密码?」文字链接 + 已登录态加「修改密码」按钮；3 个底部 sheet（注册 / 找回密码 / 改密）+ 1 个全屏 `screen-reset-password`；hash 路由识别 `#/email-confirmed` 与 `#/reset-password`；改密路径强制老密 `signInWithPassword` 验证；5 locale × 32 i18n keys；新单测 `_pw_user_mgmt.js`（22 断言）+ `_pw_ui_smoke.js` +3 断言。② **个人牌组本地/云端解耦**：导入/重命名/新建牌组不再自动上传，进 `localDirty` 等手动同步；牌组管理页本地 Tab 加「同步」按钮（`doSyncDeckAction`）。③ **跨设备同步 fix**：`saveCardFromForm` 新卡补 `mod` + `meta.mod`（否则 `computeDeckDiff` 跳过 toPush 致跨设备看不到）；`runStructurePhase` 拉云端 name + `computeDeckDiff` 加 `localDelete` 处理远端删除传播；`runMediaPhase` 用 `.update()` 替代 `.upsert()` 修 23502 NOT NULL 报错。④ **媒体 JSONB 收尾 refactor**：`downloadDeckFromCloud` / `syncDeckFromCloud` 迁移至 media JSONB；删除 `deck_cards` 旧媒体列 fallback、`restoreDecks` 旧媒体格式迁移代码、历史版本迁移代码。⑤ **测试稳定性**：`_pw_cloud_sync.js` PHASE 3 等 DECKS_META 含目标 deck（绕开 watchdog 30s flake）；`_pw_config_sync.js` Device B 断 `localStorage('phraseWrong')`（`PHRASE_WRONG` 全局已删）。
 

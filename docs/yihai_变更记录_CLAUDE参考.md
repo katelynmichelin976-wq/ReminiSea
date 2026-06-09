@@ -2,6 +2,38 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.12.1 — 安全 + 行为修复 patch
+
+### XSS 修复（hot path）
+
+- **3 处模板插值未转义**：`L9007` 选项按钮 `<div class="otxt">${name}</div>`、`L9170` revealBrowse 详情 `<div class="detail-txt">${txt}</div>`、`L9313` revealAnswer 详情同模板
+- **攻击面**：name / details 由照护者填写并跨设备同步（含预置牌组）。恶意 name（如 `<img onerror="...">`）会在每张卡片渲染时执行脚本，能读到 localStorage 中 Supabase 会话 token
+- **修法**：3 处加 `esc()` 包裹，函数已存在（L10306，div-textContent 模式）。零行为变化，最小 diff（+3/-3）
+- **审计**：其他 innerHTML 路径（flip card L9059–9078 / stats trial-name L11672 / card detail L11724 / confirm dialog L12203 等）已正确使用 `esc()`/`escAttr()`，无遗漏
+
+### 语音辅助门控修复
+
+- **遗漏的 3 个槽**：`quiz_prompt`（"请选择"）、`opt_hint`（读选项 ABCD）、`wrong_hint`（"不要着急"）原本只 gate `VOICE_MUTED`，未 gate `VOICE_ASSIST_ENABLED`。导致关闭"语音辅助"toggle 后这三类提示仍响
+- **修法**：`startCardPrompts` 函数开头加 `if (!VOICE_ASSIST_ENABLED) return`（一次盖 quiz_prompt + speakOptHint）；`wrong_hint playVoiceSlot` 调用加 `VOICE_ASSIST_ENABLED` gate
+- **未改动**：`playAnswer`（朗读卡片名）仅 gate `VOICE_MUTED` — 卡片内容音不属于"辅助"
+
+### 找回密码 hash 路由兼容
+
+- **问题**：Supabase 默认 recovery 邮件链接 hash 格式为 `#access_token=...&type=recovery`（非自定义的 `#/reset-password`）；signup 验证邮件同理。原 `handleAuthHashRoute` 只匹配自定义路径
+- **修法**：`handleAuthHashRoute` 加 `|| h.includes('type=recovery')` / `type=signup` 兼容；`onAuthStateChange` 加 `PASSWORD_RECOVERY` 事件 → 直接进 `screen-reset-password`，加 `SIGNED_IN` 事件 → 自动恢复 session；`email-confirmed` 路径补 `getSession()` 自动登录
+- **`_capturedHash` 在 `_tryInitCloud` 之外捕获**：避免 hash 被 onload reset 后丢失
+
+### 高级模式 FAB 清理
+
+- **去掉**：`updateTabBarMode` 中 advanced 模式 FAB 切换为「开始制卡」/`onAdvancedFabTap`/`+`图标的分支
+- **结果**：standard / advanced 两模式 FAB 行为一致 —「开始练习」/`onFabTap`/`▶`图标
+- **删除孤儿**：`onAdvancedFabTap` 函数 + 5 locale × `nav_start_create` i18n key
+- **保留**：制卡入口仍在牌组详情页右上角「+」（`dd-topbar-add` → `showCreateCard(currentDeck)`）
+
+### 测试卫生
+
+- **`_pw_config_sync.js` finally 加 cleanup**：清云端 `sync_config` 行 + localStorage 中 `VOICE_PARAMS` / `CROSS_PARAMS` / `DEPRECATED_KEYS` 所有键。原本测试结束后 `voiceMuted=1` / `pw-test-*` 等异常值持续存在云端，导致任何后续登录测试账号的设备被静音 + PHRASE 文本污染。`CROSS_PARAMS` 提到模块作用域便于 finally 引用
+
 ## v5.12.0 — 用户管理 + 跨设备同步 fix + 媒体 JSONB 收尾
 
 ### 用户管理（注册/找回密码/改密）
