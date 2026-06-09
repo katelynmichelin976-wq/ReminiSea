@@ -2098,6 +2098,24 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
+<!-- ══════════════ CHANGE PASSWORD SHEET ══════════════ -->
+<div class="feedback-overlay" id="change-password-overlay" style="display:none">
+  <div class="feedback-sheet" id="change-password-sheet">
+    <div class="sheet-handle-row">
+      <div class="sheet-handle"></div>
+      <button class="sheet-close-btn" onclick="closeChangePasswordSheet()" data-i18n-aria="common_close">×</button>
+    </div>
+    <div style="padding:10px 16px 14px;font-size:18px;font-weight:700;color:var(--text)" data-i18n="change_pwd_title">修改密码</div>
+    <div style="padding:0 16px 24px">
+      <input class="account-field" type="password" id="cp-old" data-i18n-placeholder="change_pwd_old_ph" placeholder="当前密码" autocomplete="current-password">
+      <input class="account-field" type="password" id="cp-new" data-i18n-placeholder="reset_new_pwd_ph" placeholder="新密码（至少 6 位）" autocomplete="new-password" style="margin-top:10px">
+      <input class="account-field" type="password" id="cp-new2" data-i18n-placeholder="reset_new_pwd_confirm" placeholder="确认新密码" autocomplete="new-password" style="margin-top:10px">
+      <button class="account-btn account-btn-primary" id="cp-submit-btn" onclick="doChangePassword()" data-i18n="reset_set_btn" style="margin-top:14px">保存</button>
+      <div class="account-msg" id="cp-msg" style="display:none;margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ theme picker ══════════════ -->
 <div class="screen screen-theme" id="screen-theme">
   <div class="theme-topbar">
@@ -6187,6 +6205,54 @@ async function doRequestReset() {
   } finally {
     btnEl.disabled = false;
     btnEl.textContent = t('reset_request_btn');
+  }
+}
+
+function openChangePasswordSheet() {
+  var overlay = document.getElementById('change-password-overlay');
+  if (!overlay) return;
+  document.getElementById('cp-old').value = '';
+  document.getElementById('cp-new').value = '';
+  document.getElementById('cp-new2').value = '';
+  document.getElementById('cp-msg').style.display = 'none';
+  overlay.style.display = '';
+  overlay.onclick = function(e) { if (e.target === overlay) closeChangePasswordSheet(); };
+}
+function closeChangePasswordSheet() {
+  var overlay = document.getElementById('change-password-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+async function doChangePassword() {
+  var oldPwd  = document.getElementById('cp-old').value;
+  var newPwd  = document.getElementById('cp-new').value;
+  var newPwd2 = document.getElementById('cp-new2').value;
+  var msgEl   = document.getElementById('cp-msg');
+  var btnEl   = document.getElementById('cp-submit-btn');
+  if (newPwd.length < 6) {
+    msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('auth_pwd_too_short'); return;
+  }
+  if (newPwd !== newPwd2) {
+    msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('auth_pwd_mismatch'); return;
+  }
+  if (!_sb || !_cloudUserEmail) {
+    msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('sync_offline'); return;
+  }
+  btnEl.disabled = true;
+  btnEl.textContent = t('reg_btn_pending');
+  try {
+    var verify = await _sb.auth.signInWithPassword({ email: _cloudUserEmail, password: oldPwd });
+    if (verify.error) {
+      msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('change_pwd_old_wrong'); return;
+    }
+    var upd = await _sb.auth.updateUser({ password: newPwd });
+    if (upd.error) {
+      msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('auth_send_fail') + ': ' + upd.error.message; return;
+    }
+    showCloudToast(t('change_pwd_done_toast'));
+    closeChangePasswordSheet();
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = t('reset_set_btn');
   }
 }
 
