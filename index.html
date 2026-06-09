@@ -5132,15 +5132,8 @@ async function restoreDecks() {
             ext: c.ext || {}, mod: c.mod || 0,
             media: {},
           };
-          // 格式迁移：旧 slim 格式 imgUrl/audUrl → media slot
-          let rawMedia = c.media || {};
-          if (!rawMedia.img && (c.imgUrl || c._imgUrl)) {
-            rawMedia = { ...rawMedia, img: { url: c.imgUrl || c._imgUrl || '', v: 0 } };
-          }
-          if (!rawMedia.aud && (c.audUrl || c._audUrl)) {
-            rawMedia = { ...rawMedia, aud: { url: c.audUrl || c._audUrl || '', v: 0 } };
-          }
           // 逐 slot 从 IDB 恢复 blob
+          const rawMedia = c.media || {};
           for (const slot of Object.keys(rawMedia)) {
             const s = rawMedia[slot];
             card.media[slot] = { url: s.url || '', v: s.v ?? 0, _blob: '' };
