@@ -2082,6 +2082,22 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
   </div>
 </div>
 
+<!-- ══════════════ RESET REQUEST SHEET ══════════════ -->
+<div class="feedback-overlay" id="reset-request-overlay" style="display:none">
+  <div class="feedback-sheet" id="reset-request-sheet">
+    <div class="sheet-handle-row">
+      <div class="sheet-handle"></div>
+      <button class="sheet-close-btn" onclick="closeResetRequestSheet()" data-i18n-aria="common_close">×</button>
+    </div>
+    <div style="padding:10px 16px 14px;font-size:18px;font-weight:700;color:var(--text)" data-i18n="reset_request_title">重置密码</div>
+    <div style="padding:0 16px 24px">
+      <input class="account-field" type="email" id="reset-req-email" data-i18n-placeholder="reg_email_ph" placeholder="邮箱地址" autocomplete="email" inputmode="email">
+      <button class="account-btn account-btn-primary" id="reset-req-btn" onclick="doRequestReset()" data-i18n="reset_request_btn" style="margin-top:14px">发送重置邮件</button>
+      <div class="account-msg" id="reset-req-msg" style="display:none;margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ theme picker ══════════════ -->
 <div class="screen screen-theme" id="screen-theme">
   <div class="theme-topbar">
@@ -6138,6 +6154,40 @@ async function doResendVerification() {
   var redirectTo = location.origin + location.pathname + '#/email-confirmed';
   await _sb.auth.resend({ type: 'signup', email: email, options: { emailRedirectTo: redirectTo } }).catch(function() {});
   showCloudToast(t('reg_wait_title'));
+}
+
+function openResetRequestSheet() {
+  var overlay = document.getElementById('reset-request-overlay');
+  if (!overlay) return;
+  var emailEl = document.getElementById('account-email');
+  if (emailEl) document.getElementById('reset-req-email').value = emailEl.value;
+  document.getElementById('reset-req-msg').style.display = 'none';
+  overlay.style.display = '';
+  overlay.onclick = function(e) { if (e.target === overlay) closeResetRequestSheet(); };
+}
+function closeResetRequestSheet() {
+  var overlay = document.getElementById('reset-request-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+async function doRequestReset() {
+  var email = document.getElementById('reset-req-email').value.trim();
+  var msgEl = document.getElementById('reset-req-msg');
+  var btnEl = document.getElementById('reset-req-btn');
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    msgEl.style.display = ''; msgEl.style.color = '#9B3A2A'; msgEl.textContent = t('auth_email_invalid'); return;
+  }
+  btnEl.disabled = true;
+  btnEl.textContent = t('reg_btn_pending');
+  try {
+    if (!_sb) _sb = _createSupabaseClient();
+    var redirectTo = location.origin + location.pathname + '#/reset-password';
+    await _sb.auth.resetPasswordForEmail(email, { redirectTo: redirectTo }).catch(function() {});
+    msgEl.style.display = ''; msgEl.style.color = 'var(--text)';
+    msgEl.textContent = t('reset_request_sent');
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = t('reset_request_btn');
+  }
 }
 
 function doAccountSync() {
