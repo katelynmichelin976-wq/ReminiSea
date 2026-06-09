@@ -69,6 +69,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **当前版本：v5.11.2**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
+**v5.12.0（未发布）：** 用户管理 — 账户屏未登录态加「注册新账号」「忘记密码?」文字链接 + 已登录态加「修改密码」按钮；3 个底部 sheet（注册 / 找回密码 / 改密）+ 1 个全屏 `screen-reset-password`；hash 路由识别 `#/email-confirmed` 与 `#/reset-password`；改密路径强制老密 `signInWithPassword` 验证；5 locale × 32 i18n keys；新单测 `_pw_user_mgmt.js`（22 断言）；`_pw_ui_smoke.js` +3 断言。spec: `docs/superpowers/specs/2026-06-09-user-mgmt-design.md`；plan: `docs/superpowers/plans/2026-06-09-user-mgmt.md`。
+
 **v5.11.2：** 首页交互 + 管理页样式细化 — 首页牌组点击改为仅切换选中态（红色高亮 + 左侧 accent 条），不再导航到详情页；删 navChevron 按钮；补 click handler 修 v5.11.1 删左滑时连带丢失选中；登录按钮与密码框加间距；牌组管理页（`.decks-panel`）本地/云端 Tab 统一为无圆角平铺风格（首页 home 圆角卡片风不受影响）。
 
 **v5.11.1：** UI 简化 — 删首页「+ 新建」按钮 + 牌组卡片左滑操作（已在牌组管理页提供）；删我的页「统计」与账户页「云端牌组」入口；取消同步开始时「正在同步」语音播报；Tab Bar「牌组」「统计」按钮加 `advanced-only` 类（standard 模式简化为 3 项，advanced 保持 5 项）。

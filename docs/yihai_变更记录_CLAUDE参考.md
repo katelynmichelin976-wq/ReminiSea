@@ -2,6 +2,19 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.12.0（未发布）— 用户管理（注册/找回密码/改密）
+
+- **账户屏链接**：未登录态加「注册新账号」「忘记密码?」文字链接（`account_link_register` / `account_link_forgot`）；已登录态加「修改密码」按钮（`change_pwd_menu`）
+- **3 个 sheet**：`#register-overlay` / `#reset-request-overlay` / `#change-password-overlay`，沿用 `feedback-overlay` / `feedback-sheet` 视觉模式（style.display 切换）
+- **全屏 screen**：`#screen-reset-password`，从邮件链接 hash `#/reset-password` 进入
+- **处理函数**：`doRegister` / `doRequestReset` / `doChangePassword` / `doApplyResetPassword` / `doResendVerification` / `handleAuthHashRoute`
+- **改密安全 2 步**：先 `signInWithPassword({email:_cloudUserEmail, password:oldPwd})` 验老密，成功后才 `updateUser({password:newPwd})`
+- **Hash 路由**：`handleAuthHashRoute()` 在 cloud init 之后 `setTimeout(200)` 内识别 `#/email-confirmed` 与 `#/reset-password`，处理后用 `history.replaceState` 清掉 hash
+- **隐私**：找回密码统一显示「已发送」无论邮箱是否存在（防爆破探测）
+- **配置依赖**：Supabase Auth Email Confirmation ON + SMTP 已配 + Redirect URLs 白名单含 `#/email-confirmed` `#/reset-password`
+- **i18n**：5 locale × 32 keys
+- **测试**：新单文件 `tests/_pw_user_mgmt.js`（22 断言，mock Supabase Auth）+ `_pw_ui_smoke.js` +3 断言
+
 ## v5.11.2 — 首页交互 + 管理页样式细化
 
 - **首页牌组点击**：`selectDeck` 移除 `showDeckDetail()` 调用，点击改为仅切换选中态（`.selected` → 红色背景 + 左侧 accent 条）；`import` 路径在 `selectDeck` 后显式补 `showDeckDetail()` 保留旧行为
