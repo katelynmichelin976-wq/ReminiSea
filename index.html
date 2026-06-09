@@ -3022,7 +3022,6 @@ const VOICE_SLOT_STORE = 'voiceSlots';
 
 let _srsDb = null;
 let _srsDbPromise = null;
-let _v5MigrationDone = false;
 
 function getCurrentUserId() {
   // logged in → cloud user UUID; logged out → last logged in user (persisted in localStorage);
@@ -3759,30 +3758,6 @@ function openSrsDb() {
     };
   });
   return _srsDbPromise;
-}
-
-async function migrateV5IfNeeded() {
-  if (_v5MigrationDone) return;
-  if (localStorage.getItem('yihaiV5MigrationPending') !== '1') { _v5MigrationDone = true; return; }
-  const db = await openSrsDb();
-  if (!db) return;
-  const uid = getOrCreateDeviceId();
-  try {
-    const csTx = db.transaction(CS_STORE, 'readwrite');
-    const csStore = csTx.objectStore(CS_STORE);
-    const csAll = await new Promise(r => { csStore.getAll().onsuccess = e => r(e.target.result || []); });
-    let csUpdated = 0;
-    csAll.forEach(s => { if (!s.user_id) { s.user_id = uid; csStore.put(s); csUpdated++; } });
-    await new Promise((resolve, reject) => { csTx.oncomplete = resolve; csTx.onerror = reject; });
-    const trTx = db.transaction(TRIAL_STORE, 'readwrite');
-    const trStore = trTx.objectStore(TRIAL_STORE);
-    const trAll = await new Promise(r => { trStore.getAll().onsuccess = e => r(e.target.result || []); });
-    let trUpdated = 0;
-    trAll.forEach(t => { if (!t.user_id) { t.user_id = uid; trStore.put(t); trUpdated++; } });
-    await new Promise((resolve, reject) => { trTx.oncomplete = resolve; trTx.onerror = reject; });
-  } catch(e) { log.error('idb', 'migrateV5 failed', e.message); }
-  localStorage.removeItem('yihaiV5MigrationPending');
-  _v5MigrationDone = true;
 }
 
 // migrate local offline records to current user on login (deviceId match only)
@@ -5096,30 +5071,8 @@ async function cleanOrphanMedia() {
 }
 
 async function restoreDecks() {
-  // one-time: migrate 'cloud_xxx' keys → 'xxx'
-  const rawIdx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
-  if (rawIdx.some(m => m.key && m.key.startsWith('cloud_'))) {
-    const migratedIdx = rawIdx.map(m => {
-      if (!m.key || !m.key.startsWith('cloud_')) return m;
-      const newKey = m.key.slice(6);
-      const cardsRaw = localStorage.getItem(LS_DECK_PREFIX + m.key);
-      if (cardsRaw) { localStorage.setItem(LS_DECK_PREFIX + newKey, cardsRaw); localStorage.removeItem(LS_DECK_PREFIX + m.key); }
-      const syncAt = localStorage.getItem('yihaiSyncAt:' + m.key);
-      if (syncAt) { localStorage.setItem('yihaiSyncAt:' + newKey, syncAt); localStorage.removeItem('yihaiSyncAt:' + m.key); }
-      return { ...m, key: newKey, deck_type: 'preset' };
-    });
-    localStorage.setItem(LS_INDEX, JSON.stringify(migratedIdx));
-    await migrateMediaKeys(rawIdx);
-  }
-
   const idx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
-  // compat: migrate old entries without deck_type
-  DECKS_META = idx.map(m => {
-    if (m.deck_type) return m;
-    // compat: migrate old entries without deck_type
-    const deck_type = m.source === 'cloud' ? 'preset' : 'personal';
-    return { ...m, deck_type };
-  });
+  DECKS_META = idx.map(m => ({ ...m }));
   for (const { key } of idx) {
     try {
       const raw = JSON.parse(localStorage.getItem(LS_DECK_PREFIX + key) || '[]');
@@ -5168,25 +5121,6 @@ async function restoreDecks() {
       }
     }
   } catch(e) {}
-}
-
-async function migrateMediaKeys(oldIdx) {
-  const db = await openDB().catch(() => null);
-  if (!db) return;
-  for (const m of oldIdx) {
-    if (!m.key || !m.key.startsWith('cloud_')) continue;
-    const newKey = m.key.slice(6);
-    const tx = db.transaction('blobs', 'readwrite');
-    const store = tx.objectStore('blobs');
-    const allKeys = await new Promise(res => { const r = store.getAllKeys(); r.onsuccess = e => res(e.target.result); });
-    for (const k of allKeys) {
-      if (typeof k === 'string' && k.startsWith(m.key + '_')) {
-        const newK = newKey + k.slice(m.key.length);
-        const blob = await new Promise(res => { const r = store.get(k); r.onsuccess = e => res(e.target.result); });
-        if (blob) { store.put(blob, newK); store.delete(k); }
-      }
-    }
-  }
 }
 
 // ── .yhspack import ──────────────────────────────────────────────
@@ -5384,11 +5318,7 @@ let _lastSrsWrite    = Promise.resolve(); // most recent _writeSrs Promise, for 
 let _launchBusy  = false; // prevent duplicate start-practice clicks
 let _browseCards = [];
 let _browseIdx   = 0;
-// Migrate old mode names
-  let _stored = localStorage.getItem('yihaiAppMode');
-  if (_stored === 'patient') _stored = 'standard';
-  else if (_stored === 'caregiver') _stored = 'advanced';
-  let _appMode = _stored || 'standard';; // 'standard' | 'advanced'
+let _appMode = localStorage.getItem('yihaiAppMode') || 'standard'; // 'standard' | 'advanced'
 
 // ── practice mode SRS state ────────────────────────────────────
 let _cardStartTs     = 0;     // current card display timestamp (for response_time calc)
@@ -10231,21 +10161,6 @@ function onBdurChange(v) {
   debouncePushConfig();
 }
 
-function migrateVoiceSettings() {
-  if (localStorage.getItem('wrongHintOn')  === '0') localStorage.removeItem('phraseWrong');
-  const oldDelay = localStorage.getItem('delay');
-  if (oldDelay && !localStorage.getItem('ansReadDelay')) {
-    localStorage.setItem('ansReadDelay', oldDelay);
-  }
-  const oldOptDelay = localStorage.getItem('optHintDelay');
-  if (oldOptDelay && !localStorage.getItem('optReadDelay')) {
-    localStorage.setItem('optReadDelay', oldOptDelay);
-  }
-  ['quizPromptOn','optHintOn','wrongHintOn','readHint',
-   'quizPromptDelay','optHintDelay','delay','browseDelay',
-   'phraseSelect'].forEach(k => localStorage.removeItem(k));
-}
-
 // resets to locale default if stored value matches any locale's default (prevents cross-device pollution)
 function loadPhraseOrDefault(storageKey, i18nKey) {
   const stored = localStorage.getItem(storageKey);
@@ -10256,7 +10171,6 @@ function loadPhraseOrDefault(storageKey, i18nKey) {
 }
 
 function loadSettings() {
-  migrateVoiceSettings();
   PHRASE_SELECT   = loadPhraseOrDefault('phraseQuizPrompt', 'quiz_select_hint');
   PHRASE_OPT_HINT = loadPhraseOrDefault('phraseOptHint',    'default_opt_hint');
 
@@ -11359,7 +11273,6 @@ function showAbout() {
   // 1. UI init — render immediately, don't wait for Supabase CDN
   (async function initUI() {
     try {
-      migrateV5IfNeeded();
       await restoreDecks();
       migrateSyncWatermarks();
       gcOrphanSyncKeys();
