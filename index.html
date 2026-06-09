@@ -5513,22 +5513,14 @@ function onAppModeToggle(el) {
 }
 
 function updateTabBarMode() {
-  const isStandard = _appMode === 'standard';
   document.querySelectorAll('.home-tabbar').forEach(tb => {
     const fab = tb.querySelector('.tab-item.action');
     if (!fab) return;
+    fab.onclick = onFabTap;
     const span = fab.querySelector('span');
-    if (isStandard) {
-      fab.onclick = onFabTap;
-      if (span) span.textContent = t('nav_start_practice');
-      const svg = fab.querySelector('svg');
-      if (svg) svg.innerHTML = '<polygon points="6 3 20 12 6 21 6 3"/>';
-    } else {
-      fab.onclick = onAdvancedFabTap;
-      if (span) span.textContent = t('nav_start_create');
-      const svg = fab.querySelector('svg');
-      if (svg) svg.innerHTML = '<line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/>';
-    }
+    if (span) span.textContent = t('nav_start_practice');
+    const svg = fab.querySelector('svg');
+    if (svg) svg.innerHTML = '<polygon points="6 3 20 12 6 21 6 3"/>';
   });
 }
 
@@ -5540,8 +5532,6 @@ function updateHomeTopbar() {
   if (modeTitle) modeTitle.textContent = t('mine_mode_title');
   if (modeSub) modeSub.textContent = _appMode === 'advanced' ? t('mine_mode_on') : t('mine_mode_off');
 }
-
-function onAdvancedFabTap() { showCreateCard(); }
 
 // ── card creator form ────────────────────────────────────
 var _ccImageBlob = null, _ccAudioBlob = null;
@@ -7000,7 +6990,6 @@ const I18N = {
     nav_home: 'Home',
     nav_mine: 'Mine',
     nav_start_practice: 'Start',
-    nav_start_create: 'Create',
     home_force_refresh: 'Force Refresh',
     home_album_section: 'My Decks',
     home_new_deck: 'New Deck',
@@ -7324,7 +7313,6 @@ const I18N = {
     nav_home: '首 页',
     nav_mine: '我 的',
     nav_start_practice: '开始练习',
-    nav_start_create: '开始制卡',
     home_force_refresh: '强制刷新',
     home_album_section: '我的牌组',
     home_new_deck: '新建牌组',
@@ -7648,7 +7636,6 @@ const I18N = {
     nav_home: '首 頁',
     nav_mine: '我 的',
     nav_start_practice: '開始練習',
-    nav_start_create: '開始製卡',
     home_force_refresh: '強制重新整理',
     home_album_section: '我的牌組',
     home_new_deck: '新增牌組',
@@ -7957,7 +7944,6 @@ const I18N = {
     nav_home: 'Inicio',
     nav_mine: 'Perfil',
     nav_start_practice: 'Empezar',
-    nav_start_create: 'Crear',
     home_force_refresh: 'Forzar actualizacion',
     home_album_section: 'Mis Mazos',
     home_new_deck: 'Nuevo Mazo',
@@ -8278,7 +8264,6 @@ const I18N = {
     nav_home: 'ホーム',
     nav_mine: 'マイ',
     nav_start_practice: 'スタート',
-    nav_start_create: '作成',
     home_force_refresh: '強制更新',
     home_album_section: 'マイデッキ',
     home_new_deck: '新規デッキ',
