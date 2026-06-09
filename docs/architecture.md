@@ -4,18 +4,29 @@
 
 ### Supabase Cloud
 
+#### 客户端写入表（App 直接 INSERT / UPSERT）
+
 | 表 | 用途 |
 |----|------|
+| `sync_trials` | 练习日志（答题流水，含 before/after 字段供算法验证） |
+| `sync_config` | 用户配置跨设备同步 |
 | `decks` | 牌组元数据（id, user_id, name, deck_type, updated_at） |
-| `deck_cards` | 牌组卡片（deck_id FK, card_id, name, image_url, audio_url, sort_order） |
-| `sync_trials` | 练习日志上传（含完整 CardState 快照） |
-| `sync_card_states` | 云端 CardState（由 DB trigger 自动维护，不直接写入） |
+| `deck_cards` | 牌组卡片（deck_id FK, card_id, fields, media JSONB） |
+| `device_registry` | 设备登录记录（first_seen / last_seen） |
+| `feedback` | 用户反馈（anon INSERT only） |
+
+#### Trigger 派生表（由 DB 自动维护，客户端只读）
+
+| 表 | 派生来源 | 维护 trigger |
+|----|---------|-------------|
+| `sync_card_states` | `sync_trials` INSERT | `fn_trial_to_card_state` — 用 `_after` 字段 UPSERT 最新卡片状态；客户端仅在无 trial 操作（手动挂起/解除/重置）时直接写入 |
+| `user_deck_stats` | `sync_trials` INSERT | `trg_update_practice_days` — 按天去重累加 `practice_days` / `last_practice_date` |
+
+> **维护原则：** 派生表的数据以 trigger 为真相源，不应绕过 trigger 直接批量写入；客户端直写仅限 trigger 无法覆盖的状态变更（如手动操作不产生 trial 的场景）。
 
 **Storage：** `ReminiSea` 桶，存图片/音频。preset/shared 类型公开读；personal 类型 owner 私有。
 
 **RLS：** `decks` preset/shared 全员可读，personal 仅 owner 读写。
-
-**DB trigger：** `fn_trial_to_card_state()` — `sync_trials` INSERT 后自动 UPSERT `sync_card_states`，无需客户端直接写状态表。
 
 ### 本地存储
 

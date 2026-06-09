@@ -10437,7 +10437,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
 
   try {
     // 1. get cards from deck_cards (ordered, paginated)
-    const ordered = await fetchAllDeckCards(deckId, 'card_id,name,image_url,audio_url');
+    const ordered = await fetchAllDeckCards(deckId, 'card_id,name,media,image_url,audio_url');
     if (!ordered.length) { showCloudToast(t('sync_deck_empty'), true); return; }
 
     const key = deckId;
@@ -10445,29 +10445,31 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
     // 4. download media and assemble cards (concurrency 3, image+audio parallel per card)
     const deckCards = [];
     await parallelMapLimit(ordered, 3, async (c, i) => {
-      const card = { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [] };
+      const card = { id: c.card_id, name: c.name, img: '', audioUrl: '', details: [], media: {} };
+      const imgUrl = c.media?.img?.url || c.image_url || '';
+      const audUrl = c.media?.aud?.url || c.audio_url || '';
       const tasks = [];
-      if (c.image_url) {
+      if (imgUrl) {
         tasks.push(
-          downloadMediaFromCDNorSupabase(c.image_url)
+          downloadMediaFromCDNorSupabase(imgUrl)
             .then(async blob => {
               card.img = URL.createObjectURL(blob);
+              card.media.img = { url: imgUrl, v: c.media?.img?.v ?? 0, _blob: card.img };
               await saveMedia(`${key}_${card.id}_img`, blob).catch(() => {});
-            }).catch(e => console.warn('[cloud] img failed:', c.image_url, e.message))
+            }).catch(e => console.warn('[cloud] img failed:', imgUrl, e.message))
         );
       }
-      if (c.audio_url) {
+      if (audUrl) {
         tasks.push(
-          downloadMediaFromCDNorSupabase(c.audio_url, audioMimeFromUrl(c.audio_url))
+          downloadMediaFromCDNorSupabase(audUrl, audioMimeFromUrl(audUrl))
             .then(async blob => {
               card.audioUrl = URL.createObjectURL(blob);
+              card.media.aud = { url: audUrl, v: c.media?.aud?.v ?? 0, _blob: card.audioUrl };
               await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
-            }).catch(e => console.warn('[cloud] aud failed:', c.audio_url, e.message))
+            }).catch(e => console.warn('[cloud] aud failed:', audUrl, e.message))
         );
       }
       await Promise.all(tasks);
-      card._imgUrl = c.image_url || '';
-      card._audUrl = c.audio_url || '';
       deckCards[i] = card;
     });
 
@@ -10507,31 +10509,21 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
   const localKey = existing.key;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('sync_syncing'); }
 
-  // media download
-  async function downloadMedia(cardId, imageUrl, audioUrl) {
-    let img = '', audioUrlBlob = '';
-    const tasks = [];
-    if (imageUrl) {
-      tasks.push(
-        downloadMediaFromCDNorSupabase(imageUrl)
-          .then(async blob => {
-            img = URL.createObjectURL(blob);
-            await saveMedia(`${localKey}_${cardId}_img`, blob).catch(() => {});
-          }).catch(e => console.warn('[sync] img fail:', e.message))
-      );
-    }
-    if (audioUrl) {
-      tasks.push(
-        downloadMediaFromCDNorSupabase(audioUrl, audioMimeFromUrl(audioUrl))
-          .then(async blob => {
-            audioUrlBlob = URL.createObjectURL(blob);
-            await saveMedia(`${localKey}_${cardId}_aud`, blob).catch(() => {});
-          }).catch(e => console.warn('[sync] aud fail:', e.message))
-      );
-    }
-    await Promise.all(tasks);
-    return { img, audioUrl: audioUrlBlob };
+  function slotUrl(row, slot) {
+    return row.media?.[slot]?.url || (slot === 'img' ? row.image_url : row.audio_url) || '';
   }
+
+  // download one media slot, save to IDB, return blob URL
+  async function downloadSlot(cardId, url, slot) {
+    if (!url) return '';
+    try {
+      const blob = await downloadMediaFromCDNorSupabase(url, slot === 'aud' ? audioMimeFromUrl(url) : undefined);
+      const blobUrl = URL.createObjectURL(blob);
+      await saveMedia(`${localKey}_${cardId}_${slot}`, blob).catch(() => {});
+      return blobUrl;
+    } catch(e) { console.warn('[sync] media fail:', slot, e.message); return ''; }
+  }
+
   try {
     const syncNow = new Date().toISOString();
     const lastSyncAt = localStorage.getItem('yihaiSyncAt:' + localKey) || '';
@@ -10551,33 +10543,27 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
     const newIds = serverIds.filter(id => !localMap[id]);
     const existingIds = serverIds.filter(id => localMap[id]);
 
+    const SELECT = 'card_id,name,media,image_url,audio_url';
+
     // 4. for existing cards: delta query (only pull updated_at > lastSyncAt)
-    let changedMap = {}; // { card_id: {card_name, image_url, audio_url} }
+    let changedMap = {};
     if (existingIds.length > 0 && lastSyncAt) {
-      // batch query to avoid long IN lists (Supabase limit)
       const batchSize = 100;
       for (let b = 0; b < existingIds.length; b += batchSize) {
         const batch = existingIds.slice(b, b + batchSize);
         const { data: changed, error: chErr } = await _sb.from('deck_cards')
-          .select('card_id,name,image_url,audio_url')
-          .eq('deck_id', deckId)
-          .in('card_id', batch)
-          .gt('updated_at', lastSyncAt);
+          .select(SELECT).eq('deck_id', deckId).in('card_id', batch).gt('updated_at', lastSyncAt);
         if (!chErr && changed) changed.forEach(c => { changedMap[c.card_id] = c; });
       }
     } else if (!lastSyncAt) {
-      // first sync (no lastSyncAt): query all existing cards too
       const batchSize = 100;
       for (let b = 0; b < existingIds.length; b += batchSize) {
         const batch = existingIds.slice(b, b + batchSize);
         const { data: all, error: aErr } = await _sb.from('deck_cards')
-          .select('card_id,name,image_url,audio_url')
-          .eq('deck_id', deckId)
-          .in('card_id', batch);
+          .select(SELECT).eq('deck_id', deckId).in('card_id', batch);
         if (!aErr && all) all.forEach(c => { changedMap[c.card_id] = c; });
       }
     }
-    // if lastSyncAt exists and changedMap is empty → no existing cards changed
 
     // 5. query complete data for new cards
     let newCardMap = {};
@@ -10586,9 +10572,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
       for (let b = 0; b < newIds.length; b += batchSize) {
         const batch = newIds.slice(b, b + batchSize);
         const { data: newCards, error: nErr } = await _sb.from('deck_cards')
-          .select('card_id,name,image_url,audio_url')
-          .eq('deck_id', deckId)
-          .in('card_id', batch);
+          .select(SELECT).eq('deck_id', deckId).in('card_id', batch);
         if (!nErr && newCards) newCards.forEach(c => { newCardMap[c.card_id] = c; });
       }
     }
@@ -10600,24 +10584,23 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
       const local = localMap[cid];
       const server = changedMap[cid];
       if (server) {
-        // server has update
         let changed = false;
         if (local.name !== server.name) { local.name = server.name; changed = true; }
-        // only download if media URL differs
-        if (server.image_url && server.image_url !== local._imgUrl) {
-          const media = await downloadMedia(cid, server.image_url, null);
-          if (media.img) { local.img = media.img; changed = true; }
-          local._imgUrl = server.image_url;
-        }
-        if (server.audio_url && server.audio_url !== local._audUrl) {
-          const media = await downloadMedia(cid, null, server.audio_url);
-          if (media.audioUrl) { local.audioUrl = media.audioUrl; changed = true; }
-          local._audUrl = server.audio_url;
+        local.media = local.media || {};
+        for (const slot of ['img', 'aud']) {
+          const url = slotUrl(server, slot);
+          if (url && url !== local.media[slot]?.url) {
+            const blobUrl = await downloadSlot(cid, url, slot);
+            local.media[slot] = { url, v: server.media?.[slot]?.v ?? 0, _blob: blobUrl };
+            if (slot === 'img') local.img = blobUrl;
+            else local.audioUrl = blobUrl;
+            if (blobUrl) changed = true;
+          }
         }
         if (changed) updated++;
         else skipped++;
       } else {
-        skipped++; // no change, keep as-is
+        skipped++;
       }
       merged.push(local);
     }
@@ -10627,12 +10610,13 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
     await parallelMapLimit(newIds, 3, async (cid) => {
       const server = newCardMap[cid];
       if (!server) return;
-      const card = { id: cid, name: server.name, img: '', audioUrl: '', details: [] };
-      const media = await downloadMedia(cid, server.image_url, server.audio_url);
-      card.img = media.img;
-      card.audioUrl = media.audioUrl;
-      card._imgUrl = server.image_url || '';
-      card._audUrl = server.audio_url || '';
+      const card = { id: cid, name: server.name, img: '', audioUrl: '', details: [], media: {} };
+      const [imgBlob, audBlob] = await Promise.all([
+        downloadSlot(cid, slotUrl(server, 'img'), 'img'),
+        downloadSlot(cid, slotUrl(server, 'aud'), 'aud'),
+      ]);
+      if (imgBlob) { card.img = imgBlob; card.media.img = { url: slotUrl(server, 'img'), v: server.media?.img?.v ?? 0, _blob: imgBlob }; }
+      if (audBlob) { card.audioUrl = audBlob; card.media.aud = { url: slotUrl(server, 'aud'), v: server.media?.aud?.v ?? 0, _blob: audBlob }; }
       merged.push(card);
       added++;
     });
