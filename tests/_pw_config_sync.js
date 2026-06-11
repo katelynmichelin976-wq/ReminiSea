@@ -92,9 +92,9 @@ async function waitSyncDone(page, maxMs) {
     // ════ PHASE 1: 全量语音文字参数 push→pull 一致性 ════
     section('PHASE 1: 全量语音文字参数 push→pull 一致性');
 
-    // 写入全部 13 个 voice 参数
+    // 写入全部 13 个 voice 参数（v5.13.3 起走 setVoiceField → voiceConfig）
     await run(page, (params) => {
-      Object.entries(params).forEach(([k, v]) => localStorage.setItem(k, v));
+      Object.entries(params).forEach(([k, v]) => setVoiceField(k, v));
     }, VOICE_PARAMS);
 
     // push 到云端
@@ -115,18 +115,18 @@ async function waitSyncDone(page, maxMs) {
     pass('云端 voiceMuted 写入正确',      cloudUi1?.voiceMuted       === '1');
     pass('云端 ttsRate 写入正确',         cloudUi1?.ttsRate          === '0.9');
 
-    // 清空本地全部 13 个 key
+    // 清空本地全部 13 个 voice 字段
     await run(page, (params) => {
-      Object.keys(params).forEach(k => localStorage.removeItem(k));
+      Object.keys(params).forEach(k => setVoiceField(k, null));
     }, VOICE_PARAMS);
 
     // pull 拉取云端配置
     await run(page, async () => { await cloudPullConfig(); });
     await wait(page, 500);
 
-    // 本地值 == 云端值（全 13 个 key 整体比对）
+    // 本地值 == 云端值（全 13 个 voice 字段整体比对）
     const localMatch1 = await run(page, (params) => {
-      return Object.entries(params).every(([k, v]) => localStorage.getItem(k) === v);
+      return Object.entries(params).every(([k, v]) => getVoiceField(k) === v);
     }, VOICE_PARAMS);
     pass('cloudPullConfig 后本地 13 个 key 全部还原（本地 == 云端）', localMatch1);
 
@@ -179,7 +179,7 @@ async function waitSyncDone(page, maxMs) {
     // CROSS_PARAMS 在模块作用域定义，便于 finally cleanup 引用
     // Device A（当前 page，已登录）写入参数并 push
     await run(page, (params) => {
-      Object.entries(params).forEach(([k, v]) => localStorage.setItem(k, v));
+      Object.entries(params).forEach(([k, v]) => setVoiceField(k, v));
     }, CROSS_PARAMS);
     const push3Ok = await run(page, async () => {
       try { await cloudPushConfig(); return true; } catch (e) { return false; }
@@ -210,18 +210,18 @@ async function waitSyncDone(page, maxMs) {
 
     // 断言 Device B 本地值 == 云端值（全 4 个 cross key）
     const bLocalMatch = await run(pageB, (params) => {
-      return Object.entries(params).every(([k, v]) => localStorage.getItem(k) === v);
+      return Object.entries(params).every(([k, v]) => getVoiceField(k) === v);
     }, CROSS_PARAMS);
     pass('Device B 本地值 == 云端值（全 4 个 cross key）', bLocalMatch);
 
     // 断言 Device B 运行时映射正确
-    // phraseWrong 无全局变量映射（wrong_hint 在 playVoiceSlot 内直接读 localStorage），改断 localStorage 值
+    // phraseWrong 无全局变量映射（wrong_hint 在 playVoiceSlot 内直接读 voiceConfig），改断 voiceConfig 值
     const globalsB = await run(pageB, () => ({
-      phraseWrongLs: localStorage.getItem('phraseWrong'),
-      optDelay:      typeof OPT_READ_DELAY !== 'undefined' ? OPT_READ_DELAY : null,
+      phraseWrongVal: getVoiceField('phraseWrong'),
+      optDelay:       typeof OPT_READ_DELAY !== 'undefined' ? OPT_READ_DELAY : null,
     }));
-    pass('Device B phraseWrong localStorage 映射正确',
-      globalsB.phraseWrongLs === 'cross-再试试');
+    pass('Device B phraseWrong voiceConfig 映射正确',
+      globalsB.phraseWrongVal === 'cross-再试试');
     pass('Device B OPT_READ_DELAY 全局变量映射正确（6.5s → 6500ms）',
       globalsB.optDelay === 6500);
 
@@ -245,7 +245,14 @@ async function waitSyncDone(page, maxMs) {
         ...DEPRECATED_KEYS,
       ];
       await run(page, async (keys) => {
-        keys.forEach(k => localStorage.removeItem(k));
+        keys.forEach(k => {
+          // voice 字段走 setVoiceField(null)；snake_case 废弃 key 仍是 raw localStorage
+          if (typeof setVoiceField === 'function' && typeof VOICE_FIELDS !== 'undefined' && VOICE_FIELDS.includes(k)) {
+            setVoiceField(k, null);
+          } else {
+            localStorage.removeItem(k);
+          }
+        });
         try {
           if (typeof _sb !== 'undefined' && _sb && typeof _cloudUserId !== 'undefined' && _cloudUserId) {
             await _sb.from('sync_config').delete().eq('user_id', _cloudUserId);

@@ -95,27 +95,35 @@ function check(desc, actual, expected) {
 }
 
 // ── v5.2 语音参数云同步完整性检查 ─────────────────────────────────────
+// v5.13.3 Phase 2.2 后 voice 字段聚合到 voiceConfig，通过 VOICE_FIELDS 注册表 + cloudPushConfig 内 ...getVoiceConfig() 平铺
 {
   const fs = require('fs');
   const html = fs.readFileSync('index.html', 'utf-8');
 
-  // Test 6: cloudPushConfig 应包含 phraseQuizPrompt
+  // Test 6-10: VOICE_FIELDS 应包含云同步所需 phrase/tts/voice/delay 字段
+  const vfStart = html.indexOf('const VOICE_FIELDS = [');
+  const vfEnd   = html.indexOf('];', vfStart);
+  const vfBody  = html.slice(vfStart, vfEnd);
+  check('VOICE_FIELDS 应包含 phraseQuizPrompt',
+    vfBody.includes("'phraseQuizPrompt'"), true);
+  check('VOICE_FIELDS 应包含 phraseQuizPromptRecognize',
+    vfBody.includes("'phraseQuizPromptRecognize'"), true);
+  check('VOICE_FIELDS 应包含 phraseOptHint',
+    vfBody.includes("'phraseOptHint'"), true);
+
+  // Test 6b: cloudPushConfig 通过 ...getVoiceConfig() 平铺 voice 字段
   const pushStart = html.indexOf('async function cloudPushConfig()');
   const pushEnd   = html.indexOf('\nasync function cloudPullConfig()');
   const pushBody  = html.slice(pushStart, pushEnd);
-  check('cloudPushConfig localUi 应包含 phraseQuizPrompt',
-    pushBody.includes('phraseQuizPrompt'), true);
+  check('cloudPushConfig localUi 通过 ...getVoiceConfig() 平铺 voice 字段',
+    pushBody.includes('...getVoiceConfig()'), true);
 
-  // Test 7: cloudPushConfig 应包含 phraseQuizPromptRecognize
-  check('cloudPushConfig localUi 应包含 phraseQuizPromptRecognize',
-    pushBody.includes('phraseQuizPromptRecognize'), true);
-
-  // Test 8: loadSettings 应从 phraseQuizPrompt 读取答题提示，不再依赖 phraseSelect
+  // Test 8: loadSettings 应通过 getVoiceField('phraseQuizPrompt') 读取（v5.13.3 起 voiceConfig 路径）
   const lsStart = html.indexOf('\nfunction loadSettings()');
   const lsEnd   = html.indexOf('\nloadSettings()');
   const lsBody  = html.slice(lsStart, lsEnd);
-  check('loadSettings 应读取 phraseQuizPrompt 作为答题提示文案',
-    lsBody.includes("'phraseQuizPrompt'"), true);
+  check('loadSettings 通过 getVoiceField 路径取 voice 字段',
+    lsBody.includes("getVoiceField('"), true);
   check('loadSettings 不应再依赖 phraseSelect',
     lsBody.includes("'phraseSelect'"), false);
 
@@ -126,15 +134,11 @@ function check(desc, actual, expected) {
   check('onSlotRowTap 保存回调应调用 debouncePushConfig',
     tapBody.includes('debouncePushConfig'), true);
 
-  // Test 10: cloudPushConfig 应包含 phraseOptHint（统一 camelCase），并主动清理废弃 snake_case key
-  check('cloudPushConfig localUi 应包含 phraseOptHint',
-    pushBody.includes('phraseOptHint'), true);
+  // Test 10: cloudPushConfig 应主动清理废弃 snake_case key
   check('cloudPushConfig mergedUi 应主动 delete 废弃 snake_case key',
     pushBody.includes("delete mergedUi[k]") && pushBody.includes("'phrase_opt_hint'"), true);
 
-  // Test 11: loadSettings 应从 phraseOptHint 读取选项提示，不含 snake_case
-  check('loadSettings 应读取 phraseOptHint 作为选项提示',
-    lsBody.includes("'phraseOptHint'"), true);
+  // Test 11: loadSettings 不应含 snake_case key phrase_opt_hint
   check('loadSettings 不应含 snake_case key phrase_opt_hint',
     lsBody.includes("'phrase_opt_hint'"), false);
 }

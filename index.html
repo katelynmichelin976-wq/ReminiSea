@@ -2895,26 +2895,7 @@ const LS_KEYS = {
   CONFETTI_ON:         'confettiOn',
   DECK_INDEX:          'yihaiDecksIndex',
   DAILY_PROGRESS:      'yihaiDailyProgress',
-  PHRASE_CORRECT:        'phraseCorrect',
-  PHRASE_WRONG:          'phraseWrong',
-  PHRASE_STREAK_CORRECT: 'phraseStreakCorrect',
-  PHRASE_SESSION_FINISH: 'phraseSessionFinish',
-  PHRASE_IDLE_BROWSE:    'phraseIdleBrowse',
-  PHRASE_OPT_HINT:       'phraseOptHint',
-  PHRASE_QUIZ_PROMPT:           'phraseQuizPrompt',
-  PHRASE_QUIZ_PROMPT_RECOGNIZE: 'phraseQuizPromptRecognize',
-  TTS_RATE:            'ttsRate',
-  TTS_PITCH:           'ttsPitch',
-  TTS_VOICE_NAME:      'ttsVoiceName',
-  VOICE_MUTED:         'voiceMuted',
-  VOICE_ASSIST_ENABLED:'voiceAssistEnabled',
-  ANS_READ_DELAY:      'ansReadDelay',
-  OPT_READ_DELAY:      'optReadDelay',
-  BROWSE_ANS_DELAY:    'browseAnsDelay',
-  OPT_COUNT:           'optCount',
-  OPT_TOUCH_DELAY:     'optTouchDelay',
-  NDUR:                'ndur',
-  BDUR:                'bdur',
+  // voice/TTS/delay/optCount/... aggregated to voiceConfig — use getVoiceField/setVoiceField
   EASY_RETRY_ON_WRONG: 'easyRetryOnWrong',
   EASY_SESSION_SIZE:   'easySessionSize',
 };
@@ -2984,6 +2965,41 @@ function migrateDeckSync() {
     for (const p of oldPrefixes) lsRemove(p + deckKey);
   }
 }
+
+// voice config 聚合 (v5.13.3 Phase 2.2)
+// ~20 个扁平 key (phrase*/tts*/voice*/Delay/optCount/optTouchDelay/ndur/bdur) → 1 个 JSON entry
+// 注意：云端 sync_config.ui schema 不变，cloudPushConfig/cloudPullConfig 通过 VOICE_FIELDS 翻译
+const VOICE_FIELDS = [
+  'phraseCorrect','phraseWrong','phraseStreakCorrect','phraseSessionFinish',
+  'phraseIdleBrowse','phraseOptHint','phraseQuizPrompt','phraseQuizPromptRecognize',
+  'ttsRate','ttsPitch','ttsVoiceName','voiceMuted','voiceAssistEnabled',
+  'ansReadDelay','optReadDelay','browseAnsDelay','optCount','optTouchDelay','ndur','bdur',
+];
+function getVoiceConfig() { return lsGetJSON('voiceConfig', {}); }
+function getVoiceField(name, def = null) {
+  const v = getVoiceConfig()[name];
+  return v == null ? def : v;
+}
+function setVoiceField(name, value) {
+  const cfg = getVoiceConfig();
+  if (value == null) delete cfg[name];
+  else cfg[name] = String(value);
+  lsSetJSON('voiceConfig', cfg);
+}
+function migrateVoiceConfig() {
+  if (lsGet('voiceConfig') != null) return;
+  const cfg = {};
+  for (const k of VOICE_FIELDS) {
+    const v = lsGet(k);
+    if (v != null) cfg[k] = v;
+  }
+  if (Object.keys(cfg).length === 0) return;
+  lsSetJSON('voiceConfig', cfg);
+  for (const k of VOICE_FIELDS) lsRemove(k);
+}
+
+// 启动期 eager migration（必须在任何 loadSettings/loadPhrases 之前完成）
+try { migrateVoiceConfig(); } catch (e) { console.warn('[migrate] voiceConfig failed', e); }
 
 // ── SRS global config (Anki naming convention) ────────────────────
 const SRS_CONFIG = {
@@ -3528,36 +3544,17 @@ async function cloudPushConfig() {
       }
     });
 
-    // collect local UI params
+    // collect local UI params（云端 schema 不变：voice 字段平铺到 ui dict）
     const localUi = {
-      confettiOn:         lsGet(LS_KEYS.CONFETTI_ON),
-      phraseWrong:          lsGet(LS_KEYS.PHRASE_WRONG),
-      phraseCorrect:        lsGet(LS_KEYS.PHRASE_CORRECT),
-      phraseStreakCorrect:  lsGet(LS_KEYS.PHRASE_STREAK_CORRECT),
-      phraseSessionFinish:  lsGet(LS_KEYS.PHRASE_SESSION_FINISH),
-      phraseIdleBrowse:     lsGet(LS_KEYS.PHRASE_IDLE_BROWSE),
-      phraseOptHint:        lsGet(LS_KEYS.PHRASE_OPT_HINT),
-      ttsRate:            lsGet(LS_KEYS.TTS_RATE),
-      ttsPitch:           lsGet(LS_KEYS.TTS_PITCH),
-      ttsVoiceName:       lsGet(LS_KEYS.TTS_VOICE_NAME),
-      voiceMuted:         lsGet(LS_KEYS.VOICE_MUTED),
-      ansReadDelay:       lsGet(LS_KEYS.ANS_READ_DELAY),
-      optReadDelay:       lsGet(LS_KEYS.OPT_READ_DELAY),
-      voiceAssistEnabled: lsGet(LS_KEYS.VOICE_ASSIST_ENABLED),
-      browseAnsDelay:     lsGet(LS_KEYS.BROWSE_ANS_DELAY),
-      optCount:           lsGet(LS_KEYS.OPT_COUNT),
-      optTouchDelay:      lsGet(LS_KEYS.OPT_TOUCH_DELAY),
-      ndur:               lsGet(LS_KEYS.NDUR),
-      bdur:               lsGet(LS_KEYS.BDUR),
-      theme:              lsGet(LS_KEYS.THEME),
-      phraseQuizPrompt:             lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT),
-      phraseQuizPromptRecognize:    lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT_RECOGNIZE),
+      ...getVoiceConfig(),
+      confettiOn: lsGet(LS_KEYS.CONFETTI_ON),
+      theme:      lsGet(LS_KEYS.THEME),
     };
     ['fs-opt','fs-ans','fs-hint','fs-btn','ls-opt','ls-ans','ls-hint','ls-btn'].forEach(k => {
       const v = lsGet(k);
       if (v) localUi[k] = v;
     });
-    Object.keys(localUi).forEach(k => { if (localUi[k] === null) delete localUi[k]; });
+    Object.keys(localUi).forEach(k => { if (localUi[k] == null) delete localUi[k]; });
 
     // pull cloud config first, merge then push (avoid overwriting other devices)
     const cloud = await _sb.from('sync_config').select('config_json').maybeSingle();
@@ -3608,10 +3605,11 @@ async function cloudPullConfig() {
       });
     }
 
-    // apply UI params
+    // apply UI params（voice 字段路由进 voiceConfig，其余仍走扁平 LS key）
     if (cfg.ui) {
       Object.entries(cfg.ui).forEach(([k, v]) => {
-        lsSet(k, v);
+        if (VOICE_FIELDS.includes(k)) setVoiceField(k, v);
+        else lsSet(k, v);
         applied++;
       });
     }
@@ -6884,8 +6882,8 @@ function startCardPrompts(pickedOpts, optLang, cardType) {
   tQuizPromptTimer = setTimeout(() => {
     tQuizPromptTimer = null;
     const _qpText = (cardType === 'recognize')
-      ? (lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT_RECOGNIZE) || t('voice_quiz_prompt_recognize') || '认识这个人吗')
-      : (lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT) || PHRASE_SELECT);
+      ? (getVoiceField('phraseQuizPromptRecognize') || t('voice_quiz_prompt_recognize') || '认识这个人吗')
+      : (getVoiceField('phraseQuizPrompt') || PHRASE_SELECT);
     playVoiceSlot('quiz_prompt', _qpText, getLocale());
     // Phase 2: option hint (waits additional OPT_READ_DELAY after quiz prompt)
     tOptHintTimer = setTimeout(() => {
@@ -8718,9 +8716,9 @@ function setLocale(loc) {
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
   // reset voice prompts to current locale defaults on language switch
-  [LS_KEYS.PHRASE_QUIZ_PROMPT, LS_KEYS.PHRASE_OPT_HINT, LS_KEYS.PHRASE_WRONG,
-   LS_KEYS.PHRASE_CORRECT, LS_KEYS.PHRASE_STREAK_CORRECT,
-   LS_KEYS.PHRASE_SESSION_FINISH, LS_KEYS.PHRASE_IDLE_BROWSE].forEach(k => lsRemove(k));
+  ['phraseQuizPrompt', 'phraseOptHint', 'phraseWrong',
+   'phraseCorrect', 'phraseStreakCorrect',
+   'phraseSessionFinish', 'phraseIdleBrowse'].forEach(k => setVoiceField(k, null));
   PHRASE_SELECT   = t('quiz_select_hint');
   PHRASE_OPT_HINT = t('default_opt_hint');
   if (typeof _updateSettingsLangVal === 'function') _updateSettingsLangVal();
@@ -9908,7 +9906,7 @@ function onLsChange(key, v) {
 function onBrowseAnsDelayChange(v) {
   BROWSE_ANSWER_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-browse-ans-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  lsSet(LS_KEYS.BROWSE_ANS_DELAY, v);
+  setVoiceField('browseAnsDelay', v);
   debouncePushConfig();
 }
 function toggleConfetti(cb) {
@@ -9919,7 +9917,7 @@ function toggleConfetti(cb) {
 
 function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
-  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); lsSet(LS_KEYS.PHRASE_OPT_HINT, PHRASE_OPT_HINT); }
+  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); setVoiceField('phraseOptHint', PHRASE_OPT_HINT); }
   debouncePushConfig();
 }
 
@@ -9930,49 +9928,49 @@ function onQpDelayChange(v) {
 function onOhDelayChange(v) {
   OPT_READ_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-ohdelay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  lsSet(LS_KEYS.OPT_READ_DELAY, v);
+  setVoiceField('optReadDelay', v);
   debouncePushConfig();
 }
 function onDelayChange(v) {
   ANS_READ_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  lsSet(LS_KEYS.ANS_READ_DELAY, v);
+  setVoiceField('ansReadDelay', v);
   debouncePushConfig();
 }
 function onBrowseDelayChange(v) {
   ANS_READ_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-browse-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  lsSet(LS_KEYS.ANS_READ_DELAY, v);
+  setVoiceField('ansReadDelay', v);
   debouncePushConfig();
 }
 
 function onTtsRateChange(v) {
   TTS_RATE = parseFloat(v);
   document.getElementById('tts-rate-val').textContent = parseFloat(v).toFixed(2);
-  lsSet(LS_KEYS.TTS_RATE, v);
+  setVoiceField('ttsRate', v);
   debouncePushConfig();
 }
 function onTtsPitchChange(v) {
   TTS_PITCH = parseFloat(v);
   document.getElementById('tts-pitch-val').textContent = parseFloat(v).toFixed(1);
-  lsSet(LS_KEYS.TTS_PITCH, v);
+  setVoiceField('ttsPitch', v);
   debouncePushConfig();
 }
 function onTtsVoiceChange(name) {
   TTS_VOICE_NAME = name;
-  lsSet(LS_KEYS.TTS_VOICE_NAME, name);
+  setVoiceField('ttsVoiceName', name);
   debouncePushConfig();
 }
 
 function onVoiceMutedChange(cb) {
   VOICE_MUTED = cb.checked;
-  lsSet(LS_KEYS.VOICE_MUTED, VOICE_MUTED ? '1' : '0');
+  setVoiceField('voiceMuted', VOICE_MUTED ? '1' : '0');
   debouncePushConfig();
 }
 
 function onAnsReadDelayChange(val) {
   ANS_READ_DELAY = parseFloat(val) * 1000;
-  lsSet(LS_KEYS.ANS_READ_DELAY, val);
+  setVoiceField('ansReadDelay', val);
   document.getElementById('ans-read-delay-val').textContent = parseFloat(val).toFixed(1) + 's';
   debouncePushConfig();
 }
@@ -10042,15 +10040,15 @@ async function renderVoiceSlots() {
 function onSlotRowTap(slot) {
   if (slot.functional) {
     const current = slot.name === 'quiz_prompt'
-      ? (lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT) || PHRASE_SELECT)
-      : (lsGet(LS_KEYS.PHRASE_OPT_HINT)    || PHRASE_OPT_HINT);
+      ? (getVoiceField('phraseQuizPrompt') || PHRASE_SELECT)
+      : (getVoiceField('phraseOptHint')    || PHRASE_OPT_HINT);
     showTextEditOverlay(
       slot.name,
       t(slot.labelKey) || slot.name,
       current,
       (newVal) => {
-        if (slot.name === 'quiz_prompt') { PHRASE_SELECT = newVal || t('quiz_select_hint') || ''; lsSet(LS_KEYS.PHRASE_QUIZ_PROMPT, newVal); }
-        if (slot.name === 'opt_hint') { PHRASE_OPT_HINT = newVal; lsSet(LS_KEYS.PHRASE_OPT_HINT, newVal); }
+        if (slot.name === 'quiz_prompt') { PHRASE_SELECT = newVal || t('quiz_select_hint') || ''; setVoiceField('phraseQuizPrompt', newVal); }
+        if (slot.name === 'opt_hint') { PHRASE_OPT_HINT = newVal; setVoiceField('phraseOptHint', newVal); }
         renderVoiceSlots();
         debouncePushConfig();
       }
@@ -10073,14 +10071,14 @@ function toggleVaGroup(group) {
 
 function onVoiceAssistToggle(cb) {
   VOICE_ASSIST_ENABLED = cb.checked;
-  lsSet(LS_KEYS.VOICE_ASSIST_ENABLED, VOICE_ASSIST_ENABLED ? '1' : '0');
+  setVoiceField('voiceAssistEnabled', VOICE_ASSIST_ENABLED ? '1' : '0');
   updateVoiceAssistStatus();
   debouncePushConfig();
 }
 
 function onOptReadDelayChange(val) {
   OPT_READ_DELAY = parseFloat(val) * 1000;
-  lsSet(LS_KEYS.OPT_READ_DELAY, val);
+  setVoiceField('optReadDelay', val);
   document.getElementById('opt-read-delay-val').textContent = parseFloat(val).toFixed(1) + 's';
   debouncePushConfig();
 }
@@ -10262,35 +10260,35 @@ function populateVoiceList() {
 function onOptTouchDelayChange(v) {
   OPT_TOUCH_DELAY = parseInt(v);
   document.getElementById('opt-touch-delay-val').textContent = `${v}ms`;
-  lsSet(LS_KEYS.OPT_TOUCH_DELAY, v);
+  setVoiceField('optTouchDelay', v);
   debouncePushConfig();
 }
 
 function onOptCount(v) {
   OPT_COUNT = parseInt(v);
   document.getElementById('opt-count-val').textContent = `${v}`;
-  lsSet(LS_KEYS.OPT_COUNT, v);
+  setVoiceField('optCount', v);
   debouncePushConfig();
 }
 function onNdurChange(v) {
   NDUR = parseFloat(v) * 1000;
   document.getElementById('dbg-ndur-val').textContent = v === '0' ? t('common_manual') : `${v}s`;
-  lsSet(LS_KEYS.NDUR, v);
+  setVoiceField('ndur', v);
   debouncePushConfig();
 }
 function onBdurChange(v) {
   BDUR = parseFloat(v) * 1000;
   document.getElementById('dbg-bdur-val').textContent = v === '0' ? t('common_manual') : `${v}s`;
-  lsSet(LS_KEYS.BDUR, v);
+  setVoiceField('bdur', v);
   debouncePushConfig();
 }
 
 // resets to locale default if stored value matches any locale's default (prevents cross-device pollution)
-function loadPhraseOrDefault(storageKey, i18nKey) {
-  const stored = lsGet(storageKey);
+function loadPhraseOrDefault(voiceField, i18nKey) {
+  const stored = getVoiceField(voiceField);
   if (!stored) return t(i18nKey);
   const allDefaults = SUPPORTED_LOCALES.map(loc => (I18N[loc] || {})[i18nKey]).filter(Boolean);
-  if (allDefaults.includes(stored)) { lsRemove(storageKey); return t(i18nKey); }
+  if (allDefaults.includes(stored)) { setVoiceField(voiceField, null); return t(i18nKey); }
   return stored;
 }
 
@@ -10299,37 +10297,37 @@ function loadSettings() {
   PHRASE_OPT_HINT = loadPhraseOrDefault('phraseOptHint',    'default_opt_hint');
 
   // browse answer delay / correct feedback
-  const browseAnsDelay = lsGet(LS_KEYS.BROWSE_ANS_DELAY);
+  const browseAnsDelay = getVoiceField('browseAnsDelay');
   if (browseAnsDelay) BROWSE_ANSWER_DELAY = parseFloat(browseAnsDelay) * 1000;
   const confettiOn = lsGet(LS_KEYS.CONFETTI_ON);
   if (confettiOn !== null) CONFETTI_ON = confettiOn === '1';
   // TTS voice params
-  const ttsRate = lsGet(LS_KEYS.TTS_RATE);
+  const ttsRate = getVoiceField('ttsRate');
   if (ttsRate) TTS_RATE = parseFloat(ttsRate);
-  const ttsPitch = lsGet(LS_KEYS.TTS_PITCH);
+  const ttsPitch = getVoiceField('ttsPitch');
   if (ttsPitch) TTS_PITCH = parseFloat(ttsPitch);
-  const ttsVoiceName = lsGet(LS_KEYS.TTS_VOICE_NAME);
+  const ttsVoiceName = getVoiceField('ttsVoiceName');
   if (ttsVoiceName !== null) TTS_VOICE_NAME = ttsVoiceName;
 
-  const voiceMuted = lsGet(LS_KEYS.VOICE_MUTED);
+  const voiceMuted = getVoiceField('voiceMuted');
   if (voiceMuted !== null) VOICE_MUTED = voiceMuted === '1';
-  const ansReadDelay = lsGet(LS_KEYS.ANS_READ_DELAY);
+  const ansReadDelay = getVoiceField('ansReadDelay');
   if (ansReadDelay) ANS_READ_DELAY = parseFloat(ansReadDelay) * 1000;
-  const optReadDelay = lsGet(LS_KEYS.OPT_READ_DELAY);
+  const optReadDelay = getVoiceField('optReadDelay');
   if (optReadDelay) OPT_READ_DELAY = parseFloat(optReadDelay) * 1000;
-  const voiceAssistEnabled = lsGet(LS_KEYS.VOICE_ASSIST_ENABLED);
+  const voiceAssistEnabled = getVoiceField('voiceAssistEnabled');
   if (voiceAssistEnabled !== null) VOICE_ASSIST_ENABLED = voiceAssistEnabled === '1';
 
   // option count / countdown / touch guard
-  const oc = lsGet(LS_KEYS.OPT_COUNT);
+  const oc = getVoiceField('optCount');
   if (oc) OPT_COUNT = parseInt(oc);
-  const otd = lsGet(LS_KEYS.OPT_TOUCH_DELAY);
+  const otd = getVoiceField('optTouchDelay');
   if (otd !== null) OPT_TOUCH_DELAY = parseInt(otd);
-  const ndur = lsGet(LS_KEYS.NDUR);
+  const ndur = getVoiceField('ndur');
   // NDUR prefers localStorage, falls back to SRS_CONFIG.practice_advance_sec
   if (ndur) NDUR = parseFloat(ndur) * 1000;
   else NDUR = SRS_CONFIG.practice_advance_sec * 1000;
-  const bdur = lsGet(LS_KEYS.BDUR);
+  const bdur = getVoiceField('bdur');
   if (bdur) BDUR = parseFloat(bdur) * 1000;
 
   // Restore CSS variables

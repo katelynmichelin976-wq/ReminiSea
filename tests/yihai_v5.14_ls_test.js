@@ -39,26 +39,6 @@ const LS_KEYS = {
   CONFETTI_ON:         'confettiOn',
   DECK_INDEX:          'yihaiDecksIndex',
   DAILY_PROGRESS:      'yihaiDailyProgress',
-  PHRASE_CORRECT:        'phraseCorrect',
-  PHRASE_WRONG:          'phraseWrong',
-  PHRASE_STREAK_CORRECT: 'phraseStreakCorrect',
-  PHRASE_SESSION_FINISH: 'phraseSessionFinish',
-  PHRASE_IDLE_BROWSE:    'phraseIdleBrowse',
-  PHRASE_OPT_HINT:       'phraseOptHint',
-  PHRASE_QUIZ_PROMPT:           'phraseQuizPrompt',
-  PHRASE_QUIZ_PROMPT_RECOGNIZE: 'phraseQuizPromptRecognize',
-  TTS_RATE:            'ttsRate',
-  TTS_PITCH:           'ttsPitch',
-  TTS_VOICE_NAME:      'ttsVoiceName',
-  VOICE_MUTED:         'voiceMuted',
-  VOICE_ASSIST_ENABLED:'voiceAssistEnabled',
-  ANS_READ_DELAY:      'ansReadDelay',
-  OPT_READ_DELAY:      'optReadDelay',
-  BROWSE_ANS_DELAY:    'browseAnsDelay',
-  OPT_COUNT:           'optCount',
-  OPT_TOUCH_DELAY:     'optTouchDelay',
-  NDUR:                'ndur',
-  BDUR:                'bdur',
   EASY_RETRY_ON_WRONG: 'easyRetryOnWrong',
   EASY_SESSION_SIZE:   'easySessionSize',
 };
@@ -161,7 +141,6 @@ const lsSetJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   const expectedKeys = [
     'LAST_CLOUD_EMAIL','DEVICE_ID','SESSION_BACKUP','GLOBAL_SYNC_TS',
     'THEME','LOCALE','APP_MODE','DECK_INDEX','DAILY_PROGRESS',
-    'PHRASE_CORRECT','TTS_RATE','VOICE_MUTED','OPT_COUNT','NDUR','BDUR',
     'EASY_RETRY_ON_WRONG','EASY_SESSION_SIZE',
   ];
   const missing = expectedKeys.filter(k => !(k in LS_KEYS));
@@ -299,6 +278,86 @@ function migrateDeckSync() {
   setDeckSync('tomb', { deletedCards: [...cur.deletedCards, 'c2'] });
   const s = getDeckSync('tomb');
   check('tombstone append via patch', s.deletedCards.length === 2 && s.deletedCards[1] === 'c2');
+}
+
+// ── Phase 2.2: voiceConfig 聚合 + 迁移 ─────────────────────────────
+
+const VOICE_FIELDS = [
+  'phraseCorrect','phraseWrong','phraseStreakCorrect','phraseSessionFinish',
+  'phraseIdleBrowse','phraseOptHint','phraseQuizPrompt','phraseQuizPromptRecognize',
+  'ttsRate','ttsPitch','ttsVoiceName','voiceMuted','voiceAssistEnabled',
+  'ansReadDelay','optReadDelay','browseAnsDelay','optCount','optTouchDelay','ndur','bdur',
+];
+function getVoiceConfig() { return lsGetJSON('voiceConfig', {}); }
+function getVoiceField(name, def = null) {
+  const v = getVoiceConfig()[name];
+  return v == null ? def : v;
+}
+function setVoiceField(name, value) {
+  const cfg = getVoiceConfig();
+  if (value == null) delete cfg[name];
+  else cfg[name] = String(value);
+  lsSetJSON('voiceConfig', cfg);
+}
+function migrateVoiceConfig() {
+  if (lsGet('voiceConfig') != null) return;
+  const cfg = {};
+  for (const k of VOICE_FIELDS) {
+    const v = lsGet(k);
+    if (v != null) cfg[k] = v;
+  }
+  if (Object.keys(cfg).length === 0) return;
+  lsSetJSON('voiceConfig', cfg);
+  for (const k of VOICE_FIELDS) lsRemove(k);
+}
+
+{
+  _store.clear();
+  _store.set('phraseCorrect', '太棒了');
+  _store.set('phraseWrong', '');  // explicit empty allowed
+  _store.set('ttsRate', '1.2');
+  _store.set('voiceMuted', '1');
+  _store.set('optCount', '4');
+  migrateVoiceConfig();
+  const cfg = getVoiceConfig();
+  check('voice migrate phraseCorrect', cfg.phraseCorrect === '太棒了');
+  check('voice migrate ttsRate', cfg.ttsRate === '1.2');
+  check('voice migrate voiceMuted', cfg.voiceMuted === '1');
+  check('voice migrate optCount', cfg.optCount === '4');
+  check('voice migrate empty string preserved', cfg.phraseWrong === '');
+  check('voice old key phraseCorrect removed', _store.get('phraseCorrect') == null);
+  check('voice old key ttsRate removed', _store.get('ttsRate') == null);
+}
+{
+  _store.clear();
+  _store.set('voiceConfig', '{"phraseCorrect":"existing"}');
+  _store.set('phraseWrong', '不对');
+  migrateVoiceConfig();
+  const cfg = getVoiceConfig();
+  check('voice idempotent: existing voiceConfig kept', cfg.phraseCorrect === 'existing');
+  check('voice idempotent: old phraseWrong key kept (no migration)', _store.get('phraseWrong') === '不对');
+}
+{
+  _store.clear();
+  migrateVoiceConfig();
+  check('voice migrate no-op when nothing to migrate', _store.get('voiceConfig') == null);
+}
+{
+  _store.clear();
+  setVoiceField('ttsRate', '1.5');
+  check('setVoiceField writes', getVoiceField('ttsRate') === '1.5');
+  setVoiceField('ttsRate', '0.8');
+  check('setVoiceField overwrites', getVoiceField('ttsRate') === '0.8');
+  setVoiceField('ttsRate', null);
+  check('setVoiceField null deletes', getVoiceField('ttsRate') === null);
+  check('setVoiceField default fallback', getVoiceField('ttsRate', '1.0') === '1.0');
+}
+{
+  _store.clear();
+  setVoiceField('voiceMuted', true);
+  check('setVoiceField coerces boolean to string', getVoiceField('voiceMuted') === 'true');
+  setVoiceField('optCount', 5);
+  check('setVoiceField coerces number to string', getVoiceField('optCount') === '5');
 }
 
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);
