@@ -2889,13 +2889,11 @@ const LS_KEYS = {
   V5_MIGRATION:        'yihaiV5MigrationPending',
   PRACTICE_DAYS:       'yihaiPracticeDays',
   LOG_LEVEL:           'yihaiLogLevel',
-  APP_MODE:            'yihaiAppMode',
-  THEME:               'theme',
-  LOCALE:              'yihai_ui_locale',
-  CONFETTI_ON:         'confettiOn',
   DECK_INDEX:          'yihaiDecksIndex',
   DAILY_PROGRESS:      'yihaiDailyProgress',
-  // voice/TTS/delay/optCount/... aggregated to voiceConfig — use getVoiceField/setVoiceField
+  // voice/TTS/delay/...   → voiceConfig (getVoiceField/setVoiceField)
+  // theme/locale/appMode/confettiOn/logLevel → uiConfig (getUiField/setUiField)
+  // fs-/ls- typography    → typographyConfig (getTypoField/setTypoField)
   EASY_RETRY_ON_WRONG: 'easyRetryOnWrong',
   EASY_SESSION_SIZE:   'easySessionSize',
 };
@@ -2908,7 +2906,6 @@ const LS_DECK = (deckKey, field) => {
   return prefix + deckKey;
 };
 const LS_SRS = configKey => 'srs_' + configKey;
-const LS_TYPO = (kind, slot) => `${kind}-${slot}`;
 const lsGet = k => localStorage.getItem(k);
 const lsSet = (k, v) => localStorage.setItem(k, String(v));
 const lsRemove = k => localStorage.removeItem(k);
@@ -2998,8 +2995,75 @@ function migrateVoiceConfig() {
   for (const k of VOICE_FIELDS) lsRemove(k);
 }
 
+// UI config 聚合 (v5.13.3 Phase 2.3)
+// 5 个扁平 key (theme/yihai_ui_locale/yihaiAppMode/confettiOn/yihaiLogLevel) → 1 个 JSON entry
+// 云端 sync_config.ui 仅同步 theme + confettiOn (locale/appMode/logLevel 仅本地)
+const UI_OLD_MAP = {
+  theme:      'theme',
+  locale:     'yihai_ui_locale',
+  appMode:    'yihaiAppMode',
+  confettiOn: 'confettiOn',
+  logLevel:   'yihaiLogLevel',
+};
+function getUiConfig() { return lsGetJSON('uiConfig', {}); }
+function getUiField(name, def = null) {
+  const v = getUiConfig()[name];
+  return v == null ? def : v;
+}
+function setUiField(name, value) {
+  const cfg = getUiConfig();
+  if (value == null) delete cfg[name];
+  else cfg[name] = String(value);
+  lsSetJSON('uiConfig', cfg);
+}
+function migrateUiConfig() {
+  if (lsGet('uiConfig') != null) return;
+  const cfg = {};
+  for (const [field, oldKey] of Object.entries(UI_OLD_MAP)) {
+    const v = lsGet(oldKey);
+    if (v != null) cfg[field] = v;
+  }
+  if (Object.keys(cfg).length === 0) return;
+  lsSetJSON('uiConfig', cfg);
+  for (const oldKey of Object.values(UI_OLD_MAP)) lsRemove(oldKey);
+}
+
+// typography config 聚合 (v5.13.3 Phase 2.3)
+// 8 个 CSS var key (fs-/ls- × opt/ans/hint/btn) → 1 个 JSON entry
+const TYPO_SLOTS = ['opt', 'ans', 'hint', 'btn'];
+function getTypographyConfig() {
+  const c = lsGetJSON('typographyConfig', {});
+  return { fs: c.fs || {}, ls: c.ls || {} };
+}
+function getTypoField(kind, slot, def = null) {
+  const v = getTypographyConfig()[kind][slot];
+  return v == null ? def : v;
+}
+function setTypoField(kind, slot, value) {
+  const cfg = getTypographyConfig();
+  if (value == null) delete cfg[kind][slot];
+  else cfg[kind][slot] = String(value);
+  lsSetJSON('typographyConfig', cfg);
+}
+function migrateTypographyConfig() {
+  if (lsGet('typographyConfig') != null) return;
+  const cfg = { fs: {}, ls: {} };
+  let any = false;
+  for (const kind of ['fs', 'ls']) {
+    for (const slot of TYPO_SLOTS) {
+      const v = lsGet(`${kind}-${slot}`);
+      if (v != null) { cfg[kind][slot] = v; any = true; }
+    }
+  }
+  if (!any) return;
+  lsSetJSON('typographyConfig', cfg);
+  for (const kind of ['fs', 'ls']) for (const slot of TYPO_SLOTS) lsRemove(`${kind}-${slot}`);
+}
+
 // 启动期 eager migration（必须在任何 loadSettings/loadPhrases 之前完成）
 try { migrateVoiceConfig(); } catch (e) { console.warn('[migrate] voiceConfig failed', e); }
+try { migrateUiConfig(); } catch (e) { console.warn('[migrate] uiConfig failed', e); }
+try { migrateTypographyConfig(); } catch (e) { console.warn('[migrate] typographyConfig failed', e); }
 
 // ── SRS global config (Anki naming convention) ────────────────────
 const SRS_CONFIG = {
@@ -3547,13 +3611,14 @@ async function cloudPushConfig() {
     // collect local UI params（云端 schema 不变：voice 字段平铺到 ui dict）
     const localUi = {
       ...getVoiceConfig(),
-      confettiOn: lsGet(LS_KEYS.CONFETTI_ON),
-      theme:      lsGet(LS_KEYS.THEME),
+      confettiOn: getUiField('confettiOn'),
+      theme:      getUiField('theme'),
     };
-    ['fs-opt','fs-ans','fs-hint','fs-btn','ls-opt','ls-ans','ls-hint','ls-btn'].forEach(k => {
-      const v = lsGet(k);
-      if (v) localUi[k] = v;
-    });
+    const typo = getTypographyConfig();
+    for (const slot of TYPO_SLOTS) {
+      if (typo.fs[slot] != null) localUi[`fs-${slot}`] = typo.fs[slot];
+      if (typo.ls[slot] != null) localUi[`ls-${slot}`] = typo.ls[slot];
+    }
     Object.keys(localUi).forEach(k => { if (localUi[k] == null) delete localUi[k]; });
 
     // pull cloud config first, merge then push (avoid overwriting other devices)
@@ -3605,10 +3670,13 @@ async function cloudPullConfig() {
       });
     }
 
-    // apply UI params（voice 字段路由进 voiceConfig，其余仍走扁平 LS key）
+    // apply UI params（按 field 类型路由：voice→voiceConfig / ui→uiConfig / typo→typographyConfig）
     if (cfg.ui) {
       Object.entries(cfg.ui).forEach(([k, v]) => {
         if (VOICE_FIELDS.includes(k)) setVoiceField(k, v);
+        else if (k === 'theme' || k === 'confettiOn') setUiField(k, v);
+        else if (k.startsWith('fs-')) setTypoField('fs', k.slice(3), v);
+        else if (k.startsWith('ls-')) setTypoField('ls', k.slice(3), v);
         else lsSet(k, v);
         applied++;
       });
@@ -3619,7 +3687,7 @@ async function cloudPullConfig() {
     loadSettings();
 
     // apply theme (compat with old light/dark and new default/jade/amber/dark)
-    var th = lsGet(LS_KEYS.THEME);
+    var th = getUiField('theme');
     if (th) {
       if (th === 'dark') { document.documentElement.setAttribute('data-theme','dark'); }
       else if (th !== 'light' && th !== 'default') { document.documentElement.setAttribute('data-theme', th); }
@@ -3905,7 +3973,7 @@ async function migrateDeviceRecordsToUser(cloudUserId) {
 const _LOG_LEVELS  = { debug: 0, info: 1, warn: 2, error: 3 };
 const _LOG_COLORS  = { debug: 'color:#888', info: 'color:#0ea5e9', warn: 'color:#f59e0b', error: 'color:#ef4444' };
 const _urlLogParam = new URLSearchParams(location.search).get('log');
-let _logLevel = _LOG_LEVELS[_urlLogParam || lsGet(LS_KEYS.LOG_LEVEL) || 'warn'] ?? 2;
+let _logLevel = _LOG_LEVELS[_urlLogParam || getUiField('logLevel') || 'warn'] ?? 2;
 
 function _writeLogToIdb(entry) {
   openSrsDb().then(function(db) {
@@ -3937,7 +4005,7 @@ var log = {
   setLevel: function(name) {
     if (_LOG_LEVELS[name] === undefined) { console.warn('yhLog: unknown level', name); return; }
     _logLevel = _LOG_LEVELS[name];
-    lsSet(LS_KEYS.LOG_LEVEL, name);
+    setUiField('logLevel', name);
     console.log('%c[LOG] level set to ' + name, _LOG_COLORS[name]);
   }
 };
@@ -5430,7 +5498,7 @@ let _lastSrsWrite    = Promise.resolve(); // most recent _writeSrs Promise, for 
 let _launchBusy  = false; // prevent duplicate start-practice clicks
 let _browseCards = [];
 let _browseIdx   = 0;
-let _appMode = lsGet(LS_KEYS.APP_MODE) || 'standard'; // 'standard' | 'advanced'
+let _appMode = getUiField('appMode') || 'standard'; // 'standard' | 'advanced'
 
 // ── practice mode SRS state ────────────────────────────────────
 let _cardStartTs     = 0;     // current card display timestamp (for response_time calc)
@@ -5615,7 +5683,7 @@ document.addEventListener('visibilitychange', () => {
 // ── advanced mode ───────────────────────────────────────────────
 function onAppModeToggle(el) {
   _appMode = el.checked ? 'advanced' : 'standard';
-  lsSet(LS_KEYS.APP_MODE, _appMode);
+  setUiField('appMode', _appMode);
   document.documentElement.setAttribute('data-mode', _appMode);
   updateTabBarMode();
   updateHomeTopbar();
@@ -8697,7 +8765,7 @@ let _uiLocale = null;
 
 function getLocale() {
   if (_uiLocale) return _uiLocale;
-  const saved = lsGet(LS_KEYS.LOCALE);
+  const saved = getUiField('locale');
   if (saved && SUPPORTED_LOCALES.includes(saved)) { _uiLocale = saved; return saved; }
   _uiLocale = detectLocale(navigator.language, SUPPORTED_LOCALES, FALLBACK_LOCALE);
   return _uiLocale;
@@ -8706,7 +8774,7 @@ function getLocale() {
 function setLocale(loc) {
   if (!SUPPORTED_LOCALES.includes(loc)) return;
   _uiLocale = loc;
-  lsSet(LS_KEYS.LOCALE, loc);
+  setUiField('locale', loc);
   applyI18n();
   document.documentElement.lang = loc;
   document.documentElement.setAttribute('lang', loc);
@@ -9892,13 +9960,13 @@ function forceRefresh() {
 function onFsChange(key, v) {
   document.documentElement.style.setProperty(`--fs-${key}`, `${v}px`);
   document.getElementById(`fs-${key}-val`).textContent = v;
-  lsSet(LS_TYPO('fs', key), v);
+  setTypoField('fs', key, v);
   debouncePushConfig();
 }
 function onLsChange(key, v) {
   document.documentElement.style.setProperty(`--ls-${key}`, `${v}px`);
   document.getElementById(`ls-${key}-val`).textContent = `${v}px`;
-  lsSet(LS_TYPO('ls', key), v);
+  setTypoField('ls', key, v);
   debouncePushConfig();
 }
 
@@ -9911,7 +9979,7 @@ function onBrowseAnsDelayChange(v) {
 }
 function toggleConfetti(cb) {
   CONFETTI_ON = cb.checked;
-  lsSet(LS_KEYS.CONFETTI_ON, CONFETTI_ON ? '1' : '0');
+  setUiField('confettiOn', CONFETTI_ON ? '1' : '0');
   debouncePushConfig();
 }
 
@@ -10299,7 +10367,7 @@ function loadSettings() {
   // browse answer delay / correct feedback
   const browseAnsDelay = getVoiceField('browseAnsDelay');
   if (browseAnsDelay) BROWSE_ANSWER_DELAY = parseFloat(browseAnsDelay) * 1000;
-  const confettiOn = lsGet(LS_KEYS.CONFETTI_ON);
+  const confettiOn = getUiField('confettiOn');
   if (confettiOn !== null) CONFETTI_ON = confettiOn === '1';
   // TTS voice params
   const ttsRate = getVoiceField('ttsRate');
@@ -10338,7 +10406,8 @@ function loadSettings() {
     {k:'ls-hint', def:'0'}, {k:'ls-btn', def:'0'},
   ];
   cssVars.forEach(({k, def}) => {
-    const v = lsGet(k) || def;
+    const [kind, slot] = k.split('-');
+    const v = getTypoField(kind, slot, def);
     document.documentElement.style.setProperty(`--${k}`, `${v}px`);
   });
 
@@ -10397,7 +10466,8 @@ function loadSettings() {
     ].forEach(({id,suf,def})=>{
       const el=document.getElementById(id);
       const val=document.getElementById(`${id}-val`);
-      const v=lsGet(id)||def;
+      const [kind, slot] = id.split('-');
+      const v=getTypoField(kind, slot, def);
       if(el) el.value=v;
       if(val) val.textContent=`${v}${suf}`;
     });
@@ -11398,7 +11468,7 @@ function setTheme(el) {
 }
 function setThemeValue(theme) {
   document.documentElement.setAttribute('data-theme', theme === 'default' ? '' : theme);
-  lsSet(LS_KEYS.THEME, theme);
+  setUiField('theme', theme);
 }
 function showTheme() {
   // highlight current theme
@@ -11418,13 +11488,13 @@ function showAbout() {
 }
 (function(){
   // restore theme — supports default/jade/amber/dark
-  var themeVal=lsGet(LS_KEYS.THEME);
+  var themeVal=getUiField('theme');
   if(!themeVal||themeVal==='light')themeVal='default';
   var isDark=themeVal==='dark'||(!themeVal&&window.matchMedia('(prefers-color-scheme: dark)').matches);
   // migrate old 'light'/'dark' settings
   if(themeVal==='dark'||isDark){
     document.documentElement.setAttribute('data-theme','dark');
-    if(themeVal==='light'||themeVal==='default')lsSet(LS_KEYS.THEME,'dark');
+    if(themeVal==='light'||themeVal==='default')setUiField('theme','dark');
   } else if(themeVal&&themeVal!=='default'&&themeVal!=='light'){
     document.documentElement.setAttribute('data-theme',themeVal);
   }

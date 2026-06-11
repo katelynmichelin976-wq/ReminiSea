@@ -33,10 +33,6 @@ const LS_KEYS = {
   V5_MIGRATION:        'yihaiV5MigrationPending',
   PRACTICE_DAYS:       'yihaiPracticeDays',
   LOG_LEVEL:           'yihaiLogLevel',
-  APP_MODE:            'yihaiAppMode',
-  THEME:               'theme',
-  LOCALE:              'yihai_ui_locale',
-  CONFETTI_ON:         'confettiOn',
   DECK_INDEX:          'yihaiDecksIndex',
   DAILY_PROGRESS:      'yihaiDailyProgress',
   EASY_RETRY_ON_WRONG: 'easyRetryOnWrong',
@@ -53,7 +49,6 @@ const LS_DECK = (deckKey, field) => {
 };
 
 const LS_SRS = configKey => 'srs_' + configKey;
-const LS_TYPO = (kind, slot) => `${kind}-${slot}`;
 
 const lsGet = k => localStorage.getItem(k);
 const lsSet = (k, v) => localStorage.setItem(k, String(v));
@@ -69,9 +64,9 @@ const lsSetJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 // lsGet/lsSet 基本
 {
   _store.clear();
-  lsSet(LS_KEYS.THEME, 'dark');
-  check('lsSet/lsGet round-trip string', lsGet(LS_KEYS.THEME) === 'dark');
-  check('lsSet writes raw value to underlying key', _store.get('theme') === 'dark');
+  lsSet(LS_KEYS.DECK_INDEX, 'foo');
+  check('lsSet/lsGet round-trip string', lsGet(LS_KEYS.DECK_INDEX) === 'foo');
+  check('lsSet writes raw value to underlying key', _store.get('yihaiDecksIndex') === 'foo');
 }
 {
   _store.clear();
@@ -130,17 +125,11 @@ const lsSetJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   check('LS_SRS supports nested key', LS_SRS('learning_steps') === 'srs_learning_steps');
 }
 
-// LS_TYPO 工厂
-{
-  check('LS_TYPO fs-opt', LS_TYPO('fs', 'opt') === 'fs-opt');
-  check('LS_TYPO ls-ans', LS_TYPO('ls', 'ans') === 'ls-ans');
-}
-
 // 注册表覆盖率 sanity
 {
   const expectedKeys = [
     'LAST_CLOUD_EMAIL','DEVICE_ID','SESSION_BACKUP','GLOBAL_SYNC_TS',
-    'THEME','LOCALE','APP_MODE','DECK_INDEX','DAILY_PROGRESS',
+    'DECK_INDEX','DAILY_PROGRESS',
     'EASY_RETRY_ON_WRONG','EASY_SESSION_SIZE',
   ];
   const missing = expectedKeys.filter(k => !(k in LS_KEYS));
@@ -358,6 +347,137 @@ function migrateVoiceConfig() {
   check('setVoiceField coerces boolean to string', getVoiceField('voiceMuted') === 'true');
   setVoiceField('optCount', 5);
   check('setVoiceField coerces number to string', getVoiceField('optCount') === '5');
+}
+
+// ── Phase 2.3: uiConfig + typographyConfig 聚合 + 迁移 ──────────
+
+const UI_OLD_MAP = {
+  theme:      'theme',
+  locale:     'yihai_ui_locale',
+  appMode:    'yihaiAppMode',
+  confettiOn: 'confettiOn',
+  logLevel:   'yihaiLogLevel',
+};
+function getUiConfig() { return lsGetJSON('uiConfig', {}); }
+function getUiField(name, def = null) {
+  const v = getUiConfig()[name];
+  return v == null ? def : v;
+}
+function setUiField(name, value) {
+  const cfg = getUiConfig();
+  if (value == null) delete cfg[name];
+  else cfg[name] = String(value);
+  lsSetJSON('uiConfig', cfg);
+}
+function migrateUiConfig() {
+  if (lsGet('uiConfig') != null) return;
+  const cfg = {};
+  for (const [field, oldKey] of Object.entries(UI_OLD_MAP)) {
+    const v = lsGet(oldKey);
+    if (v != null) cfg[field] = v;
+  }
+  if (Object.keys(cfg).length === 0) return;
+  lsSetJSON('uiConfig', cfg);
+  for (const oldKey of Object.values(UI_OLD_MAP)) lsRemove(oldKey);
+}
+
+const TYPO_SLOTS = ['opt', 'ans', 'hint', 'btn'];
+function getTypographyConfig() {
+  const c = lsGetJSON('typographyConfig', {});
+  return { fs: c.fs || {}, ls: c.ls || {} };
+}
+function getTypoField(kind, slot, def = null) {
+  const v = getTypographyConfig()[kind][slot];
+  return v == null ? def : v;
+}
+function setTypoField(kind, slot, value) {
+  const cfg = getTypographyConfig();
+  if (value == null) delete cfg[kind][slot];
+  else cfg[kind][slot] = String(value);
+  lsSetJSON('typographyConfig', cfg);
+}
+function migrateTypographyConfig() {
+  if (lsGet('typographyConfig') != null) return;
+  const cfg = { fs: {}, ls: {} };
+  let any = false;
+  for (const kind of ['fs', 'ls']) {
+    for (const slot of TYPO_SLOTS) {
+      const v = lsGet(`${kind}-${slot}`);
+      if (v != null) { cfg[kind][slot] = v; any = true; }
+    }
+  }
+  if (!any) return;
+  lsSetJSON('typographyConfig', cfg);
+  for (const kind of ['fs', 'ls']) for (const slot of TYPO_SLOTS) lsRemove(`${kind}-${slot}`);
+}
+
+{
+  _store.clear();
+  _store.set('theme', 'dark');
+  _store.set('yihai_ui_locale', 'zh-CN');
+  _store.set('yihaiAppMode', 'advanced');
+  _store.set('confettiOn', '1');
+  migrateUiConfig();
+  const cfg = getUiConfig();
+  check('ui migrate theme', cfg.theme === 'dark');
+  check('ui migrate locale', cfg.locale === 'zh-CN');
+  check('ui migrate appMode', cfg.appMode === 'advanced');
+  check('ui migrate confettiOn', cfg.confettiOn === '1');
+  check('ui migrate old theme removed', _store.get('theme') == null);
+  check('ui migrate old yihai_ui_locale removed', _store.get('yihai_ui_locale') == null);
+  check('ui migrate old yihaiAppMode removed', _store.get('yihaiAppMode') == null);
+}
+{
+  _store.clear();
+  _store.set('uiConfig', '{"theme":"existing"}');
+  _store.set('theme', 'dark');
+  migrateUiConfig();
+  check('ui idempotent: existing kept', getUiConfig().theme === 'existing');
+  check('ui idempotent: old theme not removed', _store.get('theme') === 'dark');
+}
+{
+  _store.clear();
+  setUiField('theme', 'jade');
+  check('setUiField writes', getUiField('theme') === 'jade');
+  setUiField('theme', null);
+  check('setUiField null deletes', getUiField('theme') === null);
+  check('setUiField default fallback', getUiField('theme', 'default') === 'default');
+}
+{
+  _store.clear();
+  migrateUiConfig();
+  check('ui migrate no-op when nothing to migrate', _store.get('uiConfig') == null);
+}
+
+{
+  _store.clear();
+  _store.set('fs-opt', '20');
+  _store.set('fs-ans', '24');
+  _store.set('ls-opt', '2');
+  migrateTypographyConfig();
+  const cfg = getTypographyConfig();
+  check('typo migrate fs-opt', cfg.fs.opt === '20');
+  check('typo migrate fs-ans', cfg.fs.ans === '24');
+  check('typo migrate ls-opt', cfg.ls.opt === '2');
+  check('typo migrate fs-hint absent', cfg.fs.hint === undefined);
+  check('typo migrate old fs-opt removed', _store.get('fs-opt') == null);
+  check('typo migrate old ls-opt removed', _store.get('ls-opt') == null);
+}
+{
+  _store.clear();
+  _store.set('typographyConfig', '{"fs":{"opt":"99"}}');
+  _store.set('fs-ans', '24');
+  migrateTypographyConfig();
+  check('typo idempotent: existing kept', getTypoField('fs', 'opt') === '99');
+  check('typo idempotent: new fs-ans not migrated', _store.get('fs-ans') === '24');
+}
+{
+  _store.clear();
+  setTypoField('fs', 'opt', '22');
+  check('setTypoField/getTypoField', getTypoField('fs', 'opt') === '22');
+  setTypoField('fs', 'opt', null);
+  check('setTypoField null deletes', getTypoField('fs', 'opt') === null);
+  check('setTypoField default fallback', getTypoField('fs', 'opt', '18') === '18');
 }
 
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);
