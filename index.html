@@ -3099,7 +3099,7 @@ function getCurrentUserId() {
   // logged in → cloud user UUID; logged out → last logged in user (persisted in localStorage);
   // never logged in → deviceId fallback. new login on user switch auto-overrides.
   return _cloudUserId
-    || localStorage.getItem('yihaiLastCloudUserId')
+    || lsGet(LS_KEYS.LAST_CLOUD_USER_ID)
     || getOrCreateDeviceId();
 }
 
@@ -3184,7 +3184,7 @@ function restoreSession() {
     var parsed = null;
     try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
     if (!parsed) {
-      try { parsed = JSON.parse(localStorage.getItem('yihaiSessionBackup') || 'null'); } catch(e) {}
+      try { parsed = JSON.parse(lsGet(LS_KEYS.SESSION_BACKUP) || 'null'); } catch(e) {}
     }
     if (!parsed || !parsed.user || !parsed.user.email) {
       logAppEvent('session_restore_none', {});
@@ -3202,8 +3202,8 @@ function restoreSession() {
         _syncEnabled    = true;
         _cloudUserEmail = data.session.user.email;
         _cloudUserId    = data.session.user.id;
-        localStorage.setItem('yihaiSessionBackup', JSON.stringify(data.session));
-        localStorage.setItem('yihaiLastCloudEmail', _cloudUserEmail);
+        lsSet(LS_KEYS.SESSION_BACKUP, JSON.stringify(data.session));
+        lsSet(LS_KEYS.LAST_CLOUD_EMAIL, _cloudUserEmail);
         logAppEvent('session_restore_ok', { uid: _cloudUserId });
         runSync({ decks: false, showToast: false }).then(() => refreshDeckUpdateBadges().catch(() => {})).catch(() => {});
         return;
@@ -3835,7 +3835,7 @@ function openSrsDb() {
 
 // migrate local offline records to current user on login (deviceId match only)
 async function migrateDeviceRecordsToUser(cloudUserId) {
-  var did = localStorage.getItem('yihaiDeviceId');
+  var did = lsGet(LS_KEYS.DEVICE_ID);
   if (!did || !cloudUserId || did === cloudUserId) return;
   var db = await openSrsDb();
   if (!db) return;
@@ -3936,7 +3936,7 @@ window.yhLog = {
 
 // ── telemetry: app event logs ──────────────────────────────────────
 function isMember() {
-  return localStorage.getItem('yihai_has_ever_logged_in') === '1';
+  return lsGet(LS_KEYS.HAS_EVER_LOGGED_IN) === '1';
 }
 
 function logAppEvent(type, payload, deckKey) {
@@ -4847,10 +4847,10 @@ async function getDeckStatsSrs(deckKey) {
 
 // ── cloud sync prep: device_id ──────────────────────────────────
 function getOrCreateDeviceId() {
-  let id = localStorage.getItem('yihaiDeviceId');
+  let id = lsGet(LS_KEYS.DEVICE_ID);
   if (!id) {
     id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-    localStorage.setItem('yihaiDeviceId', id);
+    lsSet(LS_KEYS.DEVICE_ID, id);
   }
   return id;
 }
@@ -6031,7 +6031,7 @@ function renderAccount() {
   }
   // Not logged in
   outEl.style.display = '';
-  document.getElementById('account-email').value = localStorage.getItem('yihaiLastCloudEmail') || '';
+  document.getElementById('account-email').value = lsGet(LS_KEYS.LAST_CLOUD_EMAIL) || '';
   document.getElementById('account-password').value = '';
   document.getElementById('account-msg').style.display = 'none';
   document.getElementById('account-login-btn').disabled = false;
@@ -6064,12 +6064,12 @@ async function doAccountLogin() {
     _syncEnabled      = true;
     _cloudUserEmail = data.user.email;
     _cloudUserId = data.user.id;
-    localStorage.setItem('yihaiLastCloudUserId', _cloudUserId);
-    localStorage.setItem('yihaiLastCloudEmail', _cloudUserEmail);
-    _deviceId = localStorage.getItem('yihaiDeviceId') || 'unknown';
-    localStorage.setItem('yihai_has_ever_logged_in', '1');
+    lsSet(LS_KEYS.LAST_CLOUD_USER_ID, _cloudUserId);
+    lsSet(LS_KEYS.LAST_CLOUD_EMAIL, _cloudUserEmail);
+    _deviceId = lsGet(LS_KEYS.DEVICE_ID) || 'unknown';
+    lsSet(LS_KEYS.HAS_EVER_LOGGED_IN, '1');
     if (data.session) {
-      localStorage.setItem('yihaiSessionBackup', JSON.stringify(data.session));
+      lsSet(LS_KEYS.SESSION_BACKUP, JSON.stringify(data.session));
     }
     await migrateDeviceRecordsToUser(_cloudUserId);
     updateCloudTabUI();
@@ -6094,8 +6094,8 @@ async function doAccountLogout() {
   try { if (_sb) await _sb.auth.signOut(); } catch(e) { console.warn('[sync] signOut error:', e.message); }
   _syncEnabled = false; _cloudUserEmail = ''; _sb = null;
   localStorage.removeItem('yihaiGlobalSyncTs');
-  localStorage.removeItem('yihaiSessionBackup');
-  localStorage.removeItem('yihai_session_backup');
+  lsRemove(LS_KEYS.SESSION_BACKUP);
+  lsRemove(LS_KEYS.SESSION_BACKUP_OLD);
   renderDeckList(); updateDeckStats();
   updateCloudTabUI();
   renderAccount();
@@ -6308,13 +6308,13 @@ function handleAuthHashRoute(h) {
           _cloudUserEmail = session.user.email;
           _cloudUserId    = session.user.id;
           _syncEnabled    = true;
-          localStorage.setItem('yihaiSessionBackup', JSON.stringify(session));
+          lsSet(LS_KEYS.SESSION_BACKUP, JSON.stringify(session));
           if (typeof updateCloudTabUI === 'function') updateCloudTabUI();
           if (typeof renderAccount === 'function') renderAccount();
         }
       });
     }
-    var emailLast = localStorage.getItem('yihaiLastCloudEmail') || '';
+    var emailLast = lsGet(LS_KEYS.LAST_CLOUD_EMAIL) || '';
     var emailEl = document.getElementById('account-email');
     if (emailEl && emailLast) emailEl.value = emailLast;
     if (typeof showAccount === 'function') showAccount();
@@ -6911,7 +6911,7 @@ async function collectDiagnostics() {
     collected_at:       Date.now(),
     idb_version:        SRS_DB_VER,
     sync_enabled:       _syncEnabled,
-    has_session_backup: !!localStorage.getItem('yihaiSessionBackup'),
+    has_session_backup: !!lsGet(LS_KEYS.SESSION_BACKUP),
     last_sync_ts:       Number(localStorage.getItem('yihaiGlobalSyncTs')) || null,
     deck_count:         (typeof DECKS_META !== 'undefined' ? DECKS_META.length : null),
     logs:               null,
@@ -11437,7 +11437,7 @@ function showAbout() {
           _cloudUserEmail = session.user.email;
           _cloudUserId    = session.user.id;
           _syncEnabled    = true;
-          localStorage.setItem('yihaiSessionBackup', JSON.stringify(session));
+          lsSet(LS_KEYS.SESSION_BACKUP, JSON.stringify(session));
           updateCloudTabUI();
           return;
         }
@@ -11445,14 +11445,14 @@ function showAbout() {
           _cloudUserEmail = session.user.email;
           _cloudUserId    = session.user.id;
           _syncEnabled    = true;
-          localStorage.setItem('yihaiSessionBackup', JSON.stringify(session));
+          lsSet(LS_KEYS.SESSION_BACKUP, JSON.stringify(session));
           logAppEvent('session_restore_token_refreshed', { uid: _cloudUserId });
           updateCloudTabUI();
         } else if (event === 'SIGNED_OUT' && _syncEnabled) {
           logAppEvent('session_restore_sdk_signout', {});
           _syncEnabled    = false;
           _cloudUserEmail = '';
-          localStorage.removeItem('yihaiSessionBackup');
+          lsRemove(LS_KEYS.SESSION_BACKUP);
           updateCloudTabUI();
         }
       });
