@@ -10835,13 +10835,25 @@ class SyncJob {
     // 累积本批已上传新 url 的卡，到 checkpoint 时一次性 batch upsert，
     // 避免每个 slot 都触发一次 PostgREST 单行写（v5.9 引入的性能退化，v5.11 修复）
     const pendingMediaUpsert = new Set();
+    const uploadedSlots = [];  // [{card, slot}]：本次 SyncJob 已上传的 slot，flush 失败时回滚 s.url 用
 
     const flushMediaUpsert = async () => {
       if (!pendingMediaUpsert.size) return;
       const batch = Array.from(pendingMediaUpsert);
-      pendingMediaUpsert.clear();
-      await upsertCardsMediaBatch(this.deckKey, batch)
-        .catch(e => console.warn('[sync] runMediaPhase batch upsert fail:', e.message));
+      let result;
+      try {
+        result = await upsertCardsMediaBatch(this.deckKey, batch);
+      } catch (e) {
+        result = { failed: batch.map(c => ({ card: c, err: e.message })) };
+      }
+      const failedSet = new Set(result.failed.map(f => f.card));
+      for (const c of batch) if (!failedSet.has(c)) pendingMediaUpsert.delete(c);
+      if (failedSet.size) {
+        rollbackUploadedSlots(uploadedSlots, failedSet);
+        saveDeckCards(this.deckKey, cards);
+        const firstErr = result.failed[0].err || 'unknown';
+        throw new Error(`[sync] runMediaPhase batch upsert fail: ${result.failed.length}/${batch.length} — ${firstErr}`);
+      }
     };
 
     for (const card of cards) {
@@ -10862,6 +10874,7 @@ class SyncJob {
           if (error) { console.warn('[sync] media upload fail:', card.id, slot, error.message); continue; }
           s.url = path;
           pendingMediaUpsert.add(card);          // 留到 checkpoint 批量 upsert
+          uploadedSlots.push({ card, slot });    // 记录供 rollback
           this._didPush = true;
         }
       }
