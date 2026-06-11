@@ -2,6 +2,21 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## 未发布修复（待 v5.12.2）
+
+### sync 顺序 fix（P0）
+
+- **根因**：`runStructurePhase` 中 `pulledAt` 推进顺序写反——在 `computeDeckDiff` 之前推进水位，导致 `toPull` 的 `r.ts <= pulledAt` 把所有远端卡误判为已同步，跨设备增量拉取被掐死
+- **修法**：快照前置（`const snapshot = pulledAt`）、推进后置（`computeDeckDiff` 完成后再写 `pulledAt = now`）
+- **`runMediaPhase` 广播**：结尾新增 `_didPush` 标记，push 发生时调用 `upsertDeckRow` 更新 `decks.updated_at`，否则其他设备的 `remoteAhead` 检测永不触发
+
+### 媒体 upsert 失败恢复（P1）
+
+- **根因**：`flushMediaUpsert` 中 `pendingMediaUpsert.clear()` 在 `await` 之前执行 + `.catch` 仅 `console.warn` 吞错，导致失败批次彻底丢失——本地 `s.url` 已写、guard 永远 skip 重传，DB 行缺失卡片媒体
+- **修法**：改为先 `await` 完成再 `clear()`；失败时通过 `uploadedSlots` 数组回滚本次上传 slot 的 `s.url` + 重新抛错让 `SyncJob` 进 `error` 状态，下次同步自动重传+重写 DB
+- **新增 `rollbackUploadedSlots` 纯函数**：v5.12 单测套件 12 断言
+- **新增 `_pw_media_recovery.js`**：failure injection e2e，7 断言
+
 ## v5.12.1 — 安全 + 行为修复 patch
 
 ### XSS 修复（hot path）
