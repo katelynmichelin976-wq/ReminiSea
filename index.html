@@ -527,6 +527,10 @@ body {
 .srs-cnt-lrn { color: #e07b00; }
 .srs-cnt-rev { color: var(--green); }
 .srs-cnt-sep { font-size:12px; color:var(--text3); font-weight:500; }
+.srs-cnt-remain { font-size:13px; color:var(--text2); font-weight:600; display:none; }
+.srs-counter[data-mode="easy"] .srs-cnt,
+.srs-counter[data-mode="easy"] .srs-cnt-sep { display:none; }
+.srs-counter[data-mode="easy"] .srs-cnt-remain { display:inline; }
 
 .gear-btn {
   background:none; border:none; cursor:pointer; padding:4px;
@@ -1798,6 +1802,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       <span class="srs-cnt srs-cnt-lrn"  id="cnt-lrn">0</span>
       <span class="srs-cnt-sep">+</span>
       <span class="srs-cnt srs-cnt-rev"  id="cnt-rev">0</span>
+      <span class="srs-cnt-remain" id="cnt-remain"></span>
     </div>
   </div>
 
@@ -8924,10 +8929,19 @@ function speakOptHint(opts, optLang) {
 // ── Anki three-color counter (new=blue + learning=orange + review=green) ─
 function updateSrsCounter() {
   if (currentMode === 'browse') return;
-  const now = Date.now();
-  const today = todayStr();
-  let newC = 0, lrnC = 0, revC = 0;
+  const counterEl = document.getElementById('srs-counter');
+  const isEasy = SRS_CONFIG.session_mode === 'easy';
+  if (counterEl) counterEl.setAttribute('data-mode', isEasy ? 'easy' : 'normal');
 
+  if (isEasy) {
+    const total = Qs.length;
+    const cur = Math.min(qIdx + 1, total);
+    const elRemain = document.getElementById('cnt-remain');
+    if (elRemain) elRemain.textContent = `${cur}/${total}`;
+    return;
+  }
+
+  let newC = 0, lrnC = 0, revC = 0;
   // stat from remaining queue (cards after qIdx, incl current)
   for (let i = qIdx; i < Qs.length; i++) {
     const s = Qs[i]._srsState;
