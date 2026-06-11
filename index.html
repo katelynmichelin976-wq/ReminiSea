@@ -10619,6 +10619,14 @@ function rollbackUploadedSlots(uploadedSlots, failedCardSet) {
   }
 }
 
+function commitUploadedSlots(uploadedSlots, succeededCardSet) {
+  for (const { card, slot } of uploadedSlots) {
+    if (!succeededCardSet.has(card)) continue;
+    const s = card.media?.[slot];
+    if (s) s.confirmed = true;
+  }
+}
+
 async function upsertCardsMediaBatch(deckKey, cards) {
   if (!cards.length) return { failed: [] };
   // 用 .update() 而非 .upsert()：行不存在时返回 0 rows，不创建残缺行（缺 NOT NULL 列）。
