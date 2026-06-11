@@ -195,7 +195,7 @@ async function runEasySessionFirstWrong(page, expectedSize) {
     });
     await wait(page, 200);
     const got15 = await run(page, () => SRS_CONFIG.easy_session_size === 15 &&
-      localStorage.getItem('easySessionSize') === '15' &&
+      localStorage.getItem('yh:v1:srs:easySessionSize') === '15' &&
       document.querySelector('[data-easy-size] .chip[data-size="15"]').classList.contains('active'));
     pass('设置 UI: 点 15 后 chip active + localStorage + SRS_CONFIG 一致', got15);
 
@@ -205,7 +205,7 @@ async function runEasySessionFirstWrong(page, expectedSize) {
     });
     await wait(page, 200);
     const got23 = await run(page, () => SRS_CONFIG.easy_session_size === 23 &&
-      localStorage.getItem('easySessionSize') === '23');
+      localStorage.getItem('yh:v1:srs:easySessionSize') === '23');
     pass('设置 UI: 点 23 后切换正常', got23);
 
     // 回到 19
@@ -222,7 +222,7 @@ async function runEasySessionFirstWrong(page, expectedSize) {
     });
     await wait(page, 200);
     const retryOff = await run(page, () => SRS_CONFIG.easy_retry_on_wrong === false &&
-      localStorage.getItem('easyRetryOnWrong') === '0');
+      localStorage.getItem('yh:v1:srs:easyRetryOnWrong') === '0');
     pass('设置 UI: 关闭 retry 后状态正确', retryOff);
 
     // 刷新页面 → 持久化检查
@@ -240,7 +240,7 @@ async function runEasySessionFirstWrong(page, expectedSize) {
     // 重新开启 retry
     await run(page, () => {
       SRS_CONFIG.easy_retry_on_wrong = true;
-      localStorage.setItem('easyRetryOnWrong', '1');
+      localStorage.setItem('yh:v1:srs:easyRetryOnWrong', '1');
     });
 
     // 进入练习
@@ -283,7 +283,7 @@ async function runEasySessionFirstWrong(page, expectedSize) {
     await wait(page, 600);
     await run(page, () => {
       SRS_CONFIG.easy_retry_on_wrong = false;
-      localStorage.setItem('easyRetryOnWrong', '0');
+      localStorage.setItem('yh:v1:srs:easyRetryOnWrong', '0');
       // 清除 daily 限制让 easy 模式能再次启动
       Object.keys(localStorage).forEach(k => { if (k.startsWith('yh_fr_')) localStorage.removeItem(k); });
     });
@@ -333,9 +333,9 @@ async function runEasySessionFirstWrong(page, expectedSize) {
         tx.oncomplete = () => res();
       });
       SRS_CONFIG.easy_retry_on_wrong = true;
-      localStorage.setItem('easyRetryOnWrong', '1');
+      localStorage.setItem('yh:v1:srs:easyRetryOnWrong', '1');
       SRS_CONFIG.easy_session_size = 15;  // 缩短以加速
-      localStorage.setItem('easySessionSize', '15');
+      localStorage.setItem('yh:v1:srs:easySessionSize', '15');
     }, DECK_ID);
 
     for (let session = 1; session <= 3; session++) {
