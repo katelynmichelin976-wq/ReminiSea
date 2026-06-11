@@ -2,20 +2,46 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
-## 未发布修复（待 v5.12.2）
+## v5.13.0 — 个人牌组跨设备同步可靠性全面修复
+
+minor bump：新增 `confirmed: boolean` 本地 schema 字段（仅 IDB 持久化，不入 DB），覆盖 crash-mid-sync 恢复语义。配合 P0/P1 的水位/失败语义修复，关闭 3 类静默数据丢失。
 
 ### sync 顺序 fix（P0）
 
 - **根因**：`runStructurePhase` 中 `pulledAt` 推进顺序写反——在 `computeDeckDiff` 之前推进水位，导致 `toPull` 的 `r.ts <= pulledAt` 把所有远端卡误判为已同步，跨设备增量拉取被掐死
-- **修法**：快照前置（`const snapshot = pulledAt`）、推进后置（`computeDeckDiff` 完成后再写 `pulledAt = now`）
+- **修法**：快照前置（diff 用旧水位）、推进后置（`computeDeckDiff` 完成后再写 `pulledAt`）
 - **`runMediaPhase` 广播**：结尾新增 `_didPush` 标记，push 发生时调用 `upsertDeckRow` 更新 `decks.updated_at`，否则其他设备的 `remoteAhead` 检测永不触发
 
-### 媒体 upsert 失败恢复（P1）
+### 媒体 upsert 失败恢复（P1 #1）
 
 - **根因**：`flushMediaUpsert` 中 `pendingMediaUpsert.clear()` 在 `await` 之前执行 + `.catch` 仅 `console.warn` 吞错，导致失败批次彻底丢失——本地 `s.url` 已写、guard 永远 skip 重传，DB 行缺失卡片媒体
-- **修法**：改为先 `await` 完成再 `clear()`；失败时通过 `uploadedSlots` 数组回滚本次上传 slot 的 `s.url` + 重新抛错让 `SyncJob` 进 `error` 状态，下次同步自动重传+重写 DB
-- **新增 `rollbackUploadedSlots` 纯函数**：v5.12 单测套件 12 断言
+- **修法**：改为先 `await` 完成再分支处理；`upsertCardsMediaBatch` 改返回 `{failed: [{card, err}]}` 不再吞错；失败时通过 `uploadedSlots` 数组回滚本次上传 slot 的 `s.url` + 重新抛错让 `SyncJob` 进 `error` 状态，下次同步自动重传+重写 DB
+- **新增 `rollbackUploadedSlots` 纯函数**：12 断言单测
 - **新增 `_pw_media_recovery.js`**：failure injection e2e，7 断言
+
+### 死代码清理（P1 #2）
+
+- **删除 `uploadDeckToCloud`**：零调用，且含 `delete().eq('deck_id')` 再 `insert` 的全量重传反模式（CLAUDE.md §8 禁止模式第一条）
+- **删除 `uploadMissingPersonalDecks`**：标注 `// deprecated v5.8 ... remove in v5.9`，至 v5.12 仍在；仅是 `syncAllDirtyDecks()` 的薄壳
+- **同步 `docs/architecture.md`**：个人牌组同步流程图重写为当前 SyncJob 三阶段路径（runStructurePhase / runCardsPhase / runMediaPhase）
+
+### crash-mid-sync 恢复（P2）
+
+- **根因**：P1 #1 修了显式 flush 失败抛错回滚，但浏览器在 checkpoint `saveDeckCards`(s.url 持久化到 IDB) 与 `flushMediaUpsert`(DB UPDATE) 之间崩溃——IDB 已有 `s.url`、DB 行 `media` 字段还是空。下次 sync 的上传 guard `!s._blob || s.url` 看 `s.url` 已有就 skip，永远不再补 DB 写
+- **修法**：引入 per-slot `confirmed: boolean` 字段，仅本地 IDB 持久化（DB 写不带）：
+  - `flushMediaUpsert` 成功后才调 `commitUploadedSlots` 把 `s.confirmed = true`
+  - 上传 guard 三态化：`confirmed` → skip / 未 confirmed + 有 url → 仅补 DB 写（不重传 Storage） / 无 url → 走 Storage + DB
+  - 所有从 DB 拉 url 的构造点（runCardsPhase pull / downloadDeckFromCloud / syncDeckFromCloud / diag 重传 / mergeCard 合并）共 9 处自动置 confirmed=true
+  - `serializeMedia` 拆为本地（保 confirmed）+ `serializeMediaForCloud`（剥 confirmed）
+- **mergeCard 单独修复**：之前重建 `merged.media[slot]` 时丢弃 local 的 confirmed → 每次跨设备 pull 后下次 sync 都会触发冗余 DB UPDATE（churn）。修：merged slot 加 `confirmed: rs.url ? true : false`
+- **新增**：22 断言 v5.12 单测（rollback + commit + serialize + mergeCard）+ `_pw_media_recovery.js` PHASE 5 crash 恢复 e2e（7 新断言，共 14）
+
+### 测试套件计数
+
+| 套件 | v5.12.1 | v5.13.0 |
+|------|---------|---------|
+| `run_all.js` 单测 | 9 套件 459 断言 | 10 套件 487 断言 |
+| `_pw_media_recovery.js` | 不存在 | 14 断言 |
 
 ## v5.12.1 — 安全 + 行为修复 patch
 
