@@ -10953,24 +10953,6 @@ function getActiveSyncJob(deckKey) {
   return _activeSyncJobs.get(deckKey) || null;
 }
 
-async function uploadDeckToCloud(key) {
-  if (!_syncEnabled || !_sb || !_cloudUserId) return;
-  const meta = DECKS_META.find(m => m.key === key);
-  if (!meta || meta.deck_type !== 'personal') return;
-  const cards = DECKS[key] || [];
-  try {
-    await upsertDeckRow(key);
-    await _sb.from('deck_cards').delete().eq('deck_id', key);
-    await upsertCardsBatch(key, cards);
-    const now = Date.now();
-    localStorage.setItem('yihaiPushedAt:' + key, String(now));
-    localStorage.setItem('yihaiSyncAt:' + key, new Date(now).toISOString());
-    console.log('[cloud] uploadDeckToCloud ok:', key, cards.length, 'cards');
-  } catch(e) {
-    console.warn('[cloud] uploadDeckToCloud fail:', e.message);
-  }
-}
-
 function computeDeckDiff(localCards, deletedIds, remoteCardMeta, pushedAt, pulledAt) {
   const localMap  = new Map(localCards.map(c => [c.id, c]));
   const remoteMap = new Map(remoteCardMeta.map(r => [r.card_id, r.ts]));
@@ -11070,12 +11052,6 @@ function computeDeckSyncState(deckKey) {
   }
   return status === 'bothChanged' || status === 'localDirty' ? { status, pushCount, mediaIncomplete } : { status, mediaIncomplete };
 }
-
-async function uploadMissingPersonalDecks() {
-  // deprecated v5.8: replaced by SyncJob; kept for backward compat one version, remove in v5.9
-  return syncAllDirtyDecks();
-}
-
 
 async function refreshDeckUpdateBadges() {
   if (!_syncEnabled || !_sb || !_cloudUserId) return;

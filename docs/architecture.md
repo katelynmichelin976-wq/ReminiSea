@@ -58,9 +58,15 @@
 
 ### 个人牌组同步
 ```
-saveDeck() / deleteDeck()
-  → uploadDeckToCloud()          // decks + deck_cards UPSERT / delete
-checkPersonalDeckUpdates()       // session 就绪后比对 updated_at，拉取更新
+saveCard() / deleteCard()        // 仅写本地 IDB，标 localDirty
+手动「同步」按钮 / runSync({decks:true})
+  → syncAllDirtyDecks()
+    → syncDeck(key)
+      → SyncJob.run()
+        ① runStructurePhase: decks + 卡片元数据 diff（toPush/toPull/toDelete/localDelete）
+        ② runCardsPhase: 卡片正文批量 upsert/pull/delete
+        ③ runMediaPhase: 媒体 slot upload/download + checkpoint 批量 upsertCardsMediaBatch
+refreshDeckUpdateBadges()        // session 就绪后比对 decks.updated_at，给本地牌组打黄点
 ```
 
 ### 跨设备同步
