@@ -2874,6 +2874,72 @@ function simpleHash(s) {
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
+// ── localStorage 注册表 + helper (v5.13.2 Phase 1) ────────────────
+const LS_KEYS = {
+  LAST_CLOUD_EMAIL:    'yihaiLastCloudEmail',
+  LAST_CLOUD_USER_ID:  'yihaiLastCloudUserId',
+  DEVICE_ID:           'yihaiDeviceId',
+  HAS_EVER_LOGGED_IN:  'yihai_has_ever_logged_in',
+  SESSION_BACKUP:      'yihaiSessionBackup',
+  SESSION_BACKUP_OLD:  'yihai_session_backup',
+  GLOBAL_SYNC_TS:      'yihaiGlobalSyncTs',
+  EASY_PULLED_AT:      'yihaiEasyPulledAt',
+  REALTIME_UPLOAD:     'yihaiRealtimeUpload',
+  PENDING_FEEDBACK:    'yihaiPendingFeedback',
+  V5_MIGRATION:        'yihaiV5MigrationPending',
+  PRACTICE_DAYS:       'yihaiPracticeDays',
+  LOG_LEVEL:           'yihaiLogLevel',
+  APP_MODE:            'yihaiAppMode',
+  THEME:               'theme',
+  LOCALE:              'yihai_ui_locale',
+  CONFETTI_ON:         'confettiOn',
+  DECK_INDEX:          'yihaiDecksIndex',
+  DAILY_PROGRESS:      'yihaiDailyProgress',
+  PHRASE_CORRECT:        'phraseCorrect',
+  PHRASE_WRONG:          'phraseWrong',
+  PHRASE_STREAK_CORRECT: 'phraseStreakCorrect',
+  PHRASE_SESSION_FINISH: 'phraseSessionFinish',
+  PHRASE_IDLE_BROWSE:    'phraseIdleBrowse',
+  PHRASE_OPT_HINT:       'phraseOptHint',
+  PHRASE_QUIZ_PROMPT:           'phraseQuizPrompt',
+  PHRASE_QUIZ_PROMPT_RECOGNIZE: 'phraseQuizPromptRecognize',
+  TTS_RATE:            'ttsRate',
+  TTS_PITCH:           'ttsPitch',
+  TTS_VOICE_NAME:      'ttsVoiceName',
+  VOICE_MUTED:         'voiceMuted',
+  VOICE_ASSIST_ENABLED:'voiceAssistEnabled',
+  ANS_READ_DELAY:      'ansReadDelay',
+  OPT_READ_DELAY:      'optReadDelay',
+  BROWSE_ANS_DELAY:    'browseAnsDelay',
+  OPT_COUNT:           'optCount',
+  OPT_TOUCH_DELAY:     'optTouchDelay',
+  NDUR:                'ndur',
+  BDUR:                'bdur',
+  EASY_RETRY_ON_WRONG: 'easyRetryOnWrong',
+  EASY_SESSION_SIZE:   'easySessionSize',
+};
+const LS_DECK = (deckKey, field) => {
+  const prefix = {
+    cards:          'yihai_deck_',
+    pushedAt:       'yihaiPushedAt:',
+    pulledAt:       'yihaiPulledAt:',
+    pushedMediaAt:  'yihaiPushedMediaAt:',
+    deletedCards:   'yihaiDeletedCards:',
+  }[field];
+  if (!prefix) throw new Error('LS_DECK: unknown field ' + field);
+  return prefix + deckKey;
+};
+const LS_SRS = configKey => 'srs_' + configKey;
+const LS_TYPO = (kind, slot) => `${kind}-${slot}`;
+const lsGet = k => localStorage.getItem(k);
+const lsSet = (k, v) => localStorage.setItem(k, String(v));
+const lsRemove = k => localStorage.removeItem(k);
+const lsGetJSON = (k, def = null) => {
+  try { const v = localStorage.getItem(k); return v == null ? def : JSON.parse(v); }
+  catch { return def; }
+};
+const lsSetJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
 // ── SRS global config (Anki naming convention) ────────────────────
 const SRS_CONFIG = {
   // new card learning
