@@ -2,6 +2,115 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.4 — localStorage keymap 规范化 Phase 3（`yh:v1:` 前缀 rename）
+
+### 动机
+
+Phase 1 (v5.13.2) 完成基础设施层（helper + 注册表）、Phase 2 (v5.13.3) 完成同生命周期聚合。Phase 3 最后一步：统一 key 命名规范化——所有 top-level key 加 `yh:v1:{namespace}:{...}` 前缀 + 冒号分层，对齐业内通用规范（Redis/Discord/Notion 客户端约定）。前缀里带版本号 (`v1`) 方便未来 schema 演进时整批迁移/清理。
+
+### 改动
+
+#### 1. Key rename 总表
+
+**Top-level（KEY_RENAMES 18 项）：**
+
+| 旧 key | 新 key |
+|---|---|
+| `yihaiLastCloudEmail` | `yh:v1:user:lastEmail` |
+| `yihaiLastCloudUserId` | `yh:v1:user:lastUserId` |
+| `yihaiDeviceId` | `yh:v1:user:deviceId` |
+| `yihai_has_ever_logged_in` | `yh:v1:user:hasEverLoggedIn` |
+| `yihaiSessionBackup` | `yh:v1:session:backup` |
+| `yihaiGlobalSyncTs` | `yh:v1:sync:globalTs` |
+| `yihaiEasyPulledAt` | `yh:v1:sync:easyPulledAt` |
+| `yihaiRealtimeUpload` | `yh:v1:sync:realtimeUpload` |
+| `yihaiPendingFeedback` | `yh:v1:sync:pendingFeedback` |
+| `yihaiV5MigrationPending` | `yh:v1:sync:v5MigrationPending` |
+| `yihaiPracticeDays` | `yh:v1:practiceDays` |
+| `yihaiDecksIndex` | `yh:v1:decks:index` |
+| `yihaiDailyProgress` | `yh:v1:daily:progress` |
+| `easyRetryOnWrong` | `yh:v1:srs:easyRetryOnWrong` |
+| `easySessionSize` | `yh:v1:srs:easySessionSize` |
+| `voiceConfig` | `yh:v1:config:voice` |
+| `uiConfig` | `yh:v1:config:ui` |
+| `typographyConfig` | `yh:v1:config:typography` |
+
+**Prefix（PREFIX_RENAMES 4 类）：**
+
+| 旧 prefix | 新 prefix | suffix |
+|---|---|---|
+| `deckSync:` | `yh:v1:deck:` | `:sync` |
+| `yihai_deck_` | `yh:v1:deck:` | `:cards` |
+| `yihaiSyncAt:` | `yh:v1:deck:` | `:syncAt` |
+| `srs_` | `yh:v1:srs:` | (无) |
+
+保留不变：
+- `yihai_session_backup` — legacy session backup，仅在 logout 路径主动清除（KEY_RENAMES 跳过）
+- Supabase SDK 自管 token (`sb-*`) — 不在我们 namespace
+
+#### 2. 实施
+
+- `LS_KEYS` 16 个 value 全部改 `yh:v1:` 路径
+- `LS_DECK(k, 'cards') → 'yh:v1:deck:' + k + ':cards'`、`LS_DECK(k, 'syncAt') → 'yh:v1:deck:' + k + ':syncAt'`
+- `LS_SRS(configKey) → 'yh:v1:srs:' + configKey`
+- 聚合 helper 内部 key 字符串全部更新（`getDeckSync/setDeckSync/migrateDeckSync` 使用 `'yh:v1:deck:' + k + ':sync'`；`getVoiceConfig/setVoiceConfig/migrateVoiceConfig` 使用 `'yh:v1:config:voice'`；同 ui/typography）
+- 新增 `migrateKeyRenames` 函数：idempotent + 不覆盖已存在新 key
+
+#### 3. 启动顺序
+
+```javascript
+// 顺序至关重要：聚合 migrate 先（read 旧扁平 key），rename 最后（统一加 prefix）
+try { migrateVoiceConfig(); } catch ...
+try { migrateUiConfig(); } catch ...
+try { migrateTypographyConfig(); } catch ...
+try { migrateKeyRenames(); } catch ...
+```
+
+升级路径覆盖：
+- v5.13.0/.1 直跳 v5.13.4：聚合 migrate 把 raw key 聚合到 voiceConfig/uiConfig/typographyConfig → migrateKeyRenames 再加 yh:v1: 前缀
+- v5.13.2 跳 v5.13.4：raw key 已聚合（前置 migrate no-op）→ migrateKeyRenames 加前缀
+- v5.13.3 跳 v5.13.4：纯 rename
+- v5.13.4 重启：全 idempotent，no-op
+
+#### 4. migrateSyncWatermarks / gcOrphanSyncKeys 跟进
+
+`migrateSyncWatermarks` 改扫 `yh:v1:deck:_:syncAt` 前缀（因 keyRenames 已把 yihaiSyncAt: 重命名）。`gcOrphanSyncKeys` 简化为扫 `yh:v1:deck:_:sync` + `yh:v1:deck:_:syncAt`。
+
+#### 5. 修 Phase 2.2 遗留 bug（Voice slot 同步漏）
+
+调研发现 voice slot 录音 / 读取 / save 路径（`slotStorageKey()` 三处调用）漏 Phase 2.2 迁移，仍 raw `lsGet/lsSet/lsRemove` 写 `phraseWrong` 等扁平 key。`setVoiceField/getVoiceField` 写入 voiceConfig JSON，二者持久层错位，跨设备 cloud sync 看不到 slot 自定义 TTS 脚本。
+
+修复：3 处全部改走 `setVoiceField/getVoiceField`：
+- `playVoiceSlot` 读 custom TTS
+- `recordSlotShow` 加载已存脚本
+- `saveVoiceRecording` 保存脚本（`scriptText || null` 一次写）
+
+slot.storageKey 值（`phraseWrong` 等）现在是 voiceConfig 字段名而非 localStorage key；和 cloudPushConfig `...getVoiceConfig()` 平铺路径一致。
+
+### 测试
+
+- 新增 v5.14_ls_test.js 套件 +24 断言（KEY_RENAMES 全字段、PREFIX_RENAMES 4 类、idempotent 双向、`sb-*` SDK token 不动、未知 raw key 不动、empty no-op）
+- 单测合计 **11 套件 596 断言**
+- Playwright 全过：smoke 68/68 + SRS e2e 21/21 + cross-device 39/39 + config sync 23/23
+- `_pw_srs_e2e.js`: `localStorage.getItem('srs_session_mode')` → `'yh:v1:srs:session_mode'`
+- `_pw_cross_device.js`: `localStorage.getItem('yihaiDailyProgress')` → `'yh:v1:daily:progress'`；PHASE 6 setup 改直接写 `yh:v1:deck:_:syncAt`（因 keyRenames 已重命名 yihaiSyncAt:）
+
+### 外观与功能
+
+- **零变化** —— App 行为与 v5.13.3 完全一致
+- **localStorage 命名彻底规范化** —— 全部 key 形如 `yh:v1:{ns}:{...}`，业内通用模式，调试面板易扫描、批量清理简单、未来 schema v2 可整批迁移
+- **云端 sync_config schema 完全未变** —— 跨设备已部署版本可无缝读写
+
+### keymap 规范化三 phase 总结
+
+| Phase | 版本 | 目标 | LS entry 数量影响 |
+|---|---|---|---|
+| 1 | v5.13.2 | 引入 LS_KEYS 注册表 + helper + 工厂；统一访问层 | 不变 |
+| 2 | v5.13.3 | 同生命周期字段聚合为 JSON blob（deckSync/voiceConfig/uiConfig/typographyConfig） | per-deck N×4 → N×1；voice 20 → 1；ui 5 → 1；typo 8 → 1 |
+| 3 | v5.13.4 | 所有 top-level key 加 `yh:v1:` 前缀 + 冒号分层 | 数量不变；命名彻底规范化 |
+
+完整 plan 见 `docs/superpowers/plans/2026-06-11-localstorage-keymap-normalization.md`。
+
 ## v5.13.3 — localStorage keymap 规范化 Phase 2（聚合配置 blob）
 
 ### 动机

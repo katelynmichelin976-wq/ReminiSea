@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | File | Purpose |
 |------|---------|
-| `index.html` | 主训练 App（v5.13.3，单 HTML 文件，Supabase 云同步） |
+| `index.html` | 主训练 App（v5.13.4，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -32,8 +32,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v5.9_sync_test.js` | v5.9 media slot 序列化单测（32 cases） |
 | `tests/yihai_v5.11_easy_test.js` | Easy 模式纯函数单测（结构公式/分类/排序/槽位/queue，38 cases） |
 | `tests/yihai_v5.12_media_recovery_test.js` | 媒体 upsert 失败回滚 + crash 恢复 + mergeCard confirmed 传播纯函数单测（22 cases） |
-| `tests/yihai_v5.14_ls_test.js` | LS_KEYS 注册表 + helper + 工厂 + deckSync/voiceConfig/uiConfig/typographyConfig 聚合迁移单测（85 cases） |
-| `tests/run_all.js` | 单元测试统一入口（11 套件，570 断言） |
+| `tests/yihai_v5.14_ls_test.js` | LS_KEYS 注册表 + helper + 工厂 + 聚合迁移 + yh:v1: prefix rename 单测（109 cases） |
+| `tests/run_all.js` | 单元测试统一入口（11 套件，596 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户/设置/i18n/语言/语音/IDB/练习模式，65 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端 + Easy 模式 EasyState IDB（21 断言，无需登录） |
 | `tests/_pw_easy.js` | Easy 模式综合（设置 UI/单局/retry/多局 confident 池/诊断面板，28 断言，无需登录） |
@@ -69,7 +69,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.13.3**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.13.4**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.13.4：** localStorage keymap 规范化 Phase 3（`yh:v1:` 前缀 rename）— 所有 top-level localStorage key 统一加 `yh:v1:` 前缀 + 冒号分层（业内通用规范，类 Redis/Discord/Notion）。① **LS_KEYS 16 个 value 重命名**：`yihaiLastCloudEmail → yh:v1:user:lastEmail`、`yihaiSessionBackup → yh:v1:session:backup`、`yihaiGlobalSyncTs → yh:v1:sync:globalTs`、`yihaiDecksIndex → yh:v1:decks:index`、`yihaiDailyProgress → yh:v1:daily:progress`、`easyRetryOnWrong → yh:v1:srs:easyRetryOnWrong` 等。② **工厂重命名**：`LS_DECK(k, 'cards') → yh:v1:deck:{k}:cards`、`LS_DECK(k, 'syncAt') → yh:v1:deck:{k}:syncAt`、`LS_SRS(k) → yh:v1:srs:{k}`。③ **聚合 entries 重命名**：`voiceConfig → yh:v1:config:voice`、`uiConfig → yh:v1:config:ui`、`typographyConfig → yh:v1:config:typography`、`deckSync:{k} → yh:v1:deck:{k}:sync`。④ **新增 migrateKeyRenames**：18 个 KEY_RENAMES（top-level）+ 4 个 PREFIX_RENAMES（`deckSync:`/`yihai_deck_`/`yihaiSyncAt:`/`srs_`），idempotent + 不覆盖已存在新 key。启动顺序：Phase 2 聚合 migrate 先（read 旧扁平 key）、Phase 3 rename 最后（统一加 prefix）。⑤ **migrateSyncWatermarks 与 gcOrphanSyncKeys 改扫 yh:v1:deck:_:syncAt / yh:v1:deck:_:sync 前缀**。⑥ **修 Phase 2.2 遗留 bug**：voice slot 录音/读取/save 路径（`slotStorageKey()` 3 处）漏迁，仍 raw `lsGet/lsSet/lsRemove`；改走 `setVoiceField/getVoiceField`，跨设备 cloud sync 现可正确同步所有 slot 自定义 TTS 脚本。⑦ **单测 +24（KEY_RENAMES 全字段、PREFIX_RENAMES、idempotent、Supabase SDK token `sb-*` 不动、未知 raw key 不动）至 596 断言**。Playwright `_pw_srs_e2e.js` (`srs_session_mode` → `yh:v1:srs:session_mode`) + `_pw_cross_device.js` (`yihaiDailyProgress` → `yh:v1:daily:progress`，PHASE 6 直接写 `yh:v1:deck:_:syncAt`) 跟随改 key 名。云端 `sync_config` schema 完全未变（跨设备已部署版本可无缝读写）。零外观与行为变化。
 
 **v5.13.3：** localStorage keymap 规范化 Phase 2（聚合配置 blob）— ① **per-deck 同步状态聚合**：`yihaiPushedAt:{k}` / `yihaiPulledAt:{k}` / `yihaiPushedMediaAt:{k}` / `yihaiDeletedCards:{k}` 4 key → 单 JSON `deckSync:{k}`；新增 `getDeckSync/setDeckSync/removeDeckSync/migrateDeckSync` helper；`yihaiSyncAt:{k}` 因 preset 牌组 sync 路径仍在用而保留独立；SyncJob/markCardDeleted/removeDeck 全路径改写；`migrateSyncWatermarks` 改为直接写 deckSync。② **voice config 聚合**：~20 个扁平 voice/TTS/delay key (phraseCorrect/ttsRate/voiceMuted/…) → 单 JSON `voiceConfig`；新增 `VOICE_FIELDS` 注册表 + `getVoiceConfig/getVoiceField/setVoiceField/migrateVoiceConfig`；`cloudPushConfig` 改 `...getVoiceConfig()` 平铺、`cloudPullConfig` 按 `VOICE_FIELDS` 路由进 `setVoiceField`，云端 `sync_config` schema 不变（保兼容跨设备已部署版本）；`loadPhraseOrDefault` 改读 `getVoiceField`。③ **UI + typography 聚合**：theme/locale/appMode/confettiOn/logLevel 5 key → `uiConfig`；fs-/ls- × opt/ans/hint/btn 8 个 CSS var key → `typographyConfig`（嵌套 `{fs: {...}, ls: {...}}`）；cloudPushConfig 展开 typography 为扁平 fs-/ls- 兼容云端、cloudPullConfig 按 field type 路由（voice/ui/typo）。④ **启动顺序**：所有 migrate 函数在 helper 之后立即运行（loadSettings/loadPhrases 之前），避免一次性升级时设置取到默认值。⑤ **LS_KEYS 大幅瘦身** + `LS_TYPO` 工厂删除。⑥ **单测套件 +63（46+22+22）至 570 断言**。Playwright `_pw_config_sync.js` 跟随改 API（`localStorage.setItem` → `setVoiceField`），`_pw_cross_device.js` 跟随改 API（裸读 `yihaiPushedAt:` → `getDeckSync`）。零外观变化，行为与 v5.13.2 完全一致。
 
@@ -121,7 +123,7 @@ git config core.hooksPath .githooks
 ## Development Commands
 
 ```powershell
-# 单元测试（全量，11 套件 570 断言）
+# 单元测试（全量，11 套件 596 断言）
 node tests/run_all.js
 
 # Playwright（需先启动 HTTP 服务器，必须用 PowerShell）
