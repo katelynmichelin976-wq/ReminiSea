@@ -7075,7 +7075,7 @@ const I18N = {
     quiz_confirm: 'Confirm', quiz_select_hint: 'Look at the picture', quiz_next: 'Next',
     finish_title: 'Practice complete!', finish_back_home: 'Back to Home',
     finish_this_session: 'This Session', finish_good: 'Good', finish_hard: 'Hard',
-    finish_again: 'Again', finish_today_total: 'Today Total', common_card_unit: 'cards',
+    finish_today_total: 'Today Total', common_card_unit: 'cards',
     common_day_unit: 'd', common_lapse_unit: '×', common_minute_unit: 'min',
     stats_title: 'Statistics', stats_tab_today: 'Today', stats_tab_decks: 'Decks', stats_tab_cards: 'Cards', stats_tab_log: 'Log',
     stats_last_7_days: 'Last 7 Days', stats_next_7_days: 'Next 7 Days Due',
@@ -7398,7 +7398,7 @@ const I18N = {
     quiz_confirm: '确认答案', quiz_select_hint: '请看图片', quiz_next: '下一题',
     finish_title: '今天练习完成！', finish_back_home: '返回首页',
     finish_this_session: '本次练习', finish_good: '良好', finish_hard: '困难',
-    finish_again: '重来', finish_today_total: '今日累计', common_card_unit: '张',
+    finish_today_total: '今日累计', common_card_unit: '张',
     common_day_unit: '天', common_lapse_unit: '次', common_minute_unit: '分',
     stats_title: '统计', stats_tab_today: '今日', stats_tab_decks: '牌组', stats_tab_cards: '卡片', stats_tab_log: '记录',
     stats_last_7_days: '近 7 天', stats_next_7_days: '未来 7 天到期预测',
@@ -7721,7 +7721,7 @@ const I18N = {
     quiz_confirm: '確認答案', quiz_select_hint: '請看圖片', quiz_next: '下一題',
     finish_title: '今天練習完成！', finish_back_home: '返回首頁',
     finish_this_session: '本次練習', finish_good: '良好', finish_hard: '困難',
-    finish_again: '重來', finish_today_total: '今日累計', common_card_unit: '張',
+    finish_today_total: '今日累計', common_card_unit: '張',
     common_day_unit: '天', common_lapse_unit: '次', common_minute_unit: '分',
     stats_title: '統計', stats_tab_today: '今日', stats_tab_decks: '牌組', stats_tab_cards: '卡片', stats_tab_log: '記錄',
     stats_last_7_days: '近 7 天', stats_next_7_days: '未來 7 天到期預測',
@@ -8029,7 +8029,7 @@ const I18N = {
     quiz_confirm: 'Confirmar', quiz_select_hint: 'Mira la imagen', quiz_next: 'Siguiente',
     finish_title: '!Practica completa!', finish_back_home: 'Volver al inicio',
     finish_this_session: 'Esta sesion', finish_good: 'Bien', finish_hard: 'Dificil',
-    finish_again: 'Otra vez', finish_today_total: 'Total de hoy', common_card_unit: 'tarjetas',
+    finish_today_total: 'Total de hoy', common_card_unit: 'tarjetas',
     common_day_unit: 'd', common_lapse_unit: '×', common_minute_unit: 'min',
     stats_title: 'Estadisticas', stats_tab_today: 'Hoy', stats_tab_decks: 'Mazos', stats_tab_cards: 'Tarjetas', stats_tab_log: 'Registro',
     stats_last_7_days: 'Ultimos 7 dias', stats_next_7_days: 'Proximos 7 dias',
@@ -8349,7 +8349,7 @@ const I18N = {
     quiz_confirm: '確認', quiz_select_hint: '写真を見てください', quiz_next: '次へ',
     finish_title: '今日の練習が完了しました！', finish_back_home: 'ホームへ戻る',
     finish_this_session: 'このセッション', finish_good: '良い', finish_hard: '難しい',
-    finish_again: 'もう一度', finish_today_total: '今日の合計', common_card_unit: 'カード',
+    finish_today_total: '今日の合計', common_card_unit: 'カード',
     common_day_unit: '日', common_lapse_unit: '×', common_minute_unit: '分',
     stats_title: '統計', stats_tab_today: '今日', stats_tab_decks: 'デッキ', stats_tab_cards: 'カード', stats_tab_log: '記録',
     stats_last_7_days: '過去7日間', stats_next_7_days: '今後7日間の予定',
@@ -9595,10 +9595,6 @@ async function showFinish() {
     <div class="finish-stat-row">
       <span class="finish-stat-lbl">${t('finish_hard')}</span>
       <span class="finish-stat-val">${sHard}</span>
-    </div>
-    <div class="finish-stat-row">
-      <span class="finish-stat-lbl">${t('finish_again')}</span>
-      <span class="finish-stat-val wrong">${sFail}</span>
     </div>
     <div class="finish-stat-row">
       <span class="finish-stat-lbl">${t('finish_today_total')}</span>
