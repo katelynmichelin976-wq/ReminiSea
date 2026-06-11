@@ -10620,9 +10620,8 @@ function rollbackUploadedSlots(uploadedSlots, failedCardSet) {
 }
 
 async function upsertCardsMediaBatch(deckKey, cards) {
-  if (!cards.length) return;
+  if (!cards.length) return { failed: [] };
   // 用 .update() 而非 .upsert()：行不存在时返回 0 rows，不创建残缺行（缺 NOT NULL 列）。
-  // 下次 runCardsPhase 会补齐 row，下次 runMediaPhase 再次更新 media 即可。
   // N 张卡 N 次 update，Promise.all 并发，wall-clock 与批量 upsert 同量级。
   const tasks = cards.map(c =>
     _sb.from('deck_cards').update({
@@ -10631,10 +10630,11 @@ async function upsertCardsMediaBatch(deckKey, cards) {
     }).eq('deck_id', deckKey).eq('card_id', c.id)
   );
   const results = await Promise.all(tasks);
-  const failed = results.filter(r => r.error);
-  if (failed.length) {
-    console.warn('[sync] upsertCardsMediaBatch:', failed.length, 'rows failed:', failed[0].error?.message);
-  }
+  const failed = [];
+  results.forEach((r, i) => {
+    if (r.error) failed.push({ card: cards[i], err: r.error.message });
+  });
+  return { failed };
 }
 
 async function deleteCardsBatch(deckKey, cardIds) {
