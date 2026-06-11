@@ -10368,7 +10368,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
           downloadMediaFromCDNorSupabase(imgUrl)
             .then(async blob => {
               card.img = URL.createObjectURL(blob);
-              card.media.img = { url: imgUrl, v: c.media?.img?.v ?? 0, _blob: card.img };
+              card.media.img = { url: imgUrl, v: c.media?.img?.v ?? 0, _blob: card.img, confirmed: true };
               await saveMedia(`${key}_${card.id}_img`, blob).catch(() => {});
             }).catch(e => console.warn('[cloud] img failed:', imgUrl, e.message))
         );
@@ -10378,7 +10378,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
           downloadMediaFromCDNorSupabase(audUrl, audioMimeFromUrl(audUrl))
             .then(async blob => {
               card.audioUrl = URL.createObjectURL(blob);
-              card.media.aud = { url: audUrl, v: c.media?.aud?.v ?? 0, _blob: card.audioUrl };
+              card.media.aud = { url: audUrl, v: c.media?.aud?.v ?? 0, _blob: card.audioUrl, confirmed: true };
               await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
             }).catch(e => console.warn('[cloud] aud failed:', audUrl, e.message))
         );
@@ -10505,7 +10505,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
           const url = slotUrl(server, slot);
           if (url && url !== local.media[slot]?.url) {
             const blobUrl = await downloadSlot(cid, url, slot);
-            local.media[slot] = { url, v: server.media?.[slot]?.v ?? 0, _blob: blobUrl };
+            local.media[slot] = { url, v: server.media?.[slot]?.v ?? 0, _blob: blobUrl, confirmed: true };
             if (slot === 'img') local.img = blobUrl;
             else local.audioUrl = blobUrl;
             if (blobUrl) changed = true;
@@ -10529,8 +10529,8 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
         downloadSlot(cid, slotUrl(server, 'img'), 'img'),
         downloadSlot(cid, slotUrl(server, 'aud'), 'aud'),
       ]);
-      if (imgBlob) { card.img = imgBlob; card.media.img = { url: slotUrl(server, 'img'), v: server.media?.img?.v ?? 0, _blob: imgBlob }; }
-      if (audBlob) { card.audioUrl = audBlob; card.media.aud = { url: slotUrl(server, 'aud'), v: server.media?.aud?.v ?? 0, _blob: audBlob }; }
+      if (imgBlob) { card.img = imgBlob; card.media.img = { url: slotUrl(server, 'img'), v: server.media?.img?.v ?? 0, _blob: imgBlob, confirmed: true }; }
+      if (audBlob) { card.audioUrl = audBlob; card.media.aud = { url: slotUrl(server, 'aud'), v: server.media?.aud?.v ?? 0, _blob: audBlob, confirmed: true }; }
       merged.push(card);
       added++;
     });
@@ -11175,8 +11175,8 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
       await Promise.all(tasks);
       // 写回 media slot
       card.media = card.media || {};
-      if (imgUrl) card.media.img = { url: imgUrl, v: c.media?.img?.v ?? 0, _blob: card.img || '' };
-      if (audUrl) card.media.aud = { url: audUrl, v: c.media?.aud?.v ?? 0, _blob: card.audioUrl || '' };
+      if (imgUrl) card.media.img = { url: imgUrl, v: c.media?.img?.v ?? 0, _blob: card.img || '', confirmed: true };
+      if (audUrl) card.media.aud = { url: audUrl, v: c.media?.aud?.v ?? 0, _blob: card.audioUrl || '', confirmed: true };
       done++;
       if (!imgOk || !audOk) console.warn('[diag:dl] card incomplete', { id: c.card_id, idx: i, imgOk, audOk });
       if (done % 25 === 0 || done === total) console.log('[diag:dl] progress', { deckId, done, total });
