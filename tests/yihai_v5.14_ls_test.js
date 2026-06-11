@@ -66,6 +66,7 @@ const LS_KEYS = {
 const LS_DECK = (deckKey, field) => {
   const prefix = {
     cards:          'yihai_deck_',
+    syncAt:         'yihaiSyncAt:',
     pushedAt:       'yihaiPushedAt:',
     pulledAt:       'yihaiPulledAt:',
     pushedMediaAt:  'yihaiPushedMediaAt:',
@@ -138,6 +139,7 @@ const lsSetJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 // LS_DECK 工厂
 {
   check('LS_DECK cards', LS_DECK('abc', 'cards') === 'yihai_deck_abc');
+  check('LS_DECK syncAt (preset deck sync watermark)', LS_DECK('abc', 'syncAt') === 'yihaiSyncAt:abc');
   check('LS_DECK pushedAt', LS_DECK('abc', 'pushedAt') === 'yihaiPushedAt:abc');
   check('LS_DECK pulledAt', LS_DECK('abc', 'pulledAt') === 'yihaiPulledAt:abc');
   check('LS_DECK pushedMediaAt', LS_DECK('abc', 'pushedMediaAt') === 'yihaiPushedMediaAt:abc');
@@ -145,9 +147,6 @@ const lsSetJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   let threw = false;
   try { LS_DECK('abc', 'unknown'); } catch { threw = true; }
   check('LS_DECK throws on unknown field', threw);
-  let threwSync = false;
-  try { LS_DECK('abc', 'syncAt'); } catch { threwSync = true; }
-  check('LS_DECK no syncAt field (v5.8 retired)', threwSync);
 }
 
 // LS_SRS 工厂
