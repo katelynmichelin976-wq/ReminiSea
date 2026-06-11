@@ -31,7 +31,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v5.8_sync_test.js` | 个人牌组同步纯函数单测（24 cases） |
 | `tests/yihai_v5.9_sync_test.js` | v5.9 media slot 序列化单测（32 cases） |
 | `tests/yihai_v5.11_easy_test.js` | Easy 模式纯函数单测（结构公式/分类/排序/槽位/queue，38 cases） |
-| `tests/run_all.js` | 单元测试统一入口（9 套件，459 断言） |
+| `tests/yihai_v5.12_media_recovery_test.js` | 媒体 upsert 失败回滚纯函数单测（12 cases） |
+| `tests/run_all.js` | 单元测试统一入口（10 套件，471 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户/设置/i18n/语言/语音/IDB/练习模式，65 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端 + Easy 模式 EasyState IDB（21 断言，无需登录） |
 | `tests/_pw_easy.js` | Easy 模式综合（设置 UI/单局/retry/多局 confident 池/诊断面板，28 断言，无需登录） |
@@ -113,7 +114,7 @@ git config core.hooksPath .githooks
 ## Development Commands
 
 ```powershell
-# 单元测试（全量，9 套件 459 断言）
+# 单元测试（全量，10 套件 471 断言）
 node tests/run_all.js
 
 # Playwright（需先启动 HTTP 服务器，必须用 PowerShell）
