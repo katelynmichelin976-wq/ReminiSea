@@ -3487,27 +3487,27 @@ async function cloudPushConfig() {
     // collect local UI params
     const localUi = {
       confettiOn:         lsGet(LS_KEYS.CONFETTI_ON),
-      phraseWrong:          localStorage.getItem('phraseWrong'),
-      phraseCorrect:        localStorage.getItem('phraseCorrect'),
-      phraseStreakCorrect:  localStorage.getItem('phraseStreakCorrect'),
-      phraseSessionFinish:  localStorage.getItem('phraseSessionFinish'),
-      phraseIdleBrowse:     localStorage.getItem('phraseIdleBrowse'),
-      phraseOptHint:        localStorage.getItem('phraseOptHint'),
-      ttsRate:            localStorage.getItem('ttsRate'),
-      ttsPitch:           localStorage.getItem('ttsPitch'),
-      ttsVoiceName:       localStorage.getItem('ttsVoiceName'),
-      voiceMuted:         localStorage.getItem('voiceMuted'),
-      ansReadDelay:       localStorage.getItem('ansReadDelay'),
-      optReadDelay:       localStorage.getItem('optReadDelay'),
-      voiceAssistEnabled: localStorage.getItem('voiceAssistEnabled'),
-      browseAnsDelay:     localStorage.getItem('browseAnsDelay'),
-      optCount:           localStorage.getItem('optCount'),
-      optTouchDelay:      localStorage.getItem('optTouchDelay'),
-      ndur:               localStorage.getItem('ndur'),
-      bdur:               localStorage.getItem('bdur'),
+      phraseWrong:          lsGet(LS_KEYS.PHRASE_WRONG),
+      phraseCorrect:        lsGet(LS_KEYS.PHRASE_CORRECT),
+      phraseStreakCorrect:  lsGet(LS_KEYS.PHRASE_STREAK_CORRECT),
+      phraseSessionFinish:  lsGet(LS_KEYS.PHRASE_SESSION_FINISH),
+      phraseIdleBrowse:     lsGet(LS_KEYS.PHRASE_IDLE_BROWSE),
+      phraseOptHint:        lsGet(LS_KEYS.PHRASE_OPT_HINT),
+      ttsRate:            lsGet(LS_KEYS.TTS_RATE),
+      ttsPitch:           lsGet(LS_KEYS.TTS_PITCH),
+      ttsVoiceName:       lsGet(LS_KEYS.TTS_VOICE_NAME),
+      voiceMuted:         lsGet(LS_KEYS.VOICE_MUTED),
+      ansReadDelay:       lsGet(LS_KEYS.ANS_READ_DELAY),
+      optReadDelay:       lsGet(LS_KEYS.OPT_READ_DELAY),
+      voiceAssistEnabled: lsGet(LS_KEYS.VOICE_ASSIST_ENABLED),
+      browseAnsDelay:     lsGet(LS_KEYS.BROWSE_ANS_DELAY),
+      optCount:           lsGet(LS_KEYS.OPT_COUNT),
+      optTouchDelay:      lsGet(LS_KEYS.OPT_TOUCH_DELAY),
+      ndur:               lsGet(LS_KEYS.NDUR),
+      bdur:               lsGet(LS_KEYS.BDUR),
       theme:              lsGet(LS_KEYS.THEME),
-      phraseQuizPrompt:             localStorage.getItem('phraseQuizPrompt'),
-      phraseQuizPromptRecognize:    localStorage.getItem('phraseQuizPromptRecognize'),
+      phraseQuizPrompt:             lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT),
+      phraseQuizPromptRecognize:    lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT_RECOGNIZE),
     };
     ['fs-opt','fs-ans','fs-hint','fs-btn','ls-opt','ls-ans','ls-hint','ls-btn'].forEach(k => {
       const v = localStorage.getItem(k);
@@ -4936,7 +4936,7 @@ function gcOrphanSyncKeys() {
       if (!deckKeys.has(deckKey)) toRemove.push(k);
     }
   }
-  toRemove.forEach(k => localStorage.removeItem(k));
+  toRemove.forEach(k => lsRemove(k));
   if (toRemove.length) console.log('[gc] 清理孤儿 sync keys:', toRemove.length);
 }
 
@@ -6844,8 +6844,8 @@ function startCardPrompts(pickedOpts, optLang, cardType) {
   tQuizPromptTimer = setTimeout(() => {
     tQuizPromptTimer = null;
     const _qpText = (cardType === 'recognize')
-      ? (localStorage.getItem('phraseQuizPromptRecognize') || t('voice_quiz_prompt_recognize') || '认识这个人吗')
-      : (localStorage.getItem('phraseQuizPrompt') || PHRASE_SELECT);
+      ? (lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT_RECOGNIZE) || t('voice_quiz_prompt_recognize') || '认识这个人吗')
+      : (lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT) || PHRASE_SELECT);
     playVoiceSlot('quiz_prompt', _qpText, getLocale());
     // Phase 2: option hint (waits additional OPT_READ_DELAY after quiz prompt)
     tOptHintTimer = setTimeout(() => {
@@ -8678,8 +8678,9 @@ function setLocale(loc) {
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
   // reset voice prompts to current locale defaults on language switch
-  ['phraseQuizPrompt','phraseOptHint','phraseWrong',
-   'phraseCorrect','phraseStreakCorrect','phraseSessionFinish','phraseIdleBrowse'].forEach(k => localStorage.removeItem(k));
+  [LS_KEYS.PHRASE_QUIZ_PROMPT, LS_KEYS.PHRASE_OPT_HINT, LS_KEYS.PHRASE_WRONG,
+   LS_KEYS.PHRASE_CORRECT, LS_KEYS.PHRASE_STREAK_CORRECT,
+   LS_KEYS.PHRASE_SESSION_FINISH, LS_KEYS.PHRASE_IDLE_BROWSE].forEach(k => lsRemove(k));
   PHRASE_SELECT   = t('quiz_select_hint');
   PHRASE_OPT_HINT = t('default_opt_hint');
   if (typeof _updateSettingsLangVal === 'function') _updateSettingsLangVal();
@@ -9867,7 +9868,7 @@ function onLsChange(key, v) {
 function onBrowseAnsDelayChange(v) {
   BROWSE_ANSWER_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-browse-ans-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  localStorage.setItem('browseAnsDelay', v);
+  lsSet(LS_KEYS.BROWSE_ANS_DELAY, v);
   debouncePushConfig();
 }
 function toggleConfetti(cb) {
@@ -9878,7 +9879,7 @@ function toggleConfetti(cb) {
 
 function onPhraseChange(key, val) {
   const normalize = s => s.replace(/。/g, '.').replace(/｛/g, '{').replace(/｝/g, '}');
-  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); localStorage.setItem('phraseOptHint', PHRASE_OPT_HINT); }
+  if (key === 'optHint') { PHRASE_OPT_HINT = normalize(val) || t('default_opt_hint'); lsSet(LS_KEYS.PHRASE_OPT_HINT, PHRASE_OPT_HINT); }
   debouncePushConfig();
 }
 
@@ -9889,49 +9890,49 @@ function onQpDelayChange(v) {
 function onOhDelayChange(v) {
   OPT_READ_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-ohdelay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  localStorage.setItem('optReadDelay', v);
+  lsSet(LS_KEYS.OPT_READ_DELAY, v);
   debouncePushConfig();
 }
 function onDelayChange(v) {
   ANS_READ_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  localStorage.setItem('ansReadDelay', v);
+  lsSet(LS_KEYS.ANS_READ_DELAY, v);
   debouncePushConfig();
 }
 function onBrowseDelayChange(v) {
   ANS_READ_DELAY = parseFloat(v) * 1000;
   document.getElementById('dbg-browse-delay-val').textContent = `${parseFloat(v).toFixed(1)}s`;
-  localStorage.setItem('ansReadDelay', v);
+  lsSet(LS_KEYS.ANS_READ_DELAY, v);
   debouncePushConfig();
 }
 
 function onTtsRateChange(v) {
   TTS_RATE = parseFloat(v);
   document.getElementById('tts-rate-val').textContent = parseFloat(v).toFixed(2);
-  localStorage.setItem('ttsRate', v);
+  lsSet(LS_KEYS.TTS_RATE, v);
   debouncePushConfig();
 }
 function onTtsPitchChange(v) {
   TTS_PITCH = parseFloat(v);
   document.getElementById('tts-pitch-val').textContent = parseFloat(v).toFixed(1);
-  localStorage.setItem('ttsPitch', v);
+  lsSet(LS_KEYS.TTS_PITCH, v);
   debouncePushConfig();
 }
 function onTtsVoiceChange(name) {
   TTS_VOICE_NAME = name;
-  localStorage.setItem('ttsVoiceName', name);
+  lsSet(LS_KEYS.TTS_VOICE_NAME, name);
   debouncePushConfig();
 }
 
 function onVoiceMutedChange(cb) {
   VOICE_MUTED = cb.checked;
-  localStorage.setItem('voiceMuted', VOICE_MUTED ? '1' : '0');
+  lsSet(LS_KEYS.VOICE_MUTED, VOICE_MUTED ? '1' : '0');
   debouncePushConfig();
 }
 
 function onAnsReadDelayChange(val) {
   ANS_READ_DELAY = parseFloat(val) * 1000;
-  localStorage.setItem('ansReadDelay', val);
+  lsSet(LS_KEYS.ANS_READ_DELAY, val);
   document.getElementById('ans-read-delay-val').textContent = parseFloat(val).toFixed(1) + 's';
   debouncePushConfig();
 }
@@ -10001,15 +10002,15 @@ async function renderVoiceSlots() {
 function onSlotRowTap(slot) {
   if (slot.functional) {
     const current = slot.name === 'quiz_prompt'
-      ? (localStorage.getItem('phraseQuizPrompt') || PHRASE_SELECT)
-      : (localStorage.getItem('phraseOptHint')    || PHRASE_OPT_HINT);
+      ? (lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT) || PHRASE_SELECT)
+      : (lsGet(LS_KEYS.PHRASE_OPT_HINT)    || PHRASE_OPT_HINT);
     showTextEditOverlay(
       slot.name,
       t(slot.labelKey) || slot.name,
       current,
       (newVal) => {
-        if (slot.name === 'quiz_prompt') { PHRASE_SELECT = newVal || t('quiz_select_hint') || ''; localStorage.setItem('phraseQuizPrompt', newVal); }
-        if (slot.name === 'opt_hint') { PHRASE_OPT_HINT = newVal; localStorage.setItem('phraseOptHint', newVal); }
+        if (slot.name === 'quiz_prompt') { PHRASE_SELECT = newVal || t('quiz_select_hint') || ''; lsSet(LS_KEYS.PHRASE_QUIZ_PROMPT, newVal); }
+        if (slot.name === 'opt_hint') { PHRASE_OPT_HINT = newVal; lsSet(LS_KEYS.PHRASE_OPT_HINT, newVal); }
         renderVoiceSlots();
         debouncePushConfig();
       }
@@ -10032,14 +10033,14 @@ function toggleVaGroup(group) {
 
 function onVoiceAssistToggle(cb) {
   VOICE_ASSIST_ENABLED = cb.checked;
-  localStorage.setItem('voiceAssistEnabled', VOICE_ASSIST_ENABLED ? '1' : '0');
+  lsSet(LS_KEYS.VOICE_ASSIST_ENABLED, VOICE_ASSIST_ENABLED ? '1' : '0');
   updateVoiceAssistStatus();
   debouncePushConfig();
 }
 
 function onOptReadDelayChange(val) {
   OPT_READ_DELAY = parseFloat(val) * 1000;
-  localStorage.setItem('optReadDelay', val);
+  lsSet(LS_KEYS.OPT_READ_DELAY, val);
   document.getElementById('opt-read-delay-val').textContent = parseFloat(val).toFixed(1) + 's';
   debouncePushConfig();
 }
@@ -10221,26 +10222,26 @@ function populateVoiceList() {
 function onOptTouchDelayChange(v) {
   OPT_TOUCH_DELAY = parseInt(v);
   document.getElementById('opt-touch-delay-val').textContent = `${v}ms`;
-  localStorage.setItem('optTouchDelay', v);
+  lsSet(LS_KEYS.OPT_TOUCH_DELAY, v);
   debouncePushConfig();
 }
 
 function onOptCount(v) {
   OPT_COUNT = parseInt(v);
   document.getElementById('opt-count-val').textContent = `${v}`;
-  localStorage.setItem('optCount', v);
+  lsSet(LS_KEYS.OPT_COUNT, v);
   debouncePushConfig();
 }
 function onNdurChange(v) {
   NDUR = parseFloat(v) * 1000;
   document.getElementById('dbg-ndur-val').textContent = v === '0' ? t('common_manual') : `${v}s`;
-  localStorage.setItem('ndur', v);
+  lsSet(LS_KEYS.NDUR, v);
   debouncePushConfig();
 }
 function onBdurChange(v) {
   BDUR = parseFloat(v) * 1000;
   document.getElementById('dbg-bdur-val').textContent = v === '0' ? t('common_manual') : `${v}s`;
-  localStorage.setItem('bdur', v);
+  lsSet(LS_KEYS.BDUR, v);
   debouncePushConfig();
 }
 
@@ -10258,37 +10259,37 @@ function loadSettings() {
   PHRASE_OPT_HINT = loadPhraseOrDefault('phraseOptHint',    'default_opt_hint');
 
   // browse answer delay / correct feedback
-  const browseAnsDelay = localStorage.getItem('browseAnsDelay');
+  const browseAnsDelay = lsGet(LS_KEYS.BROWSE_ANS_DELAY);
   if (browseAnsDelay) BROWSE_ANSWER_DELAY = parseFloat(browseAnsDelay) * 1000;
   const confettiOn = lsGet(LS_KEYS.CONFETTI_ON);
   if (confettiOn !== null) CONFETTI_ON = confettiOn === '1';
   // TTS voice params
-  const ttsRate = localStorage.getItem('ttsRate');
+  const ttsRate = lsGet(LS_KEYS.TTS_RATE);
   if (ttsRate) TTS_RATE = parseFloat(ttsRate);
-  const ttsPitch = localStorage.getItem('ttsPitch');
+  const ttsPitch = lsGet(LS_KEYS.TTS_PITCH);
   if (ttsPitch) TTS_PITCH = parseFloat(ttsPitch);
-  const ttsVoiceName = localStorage.getItem('ttsVoiceName');
+  const ttsVoiceName = lsGet(LS_KEYS.TTS_VOICE_NAME);
   if (ttsVoiceName !== null) TTS_VOICE_NAME = ttsVoiceName;
 
-  const voiceMuted = localStorage.getItem('voiceMuted');
+  const voiceMuted = lsGet(LS_KEYS.VOICE_MUTED);
   if (voiceMuted !== null) VOICE_MUTED = voiceMuted === '1';
-  const ansReadDelay = localStorage.getItem('ansReadDelay');
+  const ansReadDelay = lsGet(LS_KEYS.ANS_READ_DELAY);
   if (ansReadDelay) ANS_READ_DELAY = parseFloat(ansReadDelay) * 1000;
-  const optReadDelay = localStorage.getItem('optReadDelay');
+  const optReadDelay = lsGet(LS_KEYS.OPT_READ_DELAY);
   if (optReadDelay) OPT_READ_DELAY = parseFloat(optReadDelay) * 1000;
-  const voiceAssistEnabled = localStorage.getItem('voiceAssistEnabled');
+  const voiceAssistEnabled = lsGet(LS_KEYS.VOICE_ASSIST_ENABLED);
   if (voiceAssistEnabled !== null) VOICE_ASSIST_ENABLED = voiceAssistEnabled === '1';
 
   // option count / countdown / touch guard
-  const oc = localStorage.getItem('optCount');
+  const oc = lsGet(LS_KEYS.OPT_COUNT);
   if (oc) OPT_COUNT = parseInt(oc);
-  const otd = localStorage.getItem('optTouchDelay');
+  const otd = lsGet(LS_KEYS.OPT_TOUCH_DELAY);
   if (otd !== null) OPT_TOUCH_DELAY = parseInt(otd);
-  const ndur = localStorage.getItem('ndur');
+  const ndur = lsGet(LS_KEYS.NDUR);
   // NDUR prefers localStorage, falls back to SRS_CONFIG.practice_advance_sec
   if (ndur) NDUR = parseFloat(ndur) * 1000;
   else NDUR = SRS_CONFIG.practice_advance_sec * 1000;
-  const bdur = localStorage.getItem('bdur');
+  const bdur = lsGet(LS_KEYS.BDUR);
   if (bdur) BDUR = parseFloat(bdur) * 1000;
 
   // Restore CSS variables
