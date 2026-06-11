@@ -114,6 +114,76 @@ const DECK_KEY = '__media_recovery_test__';
     }, DECK_KEY);
     pass(`DB row 应有 media.img.url（实际：${dbState}）`, !!dbState);
 
+    section('PHASE 5: 模拟 crash → stale s.url + 未 confirmed → 下次 sync 自动补 DB');
+
+    const STALE_KEY = '__crash_recovery_test__';
+
+    // 清云端可能残留
+    await run(page, async (key) => {
+      try { await _sb.from('deck_cards').delete().eq('deck_id', key); } catch (e) {}
+      try { await _sb.from('decks').delete().eq('id', key); } catch (e) {}
+    }, STALE_KEY);
+
+    // 在本地灌一个 "crash 后状态"：DECKS 有 s.url + _blob，confirmed undefined；Storage 已有文件；DB 无 media
+    await run(page, async (key) => {
+      const card = {
+        id: 'stale1', name: 'Crash Recovery', nameLang: 'zh-CN',
+        img: '', audioUrl: '', mod: Date.now(),
+        media: { img: { url: 'stale_placeholder', v: 0, _blob: 'blob:stale' /* no confirmed */ } },
+        cardType: 'choice', ext: {},
+      };
+      DECKS[key] = [card];
+      DECKS_META.push({ key, name: 'P2 crash 测试', deck_type: 'personal', mod: Date.now() });
+      saveDeckIndex();
+
+      const blob = new Blob([new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0])], { type: 'image/jpeg' });
+      await saveMedia(`${key}_stale1_img`, blob);
+      card.media.img._blob = URL.createObjectURL(blob);
+      const path = buildPath(_cloudUserId, key, 'stale1', 'img', 0, 'jpg');
+      await _sb.storage.from('ReminiSea').upload(path, blob, { upsert: true });
+      card.media.img.url = path;
+
+      saveDeckCards(key, [card]);
+      await upsertDeckRow(key);
+      await upsertCardsBatch(key, [card]);
+
+      // 强制清空 DB media，模拟 crash 前 DB 写没成功
+      await _sb.from('deck_cards').update({ media: {} }).eq('deck_id', key).eq('card_id', 'stale1');
+    }, STALE_KEY);
+
+    // 验证起点：DB 无 media + 本地 s.url 有 + 无 confirmed
+    const before = await run(page, async (key) => {
+      const card = DECKS[key][0];
+      const { data } = await _sb.from('deck_cards').select('media').eq('deck_id', key).eq('card_id', 'stale1').maybeSingle();
+      return { localUrl: card.media.img.url, localConfirmed: !!card.media.img.confirmed, dbMedia: data?.media };
+    }, STALE_KEY);
+    pass('起点：本地有 stale s.url', before.localUrl !== '');
+    pass('起点：本地 confirmed 未置', before.localConfirmed === false);
+    pass('起点：DB media 空', !before.dbMedia || !before.dbMedia.img);
+
+    // 触发 sync — 期望走 "恢复路径" 补 DB 写
+    const recoverySync = await run(page, async (key) => {
+      try { await syncDeck(key); return { ok: true }; }
+      catch (e) { return { ok: false, err: e.message }; }
+    }, STALE_KEY);
+    pass(`恢复 sync 成功: ${JSON.stringify(recoverySync)}`, recoverySync.ok);
+
+    // 验证终点：DB 有 media + 本地 confirmed=true + URL 一致
+    const after = await run(page, async (key) => {
+      const card = DECKS[key][0];
+      const { data } = await _sb.from('deck_cards').select('media').eq('deck_id', key).eq('card_id', 'stale1').maybeSingle();
+      return { localUrl: card.media.img.url, localConfirmed: !!card.media.img.confirmed, dbUrl: data?.media?.img?.url };
+    }, STALE_KEY);
+    pass(`恢复后 DB media.img.url 已写: ${after.dbUrl}`, !!after.dbUrl);
+    pass(`恢复后本地 confirmed=true`, after.localConfirmed === true);
+    pass(`本地 url 与 DB 一致`, after.localUrl === after.dbUrl);
+
+    // PHASE 5 cleanup
+    await run(page, async (key) => {
+      try { await _sb.from('deck_cards').delete().eq('deck_id', key); } catch (e) {}
+      try { await _sb.from('decks').delete().eq('id', key); } catch (e) {}
+    }, STALE_KEY);
+
     section('PHASE 4: cleanup');
     await run(page, async (key) => {
       try { await _sb.from('deck_cards').delete().eq('deck_id', key); } catch (e) {}
