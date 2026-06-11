@@ -3007,7 +3007,7 @@ const SRS_CONFIG = {
 // ── SRS_CONFIG persistent overrides (restore user edits from localStorage) ─
 (function _loadSrsConfig() {
   Object.keys(SRS_CONFIG).forEach(k => {
-    const v = localStorage.getItem('srs_' + k);
+    const v = lsGet(LS_SRS(k));
     if (v === null) return;
     const def = SRS_CONFIG[k];
     if (Array.isArray(def)) {
@@ -3025,19 +3025,19 @@ const SRS_CONFIG = {
 // 'survival' was renamed to 'normal'; old 'normal' (applyNormalMode) and 'hard' also → 'normal'
 if (!['normal', 'easy'].includes(SRS_CONFIG.session_mode)) {
   SRS_CONFIG.session_mode = 'normal';
-  localStorage.setItem('srs_session_mode', 'normal');
+  lsSet(LS_SRS('session_mode'), 'normal');
 }
-const _persistedT = parseInt(localStorage.getItem('easySessionSize') || '0', 10);
+const _persistedT = parseInt(lsGet(LS_KEYS.EASY_SESSION_SIZE) || '0', 10);
 if ([15, 19, 23].includes(_persistedT)) SRS_CONFIG.easy_session_size = _persistedT;
-if (localStorage.getItem('easyRetryOnWrong') === '0') SRS_CONFIG.easy_retry_on_wrong = false;
+if (lsGet(LS_KEYS.EASY_RETRY_ON_WRONG) === '0') SRS_CONFIG.easy_retry_on_wrong = false;
 
 function saveSrsConfigKey(key, value) {
   if (Array.isArray(value)) {
-    localStorage.setItem('srs_' + key, JSON.stringify(value));
+    lsSet(LS_SRS(key), JSON.stringify(value));
   } else if (typeof value === 'boolean') {
-    localStorage.setItem('srs_' + key, value ? '1' : '0');
+    lsSet(LS_SRS(key), value ? '1' : '0');
   } else {
-    localStorage.setItem('srs_' + key, String(value));
+    lsSet(LS_SRS(key), String(value));
   }
   SRS_CONFIG[key] = value;
   logAppEvent('config_changed', { key: key, value: Array.isArray(value) ? JSON.stringify(value) : String(value) });
@@ -3470,7 +3470,7 @@ async function cloudPushConfig() {
     // collect local SRS params
     const localSrs = {};
     Object.keys(SRS_CONFIG).forEach(k => {
-      const v = localStorage.getItem('srs_' + k);
+      const v = lsGet(LS_SRS(k));
       if (v === null) return;
       const def = SRS_CONFIG[k];
       if (Array.isArray(def)) {
@@ -3548,16 +3548,16 @@ async function cloudPullConfig() {
     if (cfg.srs) {
       Object.entries(cfg.srs).forEach(([k, v]) => {
         if (Array.isArray(v)) {
-          localStorage.setItem('srs_' + k, JSON.stringify(v));
+          lsSet(LS_SRS(k), JSON.stringify(v));
           SRS_CONFIG[k] = v;
         } else if (typeof v === 'boolean') {
-          localStorage.setItem('srs_' + k, v ? '1' : '0');
+          lsSet(LS_SRS(k), v ? '1' : '0');
           SRS_CONFIG[k] = v;
         } else if (typeof v === 'string') {
-          localStorage.setItem('srs_' + k, v);
+          lsSet(LS_SRS(k), v);
           SRS_CONFIG[k] = v;
         } else if (typeof v === 'number') {
-          localStorage.setItem('srs_' + k, String(v));
+          lsSet(LS_SRS(k), String(v));
           SRS_CONFIG[k] = v;
         }
         applied++;
@@ -12098,7 +12098,7 @@ function refreshEasyRetryRow() {
 
 document.getElementById('easyRetryToggle')?.addEventListener('change', e => {
   SRS_CONFIG.easy_retry_on_wrong = e.target.checked;
-  localStorage.setItem('easyRetryOnWrong', e.target.checked ? '1' : '0');
+  lsSet(LS_KEYS.EASY_RETRY_ON_WRONG, e.target.checked ? '1' : '0');
 });
 
 document.querySelectorAll('[data-easy-size] .chip').forEach(b => {
@@ -12106,7 +12106,7 @@ document.querySelectorAll('[data-easy-size] .chip').forEach(b => {
     const n = parseInt(b.dataset.size, 10);
     if (![15, 19, 23].includes(n)) return;
     SRS_CONFIG.easy_session_size = n;
-    localStorage.setItem('easySessionSize', String(n));
+    lsSet(LS_KEYS.EASY_SESSION_SIZE, String(n));
     refreshEasySizeRow();
     refreshEasyRetryRow();
   });
