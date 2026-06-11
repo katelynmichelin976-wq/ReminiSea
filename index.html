@@ -3095,7 +3095,8 @@ function _createSupabaseClient() {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false
-    }
+    },
+    global: { headers: { 'Accept-Language': 'en' } }
   });
 }
 
@@ -5149,8 +5150,9 @@ async function importYhspack(file) {
     const deck = deckData.deck;
     if (!deck || !deck.cards) { dismissLoading(); showCloudToast(t('import_bad_format_cards'), true); return; }
 
-    const key = deck.id || crypto.randomUUID();
     const name = deck.name || file.name.replace('.yhspack','');
+    const existingByName = DECKS_META.find(m => m.name === name && !m.builtin);
+    const key = existingByName ? existingByName.key : (deck.id || crypto.randomUUID());
     const deckLang = deck.language || 'zh-CN';
     const cards = [];
 
@@ -5373,6 +5375,7 @@ async function deleteDeck(e, key) {
   deleteCardStatesForDeck(key).catch(() => {});
   if (currentDeck === key) currentDeck = null;
   renderDeckList();
+  renderLocalDecksTab();
   updateDeckStats();
   logAppEvent('delete_deck', { deck_key: key, deck_name: meta.name, deck_type: meta.deck_type || 'personal' });
   dismissLoading();
@@ -6254,11 +6257,16 @@ function handleAuthHashRoute(h) {
 
 function doAccountSync() {
   const btn = document.getElementById('account-sync-btn');
+  const sub = document.querySelector('#account-state-logged-in .account-hero-sub');
   if (btn) btn.disabled = true;
+  if (sub) sub.textContent = t('sync_in_progress') + '…';
   runSync({ modal: true, decks: true, events: true, showToast: true, deckKey: currentDeck })
     .then(function() { return syncAllDirtyDecks(); })
     .catch(function(e){ console.warn('[sync] account sync error:', e.message); })
-    .finally(function() { if (btn) btn.disabled = false; });
+    .finally(function() {
+      if (btn) btn.disabled = false;
+      if (sub) sub.textContent = t('account_logged_in_sub');
+    });
 }
 
 // ── 牌组管理页导航 ──────────────────────────────────────────────
@@ -10642,6 +10650,7 @@ class SyncJob {
     this._pausePromise = null;
     this._pauseResolve = null;
     this._cancelled = false;
+    this._didPush = false;
   }
   pause() {
     if (this._paused) return;
@@ -10667,17 +10676,15 @@ class SyncJob {
     this._setPhase('structure', 0, 1);
     const meta = DECKS_META.find(m => m.key === this.deckKey);
     const pushedAt = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
-    if (meta && meta.mod && meta.mod > pushedAt) await upsertDeckRow(this.deckKey);
+    // 快照 diff 用的 pulledAt——必须在任何可能推进水位的操作（upsertDeckRow / 远端 row 探测）之前
+    const pulledAt = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
+    if (meta && meta.mod && meta.mod > pushedAt) {
+      await upsertDeckRow(this.deckKey);
+      this._didPush = true;
+    }
     const { data: deckRow } = await _sb.from('decks')
       .select('updated_at, name, name_lang').eq('id', this.deckKey).maybeSingle();
-    if (meta && deckRow?.updated_at) {
-      meta._remoteUpdatedAt = deckRow.updated_at;
-      const remoteTs = Date.parse(deckRow.updated_at) || 0;
-      const curPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
-      if (remoteTs > curPulled) {
-        localStorage.setItem('yihaiPulledAt:' + this.deckKey, String(remoteTs));
-      }
-    }
+    if (meta && deckRow?.updated_at) meta._remoteUpdatedAt = deckRow.updated_at;
     // 拉云端 name 到本地（仅本地未改时；本地未上传的 rename 由 push 路径优先）
     if (meta && deckRow?.name && (!meta.mod || meta.mod <= pushedAt)) {
       let changed = false;
@@ -10692,8 +10699,15 @@ class SyncJob {
     }));
     const cards = DECKS[this.deckKey] || [];
     const deleted = getDeletedCards(this.deckKey);
-    const pulledAt = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
     const diff = computeDeckDiff(cards, deleted, remoteMeta, pushedAt, pulledAt);
+    // diff 算完后才安全推进 pulledAt 到 decks.updated_at
+    if (deckRow?.updated_at) {
+      const remoteTs = Date.parse(deckRow.updated_at) || 0;
+      const curPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
+      if (remoteTs > curPulled) {
+        localStorage.setItem('yihaiPulledAt:' + this.deckKey, String(remoteTs));
+      }
+    }
     this._setPhase('structure', 1, 1);
     return { diff, remoteRows: remote };
   }
@@ -10725,6 +10739,7 @@ class SyncJob {
       if (maxMod > curPushed) localStorage.setItem('yihaiPushedAt:' + this.deckKey, String(maxMod));
       done += batch.length;
       this._setPhase('cards', done, total);
+      this._didPush = true;
     }
 
     for (let b = 0; b < toPull.length; b += 100) {
@@ -10773,6 +10788,7 @@ class SyncJob {
       clearDeletedCards(this.deckKey);
       done += 1;
       this._setPhase('cards', done, total);
+      this._didPush = true;
     }
 
     // 远端被删的卡片：本地跟随移除（+ 清媒体）
@@ -10838,6 +10854,7 @@ class SyncJob {
           if (error) { console.warn('[sync] media upload fail:', card.id, slot, error.message); continue; }
           s.url = path;
           pendingMediaUpsert.add(card);          // 留到 checkpoint 批量 upsert
+          this._didPush = true;
         }
       }
 
@@ -10877,6 +10894,12 @@ class SyncJob {
     await flushMediaUpsert();
     if (deckMediaComplete(cards)) {
       localStorage.setItem('yihaiPushedMediaAt:' + this.deckKey, String(Date.now()));
+    }
+    // 本次 SyncJob 写过云端（结构 / 卡片 / 媒体任一） → bump decks.updated_at 通知其他设备
+    // 仅 pull / no-op 时跳过，避免触发器风格的反复 bump 死循环
+    if (this._didPush && this.canPush) {
+      try { await upsertDeckRow(this.deckKey); }
+      catch(e) { console.warn('[sync] final upsertDeckRow fail:', e.message); }
     }
   }
 }
