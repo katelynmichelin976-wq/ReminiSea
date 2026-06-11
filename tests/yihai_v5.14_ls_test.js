@@ -65,14 +65,10 @@ const LS_KEYS = {
 
 const LS_DECK = (deckKey, field) => {
   const prefix = {
-    cards:          'yihai_deck_',
-    syncAt:         'yihaiSyncAt:',
-    pushedAt:       'yihaiPushedAt:',
-    pulledAt:       'yihaiPulledAt:',
-    pushedMediaAt:  'yihaiPushedMediaAt:',
-    deletedCards:   'yihaiDeletedCards:',
+    cards:  'yihai_deck_',
+    syncAt: 'yihaiSyncAt:',
   }[field];
-  if (!prefix) throw new Error('LS_DECK: unknown field ' + field);
+  if (!prefix) throw new Error('LS_DECK: unknown field ' + field + ' (sync state aggregated to deckSync helper)');
   return prefix + deckKey;
 };
 
@@ -140,13 +136,12 @@ const lsSetJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 {
   check('LS_DECK cards', LS_DECK('abc', 'cards') === 'yihai_deck_abc');
   check('LS_DECK syncAt (preset deck sync watermark)', LS_DECK('abc', 'syncAt') === 'yihaiSyncAt:abc');
-  check('LS_DECK pushedAt', LS_DECK('abc', 'pushedAt') === 'yihaiPushedAt:abc');
-  check('LS_DECK pulledAt', LS_DECK('abc', 'pulledAt') === 'yihaiPulledAt:abc');
-  check('LS_DECK pushedMediaAt', LS_DECK('abc', 'pushedMediaAt') === 'yihaiPushedMediaAt:abc');
-  check('LS_DECK deletedCards', LS_DECK('abc', 'deletedCards') === 'yihaiDeletedCards:abc');
   let threw = false;
   try { LS_DECK('abc', 'unknown'); } catch { threw = true; }
   check('LS_DECK throws on unknown field', threw);
+  let threwAgg = false;
+  try { LS_DECK('abc', 'pushedAt'); } catch { threwAgg = true; }
+  check('LS_DECK throws on aggregated field (use deckSync)', threwAgg);
 }
 
 // LS_SRS 工厂
@@ -171,6 +166,139 @@ const lsSetJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   ];
   const missing = expectedKeys.filter(k => !(k in LS_KEYS));
   check('LS_KEYS covers all expected slots', missing.length === 0);
+}
+
+// ── Phase 2.1: deckSync 聚合 + 迁移 ───────────────────────────────
+
+const DECK_SYNC_DEFAULT = { pushedAt: 0, pulledAt: 0, pushedMediaAt: 0, deletedCards: [] };
+function getDeckSync(deckKey) {
+  return { ...DECK_SYNC_DEFAULT, ...lsGetJSON('deckSync:' + deckKey, {}) };
+}
+function setDeckSync(deckKey, patch) {
+  const cur = getDeckSync(deckKey);
+  lsSetJSON('deckSync:' + deckKey, { ...cur, ...patch });
+}
+function removeDeckSync(deckKey) {
+  lsRemove('deckSync:' + deckKey);
+}
+function migrateDeckSync() {
+  const oldPrefixes = ['yihaiPushedAt:', 'yihaiPulledAt:', 'yihaiPushedMediaAt:', 'yihaiDeletedCards:'];
+  const fieldOf = {
+    'yihaiPushedAt:': 'pushedAt',
+    'yihaiPulledAt:': 'pulledAt',
+    'yihaiPushedMediaAt:': 'pushedMediaAt',
+    'yihaiDeletedCards:': 'deletedCards',
+  };
+  const seenDecks = new Set();
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    for (const p of oldPrefixes) if (k.startsWith(p)) seenDecks.add(k.slice(p.length));
+  }
+  for (const deckKey of seenDecks) {
+    const newK = 'deckSync:' + deckKey;
+    if (lsGet(newK) != null) continue;
+    const patch = {};
+    for (const p of oldPrefixes) {
+      const oldK = p + deckKey;
+      const v = lsGet(oldK);
+      if (v == null) continue;
+      if (fieldOf[p] === 'deletedCards') {
+        patch.deletedCards = lsGetJSON(oldK, []);
+      } else {
+        patch[fieldOf[p]] = /^\d+$/.test(v) ? parseInt(v) : (Date.parse(v) || 0);
+      }
+    }
+    if (Object.keys(patch).length === 0) continue;
+    lsSetJSON(newK, { ...DECK_SYNC_DEFAULT, ...patch });
+    for (const p of oldPrefixes) lsRemove(p + deckKey);
+  }
+}
+
+{
+  _store.clear();
+  _store.set('yihaiPushedAt:abc', '1700000000000');
+  _store.set('yihaiPulledAt:abc', '1700001000000');
+  _store.set('yihaiPushedMediaAt:abc', '1700002000000');
+  _store.set('yihaiDeletedCards:abc', '["c1","c2"]');
+  migrateDeckSync();
+  const s = getDeckSync('abc');
+  check('migrate: pushedAt', s.pushedAt === 1700000000000);
+  check('migrate: pulledAt', s.pulledAt === 1700001000000);
+  check('migrate: pushedMediaAt', s.pushedMediaAt === 1700002000000);
+  check('migrate: deletedCards', s.deletedCards.length === 2 && s.deletedCards[1] === 'c2');
+  check('migrate: old yihaiPushedAt removed', _store.get('yihaiPushedAt:abc') == null);
+  check('migrate: old yihaiPulledAt removed', _store.get('yihaiPulledAt:abc') == null);
+  check('migrate: old yihaiPushedMediaAt removed', _store.get('yihaiPushedMediaAt:abc') == null);
+  check('migrate: old yihaiDeletedCards removed', _store.get('yihaiDeletedCards:abc') == null);
+}
+{
+  _store.clear();
+  _store.set('yihaiPushedAt:partial', '1700000000000');
+  migrateDeckSync();
+  const s = getDeckSync('partial');
+  check('migrate partial: pushedAt set', s.pushedAt === 1700000000000);
+  check('migrate partial: pulledAt default 0', s.pulledAt === 0);
+  check('migrate partial: pushedMediaAt default 0', s.pushedMediaAt === 0);
+  check('migrate partial: deletedCards default []', Array.isArray(s.deletedCards) && s.deletedCards.length === 0);
+}
+{
+  _store.clear();
+  _store.set('deckSync:abc', JSON.stringify({ pushedAt: 999, pulledAt: 0, pushedMediaAt: 0, deletedCards: [] }));
+  _store.set('yihaiPushedAt:abc', '1700000000000');
+  migrateDeckSync();
+  const s = getDeckSync('abc');
+  check('idempotent: new key wins', s.pushedAt === 999);
+  check('idempotent: old key untouched', _store.get('yihaiPushedAt:abc') === '1700000000000');
+}
+{
+  _store.clear();
+  _store.set('yihaiPushedAt:a', '100');
+  _store.set('yihaiPushedAt:b', '200');
+  _store.set('yihaiPulledAt:b', '300');
+  migrateDeckSync();
+  check('multi-deck: a pushedAt', getDeckSync('a').pushedAt === 100);
+  check('multi-deck: b pushedAt', getDeckSync('b').pushedAt === 200);
+  check('multi-deck: b pulledAt', getDeckSync('b').pulledAt === 300);
+}
+{
+  _store.clear();
+  _store.set('yihaiSyncAt:abc', '2026-06-12T00:00:00.000Z');
+  migrateDeckSync();
+  check('migrate: yihaiSyncAt 不聚合（preset deck 仍在用）', _store.get('yihaiSyncAt:abc') === '2026-06-12T00:00:00.000Z');
+  check('migrate: 无 push/pull/media/deleted → 不生成 deckSync', _store.get('deckSync:abc') == null);
+}
+{
+  _store.clear();
+  _store.set('yihaiPushedAt:iso', '2026-06-12T00:00:00.000Z');
+  _store.set('yihaiPulledAt:iso', '2026-06-12T01:00:00.000Z');
+  migrateDeckSync();
+  const s = getDeckSync('iso');
+  check('migrate ISO string: pushedAt parsed as ms', s.pushedAt === Date.parse('2026-06-12T00:00:00.000Z'));
+  check('migrate ISO string: pulledAt parsed as ms', s.pulledAt === Date.parse('2026-06-12T01:00:00.000Z'));
+}
+{
+  _store.clear();
+  setDeckSync('xx', { pushedAt: 100, pulledAt: 200 });
+  setDeckSync('xx', { pushedMediaAt: 300 });
+  const s = getDeckSync('xx');
+  check('setDeckSync patch merges', s.pushedAt === 100 && s.pulledAt === 200 && s.pushedMediaAt === 300);
+}
+{
+  _store.clear();
+  setDeckSync('rm', { pushedAt: 100 });
+  removeDeckSync('rm');
+  check('removeDeckSync clears entry', _store.get('deckSync:rm') == null);
+  const s = getDeckSync('rm');
+  check('getDeckSync after remove returns defaults', s.pushedAt === 0 && Array.isArray(s.deletedCards));
+}
+{
+  _store.clear();
+  setDeckSync('tomb', { deletedCards: ['c1'] });
+  const cur = getDeckSync('tomb');
+  setDeckSync('tomb', { deletedCards: [...cur.deletedCards, 'c2'] });
+  const s = getDeckSync('tomb');
+  check('tombstone append via patch', s.deletedCards.length === 2 && s.deletedCards[1] === 'c2');
 }
 
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);

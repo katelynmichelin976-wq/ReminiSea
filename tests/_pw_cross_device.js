@@ -325,7 +325,7 @@ let tStart;
     }
 
     // ════ PHASE 6: 水位迁移 ════
-    section('PHASE 6: 水位迁移 — yihaiSyncAt → yihaiPushedAt/yihaiPulledAt');
+    section('PHASE 6: 水位迁移 — yihaiSyncAt → deckSync:{key}（Phase 2.1 聚合格式）');
     const migDeckKey = 'pwMigDeck' + Date.now();
     const oldTs = Date.now() + 60 * 60 * 1000;
     const oldIso = new Date(oldTs).toISOString();
@@ -337,31 +337,31 @@ let tStart;
       DECKS_META.push({ key, name: 'pwMig', deck_type: 'personal', nameLang: 'zh-CN', mod: 1000 });
       saveDeckIndex();
       saveDeckCards(key, DECKS[key]);
+      localStorage.removeItem('deckSync:' + key);
       localStorage.removeItem('yihaiPushedAt:' + key);
       localStorage.removeItem('yihaiPulledAt:' + key);
       localStorage.setItem('yihaiSyncAt:' + key, iso);
     }, { key: migDeckKey, iso: oldIso });
 
-    const beforeMig = await run(pageA, (key) => ({
-      pushed: localStorage.getItem('yihaiPushedAt:' + key),
-      pulled: localStorage.getItem('yihaiPulledAt:' + key)
-    }), migDeckKey);
-    pass('迁移: 前置条件 pushedAt/pulledAt 为空', !beforeMig.pushed && !beforeMig.pulled);
+    const beforeMig = await run(pageA, (key) => {
+      const s = getDeckSync(key);
+      return { pushedAt: s.pushedAt, pulledAt: s.pulledAt };
+    }, migDeckKey);
+    pass('迁移: 前置条件 pushedAt/pulledAt 为空', !beforeMig.pushedAt && !beforeMig.pulledAt);
 
     await run(pageA, () => migrateSyncWatermarks());
 
-    const afterMig = await run(pageA, (key) => ({
-      pushed: localStorage.getItem('yihaiPushedAt:' + key),
-      pulled: localStorage.getItem('yihaiPulledAt:' + key)
-    }), migDeckKey);
-    pass('迁移: yihaiPushedAt 已生成', afterMig.pushed === oldIso);
-    pass('迁移: yihaiPulledAt 已生成', afterMig.pulled === oldIso);
+    const afterMig = await run(pageA, ({ key, ts }) => {
+      const s = getDeckSync(key);
+      return { pushedAt: s.pushedAt, pulledAt: s.pulledAt };
+    }, { key: migDeckKey, ts: oldTs });
+    pass('迁移: deckSync pushedAt 已生成', afterMig.pushedAt === oldTs);
+    pass('迁移: deckSync pulledAt 已生成', afterMig.pulledAt === oldTs);
 
     const diff = await run(pageA, (key) => {
       const cards = DECKS[key] || [];
       const deleted = getDeletedCards(key);
-      const pushedAt = parseWatermark(localStorage.getItem('yihaiPushedAt:' + key));
-      const pulledAt = parseWatermark(localStorage.getItem('yihaiPulledAt:' + key));
+      const { pushedAt, pulledAt } = getDeckSync(key);
       const d = computeDeckDiff(cards, deleted, [], pushedAt, pulledAt);
       return { toPush: d.toPush.length, toPull: d.toPull.length, toDelete: d.toDelete.length };
     }, migDeckKey);
@@ -450,9 +450,8 @@ let tStart;
       for (const c of DECKS[key]) c.mod = 0;
       meta.mod = 0;
       saveDeckIndex(); saveDeckCards(key, DECKS[key]);
-      const oldTs = '2026-06-05T05:57:02.584Z';
-      localStorage.setItem('yihaiPushedAt:' + key, oldTs);
-      localStorage.setItem('yihaiPulledAt:' + key, oldTs);
+      const oldEpoch = Date.parse('2026-06-05T05:57:02.584Z');
+      setDeckSync(key, { pushedAt: oldEpoch, pulledAt: oldEpoch });
     }, mediaDeckKey);
 
     await run(pageA, async (key) => { await syncDeck(key); }, mediaDeckKey);
@@ -461,12 +460,12 @@ let tStart;
     pass('Fix3: 老设备升级后 sync → state=clean（不是 bothChanged +N）',
       stateAfterUpgrade.status === 'clean');
 
-    const wm = await run(pageA, (key) => ({
-      pushed: localStorage.getItem('yihaiPushedAt:' + key),
-      pulled: localStorage.getItem('yihaiPulledAt:' + key)
-    }), mediaDeckKey);
+    const wm = await run(pageA, (key) => {
+      const s = getDeckSync(key);
+      return { pushed: s.pushedAt, pulled: s.pulledAt };
+    }, mediaDeckKey);
     pass('Fix3: pushedAt 已推进到 pulledAt（不再卡老 ISO 时间）',
-      wm.pushed === wm.pulled);
+      wm.pushed === wm.pulled && wm.pushed > 0);
 
     // ════ PHASE 10: mediaIncomplete 状态验证 ════
     section('PHASE 10: computeDeckSyncState mediaIncomplete 分支');
@@ -481,8 +480,7 @@ let tStart;
       saveDeckIndex();
       saveDeckCards(key, DECKS[key]);
       // 设置水位：pushedAt/pulledAt > mod，使 localChanged=false、remoteAhead=false
-      localStorage.setItem('yihaiPushedAt:' + key, String(2000));
-      localStorage.setItem('yihaiPulledAt:' + key, String(2000));
+      setDeckSync(key, { pushedAt: 2000, pulledAt: 2000 });
     }, phase10Key);
 
     const stateMediaMissing = await run(pageA, (key) => {

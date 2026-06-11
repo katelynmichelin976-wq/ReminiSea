@@ -2920,14 +2920,10 @@ const LS_KEYS = {
 };
 const LS_DECK = (deckKey, field) => {
   const prefix = {
-    cards:          'yihai_deck_',
-    syncAt:         'yihaiSyncAt:',
-    pushedAt:       'yihaiPushedAt:',
-    pulledAt:       'yihaiPulledAt:',
-    pushedMediaAt:  'yihaiPushedMediaAt:',
-    deletedCards:   'yihaiDeletedCards:',
+    cards:  'yihai_deck_',
+    syncAt: 'yihaiSyncAt:',
   }[field];
-  if (!prefix) throw new Error('LS_DECK: unknown field ' + field);
+  if (!prefix) throw new Error('LS_DECK: unknown field ' + field + ' (sync state aggregated to deckSync helper)');
   return prefix + deckKey;
 };
 const LS_SRS = configKey => 'srs_' + configKey;
@@ -2940,6 +2936,54 @@ const lsGetJSON = (k, def = null) => {
   catch { return def; }
 };
 const lsSetJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+// per-deck 同步状态聚合 (v5.13.3 Phase 2.1)
+// 4 个旧 key (yihai{Pushed|Pulled|PushedMedia}At:{k}, yihaiDeletedCards:{k}) → 1 个 JSON entry
+// 注意：yihaiSyncAt:{k} 仍归 LS_DECK 工厂（preset 牌组 syncDeckFromCloud/downloadDeckFromCloud 路径）
+const DECK_SYNC_DEFAULT = { pushedAt: 0, pulledAt: 0, pushedMediaAt: 0, deletedCards: [] };
+function getDeckSync(deckKey) {
+  return { ...DECK_SYNC_DEFAULT, ...lsGetJSON('deckSync:' + deckKey, {}) };
+}
+function setDeckSync(deckKey, patch) {
+  const cur = getDeckSync(deckKey);
+  lsSetJSON('deckSync:' + deckKey, { ...cur, ...patch });
+}
+function removeDeckSync(deckKey) {
+  lsRemove('deckSync:' + deckKey);
+}
+function migrateDeckSync() {
+  const oldPrefixes = ['yihaiPushedAt:', 'yihaiPulledAt:', 'yihaiPushedMediaAt:', 'yihaiDeletedCards:'];
+  const fieldOf = {
+    'yihaiPushedAt:': 'pushedAt',
+    'yihaiPulledAt:': 'pulledAt',
+    'yihaiPushedMediaAt:': 'pushedMediaAt',
+    'yihaiDeletedCards:': 'deletedCards',
+  };
+  const seenDecks = new Set();
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    for (const p of oldPrefixes) if (k.startsWith(p)) seenDecks.add(k.slice(p.length));
+  }
+  for (const deckKey of seenDecks) {
+    const newK = 'deckSync:' + deckKey;
+    if (lsGet(newK) != null) continue;
+    const patch = {};
+    for (const p of oldPrefixes) {
+      const oldK = p + deckKey;
+      const v = lsGet(oldK);
+      if (v == null) continue;
+      if (fieldOf[p] === 'deletedCards') {
+        patch.deletedCards = lsGetJSON(oldK, []);
+      } else {
+        patch[fieldOf[p]] = /^\d+$/.test(v) ? parseInt(v) : (Date.parse(v) || 0);
+      }
+    }
+    if (Object.keys(patch).length === 0) continue;
+    lsSetJSON(newK, { ...DECK_SYNC_DEFAULT, ...patch });
+    for (const p of oldPrefixes) lsRemove(p + deckKey);
+  }
+}
 
 // ── SRS global config (Anki naming convention) ────────────────────
 const SRS_CONFIG = {
@@ -4874,16 +4918,15 @@ function nextMod() {
 }
 
 function markCardDeleted(deckKey, cardId) {
-  const k = LS_DECK(deckKey, 'deletedCards');
-  const arr = lsGetJSON(k, []);
-  if (!arr.includes(cardId)) arr.push(cardId);
-  lsSetJSON(k, arr);
+  const cur = getDeckSync(deckKey);
+  if (cur.deletedCards.includes(cardId)) return;
+  setDeckSync(deckKey, { deletedCards: [...cur.deletedCards, cardId] });
 }
 function getDeletedCards(deckKey) {
-  return lsGetJSON(LS_DECK(deckKey, 'deletedCards'), []);
+  return getDeckSync(deckKey).deletedCards;
 }
 function clearDeletedCards(deckKey) {
-  lsRemove(LS_DECK(deckKey, 'deletedCards'));
+  setDeckSync(deckKey, { deletedCards: [] });
 }
 
 function migrateSyncWatermarks() {
@@ -4895,12 +4938,12 @@ function migrateSyncWatermarks() {
   for (const k of keys) {
     const deckKey = k.substring('yihaiSyncAt:'.length);
     const v = lsGet(k);
-    if (!lsGet(LS_DECK(deckKey, 'pushedAt'))) {
-      lsSet(LS_DECK(deckKey, 'pushedAt'), v);
-    }
-    if (!lsGet(LS_DECK(deckKey, 'pulledAt'))) {
-      lsSet(LS_DECK(deckKey, 'pulledAt'), v);
-    }
+    const ts = /^\d+$/.test(v) ? parseInt(v) : (Date.parse(v) || 0);
+    const cur = getDeckSync(deckKey);
+    const patch = {};
+    if (!cur.pushedAt) patch.pushedAt = ts;
+    if (!cur.pulledAt) patch.pulledAt = ts;
+    if (Object.keys(patch).length) setDeckSync(deckKey, patch);
   }
 }
 
@@ -4926,7 +4969,7 @@ async function deleteCardStatesForDeck(deckKey) {
 
 function gcOrphanSyncKeys() {
   const deckKeys = new Set(DECKS_META.map(m => m.key));
-  const prefixes = ['yihaiPushedAt:', 'yihaiPulledAt:', 'yihaiPushedMediaAt:', 'yihaiSyncAt:', 'yihaiDeletedCards:'];
+  const prefixes = ['deckSync:', 'yihaiSyncAt:'];
   const toRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
@@ -5437,10 +5480,7 @@ async function deleteDeck(e, key) {
     _sb.from('decks').delete().eq('id', key).then(null, () => {});
   }
   lsRemove(LS_DECK(key, 'syncAt'));
-  lsRemove(LS_DECK(key, 'pushedAt'));
-  lsRemove(LS_DECK(key, 'pulledAt'));
-  lsRemove(LS_DECK(key, 'pushedMediaAt'));
-  clearDeletedCards(key);
+  removeDeckSync(key);
   deleteCardStatesForDeck(key).catch(() => {});
   if (currentDeck === key) currentDeck = null;
   renderDeckList();
@@ -10664,11 +10704,11 @@ async function upsertDeckRow(deckKey) {
     updated_at: updatedAt
   }, { onConflict: 'id', ignoreDuplicates: false });
   if (error) throw new Error('upsertDeckRow: ' + error.message);
-  const curPulled = parseWatermark(lsGet(LS_DECK(deckKey, 'pulledAt')));
-  if (now > curPulled) lsSet(LS_DECK(deckKey, 'pulledAt'), String(now));
-  const curPushed = parseWatermark(lsGet(LS_DECK(deckKey, 'pushedAt')));
+  const curPulled = getDeckSync(deckKey).pulledAt;
+  if (now > curPulled) setDeckSync(deckKey, { pulledAt: now });
+  const curPushed = getDeckSync(deckKey).pushedAt;
   if (meta.mod && meta.mod > curPushed) {
-    lsSet(LS_DECK(deckKey, 'pushedAt'), String(meta.mod));
+    setDeckSync(deckKey, { pushedAt: meta.mod });
   }
   if (meta) meta._remoteUpdatedAt = updatedAt;
 }
@@ -10768,9 +10808,9 @@ class SyncJob {
   async runStructurePhase() {
     this._setPhase('structure', 0, 1);
     const meta = DECKS_META.find(m => m.key === this.deckKey);
-    const pushedAt = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pushedAt')));
+    const pushedAt = getDeckSync(this.deckKey).pushedAt;
     // 快照 diff 用的 pulledAt——必须在任何可能推进水位的操作（upsertDeckRow / 远端 row 探测）之前
-    const pulledAt = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pulledAt')));
+    const pulledAt = getDeckSync(this.deckKey).pulledAt;
     if (meta && meta.mod && meta.mod > pushedAt) {
       await upsertDeckRow(this.deckKey);
       this._didPush = true;
@@ -10796,9 +10836,9 @@ class SyncJob {
     // diff 算完后才安全推进 pulledAt 到 decks.updated_at
     if (deckRow?.updated_at) {
       const remoteTs = Date.parse(deckRow.updated_at) || 0;
-      const curPulled = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pulledAt')));
+      const curPulled = getDeckSync(this.deckKey).pulledAt;
       if (remoteTs > curPulled) {
-        lsSet(LS_DECK(this.deckKey, 'pulledAt'), String(remoteTs));
+        setDeckSync(this.deckKey, { pulledAt: remoteTs });
       }
     }
     this._setPhase('structure', 1, 1);
@@ -10828,8 +10868,8 @@ class SyncJob {
       const batch = toPush.slice(b, b + 100);
       await upsertCardsBatch(this.deckKey, batch);
       const maxMod = batch.reduce((m, c) => Math.max(m, c.mod || 0), 0);
-      const curPushed = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pushedAt')));
-      if (maxMod > curPushed) lsSet(LS_DECK(this.deckKey, 'pushedAt'), String(maxMod));
+      const curPushed = getDeckSync(this.deckKey).pushedAt;
+      if (maxMod > curPushed) setDeckSync(this.deckKey, { pushedAt: maxMod });
       done += batch.length;
       this._setPhase('cards', done, total);
       this._didPush = true;
@@ -10869,8 +10909,8 @@ class SyncJob {
         else cards.push(merged);
       }
       const maxRemoteMod = (data || []).reduce((m, r) => Math.max(m, Date.parse(r.updated_at) || 0), 0);
-      const curPulled = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pulledAt')));
-      if (maxRemoteMod > curPulled) lsSet(LS_DECK(this.deckKey, 'pulledAt'), String(maxRemoteMod));
+      const curPulled = getDeckSync(this.deckKey).pulledAt;
+      if (maxRemoteMod > curPulled) setDeckSync(this.deckKey, { pulledAt: maxRemoteMod });
       done += ids.length;
       this._setPhase('cards', done, total);
     }
@@ -10907,10 +10947,10 @@ class SyncJob {
       saveDeckCards(this.deckKey, DECKS[this.deckKey]);
     }
 
-    const finalPushed = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pushedAt')));
-    const finalPulled = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pulledAt')));
+    const finalPushed = getDeckSync(this.deckKey).pushedAt;
+    const finalPulled = getDeckSync(this.deckKey).pulledAt;
     if (finalPulled > finalPushed) {
-      lsSet(LS_DECK(this.deckKey, 'pushedAt'), String(finalPulled));
+      setDeckSync(this.deckKey, { pushedAt: finalPulled });
     }
   }
   async runMediaPhase() {
@@ -11009,7 +11049,7 @@ class SyncJob {
     saveDeckCards(this.deckKey, cards);
     await flushMediaUpsert();
     if (deckMediaComplete(cards)) {
-      lsSet(LS_DECK(this.deckKey, 'pushedMediaAt'), String(Date.now()));
+      setDeckSync(this.deckKey, { pushedMediaAt: Date.now() });
     }
     // 本次 SyncJob 写过云端（结构 / 卡片 / 媒体任一） → bump decks.updated_at 通知其他设备
     // 仅 pull / no-op 时跳过，避免触发器风格的反复 bump 死循环
@@ -11136,8 +11176,8 @@ function computeDeckSyncState(deckKey) {
   if (!meta || meta.deck_type !== 'personal') return { status: 'clean' };
   const cards = DECKS[deckKey] || [];
   const deleted = getDeletedCards(deckKey);
-  const pushedAt = parseWatermark(lsGet(LS_DECK(deckKey, 'pushedAt')));
-  const pulledAt = parseWatermark(lsGet(LS_DECK(deckKey, 'pulledAt')));
+  const pushedAt = getDeckSync(deckKey).pushedAt;
+  const pulledAt = getDeckSync(deckKey).pulledAt;
   const remoteUpdatedAt = meta._remoteUpdatedAt ? Date.parse(meta._remoteUpdatedAt) : 0;
   const localChanged = cards.some(c => c.mod && c.mod > pushedAt)
     || deleted.length > 0
@@ -11278,8 +11318,8 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
     const maxMod = (cards || []).reduce((m, c) => Math.max(m, Date.parse(c.updated_at) || 0), 0);
     const finalMark = Math.max(maxMod, cloudDeckTs);
     if (finalMark) {
-      lsSet(LS_DECK(deckId, 'pushedAt'), String(finalMark));
-      lsSet(LS_DECK(deckId, 'pulledAt'), String(finalMark));
+      setDeckSync(deckId, { pushedAt: finalMark });
+      setDeckSync(deckId, { pulledAt: finalMark });
     }
     const metaUpd = DECKS_META.find(m => m.key === deckId);
     if (metaUpd && deckRow?.updated_at) metaUpd._remoteUpdatedAt = deckRow.updated_at;
@@ -11398,6 +11438,7 @@ function showAbout() {
     try {
       await restoreDecks();
       migrateSyncWatermarks();
+      try { migrateDeckSync(); } catch (e) { console.warn('[migrate] deckSync failed', e); }
       gcOrphanSyncKeys();
       if (!currentDeck && DECKS_META.length) {
         currentDeck = DECKS_META[0].key;
