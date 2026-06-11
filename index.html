@@ -3486,7 +3486,7 @@ async function cloudPushConfig() {
 
     // collect local UI params
     const localUi = {
-      confettiOn:         localStorage.getItem('confettiOn'),
+      confettiOn:         lsGet(LS_KEYS.CONFETTI_ON),
       phraseWrong:          localStorage.getItem('phraseWrong'),
       phraseCorrect:        localStorage.getItem('phraseCorrect'),
       phraseStreakCorrect:  localStorage.getItem('phraseStreakCorrect'),
@@ -3505,7 +3505,7 @@ async function cloudPushConfig() {
       optTouchDelay:      localStorage.getItem('optTouchDelay'),
       ndur:               localStorage.getItem('ndur'),
       bdur:               localStorage.getItem('bdur'),
-      theme:              localStorage.getItem('theme'),
+      theme:              lsGet(LS_KEYS.THEME),
       phraseQuizPrompt:             localStorage.getItem('phraseQuizPrompt'),
       phraseQuizPromptRecognize:    localStorage.getItem('phraseQuizPromptRecognize'),
     };
@@ -3577,7 +3577,7 @@ async function cloudPullConfig() {
     loadSettings();
 
     // apply theme (compat with old light/dark and new default/jade/amber/dark)
-    var th = localStorage.getItem('theme');
+    var th = lsGet(LS_KEYS.THEME);
     if (th) {
       if (th === 'dark') { document.documentElement.setAttribute('data-theme','dark'); }
       else if (th !== 'light' && th !== 'default') { document.documentElement.setAttribute('data-theme', th); }
@@ -5392,7 +5392,7 @@ let _lastSrsWrite    = Promise.resolve(); // most recent _writeSrs Promise, for 
 let _launchBusy  = false; // prevent duplicate start-practice clicks
 let _browseCards = [];
 let _browseIdx   = 0;
-let _appMode = localStorage.getItem('yihaiAppMode') || 'standard'; // 'standard' | 'advanced'
+let _appMode = lsGet(LS_KEYS.APP_MODE) || 'standard'; // 'standard' | 'advanced'
 
 // ── practice mode SRS state ────────────────────────────────────
 let _cardStartTs     = 0;     // current card display timestamp (for response_time calc)
@@ -5580,7 +5580,7 @@ document.addEventListener('visibilitychange', () => {
 // ── advanced mode ───────────────────────────────────────────────
 function onAppModeToggle(el) {
   _appMode = el.checked ? 'advanced' : 'standard';
-  localStorage.setItem('yihaiAppMode', _appMode);
+  lsSet(LS_KEYS.APP_MODE, _appMode);
   document.documentElement.setAttribute('data-mode', _appMode);
   updateTabBarMode();
   updateHomeTopbar();
@@ -8658,12 +8658,11 @@ function t(key, params) {
   return val;
 }
 
-const LOCALE_KEY = 'yihai_ui_locale';
 let _uiLocale = null;
 
 function getLocale() {
   if (_uiLocale) return _uiLocale;
-  const saved = localStorage.getItem(LOCALE_KEY);
+  const saved = lsGet(LS_KEYS.LOCALE);
   if (saved && SUPPORTED_LOCALES.includes(saved)) { _uiLocale = saved; return saved; }
   _uiLocale = detectLocale(navigator.language, SUPPORTED_LOCALES, FALLBACK_LOCALE);
   return _uiLocale;
@@ -8672,7 +8671,7 @@ function getLocale() {
 function setLocale(loc) {
   if (!SUPPORTED_LOCALES.includes(loc)) return;
   _uiLocale = loc;
-  localStorage.setItem(LOCALE_KEY, loc);
+  lsSet(LS_KEYS.LOCALE, loc);
   applyI18n();
   document.documentElement.lang = loc;
   document.documentElement.setAttribute('lang', loc);
@@ -9876,7 +9875,7 @@ function onBrowseAnsDelayChange(v) {
 }
 function toggleConfetti(cb) {
   CONFETTI_ON = cb.checked;
-  localStorage.setItem('confettiOn', CONFETTI_ON ? '1' : '0');
+  lsSet(LS_KEYS.CONFETTI_ON, CONFETTI_ON ? '1' : '0');
   debouncePushConfig();
 }
 
@@ -10264,7 +10263,7 @@ function loadSettings() {
   // browse answer delay / correct feedback
   const browseAnsDelay = localStorage.getItem('browseAnsDelay');
   if (browseAnsDelay) BROWSE_ANSWER_DELAY = parseFloat(browseAnsDelay) * 1000;
-  const confettiOn = localStorage.getItem('confettiOn');
+  const confettiOn = lsGet(LS_KEYS.CONFETTI_ON);
   if (confettiOn !== null) CONFETTI_ON = confettiOn === '1';
   // TTS voice params
   const ttsRate = localStorage.getItem('ttsRate');
@@ -11363,7 +11362,7 @@ function setTheme(el) {
 }
 function setThemeValue(theme) {
   document.documentElement.setAttribute('data-theme', theme === 'default' ? '' : theme);
-  localStorage.setItem('theme', theme);
+  lsSet(LS_KEYS.THEME, theme);
 }
 function showTheme() {
   // highlight current theme
@@ -11383,13 +11382,13 @@ function showAbout() {
 }
 (function(){
   // restore theme — supports default/jade/amber/dark
-  var themeVal=localStorage.getItem('theme');
+  var themeVal=lsGet(LS_KEYS.THEME);
   if(!themeVal||themeVal==='light')themeVal='default';
   var isDark=themeVal==='dark'||(!themeVal&&window.matchMedia('(prefers-color-scheme: dark)').matches);
   // migrate old 'light'/'dark' settings
   if(themeVal==='dark'||isDark){
     document.documentElement.setAttribute('data-theme','dark');
-    if(themeVal==='light'||themeVal==='default')localStorage.setItem('theme','dark');
+    if(themeVal==='light'||themeVal==='default')lsSet(LS_KEYS.THEME,'dark');
   } else if(themeVal&&themeVal!=='default'&&themeVal!=='light'){
     document.documentElement.setAttribute('data-theme',themeVal);
   }
