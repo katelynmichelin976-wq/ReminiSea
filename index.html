@@ -4874,16 +4874,16 @@ function nextMod() {
 }
 
 function markCardDeleted(deckKey, cardId) {
-  const k = 'yihaiDeletedCards:' + deckKey;
-  const arr = JSON.parse(localStorage.getItem(k) || '[]');
+  const k = LS_DECK(deckKey, 'deletedCards');
+  const arr = lsGetJSON(k, []);
   if (!arr.includes(cardId)) arr.push(cardId);
-  localStorage.setItem(k, JSON.stringify(arr));
+  lsSetJSON(k, arr);
 }
 function getDeletedCards(deckKey) {
-  return JSON.parse(localStorage.getItem('yihaiDeletedCards:' + deckKey) || '[]');
+  return lsGetJSON(LS_DECK(deckKey, 'deletedCards'), []);
 }
 function clearDeletedCards(deckKey) {
-  localStorage.removeItem('yihaiDeletedCards:' + deckKey);
+  lsRemove(LS_DECK(deckKey, 'deletedCards'));
 }
 
 function migrateSyncWatermarks() {
@@ -4894,12 +4894,12 @@ function migrateSyncWatermarks() {
   }
   for (const k of keys) {
     const deckKey = k.substring('yihaiSyncAt:'.length);
-    const v = localStorage.getItem(k);
-    if (!localStorage.getItem('yihaiPushedAt:' + deckKey)) {
-      localStorage.setItem('yihaiPushedAt:' + deckKey, v);
+    const v = lsGet(k);
+    if (!lsGet(LS_DECK(deckKey, 'pushedAt'))) {
+      lsSet(LS_DECK(deckKey, 'pushedAt'), v);
     }
-    if (!localStorage.getItem('yihaiPulledAt:' + deckKey)) {
-      localStorage.setItem('yihaiPulledAt:' + deckKey, v);
+    if (!lsGet(LS_DECK(deckKey, 'pulledAt'))) {
+      lsSet(LS_DECK(deckKey, 'pulledAt'), v);
     }
   }
 }
@@ -5436,10 +5436,10 @@ async function deleteDeck(e, key) {
     _sb.from('deck_cards').delete().eq('deck_id', key).then(null, () => {});
     _sb.from('decks').delete().eq('id', key).then(null, () => {});
   }
-  localStorage.removeItem('yihaiSyncAt:' + key);
-  localStorage.removeItem('yihaiPushedAt:' + key);
-  localStorage.removeItem('yihaiPulledAt:' + key);
-  localStorage.removeItem('yihaiPushedMediaAt:' + key);
+  lsRemove(LS_DECK(key, 'syncAt'));
+  lsRemove(LS_DECK(key, 'pushedAt'));
+  lsRemove(LS_DECK(key, 'pulledAt'));
+  lsRemove(LS_DECK(key, 'pushedMediaAt'));
   clearDeletedCards(key);
   deleteCardStatesForDeck(key).catch(() => {});
   if (currentDeck === key) currentDeck = null;
@@ -10467,7 +10467,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
     if (!deckCards.length) { showCloudToast(t('sync_no_valid_cards'), true); return; }
 
     // record sync timestamp
-    localStorage.setItem('yihaiSyncAt:' + key, new Date().toISOString());
+    lsSet(LS_DECK(key, 'syncAt'), new Date().toISOString());
 
     // 4. write to memory + persist
     DECKS[key] = deckCards;
@@ -10517,7 +10517,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
 
   try {
     const syncNow = new Date().toISOString();
-    const lastSyncAt = localStorage.getItem('yihaiSyncAt:' + localKey) || '';
+    const lastSyncAt = lsGet(LS_DECK(localKey, 'syncAt')) || '';
 
     // 1. get server card_id list (lightweight, IDs only, paginated)
     const links = await fetchAllDeckCards(deckId, 'card_id');
@@ -10615,7 +10615,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
     // 8. delete sync: cards removed from server not kept locally (matches Anki)
 
     // 9. save
-    localStorage.setItem('yihaiSyncAt:' + localKey, syncNow);
+    lsSet(LS_DECK(localKey, 'syncAt'), syncNow);
     DECKS[localKey] = merged;
     saveDeckCards(localKey, merged);
 
@@ -10664,11 +10664,11 @@ async function upsertDeckRow(deckKey) {
     updated_at: updatedAt
   }, { onConflict: 'id', ignoreDuplicates: false });
   if (error) throw new Error('upsertDeckRow: ' + error.message);
-  const curPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + deckKey));
-  if (now > curPulled) localStorage.setItem('yihaiPulledAt:' + deckKey, String(now));
-  const curPushed = parseWatermark(localStorage.getItem('yihaiPushedAt:' + deckKey));
+  const curPulled = parseWatermark(lsGet(LS_DECK(deckKey, 'pulledAt')));
+  if (now > curPulled) lsSet(LS_DECK(deckKey, 'pulledAt'), String(now));
+  const curPushed = parseWatermark(lsGet(LS_DECK(deckKey, 'pushedAt')));
   if (meta.mod && meta.mod > curPushed) {
-    localStorage.setItem('yihaiPushedAt:' + deckKey, String(meta.mod));
+    lsSet(LS_DECK(deckKey, 'pushedAt'), String(meta.mod));
   }
   if (meta) meta._remoteUpdatedAt = updatedAt;
 }
@@ -10768,9 +10768,9 @@ class SyncJob {
   async runStructurePhase() {
     this._setPhase('structure', 0, 1);
     const meta = DECKS_META.find(m => m.key === this.deckKey);
-    const pushedAt = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
+    const pushedAt = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pushedAt')));
     // 快照 diff 用的 pulledAt——必须在任何可能推进水位的操作（upsertDeckRow / 远端 row 探测）之前
-    const pulledAt = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
+    const pulledAt = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pulledAt')));
     if (meta && meta.mod && meta.mod > pushedAt) {
       await upsertDeckRow(this.deckKey);
       this._didPush = true;
@@ -10796,9 +10796,9 @@ class SyncJob {
     // diff 算完后才安全推进 pulledAt 到 decks.updated_at
     if (deckRow?.updated_at) {
       const remoteTs = Date.parse(deckRow.updated_at) || 0;
-      const curPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
+      const curPulled = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pulledAt')));
       if (remoteTs > curPulled) {
-        localStorage.setItem('yihaiPulledAt:' + this.deckKey, String(remoteTs));
+        lsSet(LS_DECK(this.deckKey, 'pulledAt'), String(remoteTs));
       }
     }
     this._setPhase('structure', 1, 1);
@@ -10828,8 +10828,8 @@ class SyncJob {
       const batch = toPush.slice(b, b + 100);
       await upsertCardsBatch(this.deckKey, batch);
       const maxMod = batch.reduce((m, c) => Math.max(m, c.mod || 0), 0);
-      const curPushed = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
-      if (maxMod > curPushed) localStorage.setItem('yihaiPushedAt:' + this.deckKey, String(maxMod));
+      const curPushed = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pushedAt')));
+      if (maxMod > curPushed) lsSet(LS_DECK(this.deckKey, 'pushedAt'), String(maxMod));
       done += batch.length;
       this._setPhase('cards', done, total);
       this._didPush = true;
@@ -10869,8 +10869,8 @@ class SyncJob {
         else cards.push(merged);
       }
       const maxRemoteMod = (data || []).reduce((m, r) => Math.max(m, Date.parse(r.updated_at) || 0), 0);
-      const curPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
-      if (maxRemoteMod > curPulled) localStorage.setItem('yihaiPulledAt:' + this.deckKey, String(maxRemoteMod));
+      const curPulled = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pulledAt')));
+      if (maxRemoteMod > curPulled) lsSet(LS_DECK(this.deckKey, 'pulledAt'), String(maxRemoteMod));
       done += ids.length;
       this._setPhase('cards', done, total);
     }
@@ -10907,10 +10907,10 @@ class SyncJob {
       saveDeckCards(this.deckKey, DECKS[this.deckKey]);
     }
 
-    const finalPushed = parseWatermark(localStorage.getItem('yihaiPushedAt:' + this.deckKey));
-    const finalPulled = parseWatermark(localStorage.getItem('yihaiPulledAt:' + this.deckKey));
+    const finalPushed = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pushedAt')));
+    const finalPulled = parseWatermark(lsGet(LS_DECK(this.deckKey, 'pulledAt')));
     if (finalPulled > finalPushed) {
-      localStorage.setItem('yihaiPushedAt:' + this.deckKey, String(finalPulled));
+      lsSet(LS_DECK(this.deckKey, 'pushedAt'), String(finalPulled));
     }
   }
   async runMediaPhase() {
@@ -11009,7 +11009,7 @@ class SyncJob {
     saveDeckCards(this.deckKey, cards);
     await flushMediaUpsert();
     if (deckMediaComplete(cards)) {
-      localStorage.setItem('yihaiPushedMediaAt:' + this.deckKey, String(Date.now()));
+      lsSet(LS_DECK(this.deckKey, 'pushedMediaAt'), String(Date.now()));
     }
     // 本次 SyncJob 写过云端（结构 / 卡片 / 媒体任一） → bump decks.updated_at 通知其他设备
     // 仅 pull / no-op 时跳过，避免触发器风格的反复 bump 死循环
@@ -11136,8 +11136,8 @@ function computeDeckSyncState(deckKey) {
   if (!meta || meta.deck_type !== 'personal') return { status: 'clean' };
   const cards = DECKS[deckKey] || [];
   const deleted = getDeletedCards(deckKey);
-  const pushedAt = parseWatermark(localStorage.getItem('yihaiPushedAt:' + deckKey));
-  const pulledAt = parseWatermark(localStorage.getItem('yihaiPulledAt:' + deckKey));
+  const pushedAt = parseWatermark(lsGet(LS_DECK(deckKey, 'pushedAt')));
+  const pulledAt = parseWatermark(lsGet(LS_DECK(deckKey, 'pulledAt')));
   const remoteUpdatedAt = meta._remoteUpdatedAt ? Date.parse(meta._remoteUpdatedAt) : 0;
   const localChanged = cards.some(c => c.mod && c.mod > pushedAt)
     || deleted.length > 0
@@ -11269,7 +11269,7 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
         if (!_downloading.get(deckId)) return; // 登出时已取消
       }
     });
-    localStorage.setItem('yihaiSyncAt:' + deckId, syncNow);
+    lsSet(LS_DECK(deckId, 'syncAt'), syncNow);
     saveDeckCards(deckId, DECKS[deckId]);
 
     // 拉云端 decks.updated_at 同步推 pulledAt（消除 cloud.decks.updated_at > max(card.updated_at) 时的 remoteAhead 假象）
@@ -11278,8 +11278,8 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
     const maxMod = (cards || []).reduce((m, c) => Math.max(m, Date.parse(c.updated_at) || 0), 0);
     const finalMark = Math.max(maxMod, cloudDeckTs);
     if (finalMark) {
-      localStorage.setItem('yihaiPushedAt:' + deckId, String(finalMark));
-      localStorage.setItem('yihaiPulledAt:' + deckId, String(finalMark));
+      lsSet(LS_DECK(deckId, 'pushedAt'), String(finalMark));
+      lsSet(LS_DECK(deckId, 'pulledAt'), String(finalMark));
     }
     const metaUpd = DECKS_META.find(m => m.key === deckId);
     if (metaUpd && deckRow?.updated_at) metaUpd._remoteUpdatedAt = deckRow.updated_at;
