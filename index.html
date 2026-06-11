@@ -10835,7 +10835,7 @@ class SyncJob {
     // 累积本批已上传新 url 的卡，到 checkpoint 时一次性 batch upsert，
     // 避免每个 slot 都触发一次 PostgREST 单行写（v5.9 引入的性能退化，v5.11 修复）
     const pendingMediaUpsert = new Set();
-    const uploadedSlots = [];  // [{card, slot}]：本次 SyncJob 已上传的 slot，flush 失败时回滚 s.url 用
+    const uploadedSlots = [];
 
     const flushMediaUpsert = async () => {
       if (!pendingMediaUpsert.size) return;
