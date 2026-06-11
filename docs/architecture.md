@@ -69,6 +69,8 @@ saveCard() / deleteCard()        // 仅写本地 IDB，标 localDirty
 refreshDeckUpdateBadges()        // session 就绪后比对 decks.updated_at，给本地牌组打黄点
 ```
 
+> **媒体确认状态（v5.12.2+）**：`card.media[slot].confirmed: boolean` 仅本地持久化（IDB），DB 写成功才置 true；用于 crash 恢复——未 confirmed 但有 url 的 slot 下次 sync 自动补 DB 写（不重传 Storage）。`serializeMedia` 保 confirmed（IDB 用），`serializeMediaForCloud` 剥 confirmed（DB 用）。
+
 ### 跨设备同步
 - CardState / TrialLog 通过云端同步
 - `daily_progress`（reviewed_today / daily_new_today）**仅本地维护，不跨设备**

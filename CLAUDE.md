@@ -31,8 +31,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v5.8_sync_test.js` | 个人牌组同步纯函数单测（24 cases） |
 | `tests/yihai_v5.9_sync_test.js` | v5.9 media slot 序列化单测（32 cases） |
 | `tests/yihai_v5.11_easy_test.js` | Easy 模式纯函数单测（结构公式/分类/排序/槽位/queue，38 cases） |
-| `tests/yihai_v5.12_media_recovery_test.js` | 媒体 upsert 失败回滚纯函数单测（12 cases） |
-| `tests/run_all.js` | 单元测试统一入口（10 套件，471 断言） |
+| `tests/yihai_v5.12_media_recovery_test.js` | 媒体 upsert 失败回滚 + crash 恢复纯函数单测（17 cases） |
+| `tests/run_all.js` | 单元测试统一入口（10 套件，482 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户/设置/i18n/语言/语音/IDB/练习模式，65 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端 + Easy 模式 EasyState IDB（21 断言，无需登录） |
 | `tests/_pw_easy.js` | Easy 模式综合（设置 UI/单局/retry/多局 confident 池/诊断面板，28 断言，无需登录） |
@@ -70,7 +70,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **当前版本：v5.12.1**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
 
-**未发布修复（待 v5.12.2）：** ① **sync 顺序 fix（P0）**：runStructurePhase pulledAt 推进顺序写反——之前在 computeDeckDiff 前推进，导致 toPull 的 r.ts <= pulledAt 把所有远端卡误判为已同步，跨设备增量拉取被掐死。改为快照前置、推进后置。runMediaPhase 结尾新增 _didPush 标记 + 按需 upsertDeckRow 广播 decks.updated_at，否则其他设备 remoteAhead 永不触发。② **媒体 upsert 失败恢复（P1）**：flushMediaUpsert 之前 pendingMediaUpsert.clear() 在 await 前 + .catch console.warn 吞错，导致失败批次彻底丢失（本地 s.url 已写、guard 永远 skip 重传）。改为先 await 再处理，失败时通过 uploadedSlots 数组回滚本次上传 slot 的 s.url + 抛错让 SyncJob 进 error，下次同步自动重传+重写 DB。新增 rollbackUploadedSlots 纯函数（v5.12 单测套件 12 断言）+ _pw_media_recovery.js failure injection e2e（7 断言）。③ **死代码清理**：删除 `uploadDeckToCloud`（零调用 + 含 DELETE+INSERT 反模式）和 `uploadMissingPersonalDecks`（标注 "deprecated v5.8 remove in v5.9" 至 v5.12 仍在）；同步更新 `docs/architecture.md` 个人牌组同步流程图为当前 SyncJob 三阶段路径。
+**未发布修复（待 v5.12.2）：** ① **sync 顺序 fix（P0）**：runStructurePhase pulledAt 推进顺序写反——之前在 computeDeckDiff 前推进，导致 toPull 的 r.ts <= pulledAt 把所有远端卡误判为已同步，跨设备增量拉取被掐死。改为快照前置、推进后置。runMediaPhase 结尾新增 _didPush 标记 + 按需 upsertDeckRow 广播 decks.updated_at，否则其他设备 remoteAhead 永不触发。② **媒体 upsert 失败恢复（P1）**：flushMediaUpsert 之前 pendingMediaUpsert.clear() 在 await 前 + .catch console.warn 吞错，导致失败批次彻底丢失（本地 s.url 已写、guard 永远 skip 重传）。改为先 await 再处理，失败时通过 uploadedSlots 数组回滚本次上传 slot 的 s.url + 抛错让 SyncJob 进 error，下次同步自动重传+重写 DB。新增 rollbackUploadedSlots 纯函数（v5.12 单测套件 12 断言）+ _pw_media_recovery.js failure injection e2e（7 断言）。③ **死代码清理**：删除 `uploadDeckToCloud`（零调用 + 含 DELETE+INSERT 反模式）和 `uploadMissingPersonalDecks`（标注 "deprecated v5.8 remove in v5.9" 至 v5.12 仍在）；同步更新 `docs/architecture.md` 个人牌组同步流程图为当前 SyncJob 三阶段路径。④ **crash-mid-sync 恢复（P2）**：P1 #1 修了显式 flush 失败，但浏览器在 saveDeckCards(s.url 持久化) 与 flushMediaUpsert(DB 写) 之间崩，IDB 有 url DB 无，下次 upload guard 永远 skip。引入 per-slot `confirmed: boolean`：DB 写成功才置 true（commitUploadedSlots helper），上传 guard 三态化（confirmed→skip / 未 confirmed+有 url→补 DB 写 / 无 url→Storage+DB），pull/download/diag 路径自动置 confirmed=true（共 8 处构造点）。serializeMedia 拆为本地（保 confirmed）+ ForCloud（剥）。新增单测 6 断言（commit + serialize helpers）+ e2e PHASE 5 crash 恢复（7 断言）。
 
 **v5.12.1：** 安全 + 行为修复 patch — ① **XSS fix**：答题热路径选项按钮（L9007）与答案详情（L9170/L9313）的 `${name}` / `${txt}` 模板插值未走 `esc()`，恶意卡片名（如 `<img onerror=...>`）可执行脚本读取 localStorage 中 Supabase 会话 token；3 处加 `esc()` 包裹，零行为变化。② **语音辅助门控**：`startCardPrompts`（quiz_prompt + speakOptHint）与 `wrong_hint` 漏 gate `VOICE_ASSIST_ENABLED`，关闭后选项朗读和答错安慰仍响；早返回 + 加 gate 修复。③ **找回密码 hash 路由**：兼容 Supabase 默认 `type=recovery` / `type=signup` URL fragment + `PASSWORD_RECOVERY` / `SIGNED_IN` 事件；邮件确认后自动恢复 session 进账户屏。④ **高级模式 FAB 清理**：去掉 advanced 模式下 FAB 切换为「开始制卡」的行为，两模式 FAB 一致「开始练习」，制卡入口保留在牌组详情页右上角「+」。⑤ **测试卫生**：`_pw_config_sync.js` finally 加 cleanup 清云端 `sync_config`，避免 `voiceMuted=1` / `pw-test-*` 污染测试账号。
 
@@ -114,7 +114,7 @@ git config core.hooksPath .githooks
 ## Development Commands
 
 ```powershell
-# 单元测试（全量，10 套件 471 断言）
+# 单元测试（全量，10 套件 482 断言）
 node tests/run_all.js
 
 # Playwright（需先启动 HTTP 服务器，必须用 PowerShell）
