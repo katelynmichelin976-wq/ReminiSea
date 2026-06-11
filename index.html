@@ -10615,7 +10615,7 @@ function rollbackUploadedSlots(uploadedSlots, failedCardSet) {
   for (const { card, slot } of uploadedSlots) {
     if (!failedCardSet.has(card)) continue;
     const s = card.media?.[slot];
-    if (s) s.url = '';
+    if (s) { s.url = ''; s.confirmed = false; }
   }
 }
 
@@ -10774,6 +10774,7 @@ class SyncJob {
         for (const slot of Object.keys(remoteMedia)) {
           remoteMedia[slot]._blob = '';
           const s = remoteMedia[slot];
+          if (s.url) s.confirmed = true;
           if (s.url && !(local?.media?.[slot]?._blob)) {
             const blob = await loadMedia(`${this.deckKey}_${r.card_id}_${slot}`).catch(() => null);
             if (blob) s._blob = URL.createObjectURL(blob);
@@ -10856,6 +10857,8 @@ class SyncJob {
       }
       const failedSet = new Set(result.failed.map(f => f.card));
       for (const c of batch) if (!failedSet.has(c)) pendingMediaUpsert.delete(c);
+      const succeededSet = new Set(batch.filter(c => !failedSet.has(c)));
+      commitUploadedSlots(uploadedSlots, succeededSet);
       if (failedSet.size) {
         rollbackUploadedSlots(uploadedSlots, failedSet);
         saveDeckCards(this.deckKey, cards);
@@ -10872,7 +10875,14 @@ class SyncJob {
       if (this.canPush) {
         for (const slot of slots) {
           const s = card.media[slot];
-          if (!s._blob || s.url) continue;       // 无本地 blob 或已上传 → 跳过
+          if (!s._blob) continue;
+          if (s.url && s.confirmed) continue;
+          if (s.url && !s.confirmed) {
+            pendingMediaUpsert.add(card);
+            uploadedSlots.push({ card, slot });
+            this._didPush = true;
+            continue;
+          }
           const idbKey = `${this.deckKey}_${card.id}_${slot}`;
           const blob = await loadMedia(idbKey).catch(() => null);
           if (!blob) continue;
@@ -10881,8 +10891,8 @@ class SyncJob {
           const { error } = await _sb.storage.from('ReminiSea').upload(path, blob, { upsert: true });
           if (error) { console.warn('[sync] media upload fail:', card.id, slot, error.message); continue; }
           s.url = path;
-          pendingMediaUpsert.add(card);          // 留到 checkpoint 批量 upsert
-          uploadedSlots.push({ card, slot });    // 记录供 rollback
+          pendingMediaUpsert.add(card);
+          uploadedSlots.push({ card, slot });
           this._didPush = true;
         }
       }

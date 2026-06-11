@@ -12,7 +12,7 @@ function rollbackUploadedSlots(uploadedSlots, failedCardSet) {
   for (const { card, slot } of uploadedSlots) {
     if (!failedCardSet.has(card)) continue;
     const s = card.media?.[slot];
-    if (s) s.url = '';
+    if (s) { s.url = ''; s.confirmed = false; }
   }
 }
 
@@ -146,6 +146,12 @@ function serializeMediaForCloud(media) {
   const cloud = serializeMediaForCloud(m);
   check('serializeMediaForCloud: 剥 _blob + confirmed', !('_blob' in cloud.img) && !('confirmed' in cloud.img));
   check('serializeMediaForCloud: 保 url/v', cloud.img.url === 'p/x.jpg' && cloud.img.v === 1);
+}
+
+{
+  const c = { id: 'c1', media: { img: { url: 'p/c1_img.jpg', v: 0, _blob: 'blob:a', confirmed: true } } };
+  rollbackUploadedSlots([{ card: c, slot: 'img' }], new Set([c]));
+  check('rollback: confirmed=true → 失败后置 false', c.media.img.confirmed === false);
 }
 
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);
