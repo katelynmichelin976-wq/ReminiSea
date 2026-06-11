@@ -1,5 +1,5 @@
 // tests/yihai_v5.12_media_recovery_test.js
-// crash-mid-sync 恢复纯函数单测（与 index.html 保持同步）
+// P1 #1 媒体批量 upsert 失败回滚的纯函数单测
 
 let passed = 0, failed = 0;
 function check(desc, ok) {
@@ -7,7 +7,7 @@ function check(desc, ok) {
   else { failed++; console.log(`  ✗ ${desc}`); }
 }
 
-// ── rollbackUploadedSlots ─────────────────────────────────────────
+// 与 index.html 中 rollbackUploadedSlots 实现保持同步
 function rollbackUploadedSlots(uploadedSlots, failedCardSet) {
   for (const { card, slot } of uploadedSlots) {
     if (!failedCardSet.has(card)) continue;
@@ -16,25 +16,76 @@ function rollbackUploadedSlots(uploadedSlots, failedCardSet) {
   }
 }
 
+// ── 基础场景 ──────────────────────────────────────────────────────
 {
   const c = { id: 'c1', media: { img: { url: 'p/c1_img.jpg', v: 0, _blob: 'blob:a' } } };
-  rollbackUploadedSlots([{ card: c, slot: 'img' }], new Set([c]));
-  check('rollback: 失败卡的 url 清空', c.media.img.url === '');
-  check('rollback: _blob 不动', c.media.img._blob === 'blob:a');
+  rollbackUploadedSlots([], new Set([c]));
+  check('empty uploadedSlots → 不动 url', c.media.img.url === 'p/c1_img.jpg');
 }
 {
   const c = { id: 'c1', media: { img: { url: 'p/c1_img.jpg', v: 0, _blob: 'blob:a' } } };
   rollbackUploadedSlots([{ card: c, slot: 'img' }], new Set());
-  check('rollback: 不在 failedSet → url 不动', c.media.img.url === 'p/c1_img.jpg');
+  check('uploadedSlots 非空但 failedCardSet 空 → 不动 url', c.media.img.url === 'p/c1_img.jpg');
 }
 {
-  const c1 = { id: 'c1', media: { img: { url: 'p/c1.jpg', v: 0, _blob: 'b1' } } };
-  const c2 = { id: 'c2', media: { img: { url: 'p/c2.jpg', v: 0, _blob: 'b2' } } };
+  const c = { id: 'c1', media: { img: { url: 'p/c1_img.jpg', v: 0, _blob: 'blob:a' } } };
+  rollbackUploadedSlots([{ card: c, slot: 'img' }], new Set([c]));
+  check('单 slot 失败 → url 清空', c.media.img.url === '');
+  check('单 slot 失败 → _blob 保留', c.media.img._blob === 'blob:a');
+  check('单 slot 失败 → v 保留', c.media.img.v === 0);
+}
+
+// ── 多 slot ──────────────────────────────────────────────────────
+{
+  const c = {
+    id: 'c1',
+    media: {
+      img: { url: 'p/c1_img.jpg', v: 0, _blob: 'blob:a' },
+      aud: { url: 'p/c1_aud.mp3', v: 0, _blob: 'blob:b' },
+    },
+  };
+  rollbackUploadedSlots(
+    [{ card: c, slot: 'img' }, { card: c, slot: 'aud' }],
+    new Set([c])
+  );
+  check('两 slot 均失败 → 都清空 url', c.media.img.url === '' && c.media.aud.url === '');
+}
+{
+  const c = {
+    id: 'c1',
+    media: {
+      img: { url: 'p/c1_img.jpg', v: 0, _blob: 'blob:a' },
+      aud: { url: 'p/c1_aud.mp3', v: 0, _blob: 'blob:b' },
+    },
+  };
+  // 仅 img 本次上传过；aud 是上次留下的，本次未进 uploadedSlots → 不该被回滚
+  rollbackUploadedSlots([{ card: c, slot: 'img' }], new Set([c]));
+  check('只回滚本次上传 slot：img 清空', c.media.img.url === '');
+  check('只回滚本次上传 slot：aud 不动', c.media.aud.url === 'p/c1_aud.mp3');
+}
+
+// ── 多卡混合 ─────────────────────────────────────────────────────
+{
+  const c1 = { id: 'c1', media: { img: { url: 'p/c1_img.jpg', v: 0, _blob: 'blob:a' } } };
+  const c2 = { id: 'c2', media: { img: { url: 'p/c2_img.jpg', v: 0, _blob: 'blob:b' } } };
   rollbackUploadedSlots(
     [{ card: c1, slot: 'img' }, { card: c2, slot: 'img' }],
     new Set([c1])
   );
-  check('rollback: 部分失败 → 仅 c1 url 清空', c1.media.img.url === '' && c2.media.img.url === 'p/c2.jpg');
+  check('多卡部分失败 → 失败卡 url 清', c1.media.img.url === '');
+  check('多卡部分失败 → 成功卡 url 留', c2.media.img.url === 'p/c2_img.jpg');
+}
+
+// ── 防御性 ───────────────────────────────────────────────────────
+{
+  const c = { id: 'c1', media: {} };
+  rollbackUploadedSlots([{ card: c, slot: 'img' }], new Set([c]));
+  check('media 槽不存在 → 不抛错', true);
+}
+{
+  const c = { id: 'c1' };
+  rollbackUploadedSlots([{ card: c, slot: 'img' }], new Set([c]));
+  check('无 media 字段 → 不抛错', true);
 }
 
 // ── commitUploadedSlots ────────────────────────────────────────────
