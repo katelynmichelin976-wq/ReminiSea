@@ -2876,36 +2876,32 @@ function simpleHash(s) {
 
 // ── localStorage 注册表 + helper (v5.13.2 Phase 1) ────────────────
 const LS_KEYS = {
-  LAST_CLOUD_EMAIL:    'yihaiLastCloudEmail',
-  LAST_CLOUD_USER_ID:  'yihaiLastCloudUserId',
-  DEVICE_ID:           'yihaiDeviceId',
-  HAS_EVER_LOGGED_IN:  'yihai_has_ever_logged_in',
-  SESSION_BACKUP:      'yihaiSessionBackup',
-  SESSION_BACKUP_OLD:  'yihai_session_backup',
-  GLOBAL_SYNC_TS:      'yihaiGlobalSyncTs',
-  EASY_PULLED_AT:      'yihaiEasyPulledAt',
-  REALTIME_UPLOAD:     'yihaiRealtimeUpload',
-  PENDING_FEEDBACK:    'yihaiPendingFeedback',
-  V5_MIGRATION:        'yihaiV5MigrationPending',
-  PRACTICE_DAYS:       'yihaiPracticeDays',
-  LOG_LEVEL:           'yihaiLogLevel',
-  DECK_INDEX:          'yihaiDecksIndex',
-  DAILY_PROGRESS:      'yihaiDailyProgress',
-  // voice/TTS/delay/...   → voiceConfig (getVoiceField/setVoiceField)
-  // theme/locale/appMode/confettiOn/logLevel → uiConfig (getUiField/setUiField)
-  // fs-/ls- typography    → typographyConfig (getTypoField/setTypoField)
-  EASY_RETRY_ON_WRONG: 'easyRetryOnWrong',
-  EASY_SESSION_SIZE:   'easySessionSize',
+  LAST_CLOUD_EMAIL:    'yh:v1:user:lastEmail',
+  LAST_CLOUD_USER_ID:  'yh:v1:user:lastUserId',
+  DEVICE_ID:           'yh:v1:user:deviceId',
+  HAS_EVER_LOGGED_IN:  'yh:v1:user:hasEverLoggedIn',
+  SESSION_BACKUP:      'yh:v1:session:backup',
+  SESSION_BACKUP_OLD:  'yihai_session_backup',  // legacy only, removed on logout
+  GLOBAL_SYNC_TS:      'yh:v1:sync:globalTs',
+  EASY_PULLED_AT:      'yh:v1:sync:easyPulledAt',
+  REALTIME_UPLOAD:     'yh:v1:sync:realtimeUpload',
+  PENDING_FEEDBACK:    'yh:v1:sync:pendingFeedback',
+  V5_MIGRATION:        'yh:v1:sync:v5MigrationPending',
+  PRACTICE_DAYS:       'yh:v1:practiceDays',
+  DECK_INDEX:          'yh:v1:decks:index',
+  DAILY_PROGRESS:      'yh:v1:daily:progress',
+  // voice/TTS/delay/...   → yh:v1:config:voice  (getVoiceField/setVoiceField)
+  // theme/locale/appMode/confettiOn/logLevel → yh:v1:config:ui (getUiField/setUiField)
+  // fs-/ls- typography    → yh:v1:config:typography (getTypoField/setTypoField)
+  EASY_RETRY_ON_WRONG: 'yh:v1:srs:easyRetryOnWrong',
+  EASY_SESSION_SIZE:   'yh:v1:srs:easySessionSize',
 };
 const LS_DECK = (deckKey, field) => {
-  const prefix = {
-    cards:  'yihai_deck_',
-    syncAt: 'yihaiSyncAt:',
-  }[field];
-  if (!prefix) throw new Error('LS_DECK: unknown field ' + field + ' (sync state aggregated to deckSync helper)');
-  return prefix + deckKey;
+  if (field === 'cards')  return 'yh:v1:deck:' + deckKey + ':cards';
+  if (field === 'syncAt') return 'yh:v1:deck:' + deckKey + ':syncAt';
+  throw new Error('LS_DECK: unknown field ' + field + ' (sync state aggregated to deckSync helper)');
 };
-const LS_SRS = configKey => 'srs_' + configKey;
+const LS_SRS = configKey => 'yh:v1:srs:' + configKey;
 const lsGet = k => localStorage.getItem(k);
 const lsSet = (k, v) => localStorage.setItem(k, String(v));
 const lsRemove = k => localStorage.removeItem(k);
@@ -2920,14 +2916,14 @@ const lsSetJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 // 注意：yihaiSyncAt:{k} 仍归 LS_DECK 工厂（preset 牌组 syncDeckFromCloud/downloadDeckFromCloud 路径）
 const DECK_SYNC_DEFAULT = { pushedAt: 0, pulledAt: 0, pushedMediaAt: 0, deletedCards: [] };
 function getDeckSync(deckKey) {
-  return { ...DECK_SYNC_DEFAULT, ...lsGetJSON('deckSync:' + deckKey, {}) };
+  return { ...DECK_SYNC_DEFAULT, ...lsGetJSON('yh:v1:deck:' + deckKey + ':sync', {}) };
 }
 function setDeckSync(deckKey, patch) {
   const cur = getDeckSync(deckKey);
-  lsSetJSON('deckSync:' + deckKey, { ...cur, ...patch });
+  lsSetJSON('yh:v1:deck:' + deckKey + ':sync', { ...cur, ...patch });
 }
 function removeDeckSync(deckKey) {
-  lsRemove('deckSync:' + deckKey);
+  lsRemove('yh:v1:deck:' + deckKey + ':sync');
 }
 function migrateDeckSync() {
   const oldPrefixes = ['yihaiPushedAt:', 'yihaiPulledAt:', 'yihaiPushedMediaAt:', 'yihaiDeletedCards:'];
@@ -2944,7 +2940,7 @@ function migrateDeckSync() {
     for (const p of oldPrefixes) if (k.startsWith(p)) seenDecks.add(k.slice(p.length));
   }
   for (const deckKey of seenDecks) {
-    const newK = 'deckSync:' + deckKey;
+    const newK = 'yh:v1:deck:' + deckKey + ':sync';
     if (lsGet(newK) != null) continue;
     const patch = {};
     for (const p of oldPrefixes) {
@@ -2972,7 +2968,7 @@ const VOICE_FIELDS = [
   'ttsRate','ttsPitch','ttsVoiceName','voiceMuted','voiceAssistEnabled',
   'ansReadDelay','optReadDelay','browseAnsDelay','optCount','optTouchDelay','ndur','bdur',
 ];
-function getVoiceConfig() { return lsGetJSON('voiceConfig', {}); }
+function getVoiceConfig() { return lsGetJSON('yh:v1:config:voice', {}); }
 function getVoiceField(name, def = null) {
   const v = getVoiceConfig()[name];
   return v == null ? def : v;
@@ -2981,17 +2977,17 @@ function setVoiceField(name, value) {
   const cfg = getVoiceConfig();
   if (value == null) delete cfg[name];
   else cfg[name] = String(value);
-  lsSetJSON('voiceConfig', cfg);
+  lsSetJSON('yh:v1:config:voice', cfg);
 }
 function migrateVoiceConfig() {
-  if (lsGet('voiceConfig') != null) return;
+  if (lsGet('yh:v1:config:voice') != null) return;
   const cfg = {};
   for (const k of VOICE_FIELDS) {
     const v = lsGet(k);
     if (v != null) cfg[k] = v;
   }
   if (Object.keys(cfg).length === 0) return;
-  lsSetJSON('voiceConfig', cfg);
+  lsSetJSON('yh:v1:config:voice', cfg);
   for (const k of VOICE_FIELDS) lsRemove(k);
 }
 
@@ -3005,7 +3001,7 @@ const UI_OLD_MAP = {
   confettiOn: 'confettiOn',
   logLevel:   'yihaiLogLevel',
 };
-function getUiConfig() { return lsGetJSON('uiConfig', {}); }
+function getUiConfig() { return lsGetJSON('yh:v1:config:ui', {}); }
 function getUiField(name, def = null) {
   const v = getUiConfig()[name];
   return v == null ? def : v;
@@ -3014,17 +3010,17 @@ function setUiField(name, value) {
   const cfg = getUiConfig();
   if (value == null) delete cfg[name];
   else cfg[name] = String(value);
-  lsSetJSON('uiConfig', cfg);
+  lsSetJSON('yh:v1:config:ui', cfg);
 }
 function migrateUiConfig() {
-  if (lsGet('uiConfig') != null) return;
+  if (lsGet('yh:v1:config:ui') != null) return;
   const cfg = {};
   for (const [field, oldKey] of Object.entries(UI_OLD_MAP)) {
     const v = lsGet(oldKey);
     if (v != null) cfg[field] = v;
   }
   if (Object.keys(cfg).length === 0) return;
-  lsSetJSON('uiConfig', cfg);
+  lsSetJSON('yh:v1:config:ui', cfg);
   for (const oldKey of Object.values(UI_OLD_MAP)) lsRemove(oldKey);
 }
 
@@ -3032,7 +3028,7 @@ function migrateUiConfig() {
 // 8 个 CSS var key (fs-/ls- × opt/ans/hint/btn) → 1 个 JSON entry
 const TYPO_SLOTS = ['opt', 'ans', 'hint', 'btn'];
 function getTypographyConfig() {
-  const c = lsGetJSON('typographyConfig', {});
+  const c = lsGetJSON('yh:v1:config:typography', {});
   return { fs: c.fs || {}, ls: c.ls || {} };
 }
 function getTypoField(kind, slot, def = null) {
@@ -3043,10 +3039,10 @@ function setTypoField(kind, slot, value) {
   const cfg = getTypographyConfig();
   if (value == null) delete cfg[kind][slot];
   else cfg[kind][slot] = String(value);
-  lsSetJSON('typographyConfig', cfg);
+  lsSetJSON('yh:v1:config:typography', cfg);
 }
 function migrateTypographyConfig() {
-  if (lsGet('typographyConfig') != null) return;
+  if (lsGet('yh:v1:config:typography') != null) return;
   const cfg = { fs: {}, ls: {} };
   let any = false;
   for (const kind of ['fs', 'ls']) {
@@ -3056,14 +3052,69 @@ function migrateTypographyConfig() {
     }
   }
   if (!any) return;
-  lsSetJSON('typographyConfig', cfg);
+  lsSetJSON('yh:v1:config:typography', cfg);
   for (const kind of ['fs', 'ls']) for (const slot of TYPO_SLOTS) lsRemove(`${kind}-${slot}`);
 }
 
+// yh:v1: prefix rename (v5.13.4 Phase 3)
+// 把所有 top-level key 加 yh:v1: 前缀 + 冒号分层；必须在 Phase 2 聚合 migrate 之后运行
+const KEY_RENAMES = [
+  ['yihaiLastCloudEmail',     'yh:v1:user:lastEmail'],
+  ['yihaiLastCloudUserId',    'yh:v1:user:lastUserId'],
+  ['yihaiDeviceId',           'yh:v1:user:deviceId'],
+  ['yihai_has_ever_logged_in','yh:v1:user:hasEverLoggedIn'],
+  ['yihaiSessionBackup',      'yh:v1:session:backup'],
+  ['yihaiGlobalSyncTs',       'yh:v1:sync:globalTs'],
+  ['yihaiEasyPulledAt',       'yh:v1:sync:easyPulledAt'],
+  ['yihaiRealtimeUpload',     'yh:v1:sync:realtimeUpload'],
+  ['yihaiPendingFeedback',    'yh:v1:sync:pendingFeedback'],
+  ['yihaiV5MigrationPending', 'yh:v1:sync:v5MigrationPending'],
+  ['yihaiPracticeDays',       'yh:v1:practiceDays'],
+  ['yihaiDecksIndex',         'yh:v1:decks:index'],
+  ['yihaiDailyProgress',      'yh:v1:daily:progress'],
+  ['easyRetryOnWrong',        'yh:v1:srs:easyRetryOnWrong'],
+  ['easySessionSize',         'yh:v1:srs:easySessionSize'],
+  ['voiceConfig',             'yh:v1:config:voice'],
+  ['uiConfig',                'yh:v1:config:ui'],
+  ['typographyConfig',        'yh:v1:config:typography'],
+];
+const PREFIX_RENAMES = [
+  ['deckSync:',    'yh:v1:deck:', ':sync'],
+  ['yihai_deck_',  'yh:v1:deck:', ':cards'],
+  ['yihaiSyncAt:', 'yh:v1:deck:', ':syncAt'],
+  ['srs_',         'yh:v1:srs:',  ''],
+];
+function migrateKeyRenames() {
+  for (const [oldK, newK] of KEY_RENAMES) {
+    if (lsGet(newK) != null) continue;
+    const v = lsGet(oldK);
+    if (v == null) continue;
+    lsSet(newK, v);
+    lsRemove(oldK);
+  }
+  const allKeys = [];
+  for (let i = 0; i < localStorage.length; i++) allKeys.push(localStorage.key(i));
+  for (const k of allKeys) {
+    if (!k) continue;
+    for (const [oldPrefix, newPrefix, newSuffix] of PREFIX_RENAMES) {
+      if (k.startsWith(oldPrefix)) {
+        const id = k.slice(oldPrefix.length);
+        const newK = newPrefix + id + newSuffix;
+        if (lsGet(newK) != null) break;
+        lsSet(newK, lsGet(k));
+        lsRemove(k);
+        break;
+      }
+    }
+  }
+}
+
 // 启动期 eager migration（必须在任何 loadSettings/loadPhrases 之前完成）
+// 顺序：聚合 migrate 在前（读旧扁平 key），rename 最后（统一加 yh:v1: 前缀）
 try { migrateVoiceConfig(); } catch (e) { console.warn('[migrate] voiceConfig failed', e); }
 try { migrateUiConfig(); } catch (e) { console.warn('[migrate] uiConfig failed', e); }
 try { migrateTypographyConfig(); } catch (e) { console.warn('[migrate] typographyConfig failed', e); }
+try { migrateKeyRenames(); } catch (e) { console.warn('[migrate] keyRenames failed', e); }
 
 // ── SRS global config (Anki naming convention) ────────────────────
 const SRS_CONFIG = {
@@ -4996,13 +5047,15 @@ function clearDeletedCards(deckKey) {
 }
 
 function migrateSyncWatermarks() {
+  const prefix = 'yh:v1:deck:';
+  const suffix = ':syncAt';
   const keys = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k && k.startsWith('yihaiSyncAt:')) keys.push(k);
+    if (k && k.startsWith(prefix) && k.endsWith(suffix)) keys.push(k);
   }
   for (const k of keys) {
-    const deckKey = k.substring('yihaiSyncAt:'.length);
+    const deckKey = k.slice(prefix.length, -suffix.length);
     const v = lsGet(k);
     const ts = /^\d+$/.test(v) ? parseInt(v) : (Date.parse(v) || 0);
     const cur = getDeckSync(deckKey);
@@ -5035,15 +5088,16 @@ async function deleteCardStatesForDeck(deckKey) {
 
 function gcOrphanSyncKeys() {
   const deckKeys = new Set(DECKS_META.map(m => m.key));
-  const prefixes = ['deckSync:', 'yihaiSyncAt:'];
+  const prefix = 'yh:v1:deck:';
+  const suffixes = [':sync', ':syncAt'];
   const toRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    const prefix = prefixes.find(p => k && k.startsWith(p));
-    if (prefix) {
-      const deckKey = k.slice(prefix.length);
-      if (!deckKeys.has(deckKey)) toRemove.push(k);
-    }
+    if (!k || !k.startsWith(prefix)) continue;
+    const suffix = suffixes.find(s => k.endsWith(s));
+    if (!suffix) continue;
+    const deckKey = k.slice(prefix.length, -suffix.length);
+    if (!deckKeys.has(deckKey)) toRemove.push(k);
   }
   toRemove.forEach(k => lsRemove(k));
   if (toRemove.length) console.log('[gc] 清理孤儿 sync keys:', toRemove.length);
@@ -8956,7 +9010,7 @@ function pickVoice(lang, autoOnly = false) {
 async function playVoiceSlot(slotName, ttsText, ttsLang) {
   if (VOICE_MUTED) return;
   const key = slotStorageKey(slotName);
-  const customTts = key ? lsGet(key) : null;
+  const customTts = key ? getVoiceField(key) : null;
   const effectiveTts = customTts !== null ? customTts : ttsText;
   try {
     const slot = await loadVoiceSlot(slotName);
@@ -10180,7 +10234,7 @@ function openRecordingOverlay(slotName, defaultScript) {
     t('voice_slot_' + slotName) || slotName;
   const scriptEl = document.getElementById('rec-script-txt');
   const key = slotStorageKey(slotName);
-  const stored = key ? lsGet(key) : null;
+  const stored = key ? getVoiceField(key) : null;
   scriptEl.value = stored !== null ? stored : (defaultScript || '');
   _showRecState('idle');
   document.getElementById('rec-save-btn').disabled = true;
@@ -10295,10 +10349,7 @@ async function saveVoiceRecording() {
     const scriptEl = document.getElementById('rec-script-txt');
     const scriptText = scriptEl ? scriptEl.value.trim() : '';
     const _key = slotStorageKey(_recSlotName);
-    if (_key) {
-      if (scriptText) lsSet(_key, scriptText);
-      else lsRemove(_key);
-    }
+    if (_key) setVoiceField(_key, scriptText || null);
     if (_recBlob) await saveVoiceSlot(_recSlotName, _recBlob, _recMimeType, _recDuration);
     closeRecordingOverlay();
     const vaScreen = document.getElementById('screen-voice-assist');

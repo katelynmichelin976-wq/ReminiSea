@@ -139,7 +139,7 @@ let tStart;
 
     const dpA = await run(pageA, () => {
       try {
-        const dp = JSON.parse(localStorage.getItem('yihaiDailyProgress') || '{}');
+        const dp = JSON.parse(localStorage.getItem('yh:v1:daily:progress') || '{}');
         return {
           n: dp.daily_new_today || 0,
           r: dp.reviewed_today || 0
@@ -195,7 +195,7 @@ let tStart;
 
     const dpB = await run(pageB, () => {
       try {
-        const dp = JSON.parse(localStorage.getItem('yihaiDailyProgress') || '{}');
+        const dp = JSON.parse(localStorage.getItem('yh:v1:daily:progress') || '{}');
         return dp.reviewed_today || 0;
       } catch (e) { return 0; }
     });
@@ -325,7 +325,7 @@ let tStart;
     }
 
     // ════ PHASE 6: 水位迁移 ════
-    section('PHASE 6: 水位迁移 — yihaiSyncAt → deckSync:{key}（Phase 2.1 聚合格式）');
+    section('PHASE 6: 水位迁移 — yihaiSyncAt → deckSync.pushedAt/pulledAt（v5.13.4 Phase 3 yh:v1: 路径）');
     const migDeckKey = 'pwMigDeck' + Date.now();
     const oldTs = Date.now() + 60 * 60 * 1000;
     const oldIso = new Date(oldTs).toISOString();
@@ -337,10 +337,9 @@ let tStart;
       DECKS_META.push({ key, name: 'pwMig', deck_type: 'personal', nameLang: 'zh-CN', mod: 1000 });
       saveDeckIndex();
       saveDeckCards(key, DECKS[key]);
-      localStorage.removeItem('deckSync:' + key);
-      localStorage.removeItem('yihaiPushedAt:' + key);
-      localStorage.removeItem('yihaiPulledAt:' + key);
-      localStorage.setItem('yihaiSyncAt:' + key, iso);
+      removeDeckSync(key);
+      // Phase 3 后 yihaiSyncAt: 已被 keyRenames 重命名为 yh:v1:deck:_:syncAt；migrateSyncWatermarks 扫新前缀
+      localStorage.setItem('yh:v1:deck:' + key + ':syncAt', iso);
     }, { key: migDeckKey, iso: oldIso });
 
     const beforeMig = await run(pageA, (key) => {

@@ -279,7 +279,7 @@ async function createTestYhspack() {
     await page.reload({ waitUntil: 'networkidle' });
     await wait(page, 1000);
     pass('easy 模式刷新后恢复', await run(page, () =>
-      localStorage.getItem('srs_session_mode') === 'easy'
+      localStorage.getItem('yh:v1:srs:session_mode') === 'easy'
     ));
     await run(page, () => setSrsMode('normal'));
 

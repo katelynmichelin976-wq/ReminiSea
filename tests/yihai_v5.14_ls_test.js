@@ -480,5 +480,133 @@ function migrateTypographyConfig() {
   check('setTypoField default fallback', getTypoField('fs', 'opt', '18') === '18');
 }
 
+// ── Phase 3: yh:v1: prefix rename ─────────────────────────────
+
+const KEY_RENAMES = [
+  ['yihaiLastCloudEmail',     'yh:v1:user:lastEmail'],
+  ['yihaiLastCloudUserId',    'yh:v1:user:lastUserId'],
+  ['yihaiDeviceId',           'yh:v1:user:deviceId'],
+  ['yihai_has_ever_logged_in','yh:v1:user:hasEverLoggedIn'],
+  ['yihaiSessionBackup',      'yh:v1:session:backup'],
+  ['yihaiGlobalSyncTs',       'yh:v1:sync:globalTs'],
+  ['yihaiEasyPulledAt',       'yh:v1:sync:easyPulledAt'],
+  ['yihaiRealtimeUpload',     'yh:v1:sync:realtimeUpload'],
+  ['yihaiPendingFeedback',    'yh:v1:sync:pendingFeedback'],
+  ['yihaiV5MigrationPending', 'yh:v1:sync:v5MigrationPending'],
+  ['yihaiPracticeDays',       'yh:v1:practiceDays'],
+  ['yihaiDecksIndex',         'yh:v1:decks:index'],
+  ['yihaiDailyProgress',      'yh:v1:daily:progress'],
+  ['easyRetryOnWrong',        'yh:v1:srs:easyRetryOnWrong'],
+  ['easySessionSize',         'yh:v1:srs:easySessionSize'],
+  ['voiceConfig',             'yh:v1:config:voice'],
+  ['uiConfig',                'yh:v1:config:ui'],
+  ['typographyConfig',        'yh:v1:config:typography'],
+];
+const PREFIX_RENAMES = [
+  ['deckSync:',    'yh:v1:deck:', ':sync'],
+  ['yihai_deck_',  'yh:v1:deck:', ':cards'],
+  ['yihaiSyncAt:', 'yh:v1:deck:', ':syncAt'],
+  ['srs_',         'yh:v1:srs:',  ''],
+];
+
+function migrateKeyRenames() {
+  for (const [oldK, newK] of KEY_RENAMES) {
+    if (lsGet(newK) != null) continue;
+    const v = lsGet(oldK);
+    if (v == null) continue;
+    lsSet(newK, v);
+    lsRemove(oldK);
+  }
+  const allKeys = [];
+  for (let i = 0; i < localStorage.length; i++) allKeys.push(localStorage.key(i));
+  for (const k of allKeys) {
+    if (!k) continue;
+    for (const [oldPrefix, newPrefix, newSuffix] of PREFIX_RENAMES) {
+      if (k.startsWith(oldPrefix)) {
+        const id = k.slice(oldPrefix.length);
+        const newK = newPrefix + id + newSuffix;
+        if (lsGet(newK) != null) break;
+        lsSet(newK, lsGet(k));
+        lsRemove(k);
+        break;
+      }
+    }
+  }
+}
+
+{
+  _store.clear();
+  _store.set('yihaiLastCloudEmail', 'a@b.com');
+  _store.set('yihaiDeviceId', 'dev-123');
+  _store.set('yihaiGlobalSyncTs', '1700000000000');
+  _store.set('voiceConfig', '{"phraseCorrect":"yes"}');
+  _store.set('uiConfig', '{"theme":"dark"}');
+  _store.set('typographyConfig', '{"fs":{"opt":"20"}}');
+  _store.set('easyRetryOnWrong', '1');
+  migrateKeyRenames();
+  check('rename: lastEmail', lsGet('yh:v1:user:lastEmail') === 'a@b.com');
+  check('rename: deviceId',  lsGet('yh:v1:user:deviceId') === 'dev-123');
+  check('rename: globalSyncTs', lsGet('yh:v1:sync:globalTs') === '1700000000000');
+  check('rename: voiceConfig → yh:v1:config:voice', lsGet('yh:v1:config:voice') === '{"phraseCorrect":"yes"}');
+  check('rename: uiConfig → yh:v1:config:ui', lsGet('yh:v1:config:ui') === '{"theme":"dark"}');
+  check('rename: typographyConfig → yh:v1:config:typography', lsGet('yh:v1:config:typography') === '{"fs":{"opt":"20"}}');
+  check('rename: easyRetryOnWrong → yh:v1:srs:easyRetryOnWrong', lsGet('yh:v1:srs:easyRetryOnWrong') === '1');
+  check('rename: old yihaiLastCloudEmail removed', _store.get('yihaiLastCloudEmail') == null);
+  check('rename: old voiceConfig removed', _store.get('voiceConfig') == null);
+  check('rename: old typographyConfig removed', _store.get('typographyConfig') == null);
+  check('rename: old easyRetryOnWrong removed', _store.get('easyRetryOnWrong') == null);
+}
+
+{
+  _store.clear();
+  _store.set('deckSync:abc', '{"pushedAt":100,"pulledAt":200,"pushedMediaAt":300,"deletedCards":["c1"]}');
+  _store.set('yihai_deck_abc', '[{"id":"c1"}]');
+  _store.set('yihaiSyncAt:abc', '2026-06-12T00:00:00.000Z');
+  _store.set('srs_session_mode', 'normal');
+  _store.set('srs_easy_session_size', '19');
+  migrateKeyRenames();
+  check('prefix rename: deckSync:abc → yh:v1:deck:abc:sync',
+    lsGet('yh:v1:deck:abc:sync') === '{"pushedAt":100,"pulledAt":200,"pushedMediaAt":300,"deletedCards":["c1"]}');
+  check('prefix rename: yihai_deck_abc → yh:v1:deck:abc:cards',
+    lsGet('yh:v1:deck:abc:cards') === '[{"id":"c1"}]');
+  check('prefix rename: yihaiSyncAt:abc → yh:v1:deck:abc:syncAt',
+    lsGet('yh:v1:deck:abc:syncAt') === '2026-06-12T00:00:00.000Z');
+  check('prefix rename: srs_session_mode → yh:v1:srs:session_mode',
+    lsGet('yh:v1:srs:session_mode') === 'normal');
+  check('prefix rename: srs_easy_session_size → yh:v1:srs:easy_session_size',
+    lsGet('yh:v1:srs:easy_session_size') === '19');
+  check('prefix rename: old deckSync:abc removed', _store.get('deckSync:abc') == null);
+  check('prefix rename: old yihai_deck_abc removed', _store.get('yihai_deck_abc') == null);
+  check('prefix rename: old srs_session_mode removed', _store.get('srs_session_mode') == null);
+}
+
+{
+  _store.clear();
+  _store.set('yihaiLastCloudEmail', 'old@x.com');
+  _store.set('yh:v1:user:lastEmail', 'new@x.com');
+  _store.set('srs_session_mode', 'old');
+  _store.set('yh:v1:srs:session_mode', 'new');
+  migrateKeyRenames();
+  check('idempotent: new key wins (top-level)', lsGet('yh:v1:user:lastEmail') === 'new@x.com');
+  check('idempotent: old key kept untouched (top-level)', _store.get('yihaiLastCloudEmail') === 'old@x.com');
+  check('idempotent: new key wins (prefix)', lsGet('yh:v1:srs:session_mode') === 'new');
+  check('idempotent: old key kept untouched (prefix)', _store.get('srs_session_mode') === 'old');
+}
+
+{
+  _store.clear();
+  migrateKeyRenames();
+  check('rename no-op when empty', _store.size === 0);
+}
+
+{
+  _store.clear();
+  _store.set('sb-juzkonrzfyvchqxzmlpr-auth-token', 'sdk-managed');
+  _store.set('phraseWrong', 'raw-leftover');
+  migrateKeyRenames();
+  check('rename: Supabase SDK token untouched', _store.get('sb-juzkonrzfyvchqxzmlpr-auth-token') === 'sdk-managed');
+  check('rename: unknown raw key untouched', _store.get('phraseWrong') === 'raw-leftover');
+}
+
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);
 process.exit(failed === 0 ? 0 : 1);
