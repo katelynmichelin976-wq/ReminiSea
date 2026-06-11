@@ -3182,7 +3182,7 @@ function restoreSession() {
 
     var sbKey = 'sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token';
     var parsed = null;
-    try { parsed = JSON.parse(localStorage.getItem(sbKey) || 'null'); } catch(e) {}
+    try { parsed = lsGetJSON(sbKey); } catch(e) {}
     if (!parsed) {
       try { parsed = JSON.parse(lsGet(LS_KEYS.SESSION_BACKUP) || 'null'); } catch(e) {}
     }
@@ -3510,7 +3510,7 @@ async function cloudPushConfig() {
       phraseQuizPromptRecognize:    lsGet(LS_KEYS.PHRASE_QUIZ_PROMPT_RECOGNIZE),
     };
     ['fs-opt','fs-ans','fs-hint','fs-btn','ls-opt','ls-ans','ls-hint','ls-btn'].forEach(k => {
-      const v = localStorage.getItem(k);
+      const v = lsGet(k);
       if (v) localUi[k] = v;
     });
     Object.keys(localUi).forEach(k => { if (localUi[k] === null) delete localUi[k]; });
@@ -3567,7 +3567,7 @@ async function cloudPullConfig() {
     // apply UI params
     if (cfg.ui) {
       Object.entries(cfg.ui).forEach(([k, v]) => {
-        localStorage.setItem(k, String(v));
+        lsSet(k, v);
         applied++;
       });
     }
@@ -8850,7 +8850,7 @@ function pickVoice(lang, autoOnly = false) {
 async function playVoiceSlot(slotName, ttsText, ttsLang) {
   if (VOICE_MUTED) return;
   const key = slotStorageKey(slotName);
-  const customTts = key ? localStorage.getItem(key) : null;
+  const customTts = key ? lsGet(key) : null;
   const effectiveTts = customTts !== null ? customTts : ttsText;
   try {
     const slot = await loadVoiceSlot(slotName);
@@ -9854,13 +9854,13 @@ function forceRefresh() {
 function onFsChange(key, v) {
   document.documentElement.style.setProperty(`--fs-${key}`, `${v}px`);
   document.getElementById(`fs-${key}-val`).textContent = v;
-  localStorage.setItem(`fs-${key}`, v);
+  lsSet(LS_TYPO('fs', key), v);
   debouncePushConfig();
 }
 function onLsChange(key, v) {
   document.documentElement.style.setProperty(`--ls-${key}`, `${v}px`);
   document.getElementById(`ls-${key}-val`).textContent = `${v}px`;
-  localStorage.setItem(`ls-${key}`, v);
+  lsSet(LS_TYPO('ls', key), v);
   debouncePushConfig();
 }
 
@@ -10074,7 +10074,7 @@ function openRecordingOverlay(slotName, defaultScript) {
     t('voice_slot_' + slotName) || slotName;
   const scriptEl = document.getElementById('rec-script-txt');
   const key = slotStorageKey(slotName);
-  const stored = key ? localStorage.getItem(key) : null;
+  const stored = key ? lsGet(key) : null;
   scriptEl.value = stored !== null ? stored : (defaultScript || '');
   _showRecState('idle');
   document.getElementById('rec-save-btn').disabled = true;
@@ -10190,8 +10190,8 @@ async function saveVoiceRecording() {
     const scriptText = scriptEl ? scriptEl.value.trim() : '';
     const _key = slotStorageKey(_recSlotName);
     if (_key) {
-      if (scriptText) localStorage.setItem(_key, scriptText);
-      else localStorage.removeItem(_key);
+      if (scriptText) lsSet(_key, scriptText);
+      else lsRemove(_key);
     }
     if (_recBlob) await saveVoiceSlot(_recSlotName, _recBlob, _recMimeType, _recDuration);
     closeRecordingOverlay();
@@ -10247,10 +10247,10 @@ function onBdurChange(v) {
 
 // resets to locale default if stored value matches any locale's default (prevents cross-device pollution)
 function loadPhraseOrDefault(storageKey, i18nKey) {
-  const stored = localStorage.getItem(storageKey);
+  const stored = lsGet(storageKey);
   if (!stored) return t(i18nKey);
   const allDefaults = SUPPORTED_LOCALES.map(loc => (I18N[loc] || {})[i18nKey]).filter(Boolean);
-  if (allDefaults.includes(stored)) { localStorage.removeItem(storageKey); return t(i18nKey); }
+  if (allDefaults.includes(stored)) { lsRemove(storageKey); return t(i18nKey); }
   return stored;
 }
 
@@ -10300,7 +10300,7 @@ function loadSettings() {
     {k:'ls-hint', def:'0'}, {k:'ls-btn', def:'0'},
   ];
   cssVars.forEach(({k, def}) => {
-    const v = localStorage.getItem(k) || def;
+    const v = lsGet(k) || def;
     document.documentElement.style.setProperty(`--${k}`, `${v}px`);
   });
 
@@ -10359,7 +10359,7 @@ function loadSettings() {
     ].forEach(({id,suf,def})=>{
       const el=document.getElementById(id);
       const val=document.getElementById(`${id}-val`);
-      const v=localStorage.getItem(id)||def;
+      const v=lsGet(id)||def;
       if(el) el.value=v;
       if(val) val.textContent=`${v}${suf}`;
     });
