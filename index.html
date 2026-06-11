@@ -9682,11 +9682,14 @@ function startNRing() {
     nrt.style.strokeDasharray=perim;nrt.style.strokeDashoffset=0;
     nrp.style.strokeDasharray=perim;nrp.style.strokeDashoffset=perim;
     nStart=performance.now();
+    const showSec = SRS_CONFIG.session_mode !== 'easy';
     function tick(now){
       const el=now-nStart,p=Math.min(el/dur,1);
       nrp.style.strokeDashoffset=perim*(1-p);
-      const rem=Math.ceil((dur-el)/1000);
-      sec.textContent=rem>0?rem:'';
+      if (showSec) {
+        const rem=Math.ceil((dur-el)/1000);
+        sec.textContent=rem>0?rem:'';
+      }
       if(p<1){nRaf=requestAnimationFrame(tick);}
       else{sec.textContent='';onNext();}
     }
