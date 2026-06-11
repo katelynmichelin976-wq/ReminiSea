@@ -4475,7 +4475,6 @@ function processAnswer(state, rating, todayDateStr) {
 }
 
 // ── DailyProgress ────────────────────────────────────────────────
-const LS_DAILY = 'yihaiDailyProgress';
 
 function newDailyProgress() {
   return {
@@ -4493,7 +4492,7 @@ function newDailyProgress() {
 
 function getDailyProgress() {
   try {
-    const raw = localStorage.getItem(LS_DAILY);
+    const raw = lsGet(LS_KEYS.DAILY_PROGRESS);
     if (!raw) return newDailyProgress();
     const dp = JSON.parse(raw);
     if (dp.date !== todayStr()) return newDailyProgress();  // new day, reset
@@ -4502,7 +4501,7 @@ function getDailyProgress() {
 }
 
 function saveDailyProgress(dp) {
-  localStorage.setItem(LS_DAILY, JSON.stringify(dp));
+  lsSetJSON(LS_KEYS.DAILY_PROGRESS, dp);
 }
 
 // ── practice mode: difficulty curve utilities ────────────────────────
@@ -5004,16 +5003,14 @@ function getDeck(key) {
 }
 
 // ── localStorage persistence ──────────────────────────────────────
-const LS_INDEX = 'yihaiDecksIndex';
-const LS_DECK_PREFIX = 'yihai_deck_';
 
 function saveDeckIndex() {
-  localStorage.setItem(LS_INDEX, JSON.stringify(
+  lsSetJSON(LS_KEYS.DECK_INDEX,
     DECKS_META.filter(m => !m.builtin).map(m => ({
       key: m.key, name: m.name, deck_type: m.deck_type,
       nameLang: m.nameLang, mod: m.mod || 0
     }))
-  ));
+  );
 }
 function saveDeckCards(key, cards) {
   const slim = cards.map(c => ({
@@ -5021,7 +5018,7 @@ function saveDeckCards(key, cards) {
     cardType: c.cardType || 'choice', ext: c.ext || {}, mod: c.mod || 0,
     media: serializeMedia(c.media || {}),
   }));
-  localStorage.setItem(LS_DECK_PREFIX + key, JSON.stringify(slim));
+  lsSetJSON(LS_DECK(key, 'cards'), slim);
 }
 
 // ── IndexedDB media cache ─────────────────────────────────────────
@@ -5084,7 +5081,7 @@ async function checkMedia() {
     const expected = new Set();
     for (const meta of DECKS_META) {
       try {
-        const cards = JSON.parse(localStorage.getItem(LS_DECK_PREFIX + meta.key) || '[]');
+        const cards = lsGetJSON(LS_DECK(meta.key, 'cards'), []);
         for (const card of cards) {
           expected.add(meta.key + '_' + card.id + '_img');
           expected.add(meta.key + '_' + card.id + '_aud');
@@ -5144,11 +5141,11 @@ async function cleanOrphanMedia() {
 }
 
 async function restoreDecks() {
-  const idx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]');
+  const idx = lsGetJSON(LS_KEYS.DECK_INDEX, []);
   DECKS_META = idx.map(m => ({ ...m }));
   for (const { key } of idx) {
     try {
-      const raw = JSON.parse(localStorage.getItem(LS_DECK_PREFIX + key) || '[]');
+      const raw = lsGetJSON(LS_DECK(key, 'cards'), []);
       const cards = [];
       for (const c of raw) {
         try {
@@ -5432,7 +5429,7 @@ async function deleteDeck(e, key) {
   });
   delete DECKS[key];
   DECKS_META = DECKS_META.filter(m => m.key !== key);
-  localStorage.removeItem(LS_DECK_PREFIX + key);
+  lsRemove(LS_DECK(key, 'cards'));
   saveDeckIndex();
   deleteMediaForDeck(key).catch(() => {});
   if (meta.deck_type === 'personal' && _syncEnabled && _sb) {
