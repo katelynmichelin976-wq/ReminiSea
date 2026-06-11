@@ -21,6 +21,7 @@ const UNIT_SUITES = [
   'yihai_v5.8_sync_test.js',
   'yihai_v5.9_sync_test.js',
   'yihai_v5.11_easy_test.js',
+  'yihai_v5.12_media_recovery_test.js',
 ];
 
 const COL_W = 24;
