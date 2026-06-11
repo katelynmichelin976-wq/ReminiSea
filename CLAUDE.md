@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | File | Purpose |
 |------|---------|
-| `index.html` | 主训练 App（v5.13.1，单 HTML 文件，Supabase 云同步） |
+| `index.html` | 主训练 App（v5.13.2，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -32,7 +32,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v5.9_sync_test.js` | v5.9 media slot 序列化单测（32 cases） |
 | `tests/yihai_v5.11_easy_test.js` | Easy 模式纯函数单测（结构公式/分类/排序/槽位/queue，38 cases） |
 | `tests/yihai_v5.12_media_recovery_test.js` | 媒体 upsert 失败回滚 + crash 恢复 + mergeCard confirmed 传播纯函数单测（22 cases） |
-| `tests/run_all.js` | 单元测试统一入口（10 套件，487 断言） |
+| `tests/yihai_v5.14_ls_test.js` | LS_KEYS 注册表 + lsGet/lsSet helper + LS_DECK/LS_SRS/LS_TYPO 工厂单测（23 cases） |
+| `tests/run_all.js` | 单元测试统一入口（11 套件，510 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户/设置/i18n/语言/语音/IDB/练习模式，65 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端 + Easy 模式 EasyState IDB（21 断言，无需登录） |
 | `tests/_pw_easy.js` | Easy 模式综合（设置 UI/单局/retry/多局 confident 池/诊断面板，28 断言，无需登录） |
@@ -68,7 +69,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.13.1**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.13.2**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.13.2：** localStorage keymap 规范化 Phase 1（infrastructure）— 引入 `LS_KEYS` 常量注册表 + `LS_DECK(deckKey, field)` per-deck 工厂 + `LS_SRS(configKey)` / `LS_TYPO(kind, slot)` 工厂 + `lsGet/lsSet/lsRemove/lsGetJSON/lsSetJSON` 统一访问 helper。`index.html` 内 ~140 处 raw `localStorage.X(...)` 调用全部改走 helper，key 名 **不变**，外观零变化。剩余 5 处 raw 调用全在 helper 内部实现。删除 `LS_DAILY`/`LS_INDEX`/`LS_DECK_PREFIX`/`LOCALE_KEY` 旧 const，统一进 `LS_KEYS`。调研发现 `yihaiSyncAt:{key}` 仍被 preset 牌组 `syncDeckFromCloud`/`downloadDeckFromCloud` 用作 delta 水位（与 personal deck `yihaiPushedAt`/`yihaiPulledAt` 共存），保留并加入 `LS_DECK` 工厂。新增 `tests/yihai_v5.14_ls_test.js`（23 断言）单测套件总 510 断言。为 Phase 2（聚合 deckSync/voiceConfig/uiConfig）+ Phase 3（`yh:v1:` 前缀 rename）铺路。
 
 **v5.13.1：** UI 与陪伴语境对齐 patch — ① **完成屏移除红色「答错数」行**：`finish_again` 红色 `wrong` class 行与全应用「答错的选项无声消失、不给负反馈」理念冲突，删该行 + 5 locale 中未引用的 `finish_again` key。`sFail` 仍计算并传 `logAppEvent` 照护者端 stats 数据不丢。② **easy 模式倒计时环隐藏数字秒数**：`startNRing` tick 加 `showSec` 开关，`session_mode === 'easy'` 时不写 `sec.textContent`，SVG 环动画完全保留。③ **easy 模式顶栏 SRS 计数器改 cur/total 进度**：陪伴语境下 `新+学+复` Anki 三元组改为 `(qIdx+1)/Qs.length` 简单进度（如 `12/20`），CSS 用 `data-mode="easy"` 切换。
 
@@ -116,7 +119,7 @@ git config core.hooksPath .githooks
 ## Development Commands
 
 ```powershell
-# 单元测试（全量，10 套件 487 断言）
+# 单元测试（全量，11 套件 510 断言）
 node tests/run_all.js
 
 # Playwright（需先启动 HTTP 服务器，必须用 PowerShell）

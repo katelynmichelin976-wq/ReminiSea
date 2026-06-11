@@ -2,6 +2,61 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.2 — localStorage keymap 规范化 Phase 1（infrastructure）
+
+### 动机
+
+- 上线前命名规范化窗口期：目前仅妈妈一位真实用户，无数据风险，趁此完成长期维护性改造
+- `index.html` 内 ~140 处 raw `localStorage.X(...)` 调用、4 种命名风格混用（`yihaiXxx` camelCase 直连 / `yihai_xxx_yyy` snake_case / `yihaiXxx:{id}` 冒号分隔 / `srs_xxx` / `phraseXxx` / `fs-xxx` kebab），grep 困难、易引入命名冲突
+- 完整目标 plan 见 `docs/superpowers/plans/2026-06-11-localstorage-keymap-normalization.md`，分三 phase：Phase 1 引入 helper（本次）、Phase 2 聚合配置 blob、Phase 3 加 `yh:v1:` 前缀
+
+### Phase 1 改动
+
+**新增 helper 与注册表（`index.html` 工具函数区）：**
+
+- `LS_KEYS` 常量：~40 个静态 key 集中注册（user/session/sync/UI/voice/TTS/typography/easy mode/SRS……）
+- `LS_DECK(deckKey, field)` 工厂：per-deck 动态 key 生成器，`field` ∈ `cards|syncAt|pushedAt|pulledAt|pushedMediaAt|deletedCards`
+- `LS_SRS(configKey)` 工厂：`srs_` 前缀 SRS 配置 key 生成器
+- `LS_TYPO(kind, slot)` 工厂：typography CSS var key（`fs-/ls-` × `opt|ans|hint|btn`）
+- `lsGet/lsSet/lsRemove`：统一访问 helper，`lsSet` 自动 `String()` 化 value
+- `lsGetJSON(k, def)/lsSetJSON(k, v)`：JSON 序列化变体，解析失败/缺失走 default
+
+**所有 raw 调用迁移到 helper（8 个分类 commit）：**
+
+| Phase | 范围 | Commit |
+|---|---|---|
+| 1.3a | 用户/会话（LastCloudEmail/UserId, DeviceId, SessionBackup, HasEverLoggedIn） | refactor: 用户/会话 LS 调用走 LS_KEYS helper |
+| 1.3b | 同步状态（GlobalSyncTs, EasyPulledAt, RealtimeUpload, PendingFeedback, V5MigrationPending, PracticeDays, LogLevel） | refactor: 同步状态 LS 调用走 LS_KEYS helper |
+| 1.3c | UI（theme, locale, appMode, confettiOn）+ 删除 `LOCALE_KEY` 旧 const | refactor: UI 类 LS 调用走 LS_KEYS helper |
+| 1.3d | deck 索引/卡片（DECK_INDEX, DAILY_PROGRESS, deck cards body）+ 删除 `LS_INDEX/LS_DECK_PREFIX/LS_DAILY` 旧 const | refactor: deck 索引/卡片 LS 调用走 LS_KEYS helper |
+| 1.3e | voice/TTS ~20 key（phrase\*, tts\*, voice\*, \*Delay, optCount, optTouchDelay, ndur, bdur） | refactor: voice/TTS LS 调用走 LS_KEYS helper |
+| 1.3f | per-deck 同步状态（PushedAt/PulledAt/PushedMediaAt/DeletedCards/SyncAt + cards body 内联调用）走 `LS_DECK` 工厂 | refactor: per-deck 同步状态走 LS_DECK 工厂 |
+| 1.3g | SRS 配置（srs_\*）+ easy mode（EASY_RETRY_ON_WRONG, EASY_SESSION_SIZE） | refactor: SRS 配置走 LS_SRS 工厂 |
+| 1.3h | typography（`fs-`/`ls-`）+ voice slot 自定义 TTS 脚本 + cloudPushConfig/cloudPullConfig 内部循环 + Supabase SDK token 读取 | refactor: typography/voice slot/SDK token LS 调用走 helper |
+
+**意外发现：** 计划中标注的 `yihaiSyncAt:{key}` 死代码实际仍被 `syncDeckFromCloud`/`downloadDeckFromCloud`（preset 牌组路径）用作 delta 同步水位，与 personal deck `yihaiPushedAt`/`yihaiPulledAt` 共存。Plan 中删除方案作废，`LS_DECK` 工厂保留 `syncAt` 字段。
+
+### 测试
+
+- 新增 `tests/yihai_v5.14_ls_test.js`：23 断言覆盖 `lsGet/lsSet/lsRemove/lsGetJSON/lsSetJSON` 行为 + `LS_KEYS/LS_DECK/LS_SRS/LS_TYPO` 工厂
+- `tests/run_all.js` 注册新套件，**合计 11 套件 510 断言**（原 487 + 新 23）
+- Playwright 回归全部通过：
+  - `_pw_ui_smoke.js` 68/68
+  - `_pw_srs_e2e.js` 21/21
+  - `_pw_cross_device.js` 39/39
+  - `_pw_config_sync.js` 23/23
+
+### 外观与功能影响
+
+- **零外观变化** — 所有 localStorage key 名保持不变，App 行为与 v5.13.1 完全一致
+- **代码可维护性大幅提升** — grep `LS_KEYS.X` 找全 key 调用点；新增 key 必走 `LS_KEYS` 注册；批量重命名只需改注册表与工厂
+- **剩余 5 处 raw `localStorage.X(`** 全在 helper 内部实现，无业务代码 raw 调用
+
+### 已知遗留
+
+- 云端 `sync_config.config_json.ui` 字段名仍直接用 localStorage key 名作为字典 key（兼容跨设备已部署版本）。Phase 2 聚合 voice/UI config 时引入翻译表桥接，schema 不动
+- Phase 2/3 仍在 plan 中，本版本仅完成 Phase 1（基础设施）
+
 ## v5.13.1 — UI 与陪伴语境对齐 patch
 
 ### 完成屏移除红色「答错数」行
