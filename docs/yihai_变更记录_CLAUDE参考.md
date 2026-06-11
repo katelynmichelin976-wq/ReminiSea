@@ -2,6 +2,100 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.3 — localStorage keymap 规范化 Phase 2（聚合配置 blob）
+
+### 动机
+
+Phase 1 (v5.13.2) 完成了基础设施层（helper + 注册表），但 key 仍然分散。Phase 2 把同生命周期的多 key 聚合为单 JSON entry，减少 entry 数量 + 实现原子读写 + 简化 GC/迁移路径。云端 `sync_config` schema **不变**，本地通过翻译表桥接（保兼容跨设备已部署版本）。
+
+### 改动
+
+#### Phase 2.1: per-deck 同步状态聚合 `deckSync:{key}`
+
+4 个旧 key:
+- `yihaiPushedAt:{k}` (push 水位，number)
+- `yihaiPulledAt:{k}` (pull 水位，number)
+- `yihaiPushedMediaAt:{k}` (media push 水位，number)
+- `yihaiDeletedCards:{k}` (tombstone array)
+
+→ 单 JSON entry `deckSync:{k}` = `{pushedAt, pulledAt, pushedMediaAt, deletedCards}`，默认值 `DECK_SYNC_DEFAULT = {pushedAt: 0, pulledAt: 0, pushedMediaAt: 0, deletedCards: []}`。
+
+新 helper：`getDeckSync/setDeckSync/removeDeckSync/migrateDeckSync`。`migrateDeckSync` 启动时扫所有旧 key，按 deckKey 聚合，写新 entry 删旧 key；对 ISO 字符串/数字两种水位格式都能解析（`/^\d+$/.test(v) ? parseInt(v) : (Date.parse(v) || 0)`）。
+
+注意：`yihaiSyncAt:{k}` 因 preset 牌组 `syncDeckFromCloud`/`downloadDeckFromCloud` 仍在用作 delta 水位（v5.13.2 Phase 1.2 调研所发现），保留在 `LS_DECK` 工厂中独立。
+
+SyncJob 所有 watermark 读写路径（runStructurePhase/runCardsPhase/runMediaPhase/upsertDeckRow）改写 `lsGet(LS_DECK(k, 'pushedAt'))` → `getDeckSync(k).pushedAt`、`lsSet(LS_DECK(k, 'pushedAt'), String(maxMod))` → `setDeckSync(k, { pushedAt: maxMod })`。`markCardDeleted/getDeletedCards/clearDeletedCards` 改读写 `deckSync.deletedCards`。`removeDeck` 用 `removeDeckSync(key)` 替代 4 个独立 remove。`migrateSyncWatermarks` 改为直接写 deckSync（不再经 yihaiPushedAt 中转）。`gcOrphanSyncKeys` 简化 prefix 列表为 `['deckSync:', 'yihaiSyncAt:']`。`LS_DECK` 工厂瘦身只剩 `cards + syncAt`，aggregated 字段抛错指引走 deckSync helper。
+
+#### Phase 2.2: voice config 聚合 `voiceConfig`
+
+~20 个扁平 voice/TTS/delay key（phraseCorrect/phraseWrong/phraseStreakCorrect/phraseSessionFinish/phraseIdleBrowse/phraseOptHint/phraseQuizPrompt/phraseQuizPromptRecognize/ttsRate/ttsPitch/ttsVoiceName/voiceMuted/voiceAssistEnabled/ansReadDelay/optReadDelay/browseAnsDelay/optCount/optTouchDelay/ndur/bdur）→ 单 JSON entry `voiceConfig`。
+
+新 helper：`VOICE_FIELDS` 注册表 + `getVoiceConfig/getVoiceField/setVoiceField/migrateVoiceConfig`。`setVoiceField(name, null)` 删字段、`setVoiceField(name, value)` 自动 `String()` 化。
+
+**云端 `sync_config.config_json.ui` schema 不变**：
+- `cloudPushConfig` 改为 `localUi = { ...getVoiceConfig(), ... }` 平铺
+- `cloudPullConfig` 按 `VOICE_FIELDS` 路由：`if (VOICE_FIELDS.includes(k)) setVoiceField(k, v)`
+
+`loadPhraseOrDefault(voiceField, i18nKey)` 改读 `getVoiceField`（修复 PHRASE_SELECT 全局映射断言）。LS_KEYS 移除 20 个 voice 常量。
+
+#### Phase 2.3: UI + typography 聚合
+
+UI config `uiConfig`：
+- `theme` (CSS theme key)
+- `locale` (was `yihai_ui_locale`)
+- `appMode` (was `yihaiAppMode`)
+- `confettiOn`
+- `logLevel` (was `yihaiLogLevel`)
+
+5 key → 单 JSON entry。新 helper：`UI_OLD_MAP/getUiConfig/getUiField/setUiField/migrateUiConfig`。
+
+Typography config `typographyConfig`：
+- `fs-opt`, `fs-ans`, `fs-hint`, `fs-btn`（font-size CSS var）
+- `ls-opt`, `ls-ans`, `ls-hint`, `ls-btn`（letter-spacing CSS var）
+
+8 key → 嵌套 JSON `{fs: {opt, ans, hint, btn}, ls: {...}}`。新 helper：`TYPO_SLOTS/getTypographyConfig/getTypoField/setTypoField/migrateTypographyConfig`。
+
+**云端兼容**：
+- `cloudPushConfig` 展开 `typographyConfig` 为扁平 `fs-opt` / `ls-ans` 等保留云端 schema
+- `cloudPullConfig` 按 field type 路由：`if (k === 'theme' || k === 'confettiOn') setUiField(...)`，`if (k.startsWith('fs-')) setTypoField('fs', k.slice(3), v)`
+
+仅 `theme + confettiOn` 走云同步；`locale/appMode/logLevel` 仅本地。
+
+`LS_KEYS` 移除 `THEME/LOCALE/APP_MODE/CONFETTI_ON/LOG_LEVEL`，`LS_TYPO` 工厂删除。
+
+#### 启动顺序
+
+所有 migrate 函数在 helper 定义之后立即运行（loadSettings/loadPhrases 之前），避免一次性升级时设置取到默认值：
+
+```javascript
+try { migrateVoiceConfig(); } catch ...
+try { migrateUiConfig(); } catch ...
+try { migrateTypographyConfig(); } catch ...
+```
+
+（`migrateDeckSync` 仍在 initUI 中跟 `migrateSyncWatermarks` 一起，因前者依赖 restoreDecks 后的 DECKS_META 不存在，可独立运行）
+
+### 测试
+
+- 新增 v5.14_ls_test.js 套件 +63 断言（deckSync/voiceConfig/uiConfig/typographyConfig migrate/idempotent/no-op + set\*Field null deletion + 默认 fallback），单测合计 **11 套件 570 断言**
+- Playwright 全过：
+  - `_pw_ui_smoke.js` 68/68
+  - `_pw_srs_e2e.js` 21/21
+  - `_pw_cross_device.js` 39/39（PHASE 6/9/10 改用 `getDeckSync`/`setDeckSync` API）
+  - `_pw_config_sync.js` 23/23（voice 字段读写改 `setVoiceField`/`getVoiceField`；finally cleanup 同步改 API）
+- `tests/yihai_v5.2_voice_test.js` 跟随改：检测 `VOICE_FIELDS` + `...getVoiceConfig()` 平铺模式，替代旧 grep `phraseQuizPrompt` 字面量
+
+### 外观与功能
+
+- **零变化** — 所有 localStorage entry 数量减少（per-deck N×4 → N×1；voice 20 → 1；UI 5 → 1；typography 8 → 1），但 App 行为与 v5.13.2 完全一致
+- **代码可维护性进一步提升** — 同生命周期字段集中、原子读写、`removeDeck`/`switchLocale` 等批量操作单次 entry 写完
+- **云端 sync_config schema 完全未变** — 跨设备已部署版本可无缝读写
+
+### 已知遗留
+
+- Phase 3（`yh:v1:` prefix rename）仍在 plan 中，本版本未做
+- 云端 `sync_config` 仍是扁平结构 `{srs: {...}, ui: {phraseCorrect, theme, fs-opt, ...}}`，未来 schema v2 可考虑结构化（独立后续工作）
+
 ## v5.13.2 — localStorage keymap 规范化 Phase 1（infrastructure）
 
 ### 动机
