@@ -11039,6 +11039,7 @@ function mergeCard(local, remote) {
       url:   rs.url,
       v:     rs.v ?? 0,
       _blob: sameVersion ? (ls._blob || '') : '',
+      confirmed: rs.url ? true : false,
     };
   }
   return merged;

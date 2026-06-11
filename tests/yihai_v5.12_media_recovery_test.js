@@ -154,5 +154,44 @@ function serializeMediaForCloud(media) {
   check('rollback: confirmed=true → 失败后置 false', c.media.img.confirmed === false);
 }
 
+// ── mergeCard confirmed 传播 ──────────────────────────────────────
+function mergeCard(local, remote) {
+  const merged = { ...local, ...remote };
+  merged.media = merged.media || {};
+  for (const slot of Object.keys(remote.media || {})) {
+    const rs = remote.media[slot];
+    const ls = local.media?.[slot] || {};
+    const sameVersion = rs.url === ls.url && rs.v === (ls.v ?? 0);
+    merged.media[slot] = {
+      url:   rs.url,
+      v:     rs.v ?? 0,
+      _blob: sameVersion ? (ls._blob || '') : '',
+      confirmed: rs.url ? true : false,
+    };
+  }
+  return merged;
+}
+
+{
+  const local  = { id: 'c1', media: { img: { url: 'p/x.jpg', v: 0, _blob: 'b:l', confirmed: true } } };
+  const remote = { id: 'c1', media: { img: { url: 'p/x.jpg', v: 0, _blob: '',    confirmed: true } } };
+  const m = mergeCard(local, remote);
+  check('mergeCard: sameVersion + rs.url → confirmed=true', m.media.img.confirmed === true);
+  check('mergeCard: sameVersion → 保 local _blob', m.media.img._blob === 'b:l');
+}
+{
+  const local  = { id: 'c1', media: { img: { url: 'p/old.jpg', v: 0, _blob: 'b:l', confirmed: true } } };
+  const remote = { id: 'c1', media: { img: { url: 'p/new.jpg', v: 1, _blob: '',    confirmed: true } } };
+  const m = mergeCard(local, remote);
+  check('mergeCard: 远端新 url → confirmed=true（来自 DB）', m.media.img.confirmed === true);
+  check('mergeCard: 不同 version → _blob 清空', m.media.img._blob === '');
+}
+{
+  const local  = { id: 'c1', media: { img: { url: 'p/x.jpg', v: 0, _blob: 'b:l' } } };
+  const remote = { id: 'c1', media: { img: { url: '', v: 0, _blob: '' } } };
+  const m = mergeCard(local, remote);
+  check('mergeCard: 远端空 url → confirmed=false', m.media.img.confirmed === false);
+}
+
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);
 process.exit(failed > 0 ? 1 : 0);
