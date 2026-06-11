@@ -2,6 +2,23 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.1 — UI 与陪伴语境对齐 patch
+
+### 完成屏移除红色「答错数」行
+
+- **冲突**：`finish-stats` 渲染 `finish_again` 行 + 套 `wrong` class（红色），与全应用「答错的选项无声消失、不给负反馈」核心理念冲突——妈妈每次练习的最后一眼是红色失败计数
+- **修法**：删该行（5 个 i18n locale 中未引用的 `finish_again` key 一并清理）。`sFail` 仍计算并传 `logAppEvent('show_finish', {session_fail})`，照护者端 stats 数据完整
+
+### easy 模式倒计时环隐藏数字秒数
+
+- **场景**：陪伴模式下显示倒计时数字（5、4、3…）给妈妈带来时间压力感
+- **修法**：`startNRing` tick 加 `showSec = SRS_CONFIG.session_mode !== 'easy'` 开关，仅普通模式写 `sec.textContent`。SVG 环动画完全保留，时间到 `onNext()` 不变
+
+### easy 模式顶栏 SRS 计数器改 cur/total 进度
+
+- **场景**：陪伴模式下 `0+12+5` Anki 三元组对妈妈没意义且增加认知负担
+- **修法**：HTML 加 `<span class="srs-cnt-remain">`，CSS 用 `.srs-counter[data-mode="easy"]` attribute 切换：易模式显示 `${qIdx+1}/${Qs.length}` 进度（如 `12/20`），隐藏三元组与分隔符；普通模式行为不变
+
 ## v5.13.0 — 个人牌组跨设备同步可靠性全面修复
 
 minor bump：新增 `confirmed: boolean` 本地 schema 字段（仅 IDB 持久化，不入 DB），覆盖 crash-mid-sync 恢复语义。配合 P0/P1 的水位/失败语义修复，关闭 3 类静默数据丢失。

@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | File | Purpose |
 |------|---------|
-| `index.html` | 主训练 App（v5.13.0，单 HTML 文件，Supabase 云同步） |
+| `index.html` | 主训练 App（v5.13.1，单 HTML 文件，Supabase 云同步） |
 | `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
 | `index_v49.html` | 制卡工具（暂停）|
 
@@ -68,7 +68,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Recent Changes
 
-**当前版本：v5.13.0**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+**当前版本：v5.13.1**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**v5.13.1：** UI 与陪伴语境对齐 patch — ① **完成屏移除红色「答错数」行**：`finish_again` 红色 `wrong` class 行与全应用「答错的选项无声消失、不给负反馈」理念冲突，删该行 + 5 locale 中未引用的 `finish_again` key。`sFail` 仍计算并传 `logAppEvent` 照护者端 stats 数据不丢。② **easy 模式倒计时环隐藏数字秒数**：`startNRing` tick 加 `showSec` 开关，`session_mode === 'easy'` 时不写 `sec.textContent`，SVG 环动画完全保留。③ **easy 模式顶栏 SRS 计数器改 cur/total 进度**：陪伴语境下 `新+学+复` Anki 三元组改为 `(qIdx+1)/Qs.length` 简单进度（如 `12/20`），CSS 用 `data-mode="easy"` 切换。
 
 **v5.13.0：** 个人牌组跨设备同步可靠性全面修复 — ① **sync 顺序 fix（P0）**：`runStructurePhase` pulledAt 推进顺序写反——之前在 `computeDeckDiff` 前推进，导致 toPull 的 `r.ts <= pulledAt` 把所有远端卡误判为已同步，跨设备增量拉取被掐死。改为快照前置、推进后置。`runMediaPhase` 结尾新增 `_didPush` 标记 + 按需 `upsertDeckRow` 广播 `decks.updated_at`，否则其他设备 `remoteAhead` 永不触发。② **媒体 upsert 失败恢复（P1）**：`flushMediaUpsert` 之前 `pendingMediaUpsert.clear()` 在 await 前 + `.catch console.warn` 吞错，导致失败批次彻底丢失（本地 s.url 已写、guard 永远 skip 重传）。改为先 await 再处理，失败时通过 `uploadedSlots` 数组回滚本次上传 slot 的 s.url + 抛错让 SyncJob 进 error，下次同步自动重传+重写 DB。新增 `rollbackUploadedSlots` 纯函数 + `_pw_media_recovery.js` failure injection e2e。③ **死代码清理**：删除 `uploadDeckToCloud`（零调用 + 含 DELETE+INSERT 反模式）和 `uploadMissingPersonalDecks`（标注 "deprecated v5.8 remove in v5.9" 至 v5.12 仍在）；同步更新 `docs/architecture.md` 个人牌组同步流程图为当前 SyncJob 三阶段路径。④ **crash-mid-sync 恢复（P2）**：P1 修了显式 flush 失败，但浏览器在 `saveDeckCards`(s.url 持久化) 与 `flushMediaUpsert`(DB 写) 之间崩，IDB 有 url DB 无，下次 upload guard 永远 skip。引入 per-slot `confirmed: boolean`：DB 写成功才置 true（`commitUploadedSlots` helper），上传 guard 三态化（confirmed→skip / 未 confirmed+有 url→补 DB 写 / 无 url→Storage+DB），pull/download/diag/mergeCard 路径自动置 confirmed=true（共 9 处构造点）。`serializeMedia` 拆为本地（保 confirmed）+ `serializeMediaForCloud`（剥 confirmed）。`mergeCard` 传播 confirmed 防 pull 后每次同步冗余 DB 写。新增 v5.12 单测套件 22 断言 + `_pw_media_recovery.js` PHASE 5 crash 恢复 e2e（套件总 487 断言）。
 
