@@ -1,8 +1,8 @@
 /**
  * 忆海拾光 媒体 upsert 失败恢复测试 — P1 #1
  * 依赖：python -m http.server 8080 --directory C:\code
- *        $env:TEST_PASSWORD="667788"
- * 运行：$env:TEST_PASSWORD="667788"; node tests/_pw_media_recovery.js
+ *        $env:TEST_PASSWORD="xxx"
+ * 运行：$env:TEST_PASSWORD="xxx"; node tests/_pw_media_recovery.js
  *
  * 覆盖：① stub upsertCardsMediaBatch 让 media upsert 失败一次
  *       ② 验证 s.url 被回滚为空 + SyncJob 进 error
