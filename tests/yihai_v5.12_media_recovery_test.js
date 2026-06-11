@@ -119,5 +119,34 @@ function commitUploadedSlots(uploadedSlots, succeededCardSet) {
   check('commit: 部分成功 → 仅 c1 置 confirmed', c1.media.img.confirmed === true && c2.media.img.confirmed !== true);
 }
 
+// ── serializeMedia / serializeMediaForCloud ────────────────────────
+function serializeMedia(media) {
+  return Object.fromEntries(
+    Object.entries(media).map(([slot, s]) => [
+      slot,
+      s.confirmed ? { url: s.url || '', v: s.v ?? 0, confirmed: true } : { url: s.url || '', v: s.v ?? 0 },
+    ])
+  );
+}
+function serializeMediaForCloud(media) {
+  return Object.fromEntries(
+    Object.entries(media).map(([slot, s]) => [slot, { url: s.url || '', v: s.v ?? 0 }])
+  );
+}
+
+{
+  const m = { img: { url: 'p/x.jpg', v: 1, _blob: 'b:x', confirmed: true } };
+  const idb = serializeMedia(m);
+  check('serializeMedia: 剥 _blob', !('_blob' in idb.img));
+  check('serializeMedia: 保 confirmed', idb.img.confirmed === true);
+  check('serializeMedia: 保 url/v', idb.img.url === 'p/x.jpg' && idb.img.v === 1);
+}
+{
+  const m = { img: { url: 'p/x.jpg', v: 1, _blob: 'b:x', confirmed: true } };
+  const cloud = serializeMediaForCloud(m);
+  check('serializeMediaForCloud: 剥 _blob + confirmed', !('_blob' in cloud.img) && !('confirmed' in cloud.img));
+  check('serializeMediaForCloud: 保 url/v', cloud.img.url === 'p/x.jpg' && cloud.img.v === 1);
+}
+
 console.log(`\n结果：${passed} 通过  ${failed} 失败`);
 process.exit(failed > 0 ? 1 : 0);
