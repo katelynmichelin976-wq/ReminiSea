@@ -3136,7 +3136,7 @@ let _deviceId = null;
 let _lastOrphans = [];    // media cleanup: cache last orphan scan keys
 let _cloudUserEmail = '';
 let _cloudUserId = '';
-var _realtimeUpload = localStorage.getItem('yihaiRealtimeUpload') !== 'false'; // realtime upload toggle during learning
+var _realtimeUpload = lsGet(LS_KEYS.REALTIME_UPLOAD) !== 'false'; // realtime upload toggle during learning
 var _syncInFlight = false;         // runSync concurrency lock
 
 // CDN media download helper: try CDN first, fallback to Supabase Storage
@@ -3689,7 +3689,7 @@ async function runSync(opts) {
         .select('deck_key, practice_days, last_practice_date')
         .eq('user_id', _cloudUserId);
       if (_dsResp.data) {
-        localStorage.setItem('yihaiPracticeDays', JSON.stringify(_dsResp.data));
+        lsSet(LS_KEYS.PRACTICE_DAYS, JSON.stringify(_dsResp.data));
         for (var _ds of _dsResp.data) {
           var _dm = DECKS_META.find(function(d) { return d.key === _ds.deck_key; });
           if (_dm) _dm.practiceDays = _ds.practice_days;
@@ -3729,17 +3729,17 @@ async function runSync(opts) {
     syncStats.decks = newDecks + syncedDecks;
     // cleanup & mark
     // retry pending feedback (written during offline/degraded state)
-    var _pfb = localStorage.getItem('yihaiPendingFeedback');
+    var _pfb = lsGet(LS_KEYS.PENDING_FEEDBACK);
     if (_pfb && _syncEnabled) {
       try {
         var _pfbPayload = JSON.parse(_pfb);
         var _pfbClient  = supabase.createClient(FB_SUPABASE_URL, FB_SUPABASE_ANON_KEY);
         var _pfbRes     = await _pfbClient.from('feedback').insert(_pfbPayload);
-        if (!_pfbRes.error) localStorage.removeItem('yihaiPendingFeedback');
+        if (!_pfbRes.error) lsRemove(LS_KEYS.PENDING_FEEDBACK);
       } catch(e) { log.warn('feedback', 'pending retry failed', e.message); }
     }
     purgeOldLogs();
-    localStorage.setItem('yihaiGlobalSyncTs', String(Date.now()));
+    lsSet(LS_KEYS.GLOBAL_SYNC_TS, String(Date.now()));
     logAppEvent('sync_done', { deck_key: options.deckKey, stats: syncStats }, options.deckKey);
     // done
     updateProg(t('sync_done'), 100);
@@ -3800,7 +3800,7 @@ function openSrsDb() {
         if (!csStore.indexNames.contains('user_id')) csStore.createIndex('user_id', 'user_id');
         const trStore = e.target.transaction.objectStore(TRIAL_STORE);
         if (!trStore.indexNames.contains('user_id')) trStore.createIndex('user_id', 'user_id');
-        localStorage.setItem('yihaiV5MigrationPending', '1');
+        lsSet(LS_KEYS.V5_MIGRATION, '1');
       }
       if (oldVer < 6) {
         if (!db.objectStoreNames.contains(LOG_STORE)) {
@@ -3863,7 +3863,7 @@ async function migrateDeviceRecordsToUser(cloudUserId) {
 const _LOG_LEVELS  = { debug: 0, info: 1, warn: 2, error: 3 };
 const _LOG_COLORS  = { debug: 'color:#888', info: 'color:#0ea5e9', warn: 'color:#f59e0b', error: 'color:#ef4444' };
 const _urlLogParam = new URLSearchParams(location.search).get('log');
-let _logLevel = _LOG_LEVELS[_urlLogParam || localStorage.getItem('yihaiLogLevel') || 'warn'] ?? 2;
+let _logLevel = _LOG_LEVELS[_urlLogParam || lsGet(LS_KEYS.LOG_LEVEL) || 'warn'] ?? 2;
 
 function _writeLogToIdb(entry) {
   openSrsDb().then(function(db) {
@@ -3895,7 +3895,7 @@ var log = {
   setLevel: function(name) {
     if (_LOG_LEVELS[name] === undefined) { console.warn('yhLog: unknown level', name); return; }
     _logLevel = _LOG_LEVELS[name];
-    localStorage.setItem('yihaiLogLevel', name);
+    lsSet(LS_KEYS.LOG_LEVEL, name);
     console.log('%c[LOG] level set to ' + name, _LOG_COLORS[name]);
   }
 };
@@ -4259,7 +4259,7 @@ async function getAllEasyStates(deckKey) {
 // ── Easy 模式跨设备 pull（v5.11） ─────────────────────────────────
 async function pullEasyStates() {
   if (!_syncEnabled || !_sb || !_cloudUserId) return { pulled: 0 };
-  const since = parseInt(localStorage.getItem('yihaiEasyPulledAt') || '0', 10);
+  const since = parseInt(lsGet(LS_KEYS.EASY_PULLED_AT) || '0', 10);
   const sinceIso = new Date(since).toISOString();
   let resp;
   try {
@@ -4288,7 +4288,7 @@ async function pullEasyStates() {
     const ts = new Date(row.updated_at).getTime();
     if (ts > maxTs) maxTs = ts;
   }
-  if (maxTs > since) localStorage.setItem('yihaiEasyPulledAt', String(maxTs));
+  if (maxTs > since) lsSet(LS_KEYS.EASY_PULLED_AT, String(maxTs));
   return { pulled: resp.data.length };
 }
 
@@ -5185,7 +5185,7 @@ async function restoreDecks() {
   }
   // restore cloud practice days cache
   try {
-    var raw = localStorage.getItem('yihaiPracticeDays');
+    var raw = lsGet(LS_KEYS.PRACTICE_DAYS);
     if (raw) {
       var allStats = JSON.parse(raw);
       for (var i = 0; i < allStats.length; i++) {
@@ -6093,7 +6093,7 @@ async function doAccountLogout() {
   _downloading.clear();
   try { if (_sb) await _sb.auth.signOut(); } catch(e) { console.warn('[sync] signOut error:', e.message); }
   _syncEnabled = false; _cloudUserEmail = ''; _sb = null;
-  localStorage.removeItem('yihaiGlobalSyncTs');
+  lsRemove(LS_KEYS.GLOBAL_SYNC_TS);
   lsRemove(LS_KEYS.SESSION_BACKUP);
   lsRemove(LS_KEYS.SESSION_BACKUP_OLD);
   renderDeckList(); updateDeckStats();
@@ -6615,7 +6615,7 @@ function toggleDownloadPause(deckId) {
 
 function onAccountRealtimeToggle(el) {
   _realtimeUpload = el.checked;
-  localStorage.setItem('yihaiRealtimeUpload', el.checked ? 'true' : 'false');
+  lsSet(LS_KEYS.REALTIME_UPLOAD, el.checked ? 'true' : 'false');
 }
 
 // ── deck detail screen ───────────────────────────────────────────
@@ -6912,7 +6912,7 @@ async function collectDiagnostics() {
     idb_version:        SRS_DB_VER,
     sync_enabled:       _syncEnabled,
     has_session_backup: !!lsGet(LS_KEYS.SESSION_BACKUP),
-    last_sync_ts:       Number(localStorage.getItem('yihaiGlobalSyncTs')) || null,
+    last_sync_ts:       Number(lsGet(LS_KEYS.GLOBAL_SYNC_TS)) || null,
     deck_count:         (typeof DECKS_META !== 'undefined' ? DECKS_META.length : null),
     logs:               null,
     log_source:         null,
@@ -6988,7 +6988,7 @@ async function submitFeedback(userDesc) {
   } catch(e) {}
   var text = formatFeedbackText(payload);
   try { await navigator.clipboard.writeText(text); } catch(e) {}
-  localStorage.setItem('yihaiPendingFeedback', JSON.stringify(payload));
+  lsSet(LS_KEYS.PENDING_FEEDBACK, JSON.stringify(payload));
   return 'clipboard';
 }
 
@@ -11614,7 +11614,7 @@ async function renderStatsDeck() {
   var practiceDays = 0;
   var cloudDays = 0, cloudLastDate = '';
   try {
-    var raw = localStorage.getItem('yihaiPracticeDays');
+    var raw = lsGet(LS_KEYS.PRACTICE_DAYS);
     if (raw) {
       var allStats = JSON.parse(raw);
       var ds = allStats.find(function(d) { return d.deck_key === key; });
