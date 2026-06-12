@@ -95,7 +95,7 @@ function check(desc, actual, expected) {
 }
 
 // ── v5.2 语音参数云同步完整性检查 ─────────────────────────────────────
-// v5.13.3 Phase 2.2 后 voice 字段聚合到 voiceConfig，通过 VOICE_FIELDS 注册表 + cloudPushConfig 内 ...getVoiceConfig() 平铺
+// v5.13.3 Phase 2.2 后 voice 字段聚合到 voiceConfig，通过 VOICE_FIELDS 注册表路由；v5.16 起 cloudPushConfig 析构排除 phrases blob，仅平铺当前 locale 的 phrase 字段
 {
   const fs = require('fs');
   const html = fs.readFileSync('index.html', 'utf-8');
