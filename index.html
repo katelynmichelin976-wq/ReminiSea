@@ -3419,11 +3419,24 @@ function updateCloudTabUI() {
 // collect device info for troubleshooting
 function getDeviceInfo() {
   try {
-    return {
-      ua:     navigator.userAgent,
-      screen: screen.width + 'x' + screen.height,
-      lang:   navigator.language
-    };
+    const ua = navigator.userAgent;
+    let model = null;
+    const android = ua.match(/Android\s([\d.]+);\s([^)]+)\)/);
+    if (android) {
+      model = android[2].trim() + ' / Android ' + android[1];
+    } else {
+      const ios = ua.match(/(iPhone|iPad);.*?OS ([\d_]+)/);
+      if (ios) model = ios[1] + ' / iOS ' + ios[2].replace(/_/g, '.');
+      else {
+        const mac = ua.match(/Macintosh;.*?Mac OS X ([\d_]+)/);
+        if (mac) model = 'Mac / macOS ' + mac[1].replace(/_/g, '.');
+        else {
+          const win = ua.match(/Windows NT ([\d.]+)/);
+          if (win) model = 'Windows NT ' + win[1];
+        }
+      }
+    }
+    return { ua, screen: screen.width + 'x' + screen.height, lang: navigator.language, model };
   } catch(e) { return {}; }
 }
 
