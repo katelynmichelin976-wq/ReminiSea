@@ -3403,7 +3403,7 @@ function restoreSession() {
 }
 
 function _onOnlineRetry() {
-  log.info('sync', 'online — retrying session restore');
+  log.info('sync', 'online_retry_session');
   window.removeEventListener('online', _onOnlineRetry);
   restoreSession().then(function() {
     if (_syncEnabled) runSync({ decks: false, showToast: true }).then(function(){ refreshDeckUpdateBadges().catch(function(){}); }).catch(function(){});
@@ -3804,7 +3804,7 @@ async function runSync(opts) {
   logAppEvent('sync_started', { deck_key: options.deckKey, mode: options.modal ? 'modal' : 'bg', decks: !!options.decks, events: !!options.events }, options.deckKey);
   var syncStats = { trials: 0, events: 0, states_merged: 0, config: 0, decks: 0 };
   var _syncWatchdogId = setTimeout(function() {
-    log.warn('sync', 'runSync watchdog: 30s timeout');
+    log.warn('sync', 'watchdog_timeout', { ms: 30000 });
     _syncInFlight = false;
     if (options.modal && modalEl) modalEl.style.display = 'none';
     showCloudToast(t('sync_failed'), true);
@@ -3889,7 +3889,7 @@ async function runSync(opts) {
           try {
             meta = DECKS_META.find(function(m) { return m.name === sd.name; });
             if (meta) { syncStats.states_merged += await syncCardStatesFromCloud(meta.key); }
-          } catch(e) { log.warn('sync', 'syncCardStatesFromCloud skip', e.message); }
+          } catch(e) { log.warn('sync', 'card_states_pull_skip', { err: e.message }); }
         }
         renderDeckList();
         updateDeckStats();
@@ -3910,7 +3910,7 @@ async function runSync(opts) {
         var _pfbClient  = supabase.createClient(FB_SUPABASE_URL, FB_SUPABASE_ANON_KEY);
         var _pfbRes     = await _pfbClient.from('feedback').insert(_pfbPayload);
         if (!_pfbRes.error) lsRemove(LS_KEYS.PENDING_FEEDBACK);
-      } catch(e) { log.warn('feedback', 'pending retry failed', e.message); }
+      } catch(e) { log.warn('feedback', 'pending_retry_fail', { err: e.message }); }
     }
     purgeOldLogs();
     lsSet(LS_KEYS.GLOBAL_SYNC_TS, String(Date.now()));
@@ -4027,7 +4027,7 @@ async function migrateDeviceRecordsToUser(cloudUserId) {
     var trN = 0;
     trAll.forEach(function(t) { if (t.user_id === did) { t.user_id = cloudUserId; trStore.put(t); trN++; } });
     await new Promise(function(resolve, reject) { trTx.oncomplete = resolve; trTx.onerror = reject; });
-  } catch(e) { log.error('idb', 'migrateDeviceId failed', e.message); }
+  } catch(e) { log.error('storage', 'migrate_device_id_fail', { err: e.message }); }
 }
 
 // ── local log buffer（内存 ring buffer，仅 feedback 携带）──────────
@@ -4089,7 +4089,7 @@ async function upsertDeviceRegistry() {
       user_id: _cloudUserId, device_id: _deviceId,
       device_info: getDeviceInfo(), last_seen: new Date().toISOString()
     }, { onConflict: 'user_id,device_id' });
-  } catch(e) { log.warn('sync', 'upsertDeviceRegistry failed', e.message); }
+  } catch(e) { log.warn('sync', 'device_registry_upsert_fail', { err: e.message }); }
 }
 
 async function uploadAppEvent(event) {
@@ -4099,9 +4099,9 @@ async function uploadAppEvent(event) {
     var _a = await _sb.from('app_events').insert(payload);
     // 23505 = record exists (duplicate upload, treat as success)
     if (!_a.error || _a.error.code === '23505') { event.synced_at = Date.now(); return true; }
-    log.warn('sync', 'uploadAppEvent error', _a.error);
+    log.warn('sync', 'app_event_upload_err', { err: _a.error && _a.error.message });
     return false;
-  } catch(e) { log.warn('sync', 'uploadAppEvent exception', e.message); return false; }
+  } catch(e) { log.warn('sync', 'app_event_upload_exc', { err: e.message }); return false; }
 }
 
 async function uploadAppEventBatch(events) {
@@ -4113,9 +4113,9 @@ async function uploadAppEventBatch(events) {
     // ignoreDuplicates: true → ON CONFLICT DO NOTHING, treats existing rows as success
     var _a = await _sb.from('app_events').upsert(payloads, { onConflict: 'event_id', ignoreDuplicates: true });
     if (!_a.error) return true;
-    log.warn('sync', 'uploadAppEventBatch error', _a.error);
+    log.warn('sync', 'app_event_batch_err', { err: _a.error && _a.error.message });
     return false;
-  } catch(e) { log.warn('sync', 'uploadAppEventBatch exception', e.message); return false; }
+  } catch(e) { log.warn('sync', 'app_event_batch_exc', { err: e.message }); return false; }
 }
 
 
@@ -4152,7 +4152,7 @@ async function syncAppEvents() {
         req.onsuccess = function() { if (req.result) { req.result.synced_at = now; store.put(req.result); } };
       });
       tx.oncomplete = res;
-      tx.onerror = function(e) { log.error('sync', 'batch markSynced failed', e.target.error && e.target.error.message); rej(e.target.error); };
+      tx.onerror = function(e) { log.error('sync', 'batch_mark_synced_fail', { err: e.target.error && e.target.error.message }); rej(e.target.error); };
     });
   }
 
@@ -4195,7 +4195,7 @@ async function purgeOldLogs() {
       if (c.value.synced_at && c.value.synced_at < cutoff30) c.delete();
       c.continue();
     };
-  } catch(e) { log.warn('idb', 'purgeOldLogs failed', e.message); }
+  } catch(e) { log.warn('storage', 'purge_old_logs_fail', { err: e.message }); }
   if (_syncEnabled && _sb && _cloudUserId) {
     try {
       const cutoffIso = new Date(Date.now() - 30 * 86400000).toISOString();
@@ -4204,7 +4204,7 @@ async function purgeOldLogs() {
         .eq('user_id', _cloudUserId)
         .lt('last_seen', cutoffIso)
         .neq('device_id', _deviceId);
-    } catch(e) { log.warn('sync', 'purge device_registry failed', e.message); }
+    } catch(e) { log.warn('sync', 'purge_device_registry_fail', { err: e.message }); }
   }
 }
 
@@ -4613,7 +4613,7 @@ function getDailyProgress() {
     const dp = JSON.parse(raw);
     if (dp.date !== todayStr()) return newDailyProgress();  // new day, reset
     return dp;
-  } catch(e) { log.warn('idb', 'getDailyProgress parse error', e.message); return newDailyProgress(); }
+  } catch(e) { log.warn('storage', 'daily_progress_parse_fail', { err: e.message }); return newDailyProgress(); }
 }
 
 function saveDailyProgress(dp) {
