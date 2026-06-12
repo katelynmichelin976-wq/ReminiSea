@@ -7108,6 +7108,7 @@ async function collectDiagnostics() {
     });
     base.events = evts.slice(-10).map(function(e) { return { type: e.event_type, payload: e.payload, ts: e.timestamp }; });
     base.voice_log = _voiceLog.slice(-40);
+    base.user_id = _cloudUserId || null;
   } catch(e) {}
   return base;
 }
