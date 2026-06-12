@@ -24,6 +24,7 @@ const UNIT_SUITES = [
   'yihai_v5.12_media_recovery_test.js',
   'yihai_v5.14_ls_test.js',
   'yihai_v5.15_log_test.js',
+  'yihai_v5.16_lang_phrases_test.js',
 ];
 
 const COL_W = 24;
