@@ -5447,13 +5447,6 @@ let _encouragementPending = false;  // 答对鼓励语音链播放中，revealAn
 let _onEncouragementDone = null;    // 鼓励链完成时回调（由 revealAnswer 注册触发 playAnswer）
 let _answerClickTime = 0;           // 答对点击时刻，用于鼓励链兜底保持 ANS_READ_DELAY 最小延迟
 
-// ── 语音链路诊断日志（始终开启，不依赖 log level，随 feedback 上报）──
-const _voiceLog = [];
-function _logVoice(event, data) {
-  if (_voiceLog.length >= 60) _voiceLog.shift();
-  _voiceLog.push({ t: Date.now(), e: event, ...(data || {}) });
-  console.info('[VOICE]', event, data || '');
-}
 
 let _ttsPromptActive = false;  // true while startCardPrompts sequence (quiz_prompt + speakOptHint) is running
 let _idleBrowseTimer = null;
@@ -7062,7 +7055,7 @@ async function collectDiagnostics() {
       r.onerror   = function(e) { rej(e.target.error); };
     });
     base.events = evts.slice(-10).map(function(e) { return { type: e.event_type, payload: e.payload, ts: e.timestamp }; });
-    base.voice_log = _voiceLog.slice(-40);
+    base.voice_log = LOCAL_LOG.filter(l => l.m === 'voice').slice(-40);
     base.user_id = _cloudUserId || null;
   } catch(e) {}
   return base;
@@ -8977,20 +8970,20 @@ function pickVoice(lang, autoOnly = false) {
 
 async function playVoiceSlot(slotName, ttsText, ttsLang, onend = null) {
   const fireEnd = () => { if (onend) { try { onend(); } catch (e) {} } };
-  if (VOICE_MUTED) { _logVoice('slot_muted', { slot: slotName }); fireEnd(); return; }
+  if (VOICE_MUTED) { log.info('voice', 'slot_muted', { slot: slotName }); fireEnd(); return; }
   const key = slotStorageKey(slotName);
   const customTts = key ? getVoiceField(key) : null;
   const effectiveTts = customTts !== null ? customTts : ttsText;
   try {
     const slot = await loadVoiceSlot(slotName);
     if (slot && slot.audioBlob) {
-      _logVoice('slot_recording', { slot: slotName });
+      log.info('voice', 'slot_recording', { slot: slotName });
       const url = URL.createObjectURL(slot.audioBlob);
       const audio = new Audio(url);
       let ended = false;
       const finish = (reason) => {
         if (ended) return; ended = true;
-        _logVoice('slot_recording_end', { slot: slotName, reason });
+        log.info('voice', 'slot_recording_end', { slot: slotName, reason });
         URL.revokeObjectURL(url); fireEnd();
       };
       audio.onended = () => finish('ended');
@@ -8999,9 +8992,9 @@ async function playVoiceSlot(slotName, ttsText, ttsLang, onend = null) {
       return;
     }
   } catch (e) {
-    _logVoice('slot_idb_err', { slot: slotName, err: e && e.message });
+    log.warn('voice', 'slot_idb_err', { slot: slotName, err: e && e.message });
   }
-  _logVoice('slot_tts', { slot: slotName, text: (effectiveTts || '').slice(0, 12) });
+  log.info('voice', 'slot_tts', { slot: slotName, text: (effectiveTts || '').slice(0, 12) });
   if (effectiveTts) speak(effectiveTts, 0, onend, ttsLang || null);
   else fireEnd();
 }
@@ -9018,10 +9011,10 @@ function speak(text, delay = 0, onend = null, lang = null) {
     utt.volume = 1;
     const v = pickVoice(useLang, true);
     if (v) { utt.voice = v; utt.lang = v.lang; }
-    _logVoice('tts_speak', { text: text.slice(0, 12), lang: useLang, voice: v && v.name });
+    log.info('voice', 'tts_speak', { text: text.slice(0, 12), lang: useLang, voice: v && v.name });
     const _ttsOnDone = onend;
-    utt.onend = () => { _logVoice('tts_onend', { text: text.slice(0, 12) }); if (_ttsOnDone) _ttsOnDone(); };
-    utt.onerror = (ev) => { _logVoice('tts_onerror', { text: text.slice(0, 12), err: ev && ev.error }); if (_ttsOnDone) _ttsOnDone(); };
+    utt.onend = () => { log.info('voice', 'tts_onend', { text: text.slice(0, 12) }); if (_ttsOnDone) _ttsOnDone(); };
+    utt.onerror = (ev) => { log.warn('voice', 'tts_onerror', { text: text.slice(0, 12), err: ev && ev.error }); if (_ttsOnDone) _ttsOnDone(); };
     speechSynthesis.speak(utt);
     setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
   };
@@ -9432,16 +9425,16 @@ function onSel(e, idx, btn) {
     if (CONFETTI_ON) setTimeout(spawnConfetti, 100);
     _correctStreak++;
     _answerClickTime = Date.now();
-    _logVoice('correct_click', { streak: _correctStreak, wrongCount });
+    log.info('voice', 'correct_click', { streak: _correctStreak, wrongCount });
 
     if (VOICE_ASSIST_ENABLED) {
       const streakFires = _correctStreak === 3;
       if (streakFires) _correctStreak = 999; // prevent re-trigger in this session
-      _logVoice('enc_start', { streakFires });
+      log.info('voice', 'enc_start', { streakFires });
       _encouragementPending = true;
       _onEncouragementDone = null;
       const completeChain = () => {
-        _logVoice('complete_chain');
+        log.info('voice', 'complete_chain');
         _encouragementPending = false;
         if (_onEncouragementDone) {
           const cb = _onEncouragementDone;
@@ -9450,13 +9443,13 @@ function onSel(e, idx, btn) {
         }
       };
       setTimeout(() => {
-        _logVoice('correct_hint_call');
+        log.info('voice', 'correct_hint_call');
         playVoiceSlot('correct_hint', t('voice_default_correct_hint'), getLocale(), () => {
-          _logVoice('correct_hint_onend', { streakFires });
+          log.info('voice', 'correct_hint_onend', { streakFires });
           if (streakFires) {
-            _logVoice('streak_correct_call');
+            log.info('voice', 'streak_correct_call');
             playVoiceSlot('streak_correct', t('voice_default_streak_correct'), getLocale(), () => {
-              _logVoice('streak_correct_onend');
+              log.info('voice', 'streak_correct_onend');
               completeChain();
             });
           } else {
@@ -9591,7 +9584,7 @@ function revealAnswer() {
       else triggerPlayAnswer();
     };
     tAnswerTimer = setTimeout(() => {
-      _logVoice('safety_net_fired');
+      log.info('voice', 'safety_net_fired');
       _onEncouragementDone = null;
       _encouragementPending = false;
       triggerPlayAnswer();
@@ -9616,7 +9609,7 @@ async function onNext() {
   if (_currentRenderer?.unmount) _currentRenderer.unmount();
   stopNRing(); stopAllPromptTimers(); stopCelebration();
   speechSynthesis.cancel();
-  if (_encouragementPending) _logVoice('enc_cancelled');
+  if (_encouragementPending) log.info('voice', 'enc_cancelled');
   _encouragementPending = false; _onEncouragementDone = null;
   if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
   tone('next');
