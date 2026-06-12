@@ -2968,15 +2968,31 @@ const VOICE_FIELDS = [
   'ttsRate','ttsPitch','ttsVoiceName','voiceMuted','voiceAssistEnabled',
   'ansReadDelay','optReadDelay','browseAnsDelay','optCount','optTouchDelay','ndur','bdur',
 ];
+const PHRASE_VOICE_FIELDS = [
+  'phraseWrong', 'phraseCorrect', 'phraseStreakCorrect', 'phraseSessionFinish',
+  'phraseIdleBrowse', 'phraseOptHint', 'phraseQuizPrompt', 'phraseQuizPromptRecognize'
+];
 function getVoiceConfig() { return lsGetJSON('yh:v1:config:voice', {}); }
 function getVoiceField(name, def = null) {
-  const v = getVoiceConfig()[name];
+  const cfg = getVoiceConfig();
+  if (PHRASE_VOICE_FIELDS.includes(name)) {
+    const v = (cfg.phrases?.[getLocale()] || {})[name];
+    return v == null ? def : v;
+  }
+  const v = cfg[name];
   return v == null ? def : v;
 }
 function setVoiceField(name, value) {
   const cfg = getVoiceConfig();
-  if (value == null) delete cfg[name];
-  else cfg[name] = String(value);
+  if (PHRASE_VOICE_FIELDS.includes(name)) {
+    if (!cfg.phrases) cfg.phrases = {};
+    if (!cfg.phrases[getLocale()]) cfg.phrases[getLocale()] = {};
+    if (value == null) delete cfg.phrases[getLocale()][name];
+    else cfg.phrases[getLocale()][name] = String(value);
+  } else {
+    if (value == null) delete cfg[name];
+    else cfg[name] = String(value);
+  }
   lsSetJSON('yh:v1:config:voice', cfg);
 }
 function migrateVoiceConfig() {
