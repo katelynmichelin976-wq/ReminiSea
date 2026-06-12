@@ -2,6 +2,74 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.5 — 本地日志系统统一 + 测试缓存机制（基础设施）
+
+### 动机
+
+诊断 v5.13.4 中"妈妈连对鼓励语音偶尔不播"的过程暴露出本地日志体系混乱：`yh_logs` (IDB, 300 条, warn+ 才落盘) + `app_events` (IDB+Supabase, 50 条) + PR #508 临时引入的 `_voiceLog` (内存 60 条)，三套机制并行、用途重叠、未来扩展无规范。同时 release 流程的回归测试在多次"已通过状态"下被重复运行，浪费时间。
+
+### 改动
+
+#### 1. 本地日志统一（spec：`docs/superpowers/specs/2026-06-12-local-log-design.md`，plan：`docs/superpowers/plans/2026-06-12-local-log-unified.md`）
+
+- **删除** `yh_logs` IDB store（v8→v9 migration `deleteObjectStore`），删除 `_voiceLog` 内存 buffer
+- **新增** `LOCAL_LOG` 内存 ring buffer（2000 条），新 `log.info/warn/error(module, event, data)` API（取消 `debug` 级别，高频日志走 `console.debug`）
+- **11 个模块**：`voice / sync / srs / config / storage / auth / media / deck / ui / feedback / diag`
+- **15 处** `_logVoice` 调用合并为 `log.info('voice', ...)`（2 处错误路径升 `log.warn`）
+- **14 处** 现有 `log.warn/error/info` 改为 snake_case event key + 结构化 `data`（如 `'runSync watchdog: 30s timeout'` → `'watchdog_timeout', { ms: 30000 }'`），`idb` 模块统一改为 `storage`
+- **`speak()` 加 `utt.onerror`**：iOS TTS 链路即使 onend 不触发也有兜底，配合 `log.info('voice', 'tts_onerror', ...)` 可定位 iOS 静默丢 utterance 问题
+
+#### 2. 双轨边界明确
+
+| 系统 | 定位 | 持久化 | 上报 |
+|------|------|-------|------|
+| `app_events` | 业务里程碑（user did what when）| IDB + Supabase | 自动 |
+| `local_log` | 技术诊断细节（链路时序、异常）| 内存 300KB | 仅 feedback 携带 |
+
+服务端关联：从 feedback 拿到 `user_id + created_at`，JOIN `sync_app_events` 同时间段事件。
+
+#### 3. collectDiagnostics 收口
+
+- 函数体改同步（保留 async 签名兼容调用方），无 IDB 读
+- 移除：`logs` / `events` / `voice_log` / `log_source`
+- 新增：`local_log: LOCAL_LOG.slice(-500)` + `user_id: _cloudUserId || null`
+- `formatFeedbackText` 改用 `d.local_log` 过滤 warn/error，字段名跟随 `l.lv/l.m/l.e/l.t`
+
+#### 4. getDeviceInfo 补 model 字段
+
+UA 解析：iOS（"iPhone / iOS 17.4"）/ Android（含具体型号 "Pixel 7 / Android 14"）/ Mac / Windows NT。从 feedback 直接识别设备类型。
+
+#### 5. 测试通过缓存机制
+
+- 新增 `tests/_cache.js` + `tests/run_test.js`
+- `.cache/test-state.json` 记录每个测试上次通过时的 HEAD SHA
+- `node tests/run_test.js <test>`：HEAD == 缓存 SHA 或仅文档变更（SAFE_PATTERNS：`docs/`、`CLAUDE.md`、`README.md`、`MEMORY.md`、`.cache/`、`.gitignore`、`tests/_cache.js`、`tests/run_test.js`）则 SKIP；否则真跑，通过后写缓存
+- 防御：检测 "通过: 0 失败: 0" 模式拒绝缓存（避免 server 配错等环境异常被误判为通过）
+- CLI：`node tests/_cache.js list / mark / clear`
+- release skill 跟随更新，最小回归扩展为 `run_all + _pw_ui_smoke + _pw_srs_e2e`，全部走 `run_test.js` 包装器
+
+#### 6. 测试
+
+- 新增 `tests/yihai_v5.15_log_test.js`（12 断言，LOCAL_LOG ring buffer 形状/累积/挤旧/level/data 省略）
+- 单测套件总数：12 套件 608 断言
+- Playwright 回归：`_pw_ui_smoke.js` 68/68 + `_pw_srs_e2e.js` 21/21 + `_pw_easy.js` 28/28 + `_pw_feedback.js` 11/11
+
+### 改动文件
+
+- `index.html`：log 系统重写、collectDiagnostics、getDeviceInfo、15+14 处调用点、IDB v9 migration
+- `tests/yihai_v5.15_log_test.js`：新增
+- `tests/run_all.js`：注册新套件 + 兼容英文测试输出格式
+- `tests/_cache.js`、`tests/run_test.js`：新增
+- `.gitignore`：`.cache/` 加入 ignore
+- `CLAUDE.md`：版本号、测试清单、Recent Changes 同步
+- `~/.claude/skills/release/SKILL.md`：第三步增加 Playwright 最小回归，走 wrapper
+
+### 零外观与行为变化
+
+所有改动均为基础设施层，最终用户体验无差异。妈妈侧用法不变。
+
+---
+
 ## v5.13.4 — localStorage keymap 规范化 Phase 3（`yh:v1:` 前缀 rename）
 
 ### 动机
