@@ -3140,8 +3140,8 @@ function migrateKeyRenames() {
 // 启动期 eager migration（必须在任何 loadSettings/loadPhrases 之前完成）
 // 顺序：聚合 migrate 在前（读旧扁平 key），rename 最后（统一加 yh:v1: 前缀）
 try { migrateVoiceConfig(); } catch (e) { console.warn('[migrate] voiceConfig failed', e); }
-try { migrateLangPhrases(); } catch (e) { console.warn('[migrate] langPhrases failed', e); }
 try { migrateUiConfig(); } catch (e) { console.warn('[migrate] uiConfig failed', e); }
+try { migrateLangPhrases(); } catch (e) { console.warn('[migrate] langPhrases failed', e); }
 try { migrateTypographyConfig(); } catch (e) { console.warn('[migrate] typographyConfig failed', e); }
 try { migrateKeyRenames(); } catch (e) { console.warn('[migrate] keyRenames failed', e); }
 
