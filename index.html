@@ -7018,7 +7018,7 @@ const FB_SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 const FEEDBACK_EMAIL       = 'zyhacl@gmail.com';
 
 async function collectDiagnostics() {
-  var base = {
+  return {
     app_version:        APP_VERSION,
     collected_at:       Date.now(),
     idb_version:        SRS_DB_VER,
@@ -7026,35 +7026,9 @@ async function collectDiagnostics() {
     has_session_backup: !!lsGet(LS_KEYS.SESSION_BACKUP),
     last_sync_ts:       Number(lsGet(LS_KEYS.GLOBAL_SYNC_TS)) || null,
     deck_count:         (typeof DECKS_META !== 'undefined' ? DECKS_META.length : null),
-    logs:               null,
-    log_source:         null,
-    events:             null,
+    user_id:            _cloudUserId || null,
+    local_log:          LOCAL_LOG.slice(-500),
   };
-  try {
-    var db = await Promise.race([
-      openSrsDb(),
-      new Promise(function(_, rej) { setTimeout(function() { rej(new Error('idb timeout')); }, 2000); })
-    ]);
-    var logs = await new Promise(function(res, rej) {
-      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
-      r.onsuccess = function(e) { res(e.target.result || []); };
-      r.onerror   = function(e) { rej(e.target.error); };
-    });
-    base.logs = logs
-      .filter(function(l) { return l.level === 'warn' || l.level === 'error'; })
-      .slice(-30)
-      .map(function(l) { return { level: l.level, module: l.module, msg: l.msg, ts: l.timestamp }; });
-    base.log_source = 'idb';
-    var evts = await new Promise(function(res, rej) {
-      var r = db.transaction(EVT_STORE, 'readonly').objectStore(EVT_STORE).getAll();
-      r.onsuccess = function(e) { res(e.target.result || []); };
-      r.onerror   = function(e) { rej(e.target.error); };
-    });
-    base.events = evts.slice(-10).map(function(e) { return { type: e.event_type, payload: e.payload, ts: e.timestamp }; });
-    base.voice_log = LOCAL_LOG.filter(l => l.m === 'voice').slice(-40);
-    base.user_id = _cloudUserId || null;
-  } catch(e) {}
-  return base;
 }
 
 function formatFeedbackText(payload) {
@@ -7071,13 +7045,14 @@ function formatFeedbackText(payload) {
     payload.user_desc,
     '-----------',
   ];
-  if (d.logs && d.logs.length) {
-    lines.push('最近错误：');
-    d.logs.slice(-3).forEach(function(l) {
-      lines.push('  [' + l.module + '] ' + l.msg + ' (' + new Date(l.ts).toLocaleTimeString('zh-CN') + ')');
+  var errs = (d.local_log || []).filter(function(l) { return l.lv === 'error' || l.lv === 'warn'; }).slice(-3);
+  if (errs.length) {
+    lines.push('最近异常：');
+    errs.forEach(function(l) {
+      lines.push('  [' + l.m + '] ' + l.e + ' (' + new Date(l.t).toLocaleTimeString('zh-CN') + ')');
     });
   } else {
-    lines.push('错误日志：（无）');
+    lines.push('异常日志：（无）');
   }
   return lines.join('\n');
 }
