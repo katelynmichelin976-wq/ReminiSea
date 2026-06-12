@@ -111,12 +111,14 @@ function check(desc, actual, expected) {
   check('VOICE_FIELDS 应包含 phraseOptHint',
     vfBody.includes("'phraseOptHint'"), true);
 
-  // Test 6b: cloudPushConfig 通过 ...getVoiceConfig() 平铺 voice 字段
+  // Test 6b: cloudPushConfig 排除 phrases blob，平铺当前 locale 的 phrase 字段
   const pushStart = html.indexOf('async function cloudPushConfig()');
   const pushEnd   = html.indexOf('\nasync function cloudPullConfig()');
   const pushBody  = html.slice(pushStart, pushEnd);
-  check('cloudPushConfig localUi 通过 ...getVoiceConfig() 平铺 voice 字段',
-    pushBody.includes('...getVoiceConfig()'), true);
+  check('cloudPushConfig 析构排除 phrases blob',
+    pushBody.includes('phrases: _phrasesByLocale'), true);
+  check('cloudPushConfig 平铺当前 locale 的 phrase 字段',
+    pushBody.includes('_phrasesByLocale?.[getLocale()]'), true);
 
   // Test 8: loadSettings 应通过 getVoiceField('phraseQuizPrompt') 读取（v5.13.3 起 voiceConfig 路径）
   const lsStart = html.indexOf('\nfunction loadSettings()');

@@ -3701,8 +3701,10 @@ async function cloudPushConfig() {
     });
 
     // collect local UI params（云端 schema 不变：voice 字段平铺到 ui dict）
+    const { phrases: _phrasesByLocale, ...vcFlat } = getVoiceConfig();
     const localUi = {
-      ...getVoiceConfig(),
+      ...vcFlat,
+      ...(_phrasesByLocale?.[getLocale()] || {}),
       confettiOn: getUiField('confettiOn'),
       theme:      getUiField('theme'),
     };
