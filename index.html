@@ -8798,12 +8798,8 @@ function setLocale(loc) {
   if (typeof updateHomeTopbar === 'function') updateHomeTopbar();
   if (typeof updateTabBarMode === 'function') updateTabBarMode();
   if (typeof updateMineProfile === 'function') updateMineProfile();
-  // reset voice prompts to current locale defaults on language switch
-  ['phraseQuizPrompt', 'phraseOptHint', 'phraseWrong',
-   'phraseCorrect', 'phraseStreakCorrect',
-   'phraseSessionFinish', 'phraseIdleBrowse'].forEach(k => setVoiceField(k, null));
-  PHRASE_SELECT   = t('quiz_select_hint');
-  PHRASE_OPT_HINT = t('default_opt_hint');
+  PHRASE_SELECT   = getVoiceField('phraseQuizPrompt') || t('quiz_select_hint');
+  PHRASE_OPT_HINT = getVoiceField('phraseOptHint')    || t('default_opt_hint');
   if (typeof _updateSettingsLangVal === 'function') _updateSettingsLangVal();
 }
 
@@ -10419,18 +10415,9 @@ function onBdurChange(v) {
   debouncePushConfig();
 }
 
-// resets to locale default if stored value matches any locale's default (prevents cross-device pollution)
-function loadPhraseOrDefault(voiceField, i18nKey) {
-  const stored = getVoiceField(voiceField);
-  if (!stored) return t(i18nKey);
-  const allDefaults = SUPPORTED_LOCALES.map(loc => (I18N[loc] || {})[i18nKey]).filter(Boolean);
-  if (allDefaults.includes(stored)) { setVoiceField(voiceField, null); return t(i18nKey); }
-  return stored;
-}
-
 function loadSettings() {
-  PHRASE_SELECT   = loadPhraseOrDefault('phraseQuizPrompt', 'quiz_select_hint');
-  PHRASE_OPT_HINT = loadPhraseOrDefault('phraseOptHint',    'default_opt_hint');
+  PHRASE_SELECT   = getVoiceField('phraseQuizPrompt') || t('quiz_select_hint');
+  PHRASE_OPT_HINT = getVoiceField('phraseOptHint')    || t('default_opt_hint');
 
   // browse answer delay / correct feedback
   const browseAnsDelay = getVoiceField('browseAnsDelay');
