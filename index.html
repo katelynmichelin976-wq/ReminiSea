@@ -5492,6 +5492,14 @@ let _encouragementPending = false;  // 答对鼓励语音链播放中，revealAn
 let _onEncouragementDone = null;    // 鼓励链完成时回调（由 revealAnswer 注册触发 playAnswer）
 let _answerClickTime = 0;           // 答对点击时刻，用于鼓励链兜底保持 ANS_READ_DELAY 最小延迟
 
+// ── 语音链路诊断日志（始终开启，不依赖 log level，随 feedback 上报）──
+const _voiceLog = [];
+function _logVoice(event, data) {
+  if (_voiceLog.length >= 60) _voiceLog.shift();
+  _voiceLog.push({ t: Date.now(), e: event, ...(data || {}) });
+  console.info('[VOICE]', event, data || '');
+}
+
 let _ttsPromptActive = false;  // true while startCardPrompts sequence (quiz_prompt + speakOptHint) is running
 let _idleBrowseTimer = null;
 const IDLE_BROWSE_SEC = 10;
@@ -7099,6 +7107,7 @@ async function collectDiagnostics() {
       r.onerror   = function(e) { rej(e.target.error); };
     });
     base.events = evts.slice(-10).map(function(e) { return { type: e.event_type, payload: e.payload, ts: e.timestamp }; });
+    base.voice_log = _voiceLog.slice(-40);
   } catch(e) {}
   return base;
 }
@@ -9012,27 +9021,31 @@ function pickVoice(lang, autoOnly = false) {
 
 async function playVoiceSlot(slotName, ttsText, ttsLang, onend = null) {
   const fireEnd = () => { if (onend) { try { onend(); } catch (e) {} } };
-  if (VOICE_MUTED) { fireEnd(); return; }
+  if (VOICE_MUTED) { _logVoice('slot_muted', { slot: slotName }); fireEnd(); return; }
   const key = slotStorageKey(slotName);
   const customTts = key ? getVoiceField(key) : null;
   const effectiveTts = customTts !== null ? customTts : ttsText;
   try {
     const slot = await loadVoiceSlot(slotName);
     if (slot && slot.audioBlob) {
-      console.info(`[TTS][playVoiceSlot] slot=${slotName} → recording`);
+      _logVoice('slot_recording', { slot: slotName });
       const url = URL.createObjectURL(slot.audioBlob);
       const audio = new Audio(url);
       let ended = false;
-      const finish = () => { if (ended) return; ended = true; URL.revokeObjectURL(url); fireEnd(); };
-      audio.onended = finish;
-      audio.onerror = finish;
+      const finish = (reason) => {
+        if (ended) return; ended = true;
+        _logVoice('slot_recording_end', { slot: slotName, reason });
+        URL.revokeObjectURL(url); fireEnd();
+      };
+      audio.onended = () => finish('ended');
+      audio.onerror = () => finish('error');
       await audio.play();
       return;
     }
   } catch (e) {
-    // IDB read failure — fall through to TTS
+    _logVoice('slot_idb_err', { slot: slotName, err: e && e.message });
   }
-  console.info(`[TTS][playVoiceSlot] slot=${slotName} → TTS text="${effectiveTts}" lang=${ttsLang}`);
+  _logVoice('slot_tts', { slot: slotName, text: (effectiveTts || '').slice(0, 12) });
   if (effectiveTts) speak(effectiveTts, 0, onend, ttsLang || null);
   else fireEnd();
 }
@@ -9049,8 +9062,10 @@ function speak(text, delay = 0, onend = null, lang = null) {
     utt.volume = 1;
     const v = pickVoice(useLang, true);
     if (v) { utt.voice = v; utt.lang = v.lang; }
-    console.info(`[TTS][speak] "${text.slice(0,20)}" lang=${lang}→${useLang} voice=${v&&v.name}`);
-    if (onend) utt.onend = onend;
+    _logVoice('tts_speak', { text: text.slice(0, 12), lang: useLang, voice: v && v.name });
+    const _ttsOnDone = onend;
+    utt.onend = () => { _logVoice('tts_onend', { text: text.slice(0, 12) }); if (_ttsOnDone) _ttsOnDone(); };
+    utt.onerror = (ev) => { _logVoice('tts_onerror', { text: text.slice(0, 12), err: ev && ev.error }); if (_ttsOnDone) _ttsOnDone(); };
     speechSynthesis.speak(utt);
     setTimeout(() => { if (speechSynthesis.paused) speechSynthesis.resume(); }, 250);
   };
@@ -9461,13 +9476,16 @@ function onSel(e, idx, btn) {
     if (CONFETTI_ON) setTimeout(spawnConfetti, 100);
     _correctStreak++;
     _answerClickTime = Date.now();
+    _logVoice('correct_click', { streak: _correctStreak, wrongCount });
 
     if (VOICE_ASSIST_ENABLED) {
       const streakFires = _correctStreak === 3;
       if (streakFires) _correctStreak = 999; // prevent re-trigger in this session
+      _logVoice('enc_start', { streakFires });
       _encouragementPending = true;
       _onEncouragementDone = null;
       const completeChain = () => {
+        _logVoice('complete_chain');
         _encouragementPending = false;
         if (_onEncouragementDone) {
           const cb = _onEncouragementDone;
@@ -9476,9 +9494,15 @@ function onSel(e, idx, btn) {
         }
       };
       setTimeout(() => {
+        _logVoice('correct_hint_call');
         playVoiceSlot('correct_hint', t('voice_default_correct_hint'), getLocale(), () => {
+          _logVoice('correct_hint_onend', { streakFires });
           if (streakFires) {
-            playVoiceSlot('streak_correct', t('voice_default_streak_correct'), getLocale(), completeChain);
+            _logVoice('streak_correct_call');
+            playVoiceSlot('streak_correct', t('voice_default_streak_correct'), getLocale(), () => {
+              _logVoice('streak_correct_onend');
+              completeChain();
+            });
           } else {
             completeChain();
           }
@@ -9611,6 +9635,7 @@ function revealAnswer() {
       else triggerPlayAnswer();
     };
     tAnswerTimer = setTimeout(() => {
+      _logVoice('safety_net_fired');
       _onEncouragementDone = null;
       _encouragementPending = false;
       triggerPlayAnswer();
@@ -9635,6 +9660,7 @@ async function onNext() {
   if (_currentRenderer?.unmount) _currentRenderer.unmount();
   stopNRing(); stopAllPromptTimers(); stopCelebration();
   speechSynthesis.cancel();
+  if (_encouragementPending) _logVoice('enc_cancelled');
   _encouragementPending = false; _onEncouragementDone = null;
   if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
   tone('next');
