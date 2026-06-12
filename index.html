@@ -3259,12 +3259,11 @@ function minsToTs(mins) {
 
 // ── IndexedDB: yihai_srs (v5: user_id multi-user isolation) ──────
 const SRS_DB_NAME    = 'yihai_srs';
-const SRS_DB_VER     = 8;
+const SRS_DB_VER     = 9;
 const EASY_STORE     = 'easyCardStates';
 const CS_STORE       = 'card_states';
 const TRIAL_STORE    = 'trials';
 const EVT_STORE      = 'app_events';
-const LOG_STORE      = 'yh_logs';
 const VOICE_SLOT_STORE = 'voiceSlots';
 
 let _srsDb = null;
@@ -3976,14 +3975,6 @@ function openSrsDb() {
         if (!trStore.indexNames.contains('user_id')) trStore.createIndex('user_id', 'user_id');
         lsSet(LS_KEYS.V5_MIGRATION, '1');
       }
-      if (oldVer < 6) {
-        if (!db.objectStoreNames.contains(LOG_STORE)) {
-          const ls = db.createObjectStore(LOG_STORE, { keyPath: 'log_id', autoIncrement: true });
-          ls.createIndex('timestamp', 'timestamp');
-          ls.createIndex('level', 'level');
-        }
-        console.log('[idb] upgraded yihai_srs v5→v6: yh_logs store created');
-      }
       if (oldVer < 7) {
         if (!db.objectStoreNames.contains(VOICE_SLOT_STORE)) {
           db.createObjectStore(VOICE_SLOT_STORE, { keyPath: 'slotName' });
@@ -3995,6 +3986,12 @@ function openSrsDb() {
           s.createIndex('deck_key', 'deck_key', { unique: false });
         }
         console.log('[idb] upgraded yihai_srs v7→v8: easyCardStates store created');
+      }
+      if (oldVer < 9) {
+        if (db.objectStoreNames.contains('yh_logs')) {
+          db.deleteObjectStore('yh_logs');
+        }
+        console.log('[idb] upgraded yihai_srs v8→v9: yh_logs store dropped');
       }
     };
     req.onsuccess = e => { _srsDb = e.target.result; _srsDbPromise = null; res(_srsDb); };
