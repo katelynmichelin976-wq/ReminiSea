@@ -28,6 +28,7 @@ C*codetests_debug_stats.js
 
 # Tool & agent ephemeral directories
 .agents/
+.cache/
 .codegraph/
 .playwright-mcp/
 .superpowers/
