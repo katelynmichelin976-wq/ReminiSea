@@ -2,6 +2,74 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.6 — 语音提示词按 UI 语言分组存储
+
+### 动机
+
+之前所有 8 个语音提示词脚本（`phraseWrong` / `phraseCorrect` / `phraseQuizPrompt` 等）扁平存于 `yh:v1:config:voice` 单一字段集。`setLocale()` 切换语言时为防止"中文脚本被英文 TTS 朗读"会粗暴清空全部脚本——用户的自定义内容永久丢失，且 quiz_prompt（功能性槽）因有内存变量 `PHRASE_SELECT` 而感知到"切了"，wrong_hint 等情绪槽却不显示文字内容、用户无从察觉。
+
+### 改动
+
+#### 1. 数据结构：`yh:v1:config:voice` 内新增 `phrases` 子对象
+
+```json
+{
+  "ttsRate": "0.85",
+  "voiceMuted": "0",
+  "phrases": {
+    "zh-CN": { "phraseWrong": "没关系！", "phraseCorrect": "太棒了！", ... },
+    "en":    { "phraseWrong": "Try again!", ... }
+  }
+}
+```
+
+- 8 个 phrase 字段按 locale 分组（`PHRASE_VOICE_FIELDS` 注册表）
+- 非 phrase 字段（ttsRate / voiceMuted 等）原地保持扁平
+- 总量 5 locale × 8 phrase = ~40 条短字符串，远小于 5KB 聚合阈值
+- 符合 v5.13.4 落定的 LS 命名规范：`yh:v1:config:voice` 已存在合规 key，`phrases` 是 JSON 子键（不是 LS key 段，camelCase 规则不适用）
+
+#### 2. helper 路由（调用方零改动）
+
+- `getVoiceField(name)` / `setVoiceField(name, value)`：对 `PHRASE_VOICE_FIELDS` 内字段自动路由至 `cfg.phrases[getLocale()]`，其余字段走原扁平路径
+- 所有调用方（`playVoiceSlot` / `openRecordingOverlay` / `onSlotRowTap` / `cloudPullConfig` 等）完全不动
+
+#### 3. `setLocale` 简化
+
+- **删除** 7 个 phrase 字段的清空循环——per-locale 存储后切换语言不再需要破坏数据
+- `PHRASE_SELECT` / `PHRASE_OPT_HINT` 改为切换后直接 `getVoiceField('phraseQuizPrompt') || t('quiz_select_hint')` 读新 locale 的值
+- **删除** `loadPhraseOrDefault`（原本用于检测"存储值是否为某语言默认值"防止跨设备污染——per-locale 存储后这个问题消失）
+
+#### 4. 迁移 `migrateLangPhrases`
+
+- 幂等：`if (cfg.phrases) return`
+- 旧扁平 phrase 字段 → 当前 locale 的 `phrases[locale]` 桶
+- 启动顺序：`migrateVoiceConfig` → `migrateUiConfig` → `migrateLangPhrases` → `migrateTypographyConfig` → `migrateKeyRenames`（必须在 `migrateUiConfig` 之后，确保 `getLocale()` 能读到 v5.13.3 之前用户的 locale）
+
+#### 5. `cloudPushConfig` 排除 `phrases` blob
+
+- `const { phrases: _phrasesByLocale, ...vcFlat } = getVoiceConfig()` 析构剔除 `phrases`
+- 展开当前 locale 的 phrase 字段为扁平格式上传（与现有云端 schema 一致），云端 `sync_config.ui` schema **完全不动**
+- `cloudPullConfig` 零改动（`setVoiceField` 已自动路由到当前 locale）
+
+#### 6. 测试
+
+- 新增单测 `tests/yihai_v5.16_lang_phrases_test.js`（22 断言）：phrase 按 locale 存储 / 非 phrase 扁平路径 / 删除幂等 / 跨 locale 互不干扰 / migrate 幂等 / 全 8 字段覆盖
+- run_all.js 13 套件 631 断言全通过
+- Playwright UI smoke 68 通过 + SRS e2e 21 通过
+- `tests/yihai_v5.2_voice_test.js` Test 6b 跟随更新（断言 `cloudPushConfig` 新析构模式）
+
+### 已知设计取舍
+
+- 跨设备跨 locale 同步：设备 A（中文）push → 云端扁平字段 → 设备 B（英文）pull → 写入设备 B 当前 locale（英文）的 phrases；spec 明确接受，云端 schema 不动的代价
+- `migrateLangPhrases` 全新安装会写 `{"phrases":{}}` 空 sentinel（无害但与 `migrateVoiceConfig` 的"无数据不写"模式略不一致）
+
+### Spec / Plan
+
+- spec：`docs/superpowers/specs/2026-06-12-per-locale-voice-phrases-design.md`
+- plan：`docs/superpowers/plans/2026-06-12-per-locale-voice-phrases.md`
+
+---
+
 ## v5.13.5 — 本地日志系统统一 + 测试缓存机制（基础设施）
 
 ### 动机
