@@ -17,6 +17,7 @@ const SAFE_PATTERNS = [
   /^MEMORY\.md$/,
   /^\.cache\//,
   /^\.gitignore$/,
+  /^tests\/(_cache|run_test)\.js$/,  // 缓存基础设施本身
 ];
 
 function git(cmd) {

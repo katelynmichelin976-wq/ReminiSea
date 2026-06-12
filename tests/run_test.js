@@ -20,10 +20,23 @@ if (r.skip) {
 }
 
 console.log(`[cache] RUN ${normTest(test)} (${r.reason})`);
-const res = spawnSync('node', [test], { stdio: 'inherit', shell: false });
-if (res.status === 0) {
+
+// 捕获输出做 sanity check（"0 通过 0 失败" = 测试空跑，可能是环境问题，不应缓存）
+let captured = '';
+const res = spawnSync('node', [test], { shell: false });
+process.stdout.write(res.stdout);
+process.stderr.write(res.stderr);
+captured = (res.stdout || '').toString() + (res.stderr || '').toString();
+
+const zeroAssertions = /通过:\s*0\s+失败:\s*0|0 passed,\s*0 failed/i.test(captured);
+const okStatus = res.status === 0 && !zeroAssertions;
+
+if (okStatus) {
   markPassed(test);
   console.log(`[cache] ✓ marked passed`);
+} else if (zeroAssertions) {
+  console.log(`[cache] ✗ 0 通过 0 失败（疑似环境异常或测试未执行），不缓存`);
+  process.exit(2);
 } else {
   console.log(`[cache] ✗ failed (exit ${res.status})`);
 }
