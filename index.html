@@ -5488,6 +5488,9 @@ let VOICE_MUTED      = false;
 let VOICE_ASSIST_ENABLED = false;
 
 let _correctStreak = 0;
+let _encouragementPending = false;  // 答对鼓励语音链播放中，revealAnswer 应等链完成再播答案
+let _onEncouragementDone = null;    // 鼓励链完成时回调（由 revealAnswer 注册触发 playAnswer）
+let _answerClickTime = 0;           // 答对点击时刻，用于鼓励链兜底保持 ANS_READ_DELAY 最小延迟
 
 let _ttsPromptActive = false;  // true while startCardPrompts sequence (quiz_prompt + speakOptHint) is running
 let _idleBrowseTimer = null;
@@ -9007,8 +9010,9 @@ function pickVoice(lang, autoOnly = false) {
   return v;
 }
 
-async function playVoiceSlot(slotName, ttsText, ttsLang) {
-  if (VOICE_MUTED) return;
+async function playVoiceSlot(slotName, ttsText, ttsLang, onend = null) {
+  const fireEnd = () => { if (onend) { try { onend(); } catch (e) {} } };
+  if (VOICE_MUTED) { fireEnd(); return; }
   const key = slotStorageKey(slotName);
   const customTts = key ? getVoiceField(key) : null;
   const effectiveTts = customTts !== null ? customTts : ttsText;
@@ -9018,8 +9022,10 @@ async function playVoiceSlot(slotName, ttsText, ttsLang) {
       console.info(`[TTS][playVoiceSlot] slot=${slotName} → recording`);
       const url = URL.createObjectURL(slot.audioBlob);
       const audio = new Audio(url);
-      audio.onended = () => URL.revokeObjectURL(url);
-      audio.onerror = () => URL.revokeObjectURL(url);
+      let ended = false;
+      const finish = () => { if (ended) return; ended = true; URL.revokeObjectURL(url); fireEnd(); };
+      audio.onended = finish;
+      audio.onerror = finish;
       await audio.play();
       return;
     }
@@ -9027,7 +9033,8 @@ async function playVoiceSlot(slotName, ttsText, ttsLang) {
     // IDB read failure — fall through to TTS
   }
   console.info(`[TTS][playVoiceSlot] slot=${slotName} → TTS text="${effectiveTts}" lang=${ttsLang}`);
-  if (effectiveTts) speak(effectiveTts, 0, null, ttsLang || null);
+  if (effectiveTts) speak(effectiveTts, 0, onend, ttsLang || null);
+  else fireEnd();
 }
 
 function speak(text, delay = 0, onend = null, lang = null) {
@@ -9453,12 +9460,30 @@ function onSel(e, idx, btn) {
     tone('ok');
     if (CONFETTI_ON) setTimeout(spawnConfetti, 100);
     _correctStreak++;
-    if (VOICE_ASSIST_ENABLED && _correctStreak === 3) {
-      _correctStreak = 999; // prevent re-trigger in this session
-      setTimeout(() => playVoiceSlot('streak_correct', t('voice_default_streak_correct'), getLocale()), 400);
-    }
+    _answerClickTime = Date.now();
+
     if (VOICE_ASSIST_ENABLED) {
-      setTimeout(() => playVoiceSlot('correct_hint', t('voice_default_correct_hint'), getLocale()), 300);
+      const streakFires = _correctStreak === 3;
+      if (streakFires) _correctStreak = 999; // prevent re-trigger in this session
+      _encouragementPending = true;
+      _onEncouragementDone = null;
+      const completeChain = () => {
+        _encouragementPending = false;
+        if (_onEncouragementDone) {
+          const cb = _onEncouragementDone;
+          _onEncouragementDone = null;
+          cb();
+        }
+      };
+      setTimeout(() => {
+        playVoiceSlot('correct_hint', t('voice_default_correct_hint'), getLocale(), () => {
+          if (streakFires) {
+            playVoiceSlot('streak_correct', t('voice_default_streak_correct'), getLocale(), completeChain);
+          } else {
+            completeChain();
+          }
+        });
+      }, 300);
     }
 
     // T1 rating mapping: 1st correct→Good, 2nd correct (after 1st wrong)→Hard
@@ -9560,11 +9585,11 @@ function revealAnswer() {
   document.querySelector('.btm').classList.add('active');
 
   // play after answer speech delay, prefer recording, fallback TTS
-  tAnswerTimer = setTimeout(() => {
+  const sid = sessionId;
+  const triggerPlayAnswer = () => {
     tAnswerTimer = null;
-    const sid = sessionId;
+    if (sid !== sessionId) return;
     const startCountdown = () => { if (sid === sessionId) startNRing(); };
-
     // after answer name: speak details → countdown
     const afterAnswer = () => {
       if (sid !== sessionId) return;
@@ -9574,9 +9599,25 @@ function revealAnswer() {
         startCountdown();
       }
     };
-
     playAnswer(q, afterAnswer);
-  }, ANS_READ_DELAY);
+  };
+  if (_encouragementPending) {
+    // 等鼓励链播完再播答案；保持 ANS_READ_DELAY 作最小延迟，ANS_READ_DELAY+4s 作安全网兜底 onend 不触发
+    _onEncouragementDone = () => {
+      if (tAnswerTimer) { clearTimeout(tAnswerTimer); tAnswerTimer = null; }
+      const elapsed = Date.now() - _answerClickTime;
+      const wait = Math.max(0, ANS_READ_DELAY - elapsed);
+      if (wait > 0) tAnswerTimer = setTimeout(triggerPlayAnswer, wait);
+      else triggerPlayAnswer();
+    };
+    tAnswerTimer = setTimeout(() => {
+      _onEncouragementDone = null;
+      _encouragementPending = false;
+      triggerPlayAnswer();
+    }, ANS_READ_DELAY + 4000);
+  } else {
+    tAnswerTimer = setTimeout(triggerPlayAnswer, ANS_READ_DELAY);
+  }
 
   // ── SRS write (practice mode) ────────────────────────────
   if (currentMode !== 'browse' && q._srsState) {
@@ -9594,6 +9635,7 @@ async function onNext() {
   if (_currentRenderer?.unmount) _currentRenderer.unmount();
   stopNRing(); stopAllPromptTimers(); stopCelebration();
   speechSynthesis.cancel();
+  _encouragementPending = false; _onEncouragementDone = null;
   if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
   tone('next');
   // immediately clear answer panel, disable transition to prevent flash
