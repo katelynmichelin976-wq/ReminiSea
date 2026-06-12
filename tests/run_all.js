@@ -23,6 +23,7 @@ const UNIT_SUITES = [
   'yihai_v5.11_easy_test.js',
   'yihai_v5.12_media_recovery_test.js',
   'yihai_v5.14_ls_test.js',
+  'yihai_v5.15_log_test.js',
 ];
 
 const COL_W = 24;
@@ -38,7 +39,8 @@ for (const suite of UNIT_SUITES) {
 
   const output = (result.stdout || '') + (result.stderr || '');
   const match  = output.match(/结果：(\d+) 通过\s+(\d+) 失败/)
-             || output.match(/通过 (\d+) \/ 失败 (\d+)/);
+             || output.match(/通过 (\d+) \/ 失败 (\d+)/)
+             || output.match(/(\d+) passed, (\d+) failed/);
 
   if (!match) {
     console.log(`  ✗ ${suite.padEnd(COL_W)} — 运行失败`);

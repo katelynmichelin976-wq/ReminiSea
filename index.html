@@ -4030,82 +4030,24 @@ async function migrateDeviceRecordsToUser(cloudUserId) {
   } catch(e) { log.error('idb', 'migrateDeviceId failed', e.message); }
 }
 
-// ── diagnostic log system ──────────────────────────────────────────
-// priority: URL ?log=debug > localStorage yihaiLogLevel > default warn
-// IDB write: info+; console color output: all levels visible (depends on current level)
-// DevTools: window.yhLog.setLevel / show / showErrors / clear / export
-const _LOG_LEVELS  = { debug: 0, info: 1, warn: 2, error: 3 };
-const _LOG_COLORS  = { debug: 'color:#888', info: 'color:#0ea5e9', warn: 'color:#f59e0b', error: 'color:#ef4444' };
-const _urlLogParam = new URLSearchParams(location.search).get('log');
-let _logLevel = _LOG_LEVELS[_urlLogParam || getUiField('logLevel') || 'warn'] ?? 2;
+// ── local log buffer（内存 ring buffer，仅 feedback 携带）──────────
+// 边界：app_events = 业务里程碑（自动上传服务端）；local_log = 技术细节（仅 feedback）
+const LOCAL_LOG = [];
+const LOCAL_LOG_MAX = 2000;
 
-function _writeLogToIdb(entry) {
-  openSrsDb().then(function(db) {
-    var tx = db.transaction(LOG_STORE, 'readwrite');
-    tx.objectStore(LOG_STORE).add(entry);
-    tx.oncomplete = function() { trimStore(db, LOG_STORE, 300); };
-  }).catch(function(){});
+function _push(level, module, event, data) {
+  if (LOCAL_LOG.length >= LOCAL_LOG_MAX) LOCAL_LOG.shift();
+  LOCAL_LOG.push({ t: Date.now(), lv: level, m: module, e: event, d: data });
+  const fn = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'info';
+  if (data !== undefined) console[fn](`[${module}]`, event, data);
+  else console[fn](`[${module}]`, event);
 }
 
-function _doLog(levelName, module, msg, data) {
-  var levelNum = _LOG_LEVELS[levelName] ?? 0;
-  if (levelNum < _logLevel) return;
-  var prefix = '[' + levelName.toUpperCase() + '][' + module + ']';
-  if (data !== undefined) {
-    console.log('%c' + prefix, _LOG_COLORS[levelName], msg, data);
-  } else {
-    console.log('%c' + prefix, _LOG_COLORS[levelName], msg);
-  }
-  if (levelNum >= _LOG_LEVELS.info) {
-    _writeLogToIdb({ level: levelName, module: module, msg: msg, data: data !== undefined ? JSON.stringify(data) : undefined, timestamp: Date.now(), synced_at: null });
-  }
-}
-
-var log = {
-  debug: function(mod, msg, data) { _doLog('debug', mod, msg, data); },
-  info:  function(mod, msg, data) { _doLog('info',  mod, msg, data); },
-  warn:  function(mod, msg, data) { _doLog('warn',  mod, msg, data); },
-  error: function(mod, msg, data) { _doLog('error', mod, msg, data); },
-  setLevel: function(name) {
-    if (_LOG_LEVELS[name] === undefined) { console.warn('yhLog: unknown level', name); return; }
-    _logLevel = _LOG_LEVELS[name];
-    setUiField('logLevel', name);
-    console.log('%c[LOG] level set to ' + name, _LOG_COLORS[name]);
-  }
-};
-
-window.yhLog = {
-  setLevel: log.setLevel,
-  show: function(n) {
-    openSrsDb().then(function(db) {
-      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
-      r.onsuccess = function(e) {
-        var rows = e.target.result || [];
-        rows.slice(-(n || 50)).forEach(function(r) { console.log('[' + r.level + '][' + r.module + ']', r.msg, r.data || ''); });
-        console.log('── total', rows.length, 'entries ──');
-      };
-    }).catch(console.error);
-  },
-  showErrors: function() {
-    openSrsDb().then(function(db) {
-      var idx = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).index('level');
-      var r = idx.getAll('error');
-      r.onsuccess = function(e) { (e.target.result || []).forEach(function(r) { console.error('[' + r.module + ']', r.msg, r.data || ''); }); };
-    }).catch(console.error);
-  },
-  clear: function() {
-    openSrsDb().then(function(db) { db.transaction(LOG_STORE, 'readwrite').objectStore(LOG_STORE).clear(); }).catch(console.error);
-    console.log('[LOG] yh_logs cleared');
-  },
-  export: function() {
-    openSrsDb().then(function(db) {
-      var r = db.transaction(LOG_STORE, 'readonly').objectStore(LOG_STORE).getAll();
-      r.onsuccess = function(e) {
-        var blob = new Blob([JSON.stringify(e.target.result, null, 2)], { type: 'application/json' });
-        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'yh_logs_' + Date.now() + '.json'; a.click();
-      };
-    }).catch(console.error);
-  }
+const log = {
+  debug: () => {},
+  info:  (m, e, d) => _push('info',  m, e, d),
+  warn:  (m, e, d) => _push('warn',  m, e, d),
+  error: (m, e, d) => _push('error', m, e, d),
 };
 
 // ── telemetry: app event logs ──────────────────────────────────────
