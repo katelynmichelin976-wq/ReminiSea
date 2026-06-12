@@ -4044,7 +4044,6 @@ function _push(level, module, event, data) {
 }
 
 const log = {
-  debug: () => {},
   info:  (m, e, d) => _push('info',  m, e, d),
   warn:  (m, e, d) => _push('warn',  m, e, d),
   error: (m, e, d) => _push('error', m, e, d),
@@ -4056,7 +4055,7 @@ function isMember() {
 }
 
 function logAppEvent(type, payload, deckKey) {
-  log.debug('evt', type, payload);
+  console.debug('[evt]', type, payload);
   var event = {
     event_id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     event_type: type,
