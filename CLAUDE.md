@@ -33,7 +33,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v5.11_easy_test.js` | Easy 模式纯函数单测（结构公式/分类/排序/槽位/queue，38 cases） |
 | `tests/yihai_v5.12_media_recovery_test.js` | 媒体 upsert 失败回滚 + crash 恢复 + mergeCard confirmed 传播纯函数单测（22 cases） |
 | `tests/yihai_v5.14_ls_test.js` | LS_KEYS 注册表 + helper + 工厂 + 聚合迁移 + yh:v1: prefix rename 单测（109 cases） |
-| `tests/run_all.js` | 单元测试统一入口（11 套件，596 断言） |
+| `tests/yihai_v5.15_log_test.js` | 本地日志 ring buffer 单测（12 cases） |
+| `tests/run_all.js` | 单元测试统一入口（12 套件，608 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户/设置/i18n/语言/语音/IDB/练习模式，65 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端 + Easy 模式 EasyState IDB（21 断言，无需登录） |
 | `tests/_pw_easy.js` | Easy 模式综合（设置 UI/单局/retry/多局 confident 池/诊断面板，28 断言，无需登录） |
@@ -70,6 +71,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Recent Changes
 
 **当前版本：v5.13.4**（`index.html`，线上版）。完整历史见 `docs/yihai_变更记录_CLAUDE参考.md`。
+
+**基础设施改造（本地日志统一，未发布）：** 删除 `yh_logs` IDB store（v8→v9 migration drop）+ `_voiceLog` 内存 buffer，统一为 `LOCAL_LOG` 内存 ring buffer（2000 条），新 `log.info/warn/error(module, event, data)` 签名。模块分类：voice/sync/srs/config/storage/auth/media/deck/ui/feedback/diag（11 个）。`collectDiagnostics` 收口：移除 `logs`/`events`/`voice_log`/`log_source`，统一带 `local_log`（最近 500 条）+ `user_id`。`app_events` 系统完全不动，定位边界 = 业务里程碑（自动上传）vs 本地日志（仅 feedback 携带）。
 
 **v5.13.4：** localStorage keymap 规范化 Phase 3（`yh:v1:` 前缀 rename）— 所有 top-level localStorage key 统一加 `yh:v1:` 前缀 + 冒号分层（业内通用规范，类 Redis/Discord/Notion）。① **LS_KEYS 16 个 value 重命名**：`yihaiLastCloudEmail → yh:v1:user:lastEmail`、`yihaiSessionBackup → yh:v1:session:backup`、`yihaiGlobalSyncTs → yh:v1:sync:globalTs`、`yihaiDecksIndex → yh:v1:decks:index`、`yihaiDailyProgress → yh:v1:daily:progress`、`easyRetryOnWrong → yh:v1:srs:easyRetryOnWrong` 等。② **工厂重命名**：`LS_DECK(k, 'cards') → yh:v1:deck:{k}:cards`、`LS_DECK(k, 'syncAt') → yh:v1:deck:{k}:syncAt`、`LS_SRS(k) → yh:v1:srs:{k}`。③ **聚合 entries 重命名**：`voiceConfig → yh:v1:config:voice`、`uiConfig → yh:v1:config:ui`、`typographyConfig → yh:v1:config:typography`、`deckSync:{k} → yh:v1:deck:{k}:sync`。④ **新增 migrateKeyRenames**：18 个 KEY_RENAMES（top-level）+ 4 个 PREFIX_RENAMES（`deckSync:`/`yihai_deck_`/`yihaiSyncAt:`/`srs_`），idempotent + 不覆盖已存在新 key。启动顺序：Phase 2 聚合 migrate 先（read 旧扁平 key）、Phase 3 rename 最后（统一加 prefix）。⑤ **migrateSyncWatermarks 与 gcOrphanSyncKeys 改扫 yh:v1:deck:_:syncAt / yh:v1:deck:_:sync 前缀**。⑥ **修 Phase 2.2 遗留 bug**：voice slot 录音/读取/save 路径（`slotStorageKey()` 3 处）漏迁，仍 raw `lsGet/lsSet/lsRemove`；改走 `setVoiceField/getVoiceField`，跨设备 cloud sync 现可正确同步所有 slot 自定义 TTS 脚本。⑦ **单测 +24（KEY_RENAMES 全字段、PREFIX_RENAMES、idempotent、Supabase SDK token `sb-*` 不动、未知 raw key 不动）至 596 断言**。Playwright `_pw_srs_e2e.js` (`srs_session_mode` → `yh:v1:srs:session_mode`) + `_pw_cross_device.js` (`yihaiDailyProgress` → `yh:v1:daily:progress`，PHASE 6 直接写 `yh:v1:deck:_:syncAt`) 跟随改 key 名。云端 `sync_config` schema 完全未变（跨设备已部署版本可无缝读写）。零外观与行为变化。
 
