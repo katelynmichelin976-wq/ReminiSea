@@ -2,6 +2,45 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.9 — iPad 横屏 overlay 锁定
+
+### 动机
+
+用户在 iPad PWA standalone 模式下横屏使用 Easy 模式，发现"小联全家"三口合照里中间一人（站后排的儿子）的脸被裁掉。诊断到根因：
+
+- 照片实际像素 1141×1600（竖向，儿子脸在画面 y=270-450 上 1/4 处）
+- `CARD_RENDERERS.choice.mount` 里 `_card.style.aspectRatio = '1/1'`，且 onload 的自然比例分支只覆盖横图（`naturalWidth > naturalHeight × 1.15`），竖图不进
+- iPad 横屏（vh=810）`--img-max-h = 810 - 70(bar) - 344(4 选项) - 30 = 366`，容器变 720×366（1.97:1 扁矩形）
+- object-fit:cover 把竖向图缩到 720×1010，上下各裁 322 显示像素，原图可见 y=510-1090，**儿子的脸全在 510 之上完全裁没**
+
+iPad PWA **不尊重 `manifest.json` 的 `orientation:portrait`**（Apple 把 iPad 视作多任务设备，故意忽略），`screen.orientation.lock()` 在 Safari 不支持。横屏布局未支持前任由用户进入会产生"app 支持横屏"的错觉。
+
+### 改动
+
+#### iPad 横屏 overlay 锁定（`index.html`）
+
+新增 `#rotate-prompt` overlay：
+
+- HTML：旋转图标 SVG + i18n 文案
+- CSS：`@media (orientation:landscape) and (hover:none) and (pointer:coarse) { display:flex }` — 纯 CSS 触发，触屏设备横屏才命中，桌面浏览器不影响
+- z-index 99999，全屏挡住所有 UI（含 settings sheet）
+- 背后 quiz/home 状态完全不动，旋转回竖屏 overlay 自动消失
+
+iPhone PWA 继续靠 `manifest.json` orientation 锁定，根本不触发 overlay。iPad 用 overlay 兜底。
+
+#### i18n 5 语 rotate_to_portrait / _sub
+
+en / zh-CN / zh-Hant / es / ja 五语种各加两个 key（主提示「请竖屏使用」+ 副提示「请旋转设备」）。
+
+### 与裁脸根因的关系
+
+锁屏只是 UI 层兜底——iPad 横屏看不到 quiz UI，今天看到的"裁脸"在 iPad 上临时消失。**CSS 1:1 + max-height 压扁竖向图的根因未修**，等以后做横屏左右分栏布局时一并解决。
+
+### 测试
+
+- 新增 `tests/_pw_orientation_lock.js`（13 断言）：桌面横屏不触发 / 触屏竖屏不触发 / 触屏横屏触发 / zh-CN+en+ja 文案 / 横竖屏切换状态保留
+- run_all.js 单元回归 634 断言全过
+
 ## v5.13.8 — session 恢复三处独立 bug 修复
 
 ### 动机
