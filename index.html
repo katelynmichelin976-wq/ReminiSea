@@ -3375,7 +3375,27 @@ function _createSupabaseClient() {
   });
 }
 
-// single getSession() call with 7s timeout — any failure → offline (keep credentials, retry on online)
+// helpers shared by restoreSession 三个分支（在线 / refresh 续期成功 / offline）
+function _applyRestoredSession(session, eventType) {
+  _syncEnabled    = true;
+  _cloudUserEmail = session.user.email;
+  _cloudUserId    = session.user.id;
+  lsSet(LS_KEYS.SESSION_BACKUP, JSON.stringify(session));
+  lsSet(LS_KEYS.LAST_CLOUD_EMAIL, _cloudUserEmail);
+  logAppEvent(eventType, { uid: _cloudUserId });
+  runSync({ decks: false, showToast: false }).then(() => refreshDeckUpdateBadges().catch(() => {})).catch(() => {});
+}
+function _goOffline(parsed, reason) {
+  _syncEnabled    = false;
+  _cloudUserEmail = parsed.user.email;
+  _cloudUserId    = parsed.user.id || '';
+  try { _sb.auth.stopAutoRefresh(); } catch(e) {}
+  logAppEvent('session_restore_offline', { reason: reason });
+  window.removeEventListener('online', _onOnlineRetry);
+  window.addEventListener('online', _onOnlineRetry);
+}
+
+// getSession() + 失败时显式 refreshSession() 兜底 — 都不行才进 offline
 function restoreSession() {
   logAppEvent('session_restore_start', { SDK: 'supabase-js' });
   _sessionRestoring = true;
@@ -3402,24 +3422,25 @@ function restoreSession() {
       var data = result.data, error = result.error;
 
       if (!error && data.session) {
-        _syncEnabled    = true;
-        _cloudUserEmail = data.session.user.email;
-        _cloudUserId    = data.session.user.id;
-        lsSet(LS_KEYS.SESSION_BACKUP, JSON.stringify(data.session));
-        lsSet(LS_KEYS.LAST_CLOUD_EMAIL, _cloudUserEmail);
-        logAppEvent('session_restore_ok', { uid: _cloudUserId });
-        runSync({ decks: false, showToast: false }).then(() => refreshDeckUpdateBadges().catch(() => {})).catch(() => {});
+        _applyRestoredSession(data.session, 'session_restore_ok');
         return;
       }
 
-      _syncEnabled    = false;
-      _cloudUserEmail = parsed.user.email;
-      _cloudUserId    = parsed.user.id || '';
-      try { _sb.auth.stopAutoRefresh(); } catch(e) {}
-	      logAppEvent('session_restore_offline', { reason: timedOut ? 'timeout' : (error && error.message) || 'no_session' });
+      // getSession 返回 null（access_token 可能过期）→ 在进 offline 前显式尝试 refresh_token 续期
+      if (!timedOut) {
+        return Promise.race([
+          _sb.auth.refreshSession(),
+          new Promise(function(resolve) { setTimeout(function(){ resolve({ data: { session: null }, error: { message: 'refresh_timeout' } }); }, 5000); })
+        ]).then(function(rr) {
+          if (!rr.error && rr.data && rr.data.session) {
+            _applyRestoredSession(rr.data.session, 'session_restore_refresh_ok');
+            return;
+          }
+          _goOffline(parsed, (rr.error && rr.error.message) || 'refresh_no_session');
+        });
+      }
 
-      window.removeEventListener('online', _onOnlineRetry);
-      window.addEventListener('online', _onOnlineRetry);
+      _goOffline(parsed, timedOut ? 'timeout' : (error && error.message) || 'no_session');
     });
   }).catch(function(e) {
     logAppEvent('session_restore_error', { errMsg: e.message });
@@ -6243,7 +6264,9 @@ async function doAccountLogout() {
   logAppEvent('logout', {});
   for (const [, dl] of _downloading) { if (dl.pauseResolve) dl.pauseResolve(); }
   _downloading.clear();
-  try { if (_sb) await _sb.auth.signOut(); } catch(e) { console.warn('[sync] signOut error:', e.message); }
+  // scope: 'local' 只清当前 client 的 localStorage，不撤销服务端 refresh_token；
+  // 否则任何登出（测试 cleanup / 多设备 A 退出）会连带把同账号其他设备的 session 也吹掉
+  try { if (_sb) await _sb.auth.signOut({ scope: 'local' }); } catch(e) { console.warn('[sync] signOut error:', e.message); }
   _syncEnabled = false; _cloudUserEmail = ''; _sb = null;
   lsRemove(LS_KEYS.GLOBAL_SYNC_TS);
   lsRemove(LS_KEYS.SESSION_BACKUP);
@@ -11592,8 +11615,12 @@ function showAbout() {
   async function initCloud() {
     var _initHash = location.hash || '';
     window.addEventListener('offline', function() {
+      logAppEvent('network_offline', {});
       if (_sb) { try { _sb.auth.stopAutoRefresh(); } catch(e) {} }
       if (_syncEnabled) { _syncEnabled = false; updateCloudTabUI(); }
+      // 注册 online 恢复 — 之前缺这一步，导致中途断网后联网无法自愈
+      window.removeEventListener('online', _onOnlineRetry);
+      window.addEventListener('online', _onOnlineRetry);
     });
 
     await restoreSession();
