@@ -3318,15 +3318,6 @@ function minsToTs(mins) {
   return Math.round(mins * 60 * 1000);
 }
 
-// ── IndexedDB: yihai_srs (v5: user_id multi-user isolation) ──────
-const SRS_DB_NAME    = 'yihai_srs';
-const SRS_DB_VER     = 9;
-const EASY_STORE     = 'easyCardStates';
-const CS_STORE       = 'card_states';
-const TRIAL_STORE    = 'trials';
-const EVT_STORE      = 'app_events';
-const VOICE_SLOT_STORE = 'voiceSlots';
-
 // ── IDB 注册表 (v5.13.10 Phase 1) ────────────────────────────────────
 // 声明当前 IDB 现状；P2 将 rename store 到规范名（spec §4.2）
 const IDB_DBS = {
@@ -3341,6 +3332,15 @@ const IDB_STORES = {
   voiceSlots:     { db: 'srs',   name: 'voiceSlots',     keyPath: 'slotName'  },
   mediaBlobs:     { db: 'media', name: 'blobs',          keyPath: null /* external key */ },
 };
+
+// ── IndexedDB: yihai_srs (v5: user_id multi-user isolation) ──────
+const SRS_DB_NAME    = IDB_DBS.srs.name;
+const SRS_DB_VER     = IDB_DBS.srs.version;
+const EASY_STORE     = IDB_STORES.easyCardStates.name;
+const CS_STORE       = IDB_STORES.syncCardStates.name;
+const TRIAL_STORE    = IDB_STORES.syncTrials.name;
+const EVT_STORE      = IDB_STORES.appEvents.name;
+const VOICE_SLOT_STORE = IDB_STORES.voiceSlots.name;
 
 let _srsDb = null;
 let _srsDbPromise = null;
@@ -5352,7 +5352,7 @@ function saveDeckCards(key, cards) {
 }
 
 // ── IndexedDB media cache ─────────────────────────────────────────
-const IDB_NAME = 'yihai_media', IDB_VER = 1, IDB_STORE = 'blobs';
+const IDB_NAME = IDB_DBS.media.name, IDB_VER = IDB_DBS.media.version, IDB_STORE = IDB_STORES.mediaBlobs.name;
 
 function openDB() {
   return new Promise((res, rej) => {
