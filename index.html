@@ -4537,23 +4537,11 @@ async function getAllCardStates(deckKey) {
 
 // ── EasyState IDB CRUD (v5.11) ────────────────────────────────────
 async function getEasyState(deckKey, cardId) {
-  const db = await openSrsDb();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(EASY_STORE, 'readonly');
-    const req = tx.objectStore(EASY_STORE).get([deckKey, cardId]);
-    req.onsuccess = () => res(req.result || null);
-    req.onerror   = () => rej(req.error);
-  });
+  return await idbGet('easyCardStates', [deckKey, cardId]);
 }
 
 async function putEasyState(s) {
-  const db = await openSrsDb();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(EASY_STORE, 'readwrite');
-    tx.objectStore(EASY_STORE).put(s);
-    tx.oncomplete = () => res();
-    tx.onerror    = () => rej(tx.error);
-  });
+  await idbPut('easyCardStates', s);
 }
 
 async function getAllEasyStates(deckKey) {
