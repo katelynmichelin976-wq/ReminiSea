@@ -4451,25 +4451,13 @@ async function saveCardState(state) {
   state.updated_at = Date.now();
   state.synced_at = null;
   state.user_id = state.user_id || getCurrentUserId();
-  const db = await openSrsDb();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(CS_STORE, 'readwrite');
-    tx.objectStore(CS_STORE).put(state);
-    tx.oncomplete = () => { res(); };
-    tx.onerror    = e => rej(e.target.error);
-  });
+  await idbPut('syncCardStates', state);
 }
 
 // local write only, don't overwrite updated_at, don't upload (merge write for cloud progress backfill)
 async function saveCardStateLocal(state) {
   state.user_id = state.user_id || getCurrentUserId();
-  const db = await openSrsDb();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(CS_STORE, 'readwrite');
-    tx.objectStore(CS_STORE).put(state);
-    tx.oncomplete = res;
-    tx.onerror    = e => rej(e.target.error);
-  });
+  await idbPut('syncCardStates', state);
 }
 
 async function saveVoiceSlot(slotName, audioBlob, mimeType, duration) {
@@ -4517,21 +4505,17 @@ async function loadAllVoiceSlots() {
 }
 
 async function getAllCardStates(deckKey) {
-  let db = await openSrsDb();
-  if (!db) { _srsDb = null; _srsDbPromise = null; db = await openSrsDb(); }
-  if (!db) return [];
   const uid = getCurrentUserId();
-  return new Promise((res, rej) => {
-    const req = db.transaction(CS_STORE, 'readonly')
-                  .objectStore(CS_STORE).getAll();
-    req.onsuccess = e => {
-      const all = e.target.result || [];
-      res(all.filter(s => {
-        if (!s.user_id || s.user_id === uid) return deckKey ? s.deck_key === deckKey : true;
-        return false;
-      }));
-    };
-    req.onerror = e => rej(e.target.error);
+  let all;
+  try {
+    all = await idbGetAll('syncCardStates');
+  } catch {
+    _srsDb = null; _srsDbPromise = null;
+    all = await idbGetAll('syncCardStates').catch(() => []);
+  }
+  return all.filter(s => {
+    if (!s.user_id || s.user_id === uid) return deckKey ? s.deck_key === deckKey : true;
+    return false;
   });
 }
 
@@ -4604,32 +4588,19 @@ async function getOrCreateCardState(deckKey, cardId) {
 // ── TrialLog write ──────────────────────────────────────────────
 async function writeTrialLog(entry) {
   entry.user_id = entry.user_id || getCurrentUserId();
-  const db = await openSrsDb();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(TRIAL_STORE, 'readwrite');
-    tx.objectStore(TRIAL_STORE).put(entry);
-    tx.oncomplete = () => { if (_realtimeUpload) syncTrialLog(entry); res(); };
-    tx.onerror    = e => rej(e.target.error);
-  });
+  await idbPut('syncTrials', entry);
+  if (_realtimeUpload) syncTrialLog(entry);
 }
 
 // read TrialLog within specified days (ascending by timestamp)
 async function getTrialLogs(deckKey, days) {
-  const db    = await openSrsDb();
   const cutTs = days ? Date.now() - days * 86400 * 1000 : 0;
   const uid = getCurrentUserId();
-  return new Promise((res, rej) => {
-    const req = db.transaction(TRIAL_STORE, 'readonly')
-                  .objectStore(TRIAL_STORE).getAll();
-    req.onsuccess = e => {
-      let rows = (e.target.result || [])
-        .filter(r => r.timestamp >= cutTs && !r._retrying && (!r.user_id || r.user_id === uid));
-      if (deckKey) rows = rows.filter(r => r.deck_key === deckKey);
-      rows.sort((a, b) => a.timestamp - b.timestamp);
-      res(rows);
-    };
-    req.onerror = e => rej(e.target.error);
-  });
+  let rows = (await idbGetAll('syncTrials'))
+    .filter(r => r.timestamp >= cutTs && !r._retrying && (!r.user_id || r.user_id === uid));
+  if (deckKey) rows = rows.filter(r => r.deck_key === deckKey);
+  rows.sort((a, b) => a.timestamp - b.timestamp);
+  return rows;
 }
 
 // ── SM-2 processAnswer state machine ────────────────────────────
