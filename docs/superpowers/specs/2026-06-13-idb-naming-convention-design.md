@@ -65,21 +65,27 @@ localStorage 已在 v5.13.2-5.13.4 通过三 Phase 完成统一化：`yh:v1:{ns}
 
 ## 3. 核心设计决策
 
-### 3.1 为什么 record 字段用 camelCase 而非 snake_case
+### 3.1 为什么 record 字段保留 snake_case（spec 修正）
 
-**辩论的核心**：IDB record 字段名应跟 JS 内存对象一致（camelCase），还是跟 Supabase 列名一致（snake_case）。
+**初版误判修正**：本 spec 初稿主张 record 字段改 camelCase（"跟 JS 内存对象一致"），但 P2 plan 编写时扫描现状代码（`index.html` 173 处 `entry.snake_field` 访问点）发现：**业务代码现状已经一致地用 snake_case 访问 IDB record**——record 在 JS 内存中不是 camelCase，而是跟 Supabase 列名 1:1 对齐的 snake_case。这意味着初版"零转换层"论证的前提（业务代码 camelCase）不成立。
 
-**采用 camelCase 的理由**：
+**修正后的理由：保留 snake_case**：
 
-1. **零转换层**：业务代码 → IDB → 业务代码 整条路径全 camelCase，无 deep transform，无字段名映射 bug 风险
-2. **CLAUDE.md L141 已明确分层**：JS 用 camelCase，DB 列用 snake_case，**两套规范独立**。IDB 是 JS 调用的存储，按 JS 一侧走 camelCase 更自然
-3. **deep transform helper 是真正复杂层**：通用 `deepSnakeKeys/deepCamelKeys` 遇到 `mp3_url`、复合 key、嵌套对象、Blob、null/undefined 都易翻车；散落的手动 mapping 反而在固定字段上更稳
-4. **sync 层显式 mapping 是清晰边界**：现有 `runCardsPhase` / `runMediaPhase` 等已写好显式 `{ trial_id: r.trialId, due_ts: r.dueTs, ... }` mapping，约 5-10 处，稳定工作。继续使用比转为 helper 自动转换更可控
-5. **行业实践不一致**：IndexedDB 没有"行业规范"，Firebase Firestore 默认 camelCase，Anki 用 snake_case（Python 习惯），Supabase 项目客户端有 camel 有 snake——不存在"对齐 Supabase = 正确"的硬规则
+1. **现状对齐 Supabase 1:1**：`entry = { trial_id, card_id, due_ts, is_correct, ... }` 直接 `supabase.from('sync_trials').upsert(entry)` 成立，**零字段名转换**
+2. **零代码改动迁移**：保留 snake_case = 50+ 调用点 record 字段访问完全不动 = P2 PR 体量缩小 90%
+3. **sync 上下行无 mapping 开销**：从 IDB getAll → 直接喂 Supabase upsert，从 Supabase select → 直接 IDB put，全程同一个 snake_case 数据结构
+4. **跨层映射明确**：IDB record = Supabase row，认知统一，没有"IDB 一套字段名、上传时再转一套"的隐式契约
+5. **CLAUDE.md L141 不冲突**：该规则说"DB 列 snake_case，JS 内存 camelCase 独立不混用"。IDB record 是 DB/JS 边界产物，**作为 DB 那一侧载体处理**（snake_case）是合理选择，跟纯 JS 内存对象（如 UI state、SRS 计算中间值）的 camelCase 不冲突
 
 **store 名仍 snake_case 对齐 Supabase**：
 
-store 名是"表名级"标识符，类比 Postgres 表名。行业惯例 snake_case 复数，且对齐 Supabase 表名能让 grep `sync_trials` 同时命中本地 IDB 调用点和云端 SQL，调试友好。这是行内字段（record）跟容器（store/表）两个独立的命名层级。
+store 名是"表名级"标识符，类比 Postgres 表名。行业惯例 snake_case 复数，且对齐 Supabase 表名能让 grep `sync_trials` 同时命中本地 IDB 调用点和云端 SQL，调试友好。
+
+**该修正的连带影响（已更新 §4.3、§4.4、§5.2、§8.2、§9）**：
+- keyPath 全部保留 snake_case
+- record 字段全部保留 snake_case
+- P2 不再需要"50+ 调用点改字段名"任务，仅 store 名 rename + onupgradeneeded
+- P3 仍按计划做 helper 调用点改造（与本决策正交）
 
 ### 3.2 为什么保留 DB 名 `yihai_xxx`
 
@@ -131,18 +137,22 @@ store 名是"表名级"标识符，类比 Postgres 表名。行业惯例 snake_c
 
 | store | keyPath | 类型 | 备注 |
 |---|---|---|---|
-| `sync_trials` | `trialId` | 单字段 | 旧 `trial_id` 改 camelCase |
-| `sync_card_states` | `stateKey` | 单字段 | 旧 `state_key`，衍生 `${deckKey}\|${cardId}` |
-| `easy_card_states` | `[deckKey, cardId]` | 复合 | 旧 `[deck_key, card_id]` |
-| `app_events` | `eventId` | 单字段 | 旧 `event_id` |
-| `voice_slots` | `slotName` | 单字段 | 不变（已是 camelCase）|
+| `sync_trials` | `trial_id` | 单字段 | 不变（现状已对齐 Supabase PK）|
+| `sync_card_states` | `state_key` | 单字段 | 不变，衍生 `${deckKey}\|${cardId}` |
+| `easy_card_states` | `[deck_key, card_id]` | 复合 | 不变（现状已对齐）|
+| `app_events` | `event_id` | 单字段 | 不变 |
+| `voice_slots` | `slotName` | 单字段 | 不变（本地无 Supabase 对应表，沿用 camelCase）|
 | `media_blobs` | (无 keyPath) | 外部 key | 跟原 `blobs` 一致，put(blob, key) 二参形式 |
 
 ### 4.4 Record 字段
 
-- **业务字段**：camelCase（如 `trialId, cardId, dueTs, isCorrect, lapsesTotal`）
-- **本地补充字段（不上传 Supabase）**：camelCase，可选 `_` 前缀表达"内部"（如 `_dirty, _syncedAt, _blob`）
-- **跟 Supabase 同步的字段命名**：JS 侧用 camelCase，sync 上传时由 sync 层显式 map 成 snake_case（保留现状）
+**结论：保留 snake_case，跟 Supabase 列名 1:1 对齐**。
+
+- **同步字段**：snake_case，跟 Supabase 列名严格一致（如 `trial_id, card_id, due_ts, is_correct, lapses_total`）
+- **本地补充字段（不上传 Supabase）**：snake_case 风格保持一致（如 `synced_at, suspended_reason`）
+- **现状代码已经这样了**：扫描 `index.html` 173 处 `entry.snake_field` 访问点，业务代码层对 IDB record 一致地使用 snake_case 字段名
+- **优势**：IDB record 可直接 upsert 到 Supabase（零字段名转换）、零代码改动迁移、跨层映射明确（IDB record = Supabase row）
+- **代价**：跟 CLAUDE.md L141 的 "JS 内存用 camelCase" 原则在 IDB record 这个 DB/JS 边界上"留作 snake_case"。这是 spec §3.1 论证修正后的明确决策
 
 ## 5. 注册表
 
@@ -159,11 +169,11 @@ const IDB_DBS = {
 
 ```js
 const IDB_STORES = {
-  syncTrials:     { db: 'srs',   name: 'sync_trials',      keyPath: 'trialId'  },
-  syncCardStates: { db: 'srs',   name: 'sync_card_states', keyPath: 'stateKey' },
-  easyCardStates: { db: 'srs',   name: 'easy_card_states', keyPath: ['deckKey', 'cardId'] },
-  appEvents:      { db: 'srs',   name: 'app_events',       keyPath: 'eventId'  },
-  voiceSlots:     { db: 'srs',   name: 'voice_slots',      keyPath: 'slotName' },
+  syncTrials:     { db: 'srs',   name: 'sync_trials',      keyPath: 'trial_id'  },
+  syncCardStates: { db: 'srs',   name: 'sync_card_states', keyPath: 'state_key' },
+  easyCardStates: { db: 'srs',   name: 'easy_card_states', keyPath: ['deck_key', 'card_id'] },
+  appEvents:      { db: 'srs',   name: 'app_events',       keyPath: 'event_id'  },
+  voiceSlots:     { db: 'srs',   name: 'voice_slots',      keyPath: 'slotName'  },
   mediaBlobs:     { db: 'media', name: 'media_blobs',      keyPath: null /* external key */ },
 };
 ```
@@ -304,16 +314,16 @@ indexedDB.open('yihai_media', 2).onupgradeneeded = (e) => {
 - 单测 helper 基础路径（约 8 cases）
 - 现有所有回归测试不变
 
-### Phase 2：store rename + schema 迁移（中 PR）
+### Phase 2：store rename + schema 迁移（小-中 PR）
 
 **改动**：
 - 更新 `IDB_DBS` version：srs 9→10, media 1→2
-- 更新 `IDB_STORES` 中 store 名 / keyPath 到新规范（snake_case store 名 + camelCase keyPath）
+- 更新 `IDB_STORES` 中 store 名到新规范（snake_case 对齐 Supabase 表名）；keyPath / record 字段**保留 snake_case 不变**（§3.1 修正）
+- 老常量值（`TRIAL_STORE`、`CS_STORE`、`EVT_STORE`、`VOICE_SLOT_STORE`、`EASY_STORE`、`IDB_STORE`）改成"延迟引用 IDB_STORES"（如 `const TRIAL_STORE = IDB_STORES.syncTrials.name`），50+ 现有调用点透明 follow 新 store 名
 - onupgradeneeded handler 走 §7 的迁移函数
-- 现有 50+ 处 `tx.objectStore('trials')` 等裸字符串调用点暂时保留，但**通过 IDB_STORES 引用**（如 `tx.objectStore(IDB_STORES.syncTrials.name)`），避免手写新 store 名
-- record 写入字段名同步改成 camelCase（如 `{ trialId, cardId, ... }`）
+- 无需改动任何 record 字段名 或 sync 层 mapping（§3.1 修正后零开销）
 
-**风险**：中（onupgradeneeded 触发 + 字段名变更）
+**风险**：低（仅 schema rename，运行时数据流不变）
 
 **测试**：
 - 新增 `_pw_idb_migration.js`：模拟老版本 IDB → 升级 → 验证 store 列表 + record 字段
