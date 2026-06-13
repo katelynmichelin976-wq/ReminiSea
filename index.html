@@ -4153,6 +4153,7 @@ async function idbDelete(storeKey, key) {
     tx.objectStore(name).delete(key);
     tx.oncomplete = () => res();
     tx.onerror    = e => rej(e.target.error);
+    tx.onabort    = e => rej(e.target.error || new Error('idb tx aborted'));
   });
 }
 async function idbGetAll(storeKey) {
@@ -4175,6 +4176,7 @@ async function idbClear(storeKey) {
     tx.objectStore(name).clear();
     tx.oncomplete = () => res();
     tx.onerror    = e => rej(e.target.error);
+    tx.onabort    = e => rej(e.target.error || new Error('idb tx aborted'));
   });
 }
 // 外部 key 形式（mediaBlobs 用：put(blob, key) / get(key)，无 keyPath）
@@ -4186,6 +4188,7 @@ async function idbPutWithKey(storeKey, key, value) {
     tx.objectStore(name).put(value, key);
     tx.oncomplete = () => res();
     tx.onerror    = e => rej(e.target.error);
+    tx.onabort    = e => rej(e.target.error || new Error('idb tx aborted'));
   });
 }
 async function idbGetByKey(storeKey, key) {
@@ -4197,6 +4200,7 @@ async function idbGetByKey(storeKey, key) {
 }
 // 批量事务（多 store 原子读写）— callback 收到原生 IDB transaction
 async function idbTx(storeKeys, mode, callback) {
+  storeKeys.forEach(k => { if (!IDB_STORES[k]) throw new Error('idbTx: unknown storeKey: ' + k); });
   const meta = storeKeys.map(k => IDB_STORES[k]);
   const dbs = new Set(meta.map(m => m.db));
   if (dbs.size > 1) throw new Error('idbTx: cannot span multiple databases');
