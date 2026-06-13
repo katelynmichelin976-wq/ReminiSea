@@ -34,7 +34,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v5.12_media_recovery_test.js` | 媒体 upsert 失败回滚 + crash 恢复 + mergeCard confirmed 传播纯函数单测（22 cases） |
 | `tests/yihai_v5.14_ls_test.js` | LS_KEYS 注册表 + helper + 工厂 + 聚合迁移 + yh:v1: prefix rename 单测（109 cases） |
 | `tests/yihai_v5.15_log_test.js` | 本地日志 ring buffer 单测（12 cases） |
-| `tests/run_all.js` | 单元测试统一入口（12 套件，608 断言） |
+| `tests/yihai_v5.13.10_idb_p1_test.js` | IDB_DBS / IDB_STORES 注册表静态校验（33 断言） |
+| `tests/run_all.js` | 单元测试统一入口（14 套件，667 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户/设置/i18n/语言/语音/IDB/练习模式，65 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端 + Easy 模式 EasyState IDB（21 断言，无需登录） |
 | `tests/_pw_easy.js` | Easy 模式综合（设置 UI/单局/retry/多局 confident 池/诊断面板，28 断言，无需登录） |
@@ -42,6 +43,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_pw_cloud_sync.js` | 云端流程（登录/牌组下载/同步/session restore/用户隔离/feedback E2E，32 断言） |
 | `tests/_pw_cross_device.js` | 跨设备同步（练习→同步→接收/review 不被覆写/DP 仅本地/增量/暂停续传/水位迁移/Fix1-3 回归/runMediaPhase await，39 断言） |
 | `tests/_pw_session_restore.js` | 会话恢复（SDK 失败/无 backup/token 失效/backup 损坏/超时，13 断言） |
+| `tests/_pw_idb_helpers.js` | IDB helper round-trip（IDB_STORES 注册表 + 9 个 helper 函数，~23 断言，无需登录） |
 | `tests/_pw_sync_guard.js` | runSync 30s watchdog（7 断言） |
 | `tests/_pw_feedback.js` | 意见反馈模块（11 断言） |
 | `tests/_pw_config_sync.js` | 语音参数云同步（~23 断言，需登录） |

@@ -4112,6 +4112,110 @@ function openSrsDb() {
   return _srsDbPromise;
 }
 
+// ── IDB helper (v5.13.10 Phase 1) ────────────────────────────────────
+// 复用现有 openSrsDb() / openDB() 的 DB cache；helper 仅做注册表路由 + Promise 包装
+async function _idbDbFor(storeKey) {
+  const meta = IDB_STORES[storeKey];
+  if (!meta) throw new Error('idb: unknown storeKey: ' + storeKey);
+  if (meta.db === 'srs')   return openSrsDb();
+  if (meta.db === 'media') return openDB();
+  throw new Error('idb: unknown db: ' + meta.db);
+}
+function _idbReqAsPromise(req) {
+  return new Promise((res, rej) => {
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbGet(storeKey, key) {
+  const db = await _idbDbFor(storeKey);
+  const name = IDB_STORES[storeKey].name;
+  const req = db.transaction(name, 'readonly').objectStore(name).get(key);
+  const r = await _idbReqAsPromise(req);
+  return r == null ? null : r;
+}
+async function idbPut(storeKey, record) {
+  const db = await _idbDbFor(storeKey);
+  const name = IDB_STORES[storeKey].name;
+  return new Promise((res, rej) => {
+    const tx = db.transaction(name, 'readwrite');
+    tx.objectStore(name).put(record);
+    tx.oncomplete = () => res();
+    tx.onerror    = e => rej(e.target.error);
+    tx.onabort    = e => rej(e.target.error || new Error('idb tx aborted'));
+  });
+}
+async function idbDelete(storeKey, key) {
+  const db = await _idbDbFor(storeKey);
+  const name = IDB_STORES[storeKey].name;
+  return new Promise((res, rej) => {
+    const tx = db.transaction(name, 'readwrite');
+    tx.objectStore(name).delete(key);
+    tx.oncomplete = () => res();
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
+async function idbGetAll(storeKey) {
+  const db = await _idbDbFor(storeKey);
+  const name = IDB_STORES[storeKey].name;
+  const req = db.transaction(name, 'readonly').objectStore(name).getAll();
+  return (await _idbReqAsPromise(req)) || [];
+}
+async function idbCount(storeKey) {
+  const db = await _idbDbFor(storeKey);
+  const name = IDB_STORES[storeKey].name;
+  const req = db.transaction(name, 'readonly').objectStore(name).count();
+  return (await _idbReqAsPromise(req)) || 0;
+}
+async function idbClear(storeKey) {
+  const db = await _idbDbFor(storeKey);
+  const name = IDB_STORES[storeKey].name;
+  return new Promise((res, rej) => {
+    const tx = db.transaction(name, 'readwrite');
+    tx.objectStore(name).clear();
+    tx.oncomplete = () => res();
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
+// 外部 key 形式（mediaBlobs 用：put(blob, key) / get(key)，无 keyPath）
+async function idbPutWithKey(storeKey, key, value) {
+  const db = await _idbDbFor(storeKey);
+  const name = IDB_STORES[storeKey].name;
+  return new Promise((res, rej) => {
+    const tx = db.transaction(name, 'readwrite');
+    tx.objectStore(name).put(value, key);
+    tx.oncomplete = () => res();
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
+async function idbGetByKey(storeKey, key) {
+  const db = await _idbDbFor(storeKey);
+  const name = IDB_STORES[storeKey].name;
+  const req = db.transaction(name, 'readonly').objectStore(name).get(key);
+  const r = await _idbReqAsPromise(req);
+  return r == null ? null : r;
+}
+// 批量事务（多 store 原子读写）— callback 收到原生 IDB transaction
+async function idbTx(storeKeys, mode, callback) {
+  const meta = storeKeys.map(k => IDB_STORES[k]);
+  const dbs = new Set(meta.map(m => m.db));
+  if (dbs.size > 1) throw new Error('idbTx: cannot span multiple databases');
+  const dbKey = [...dbs][0];
+  const db = dbKey === 'srs' ? await openSrsDb() : await openDB();
+  const names = meta.map(m => m.name);
+  return new Promise((res, rej) => {
+    const tx = db.transaction(names, mode);
+    let userErr = null;
+    tx.oncomplete = () => userErr ? rej(userErr) : res();
+    tx.onerror    = e => rej(userErr || e.target.error);
+    tx.onabort    = e => rej(userErr || e.target.error || new Error('idb tx aborted'));
+    Promise.resolve(callback(tx)).catch(err => {
+      userErr = err;
+      try { tx.abort(); } catch {}
+    });
+  });
+}
+
 // migrate local offline records to current user on login (deviceId match only)
 async function migrateDeviceRecordsToUser(cloudUserId) {
   var did = lsGet(LS_KEYS.DEVICE_ID);
