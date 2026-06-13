@@ -2,6 +2,64 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.8 — session 恢复三处独立 bug 修复
+
+### 动机
+
+发布 v5.13.5 后用户报告"打开 app 发现已退出登录"。诊断过程查 app_events 串起三个独立根因，完整分析见 `docs/auth_session_bug_analysis_2026-06-12.md`。
+
+### 改动
+
+#### #1 `doAccountLogout` 改 `signOut({ scope: 'local' })`
+
+**`index.html:6235`：** 原 `_sb.auth.signOut()` 默认 scope 是 `global`——撤销服务端**所有** refresh_token，所有设备下次冷启动都失败。
+
+实证铁链：今天凌晨 5-6 点 Playwright 跑了 ~50 次 `_pw_cloud_sync` 类登录测试，06:31:09 一次 cleanup logout（global）撤销 zyhaff 所有 refresh_token；16 小时后用户用真实设备开 v5.13.5 验证 → `session_restore_offline (no_session)` 3ms 内触发。妈妈也被影响过：2026-06-08 09:53 开发设备 global logout 后她真实手机被强制重登。
+
+修复：`signOut({ scope: 'local' })` 只清当前 client 的 localStorage，**不撤销服务端 token**。Playwright cleanup / 用户多设备登出 / 开发手动登出三种场景同时受益。一行改动。
+
+#### #2 `restoreSession` 加 refresh_token 续期分支
+
+**`index.html:3378-3398, 3404-3427`：** 原代码 `getSession()` 返回 null 时直接进 offline 并 `stopAutoRefresh()`——refresh_token 仍有效却没用上。
+
+修复：在进 offline 前显式 `Promise.race([_sb.auth.refreshSession(), 5s timeout])`。成功则等同 online 分支（新增 `session_restore_refresh_ok` 事件）；失败才真的 offline。提取 `_applyRestoredSession` + `_goOffline` 两个 helper 减少分支重复代码（~30 行 net 增加）。
+
+`refreshSession()` 不需要密码——用 localStorage 现有 refresh_token 一次 HTTPS 请求换新 access_token，用户完全无感知。
+
+#### #3 offline handler 加 'online' 恢复 listener
+
+**`index.html:11602-11608`：** 原代码使用中 WiFi 闪断时设 `_syncEnabled = false` + UI 重渲染，**但不注册 'online' 监听器**——网络恢复后无法自愈，必须关闭重开 app。完全无 app_event 留痕。
+
+修复：offline handler 内追加 `window.addEventListener('online', _onOnlineRetry)` + 新增 `network_offline` 事件用于量化触发频率。3 行新增。
+
+### refresh_token 实际不会按时间过期（认知校正）
+
+查 `auth.refresh_tokens` 表结构发现**没有 `expires_at` 列**——失效完全靠 `revoked` 布尔位。免费版项目的 refresh_token 没有时间硬性过期（实测妈妈 28 小时前的 token 仍未撤销）。bug #2 的"长时间不开 app 后 access_token 过期"是真正的触发条件；refresh_token 自身只会被 global logout / 改密 / 管理员撤销/Pro 套餐 inactivity timeout（免费版无）这几种主动操作撤销。
+
+### 监测
+
+部署 7 天后查 `app_events`：
+
+```sql
+SELECT COUNT(*) FILTER (WHERE event_type = 'session_restore_refresh_ok') AS refresh_ok,
+       COUNT(*) FILTER (WHERE event_type = 'network_offline') AS net_offline,
+       COUNT(*) FILTER (WHERE event_type = 'logout') AS logout
+FROM app_events
+WHERE timestamp > extract(epoch from now() - interval '7 days')*1000;
+```
+
+修复有效标志：`refresh_ok > 0`（自动续期生效）；用户 `logout` 平均下降（开发测试不再波及真实用户）。
+
+### 测试
+
+回归全过：12 套件 608 单测 + 68 ui_smoke + 21 srs_e2e。修复内容深在 Supabase SDK 与 'online'/'offline' 事件路径中，单测与 Playwright 难覆盖，主要靠生产 app_events 监测。
+
+### 零外观变化
+
+UI 和行为完全保持现状。用户感知：之后版本更新或长时间不开后再开，**多数情况不需要重输密码**。
+
+---
+
 ## v5.13.7 — 提示词云端 schema 改嵌套同步（修 v5.13.6 跨设备跨 locale 污染）
 
 ### 动机
