@@ -364,9 +364,9 @@ async function runEasySessionFirstWrong(page, expectedSize) {
     // yh_diag.js Tab 0 包含「轻松模式统计」段，仅检查 IDB store 存在和数据可读
     const easyStoreExists = await run(page, async () => {
       const db = await openSrsDb();
-      return db.objectStoreNames.contains('easyCardStates');
+      return db.objectStoreNames.contains('easy_card_states');
     });
-    pass('Phase6: IDB 含 easyCardStates store', easyStoreExists);
+    pass('Phase6: IDB 含 easy_card_states store', easyStoreExists);
 
     const idbVer = await run(page, async () => {
       const db = await openSrsDb();

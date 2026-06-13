@@ -115,6 +115,20 @@ async function seedOldSchema(page) {
     pass('新 store sync_trials 存在',                   newSrsStores.names.includes('sync_trials'));
     pass('新 store sync_card_states 存在',              newSrsStores.names.includes('sync_card_states'));
     pass('新 store easy_card_states 存在',              newSrsStores.names.includes('easy_card_states'));
+
+    const easyIdxNames = await run(page, async () => {
+      return new Promise((res) => {
+        const req = indexedDB.open('yihai_srs');
+        req.onsuccess = e => {
+          const store = e.target.result.transaction('easy_card_states', 'readonly').objectStore('easy_card_states');
+          const names = Array.from(store.indexNames);
+          e.target.result.close();
+          res(names);
+        };
+      });
+    });
+    pass('easy_card_states 含 deck_key 索引', easyIdxNames.includes('deck_key'));
+
     pass('新 store app_events 存在',                    newSrsStores.names.includes('app_events'));
     pass('新 store voice_slots 存在',                   newSrsStores.names.includes('voice_slots'));
     pass('老 store trials 已删',                        !newSrsStores.names.includes('trials'));

@@ -3327,7 +3327,7 @@ const IDB_DBS = {
 const IDB_STORES = {
   syncTrials:     { db: 'srs',   name: 'sync_trials',      keyPath: 'trial_id'  },
   syncCardStates: { db: 'srs',   name: 'sync_card_states', keyPath: 'state_key' },
-  easyCardStates: { db: 'srs',   name: 'easy_card_states', keyPath: ['deck_key','card_id'] },
+  easyCardStates: { db: 'srs',   name: 'easy_card_states', keyPath: ['deck_key','card_id'], indexes: [{ name: 'deck_key', keyPath: 'deck_key' }] },
   appEvents:      { db: 'srs',   name: 'app_events',       keyPath: 'event_id'  },
   voiceSlots:     { db: 'srs',   name: 'voice_slots',      keyPath: 'slotName'  },
   mediaBlobs:     { db: 'media', name: 'media_blobs',      keyPath: null /* external key */ },
@@ -4072,9 +4072,11 @@ function openSrsDb() {
       });
       Object.values(IDB_STORES).filter(s => s.db === 'srs').forEach(s => {
         if (!db.objectStoreNames.contains(s.name)) {
-          db.createObjectStore(s.name, { keyPath: s.keyPath });
+          const store = db.createObjectStore(s.name, { keyPath: s.keyPath });
+          if (s.indexes) s.indexes.forEach(idx => store.createIndex(idx.name, idx.keyPath, idx.opts || {}));
         }
       });
+      // NOTE: log.info is declared later in the file — use console.log here
       console.log('[idb] yihai_srs upgraded to v' + IDB_DBS.srs.version);
     };
     req.onsuccess = e => { _srsDb = e.target.result; _srsDbPromise = null; res(_srsDb); };
@@ -5338,9 +5340,11 @@ function openDB() {
       Object.values(IDB_STORES).filter(s => s.db === 'media').forEach(s => {
         if (!db.objectStoreNames.contains(s.name)) {
           const opts = s.keyPath ? { keyPath: s.keyPath } : {};
-          db.createObjectStore(s.name, opts);
+          const store = db.createObjectStore(s.name, opts);
+          if (s.indexes) s.indexes.forEach(idx => store.createIndex(idx.name, idx.keyPath, idx.opts || {}));
         }
       });
+      // NOTE: log.info is declared later in the file — use console.log here
       console.log('[idb] yihai_media upgraded to v' + IDB_DBS.media.version);
     };
     req.onsuccess = e => res(e.target.result);
