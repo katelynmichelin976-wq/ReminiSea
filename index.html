@@ -3581,9 +3581,7 @@ async function syncTrialLog(entry) {
       // unique key conflict (23505) = record already exists on server, treat as success
       if (error.code === '23505') {
         entry.synced_at = Date.now();
-        const db = await openSrsDb();
-        const tx = db.transaction(TRIAL_STORE, 'readwrite');
-        tx.objectStore(TRIAL_STORE).put(entry);
+        await idbPut('syncTrials', entry).catch(() => {});
       } else {
         console.warn('[sync] trial upload failed:', error.message);
       }
@@ -3591,10 +3589,7 @@ async function syncTrialLog(entry) {
     }
     // mark as synced (write back to IndexedDB for offline retry detection)
     entry.synced_at = Date.now();
-    const db = await openSrsDb();
-    const tx = db.transaction(TRIAL_STORE, 'readwrite');
-    tx.objectStore(TRIAL_STORE).put(entry);
-    tx.onerror = e => console.warn('[sync] trial synced_at writeback failed');
+    await idbPut('syncTrials', entry).catch(e => console.warn('[sync] trial synced_at writeback failed', e && e.message));
   } catch(e) { console.warn('[sync] trial upload error:', e.message); }
 }
 
@@ -3653,9 +3648,7 @@ async function syncCardState(state) {
     if (error) throw error;
     // upload success → mark synced
     state.synced_at = Date.now();
-    const db = await openSrsDb();
-    const tx = db.transaction(CS_STORE, 'readwrite');
-    tx.objectStore(CS_STORE).put(state);
+    await idbPut('syncCardStates', state).catch(() => {});
   } catch(e) { console.warn('[sync] card state upload error:', e.message); }
 }
 
@@ -3728,14 +3721,8 @@ async function syncCardStatesFromCloud(deckKey) {
 async function syncPendingData(deckKey) {
   if (!_syncEnabled || !_sb) return;
   try {
-    const db = await openSrsDb();
-
     // 1. retry unsynced TrialLog (current user only)
-    const allTrials = await new Promise((res, rej) => {
-      const req = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
-      req.onsuccess = e => res(e.target.result || []);
-      req.onerror   = e => rej(e.target.error);
-    });
+    const allTrials = await idbGetAll('syncTrials');
     const uid = getCurrentUserId();
     const pending = allTrials.filter(t => !t.synced_at && (!t.user_id || t.user_id === uid));
     await parallelMapLimit(pending, 10, async t => {
@@ -3919,12 +3906,7 @@ async function runSync(opts) {
   try {
     // 1. upload TrialLog (incremental)
     updateProg(t('sync_upload_trials'), 10);
-    var db = await openSrsDb();
-    var allTrials = await new Promise(function(res, rej) {
-      var r = db.transaction(TRIAL_STORE, 'readonly').objectStore(TRIAL_STORE).getAll();
-      r.onsuccess = function(e) { res(e.target.result || []); };
-      r.onerror   = function(e) { rej(e.target.error); };
-    });
+    var allTrials = await idbGetAll('syncTrials');
     var uid = getCurrentUserId();
     var pendingTrials = allTrials.filter(function(t) { return !t.synced_at && t.deck_key && (!t.user_id || t.user_id === uid); });
     var TRIAL_BATCH = 10;
@@ -3934,15 +3916,12 @@ async function runSync(opts) {
       if (tOk) {
         syncStats.trials += tBatch.length;
         var tNow = Date.now();
-        await new Promise(function(res, rej) {
-          var tx = db.transaction(TRIAL_STORE, 'readwrite');
-          var store = tx.objectStore(TRIAL_STORE);
+        await idbTx(['syncTrials'], 'readwrite', function(tx) {
+          var store = tx.objectStore(IDB_STORES.syncTrials.name);
           tBatch.forEach(function(t) {
             var req = store.get(t.trial_id);
             req.onsuccess = function() { if (req.result) { req.result.synced_at = tNow; store.put(req.result); } };
           });
-          tx.oncomplete = res;
-          tx.onerror = function(e) { rej(e.target.error); };
         });
       }
     }
@@ -4263,16 +4242,12 @@ function logAppEvent(type, payload, deckKey) {
   };
   // write to IndexedDB only, don’t upload immediately (avoid 409 race with syncAppEvents)
   if (!isMember()) {
-    openSrsDb().then(function(db) {
-      var tx = db.transaction(EVT_STORE, 'readwrite');
-      tx.objectStore(EVT_STORE).put(event);
-      tx.oncomplete = function() { trimStore(db, EVT_STORE, 50); };
+    idbPut('appEvents', event).then(function() {
+      openSrsDb().then(function(db) { trimStore(db, EVT_STORE, 50); }).catch(function(){});
     }).catch(function(){});
     return;
   }
-  openSrsDb().then(function(db) {
-    db.transaction(EVT_STORE, 'readwrite').objectStore(EVT_STORE).put(event);
-  }).catch(function(){});
+  idbPut('appEvents', event).catch(function(){});
 }
 
 
@@ -4317,14 +4292,9 @@ async function uploadAppEventBatch(events) {
 // batch retry AppEvents (including warn/error diagnostic logs)
 async function syncAppEvents() {
   if (!_syncEnabled || !_sb) return 0;
-  var db = await openSrsDb();
 
   // read unsynced business events
-  var evtAll = await new Promise(function(res, rej) {
-    var r = db.transaction(EVT_STORE, 'readonly').objectStore(EVT_STORE).getAll();
-    r.onsuccess = function(e) { res(e.target.result || []); };
-    r.onerror   = function(e) { rej(e.target.error); };
-  });
+  var evtAll = await idbGetAll('appEvents');
   var pending = evtAll.filter(function(e) { return !e.synced_at; });
 
   // upload business events in batches of 10
@@ -4339,16 +4309,17 @@ async function syncAppEvents() {
   // batch write synced_at in single transaction (fix markEventSynced omission)
   if (syncedIds.length > 0) {
     var now = Date.now();
-    await new Promise(function(res, rej) {
-      var tx = db.transaction(EVT_STORE, 'readwrite');
-      var store = tx.objectStore(EVT_STORE);
-      syncedIds.forEach(function(id) {
-        var req = store.get(id);
-        req.onsuccess = function() { if (req.result) { req.result.synced_at = now; store.put(req.result); } };
+    try {
+      await idbTx(['appEvents'], 'readwrite', function(tx) {
+        var store = tx.objectStore(IDB_STORES.appEvents.name);
+        syncedIds.forEach(function(id) {
+          var req = store.get(id);
+          req.onsuccess = function() { if (req.result) { req.result.synced_at = now; store.put(req.result); } };
+        });
       });
-      tx.oncomplete = res;
-      tx.onerror = function(e) { log.error('sync', 'batch_mark_synced_fail', { err: e.target.error && e.target.error.message }); rej(e.target.error); };
-    });
+    } catch (e) {
+      log.error('sync', 'batch_mark_synced_fail', { err: e && e.message });
+    }
   }
 
   return syncedIds.length;
