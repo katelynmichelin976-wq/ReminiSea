@@ -1681,6 +1681,38 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 .va-ss-no   { background: var(--surf2); color: var(--text3); }
 .va-ss-func { background: var(--ocean-bg); color: var(--ocean); }
 .va-slot-arr { color: var(--text3); display: flex; flex-shrink: 0; }
+
+/* ════════════════════════════════
+   ROTATE PROMPT (横屏锁定 overlay)
+   触屏设备横屏时挡住 UI，提示竖屏使用
+   ════════════════════════════════ */
+#rotate-prompt {
+  display: none;
+  position: fixed; inset: 0;
+  z-index: 99999;
+  background: var(--bg);
+  color: var(--text);
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 24px; padding: 24px;
+  text-align: center;
+  -webkit-user-select: none; user-select: none;
+}
+.rotate-icon {
+  width: 72px; height: 72px;
+  color: var(--ocean);
+  animation: rotate-hint 2.4s ease-in-out infinite;
+}
+@keyframes rotate-hint {
+  0%, 40%, 100% { transform: rotate(0); }
+  60%, 90% { transform: rotate(-90deg); }
+}
+.rotate-text { font-size: 20px; font-weight: 700; }
+.rotate-subtext { font-size: 14px; color: var(--text2); max-width: 280px; line-height: 1.5; }
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  #rotate-prompt { display: flex; }
+}
 </style>
 </head>
 <body>
@@ -7202,6 +7234,8 @@ const I18N = {
     app_title: 'Memory Glimmers',
     app_short_name: 'Glimmers',
     meta_description: 'Picture-word matching — learn with fun',
+    rotate_to_portrait: 'Portrait mode only',
+    rotate_to_portrait_sub: 'Please rotate your device back to portrait',
     // Common
     common_item_unit: '',
     common_back: 'Back',
@@ -7528,6 +7562,8 @@ const I18N = {
     app_title: '忆海拾光',
     app_short_name: '忆海拾光',
     meta_description: '看图识物 — 快乐学习',
+    rotate_to_portrait: '请竖屏使用',
+    rotate_to_portrait_sub: '本应用暂只支持竖屏，请旋转设备',
     common_back: '返回',
     common_cancel: '取消',
     common_confirm: '确认',
@@ -7851,6 +7887,8 @@ const I18N = {
     app_title: '憶海拾光',
     app_short_name: '憶海拾光',
     meta_description: '看圖識物 — 快樂學習',
+    rotate_to_portrait: '請豎屏使用',
+    rotate_to_portrait_sub: '本應用暫只支持豎屏，請旋轉設備',
     common_back: '返回',
     common_cancel: '取消',
     common_confirm: '確認',
@@ -8159,6 +8197,8 @@ const I18N = {
     app_title: 'Memory Glimmers',
     app_short_name: 'Glimmers',
     meta_description: 'Reconocimiento visual — aprende con diversion',
+    rotate_to_portrait: 'Solo modo vertical',
+    rotate_to_portrait_sub: 'Por favor gira tu dispositivo a vertical',
     common_back: 'Volver',
     common_cancel: 'Cancelar',
     common_confirm: 'Confirmar',
@@ -8476,6 +8516,8 @@ const I18N = {
     app_title: 'メモリーグリマーズ',
     app_short_name: 'グリマーズ',
     meta_description: '写真で学ぶ — 楽しく覚えよう',
+    rotate_to_portrait: '縦向き専用',
+    rotate_to_portrait_sub: 'デバイスを縦向きに戻してください',
     // Common
     common_item_unit: '',
     common_back: '戻る',
@@ -12598,6 +12640,17 @@ document.addEventListener('contextmenu', e => e.preventDefault());
       <button class="rec-save-btn" onclick="saveTextEdit()" data-i18n="common_save">保存</button>
     </div>
   </div>
+</div>
+
+<div id="rotate-prompt" aria-hidden="true">
+  <svg class="rotate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="6" y="2" width="12" height="20" rx="2"/>
+    <line x1="12" y1="18" x2="12" y2="18"/>
+    <path d="M3 8 a9 9 0 0 1 9 -6" stroke-dasharray="2 2"/>
+    <polyline points="3 5 3 8 6 8"/>
+  </svg>
+  <div class="rotate-text" data-i18n="rotate_to_portrait">请竖屏使用</div>
+  <div class="rotate-subtext" data-i18n="rotate_to_portrait_sub">本应用暂只支持竖屏</div>
 </div>
 </body>
 </html>
