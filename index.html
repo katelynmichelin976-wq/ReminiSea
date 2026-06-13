@@ -3327,6 +3327,21 @@ const TRIAL_STORE    = 'trials';
 const EVT_STORE      = 'app_events';
 const VOICE_SLOT_STORE = 'voiceSlots';
 
+// ── IDB 注册表 (v5.13.10 Phase 1) ────────────────────────────────────
+// 声明当前 IDB 现状；P2 将 rename store 到规范名（spec §4.2）
+const IDB_DBS = {
+  srs:   { name: 'yihai_srs',   version: 9 },
+  media: { name: 'yihai_media', version: 1 },
+};
+const IDB_STORES = {
+  syncTrials:     { db: 'srs',   name: 'trials',         keyPath: 'trial_id'  },
+  syncCardStates: { db: 'srs',   name: 'card_states',    keyPath: 'state_key' },
+  easyCardStates: { db: 'srs',   name: 'easyCardStates', keyPath: ['deck_key','card_id'] },
+  appEvents:      { db: 'srs',   name: 'app_events',     keyPath: 'event_id'  },
+  voiceSlots:     { db: 'srs',   name: 'voiceSlots',     keyPath: 'slotName'  },
+  mediaBlobs:     { db: 'media', name: 'blobs',          keyPath: null /* external key */ },
+};
+
 let _srsDb = null;
 let _srsDbPromise = null;
 
