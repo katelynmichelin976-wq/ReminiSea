@@ -5264,31 +5264,19 @@ function openDB() {
   });
 }
 async function saveMedia(key, blob) {
-  const db = await openDB();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(IDB_STORE, 'readwrite');
-    tx.objectStore(IDB_STORE).put(blob, key);
-    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
-  });
+  await idbPutWithKey('mediaBlobs', key, blob);
 }
 async function loadMedia(key) {
-  const db = await openDB();
-  return new Promise((res, rej) => {
-    const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).get(key);
-    req.onsuccess = e => res(e.target.result || null);
-    req.onerror   = e => rej(e.target.error);
-  });
+  return await idbGetByKey('mediaBlobs', key);
 }
 async function deleteMediaForDeck(deckKey) {
-  const db = await openDB();
-  const allKeys = await new Promise((res, rej) => {
-    const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).getAllKeys();
-    req.onsuccess = e => res(e.target.result); req.onerror = e => rej(e.target.error);
+  const allKeys = await idbGetAllKeys('mediaBlobs');
+  const toDelete = allKeys.filter(k => k.startsWith(deckKey + '_'));
+  if (!toDelete.length) return;
+  await idbTx(['mediaBlobs'], 'readwrite', (tx) => {
+    const st = tx.objectStore(IDB_STORES.mediaBlobs.name);
+    toDelete.forEach(k => st.delete(k));
   });
-  const tx = db.transaction(IDB_STORE, 'readwrite');
-  const st = tx.objectStore(IDB_STORE);
-  allKeys.filter(k => k.startsWith(deckKey + '_')).forEach(k => st.delete(k));
-  return new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = e => rej(e.target.error); });
 }
 
 // ── media file check & cleanup ────────────────────────────────────
@@ -5301,12 +5289,7 @@ async function checkMedia() {
 
   try {
     // 1. get all blob keys from IndexedDB
-    const db = await openDB();
-    const allKeys = await new Promise((res, rej) => {
-      const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).getAllKeys();
-      req.onsuccess = () => res(req.result || []);
-      req.onerror = () => rej(req.error);
-    });
+    const allKeys = await idbGetAllKeys('mediaBlobs');
 
     // 2. build expected key set (all decks × all cards)
     const expected = new Set();
@@ -5359,11 +5342,10 @@ async function cleanOrphanMedia() {
   resultEl.innerHTML = '<span style="color:var(--text3)">⏳ ' + t('storage_cleaning') + '</span>';
 
   try {
-    const db = await openDB();
-    const tx = db.transaction(IDB_STORE, 'readwrite');
-    const st = tx.objectStore(IDB_STORE);
-    orphans.forEach(k => st.delete(k));
-    await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    await idbTx(['mediaBlobs'], 'readwrite', (tx) => {
+      const st = tx.objectStore(IDB_STORES.mediaBlobs.name);
+      orphans.forEach(k => st.delete(k));
+    });
     _lastOrphans = [];
     resultEl.innerHTML = '<div style="padding:10px;background:var(--green-bg);border:1px solid var(--green-bd);border-radius:8px;color:var(--green);font-size:13px;">✅ ' + esc(t('media_clean_done', { count: orphans.length })) + '</div>';
   } catch(e) {
@@ -11160,10 +11142,10 @@ class SyncJob {
           if (s._blob && s._blob.startsWith('blob:')) URL.revokeObjectURL(s._blob);
         });
         try {
-          const db = await openDB();
-          const tx = db.transaction(IDB_STORE, 'readwrite');
-          const st = tx.objectStore(IDB_STORE);
-          for (const slot of Object.keys(c.media || {})) st.delete(`${this.deckKey}_${c.id}_${slot}`);
+          await idbTx(['mediaBlobs'], 'readwrite', (tx) => {
+            const st = tx.objectStore(IDB_STORES.mediaBlobs.name);
+            for (const slot of Object.keys(c.media || {})) st.delete(`${this.deckKey}_${c.id}_${slot}`);
+          });
         } catch (e) { /* ignore */ }
       }
       DECKS[this.deckKey] = cards.filter(c => !delIds.has(c.id));
