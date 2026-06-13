@@ -28,7 +28,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
 
     // ════ PHASE 2: helper 函数存在 ════
     section('PHASE 2: helper 函数存在');
-    for (const fn of ['idbGet','idbPut','idbDelete','idbGetAll','idbCount','idbClear','idbPutWithKey','idbGetByKey','idbTx']) {
+    for (const fn of ['idbGet','idbPut','idbDelete','idbGetAll','idbCount','idbClear','idbPutWithKey','idbGetByKey','idbGetAllKeys','idbTx']) {
       pass(`${fn} 全局函数存在`, await run(page, (n) => typeof window[n] === 'function', fn));
     }
 
@@ -70,6 +70,23 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     });
     pass('idbPutWithKey + idbGetByKey round-trip', blobBack === 'hello');
     pass('idbGetByKey 不存在 key 返回 null',       null === await run(page, async () => await idbGetByKey('mediaBlobs', 'nonexistent_p1')));
+
+    // ════ PHASE 6.5: idbGetAllKeys（mediaBlobs 外部 key 列表）════
+    section('PHASE 6.5: idbGetAllKeys');
+    await run(page, async () => {
+      const b1 = new Blob(['a'], { type: 'text/plain' });
+      const b2 = new Blob(['b'], { type: 'text/plain' });
+      await idbPutWithKey('mediaBlobs', 'test_p3_keys_1', b1);
+      await idbPutWithKey('mediaBlobs', 'test_p3_keys_2', b2);
+    });
+    const keys = await run(page, async () => await idbGetAllKeys('mediaBlobs'));
+    pass('idbGetAllKeys 返回数组',          Array.isArray(keys));
+    pass('idbGetAllKeys 含 test_p3_keys_1', keys.includes('test_p3_keys_1'));
+    pass('idbGetAllKeys 含 test_p3_keys_2', keys.includes('test_p3_keys_2'));
+    await run(page, async () => {
+      await idbDelete('mediaBlobs', 'test_p3_keys_1').catch(() => {});
+      await idbDelete('mediaBlobs', 'test_p3_keys_2').catch(() => {});
+    });
 
     // ════ PHASE 7: idbTx 批量事务原子性 ════
     section('PHASE 7: idbTx 批量事务原子性');
