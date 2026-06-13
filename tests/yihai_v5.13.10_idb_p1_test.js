@@ -40,9 +40,9 @@ try {
 assert('IDB_DBS 含 srs 条目',   !!IDB_DBS.srs);
 assert('IDB_DBS 含 media 条目', !!IDB_DBS.media);
 assert('IDB_DBS.srs.name == "yihai_srs"',     IDB_DBS.srs && IDB_DBS.srs.name === 'yihai_srs');
-assert('IDB_DBS.srs.version == 9（P1 不 bump）', IDB_DBS.srs && IDB_DBS.srs.version === 9);
+assert('IDB_DBS.srs.version == 10（P2 bump）', IDB_DBS.srs && IDB_DBS.srs.version === 10);
 assert('IDB_DBS.media.name == "yihai_media"',  IDB_DBS.media && IDB_DBS.media.name === 'yihai_media');
-assert('IDB_DBS.media.version == 1（P1 不 bump）', IDB_DBS.media && IDB_DBS.media.version === 1);
+assert('IDB_DBS.media.version == 2（P2 bump）', IDB_DBS.media && IDB_DBS.media.version === 2);
 
 // IDB_STORES 完整性
 const expectedStoreKeys = ['syncTrials','syncCardStates','easyCardStates','appEvents','voiceSlots','mediaBlobs'];
@@ -54,13 +54,13 @@ expectedStoreKeys.forEach(k => {
   }
 });
 
-// store 名声明现状（P1 不 rename）
-assert('syncTrials.name == "trials"（现状）',          IDB_STORES.syncTrials && IDB_STORES.syncTrials.name === 'trials');
-assert('syncCardStates.name == "card_states"（现状）', IDB_STORES.syncCardStates && IDB_STORES.syncCardStates.name === 'card_states');
-assert('easyCardStates.name == "easyCardStates"（现状）', IDB_STORES.easyCardStates && IDB_STORES.easyCardStates.name === 'easyCardStates');
-assert('appEvents.name == "app_events"（现状）',       IDB_STORES.appEvents && IDB_STORES.appEvents.name === 'app_events');
-assert('voiceSlots.name == "voiceSlots"（现状）',     IDB_STORES.voiceSlots && IDB_STORES.voiceSlots.name === 'voiceSlots');
-assert('mediaBlobs.name == "blobs"（现状）',           IDB_STORES.mediaBlobs && IDB_STORES.mediaBlobs.name === 'blobs');
+// store 名 P2 规范名
+assert('syncTrials.name == "sync_trials"（P2 规范）',          IDB_STORES.syncTrials && IDB_STORES.syncTrials.name === 'sync_trials');
+assert('syncCardStates.name == "sync_card_states"（P2 规范）', IDB_STORES.syncCardStates && IDB_STORES.syncCardStates.name === 'sync_card_states');
+assert('easyCardStates.name == "easy_card_states"（P2 规范）', IDB_STORES.easyCardStates && IDB_STORES.easyCardStates.name === 'easy_card_states');
+assert('appEvents.name == "app_events"（不变）',             IDB_STORES.appEvents && IDB_STORES.appEvents.name === 'app_events');
+assert('voiceSlots.name == "voice_slots"（P2 规范）',         IDB_STORES.voiceSlots && IDB_STORES.voiceSlots.name === 'voice_slots');
+assert('mediaBlobs.name == "media_blobs"（P2 规范）',         IDB_STORES.mediaBlobs && IDB_STORES.mediaBlobs.name === 'media_blobs');
 
 // store 名唯一性（同 DB 内不重名）
 const byDb = {};

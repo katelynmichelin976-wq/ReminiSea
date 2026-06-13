@@ -44,6 +44,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_pw_cross_device.js` | 跨设备同步（练习→同步→接收/review 不被覆写/DP 仅本地/增量/暂停续传/水位迁移/Fix1-3 回归/runMediaPhase await，39 断言） |
 | `tests/_pw_session_restore.js` | 会话恢复（SDK 失败/无 backup/token 失效/backup 损坏/超时，13 断言） |
 | `tests/_pw_idb_helpers.js` | IDB helper round-trip（IDB_STORES 注册表 + 9 个 helper 函数，~23 断言，无需登录） |
+| `tests/_pw_idb_migration.js` | IDB schema 迁移（v9→v10 srs / v1→v2 media，老 store 删除新建，~17 断言，无需登录） |
 | `tests/_pw_sync_guard.js` | runSync 30s watchdog（7 断言） |
 | `tests/_pw_feedback.js` | 意见反馈模块（11 断言） |
 | `tests/_pw_config_sync.js` | 语音参数云同步（~23 断言，需登录） |

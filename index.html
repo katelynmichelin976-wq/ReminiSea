@@ -3318,19 +3318,19 @@ function minsToTs(mins) {
   return Math.round(mins * 60 * 1000);
 }
 
-// ── IDB 注册表 (v5.13.10 Phase 1) ────────────────────────────────────
-// 声明当前 IDB 现状；P2 将 rename store 到规范名（spec §4.2）
+// ── IDB 注册表 (v5.13.10 Phase 2 — store rename + schema bump) ──────
+// keyPath / record 字段保留 snake_case（spec §3.1 修正）
 const IDB_DBS = {
-  srs:   { name: 'yihai_srs',   version: 9 },
-  media: { name: 'yihai_media', version: 1 },
+  srs:   { name: 'yihai_srs',   version: 10 },
+  media: { name: 'yihai_media', version: 2  },
 };
 const IDB_STORES = {
-  syncTrials:     { db: 'srs',   name: 'trials',         keyPath: 'trial_id'  },
-  syncCardStates: { db: 'srs',   name: 'card_states',    keyPath: 'state_key' },
-  easyCardStates: { db: 'srs',   name: 'easyCardStates', keyPath: ['deck_key','card_id'] },
-  appEvents:      { db: 'srs',   name: 'app_events',     keyPath: 'event_id'  },
-  voiceSlots:     { db: 'srs',   name: 'voiceSlots',     keyPath: 'slotName'  },
-  mediaBlobs:     { db: 'media', name: 'blobs',          keyPath: null /* external key */ },
+  syncTrials:     { db: 'srs',   name: 'sync_trials',      keyPath: 'trial_id'  },
+  syncCardStates: { db: 'srs',   name: 'sync_card_states', keyPath: 'state_key' },
+  easyCardStates: { db: 'srs',   name: 'easy_card_states', keyPath: ['deck_key','card_id'] },
+  appEvents:      { db: 'srs',   name: 'app_events',       keyPath: 'event_id'  },
+  voiceSlots:     { db: 'srs',   name: 'voice_slots',      keyPath: 'slotName'  },
+  mediaBlobs:     { db: 'media', name: 'media_blobs',      keyPath: null /* external key */ },
 };
 
 // ── IndexedDB: yihai_srs (v5: user_id multi-user isolation) ──────
@@ -4063,44 +4063,19 @@ function openSrsDb() {
     const req = indexedDB.open(SRS_DB_NAME, SRS_DB_VER);
     req.onupgradeneeded = e => {
       const db = e.target.result;
-      const oldVer = e.oldVersion;
-      if (!db.objectStoreNames.contains(CS_STORE)) {
-        db.createObjectStore(CS_STORE, { keyPath: 'state_key' });
-      }
-      if (!db.objectStoreNames.contains(TRIAL_STORE)) {
-        const ts = db.createObjectStore(TRIAL_STORE, { keyPath: 'trial_id' });
-        ts.createIndex('deck_key',   'deck_key');
-        ts.createIndex('timestamp',  'timestamp');
-        ts.createIndex('synced_at',  'synced_at');
-      }
-      if (!db.objectStoreNames.contains(EVT_STORE)) {
-        db.createObjectStore(EVT_STORE, { keyPath: 'event_id' });
-      }
-      if (oldVer < 5) {
-        const csStore = e.target.transaction.objectStore(CS_STORE);
-        if (!csStore.indexNames.contains('user_id')) csStore.createIndex('user_id', 'user_id');
-        const trStore = e.target.transaction.objectStore(TRIAL_STORE);
-        if (!trStore.indexNames.contains('user_id')) trStore.createIndex('user_id', 'user_id');
-        lsSet(LS_KEYS.V5_MIGRATION, '1');
-      }
-      if (oldVer < 7) {
-        if (!db.objectStoreNames.contains(VOICE_SLOT_STORE)) {
-          db.createObjectStore(VOICE_SLOT_STORE, { keyPath: 'slotName' });
+      const obsoleteStoreNames = [
+        'trials', 'card_states', 'easyCardStates', 'app_events',
+        'voiceSlots', 'yh_logs'
+      ];
+      obsoleteStoreNames.forEach(name => {
+        if (db.objectStoreNames.contains(name)) db.deleteObjectStore(name);
+      });
+      Object.values(IDB_STORES).filter(s => s.db === 'srs').forEach(s => {
+        if (!db.objectStoreNames.contains(s.name)) {
+          db.createObjectStore(s.name, { keyPath: s.keyPath });
         }
-      }
-      if (oldVer < 8) {
-        if (!db.objectStoreNames.contains(EASY_STORE)) {
-          const s = db.createObjectStore(EASY_STORE, { keyPath: ['deck_key', 'card_id'] });
-          s.createIndex('deck_key', 'deck_key', { unique: false });
-        }
-        console.log('[idb] upgraded yihai_srs v7→v8: easyCardStates store created');
-      }
-      if (oldVer < 9) {
-        if (db.objectStoreNames.contains('yh_logs')) {
-          db.deleteObjectStore('yh_logs');
-        }
-        console.log('[idb] upgraded yihai_srs v8→v9: yh_logs store dropped');
-      }
+      });
+      console.log('[idb] yihai_srs upgraded to v' + IDB_DBS.srs.version);
     };
     req.onsuccess = e => { _srsDb = e.target.result; _srsDbPromise = null; res(_srsDb); };
     req.onerror   = e => { _srsDbPromise = null; rej(e.target.error); };
@@ -5357,7 +5332,17 @@ const IDB_NAME = IDB_DBS.media.name, IDB_VER = IDB_DBS.media.version, IDB_STORE 
 function openDB() {
   return new Promise((res, rej) => {
     const req = indexedDB.open(IDB_NAME, IDB_VER);
-    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (db.objectStoreNames.contains('blobs')) db.deleteObjectStore('blobs');
+      Object.values(IDB_STORES).filter(s => s.db === 'media').forEach(s => {
+        if (!db.objectStoreNames.contains(s.name)) {
+          const opts = s.keyPath ? { keyPath: s.keyPath } : {};
+          db.createObjectStore(s.name, opts);
+        }
+      });
+      console.log('[idb] yihai_media upgraded to v' + IDB_DBS.media.version);
+    };
     req.onsuccess = e => res(e.target.result);
     req.onerror   = e => rej(e.target.error);
   });
