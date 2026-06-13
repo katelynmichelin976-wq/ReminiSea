@@ -3309,7 +3309,7 @@ function getCurrentUserId() {
 // ── Supabase cloud sync ──────────────────────────────────────────
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
-const APP_VERSION = '5.13.6';
+const APP_VERSION = '5.13.7';
 document.title = '忆海拾光 v' + APP_VERSION;
 document.getElementById('home-version').textContent = 'v' + APP_VERSION;
 
@@ -3700,11 +3700,11 @@ async function cloudPushConfig() {
       }
     });
 
-    // collect local UI params（云端 schema 不变：voice 字段平铺到 ui dict）
-    const { phrases: _phrasesByLocale, ...vcFlat } = getVoiceConfig();
+    // collect local UI params（v5.13.7：phrases 整个 locale-keyed blob 一起同步，不再按当前 locale 平铺）
+    const { phrases: _phrases, ...vcFlat } = getVoiceConfig();
     const localUi = {
       ...vcFlat,
-      ...(_phrasesByLocale?.[getLocale()] || {}),
+      phrases:    _phrases || {},
       confettiOn: getUiField('confettiOn'),
       theme:      getUiField('theme'),
     };
@@ -3720,7 +3720,9 @@ async function cloudPushConfig() {
     const cloudCfg = cloud.data?.config_json;
     const mergedSrs = { ...(cloudCfg?.srs || {}), ...localSrs };
     const mergedUi  = { ...(cloudCfg?.ui  || {}), ...localUi  };
-    ['phrase_quiz_prompt','phrase_quiz_prompt_recognize','phrase_opt_hint','phraseSelect'].forEach(k => delete mergedUi[k]);
+    // 清理：v5.13.6 及更早扁平 phrase 字段 + 历史 wire-name；v5.13.7 起统一走 phrases 嵌套
+    [...PHRASE_VOICE_FIELDS, 'phrase_quiz_prompt','phrase_quiz_prompt_recognize','phrase_opt_hint','phraseSelect']
+      .forEach(k => delete mergedUi[k]);
 
     const { error } = await _sb.from('sync_config').upsert({
       user_id: _cloudUserId,
@@ -3767,7 +3769,14 @@ async function cloudPullConfig() {
     // apply UI params（按 field 类型路由：voice→voiceConfig / ui→uiConfig / typo→typographyConfig）
     if (cfg.ui) {
       Object.entries(cfg.ui).forEach(([k, v]) => {
-        if (VOICE_FIELDS.includes(k)) setVoiceField(k, v);
+        if (k === 'phrases' && v && typeof v === 'object') {
+          // v5.13.7：phrases 整个 locale-keyed blob 写回本地，覆盖所有 locale
+          const vc = getVoiceConfig();
+          vc.phrases = v;
+          lsSetJSON('yh:v1:config:voice', vc);
+        } else if (PHRASE_VOICE_FIELDS.includes(k)) {
+          // 老版本云端遗留扁平 phrase 字段：跳过，避免污染当前 locale
+        } else if (VOICE_FIELDS.includes(k)) setVoiceField(k, v);
         else if (k === 'theme' || k === 'confettiOn') setUiField(k, v);
         else if (k.startsWith('fs-')) setTypoField('fs', k.slice(3), v);
         else if (k.startsWith('ls-')) setTypoField('ls', k.slice(3), v);

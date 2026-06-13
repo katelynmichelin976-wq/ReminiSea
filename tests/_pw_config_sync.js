@@ -109,8 +109,10 @@ async function waitSyncDone(page, maxMs) {
       const { data } = await _sb.from('sync_config').select('config_json').maybeSingle();
       return data?.config_json?.ui || null;
     });
-    pass('云端 phraseQuizPrompt 写入正确', cloudUi1?.phraseQuizPrompt === 'pw-test-问题提示');
-    pass('云端 phraseWrong 写入正确',     cloudUi1?.phraseWrong      === 'pw-test-再想想');
+    // v5.13.7：phrase 字段在 ui.phrases[locale] 嵌套结构内
+    const localeForPhrases1 = await run(page, () => getLocale());
+    pass('云端 phraseQuizPrompt 写入正确', cloudUi1?.phrases?.[localeForPhrases1]?.phraseQuizPrompt === 'pw-test-问题提示');
+    pass('云端 phraseWrong 写入正确',     cloudUi1?.phrases?.[localeForPhrases1]?.phraseWrong      === 'pw-test-再想想');
     pass('云端 ansReadDelay 写入正确',    cloudUi1?.ansReadDelay     === '3.5');
     pass('云端 voiceMuted 写入正确',      cloudUi1?.voiceMuted       === '1');
     pass('云端 ttsRate 写入正确',         cloudUi1?.ttsRate          === '0.9');
@@ -170,8 +172,10 @@ async function waitSyncDone(page, maxMs) {
     });
     pass('废弃 key 全部从云端 config_json 中删除',
       cloudUi2 !== null && DEPRECATED_KEYS.every(k => !(k in cloudUi2)));
+    // v5.13.7：合法 phrase 字段在 ui.phrases[locale] 内
+    const localeForPhrases2 = await run(page, () => getLocale());
     pass('合法 key phraseQuizPrompt 仍存在于云端',
-      cloudUi2 !== null && 'phraseQuizPrompt' in cloudUi2);
+      cloudUi2 !== null && cloudUi2.phrases?.[localeForPhrases2]?.phraseQuizPrompt != null);
 
     // ════ PHASE 3: 跨设备语音参数传播 ════
     section('PHASE 3: 跨设备语音参数传播');
@@ -192,8 +196,10 @@ async function waitSyncDone(page, maxMs) {
       const { data } = await _sb.from('sync_config').select('config_json').maybeSingle();
       return data?.config_json?.ui || null;
     });
+    // v5.13.7：phrase 字段在嵌套路径
+    const localeForPhrases3 = await run(page, () => getLocale());
     pass('Device A → 云端 phraseWrong 正确',
-      cloudUi3?.phraseWrong === CROSS_PARAMS.phraseWrong);
+      cloudUi3?.phrases?.[localeForPhrases3]?.phraseWrong === CROSS_PARAMS.phraseWrong);
     pass('Device A → 云端 optReadDelay 正确',
       cloudUi3?.optReadDelay === CROSS_PARAMS.optReadDelay);
 

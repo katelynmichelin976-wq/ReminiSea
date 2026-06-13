@@ -111,14 +111,25 @@ function check(desc, actual, expected) {
   check('VOICE_FIELDS 应包含 phraseOptHint',
     vfBody.includes("'phraseOptHint'"), true);
 
-  // Test 6b: cloudPushConfig 排除 phrases blob，平铺当前 locale 的 phrase 字段
+  // Test 6b: cloudPushConfig 推送整个 phrases 嵌套 blob（v5.13.7+：所有 locale 一起同步）
   const pushStart = html.indexOf('async function cloudPushConfig()');
   const pushEnd   = html.indexOf('\nasync function cloudPullConfig()');
   const pushBody  = html.slice(pushStart, pushEnd);
-  check('cloudPushConfig 析构排除 phrases blob',
-    pushBody.includes('phrases: _phrasesByLocale'), true);
-  check('cloudPushConfig 平铺当前 locale 的 phrase 字段',
-    pushBody.includes('_phrasesByLocale?.[getLocale()]'), true);
+  check('cloudPushConfig 析构 phrases 子对象',
+    pushBody.includes('phrases: _phrases'), true);
+  check('cloudPushConfig 整体上传 phrases 嵌套 blob',
+    pushBody.includes('phrases:    _phrases || {}') || pushBody.includes('phrases: _phrases || {}'), true);
+  check('cloudPushConfig 清理 mergedUi 中遗留扁平 phrase 字段',
+    pushBody.includes('...PHRASE_VOICE_FIELDS'), true);
+
+  // Test 6c: cloudPullConfig 路由 phrases 嵌套对象（v5.13.7）
+  const pullStart = html.indexOf('async function cloudPullConfig()');
+  const pullEnd   = html.indexOf('\nfunction loadSettings()');
+  const pullBody  = html.slice(pullStart, pullEnd > pullStart ? pullEnd : pullStart + 10000);
+  check('cloudPullConfig 识别 phrases 嵌套对象',
+    pullBody.includes("k === 'phrases'"), true);
+  check('cloudPullConfig 跳过老版本遗留扁平 phrase 字段',
+    pullBody.includes('PHRASE_VOICE_FIELDS.includes(k)'), true);
 
   // Test 8: loadSettings 应通过 getVoiceField('phraseQuizPrompt') 读取（v5.13.3 起 voiceConfig 路径）
   const lsStart = html.indexOf('\nfunction loadSettings()');

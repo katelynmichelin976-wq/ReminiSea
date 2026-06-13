@@ -2,6 +2,70 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.7 — 提示词云端 schema 改嵌套同步（修 v5.13.6 跨设备跨 locale 污染）
+
+### 动机
+
+v5.13.6 实现"按 UI 语言分组存储"时，云端 `sync_config.ui` schema 保持扁平字段不变（push 时只平铺当前 locale 的 phrase 字段）。这导致跨设备跨 locale 场景污染：
+
+| 场景 | v5.13.6 行为 | v5.13.7 行为 |
+|------|-------------|-------------|
+| 设备 A、B 同语言 | ✓ 正确 | ✓ 正确 |
+| 设备 A 中文 push、设备 B 英文 pull | ❌ 中文脚本写入 B 的英文 locale 桶，污染英文自定义 | ✓ A 的中文写入 B 的中文 locale 桶 |
+| 单设备多语言切换后 push | ❌ 云端始终只保留最后 push 的那个 locale 内容 | ✓ 所有 locale 一起同步 |
+
+### 改动（突破性 schema 变更，按用户决策不考虑老数据）
+
+#### 1. `cloudPushConfig`：phrases 整个 locale-keyed blob 同步
+
+```js
+const { phrases: _phrases, ...vcFlat } = getVoiceConfig();
+const localUi = {
+  ...vcFlat,
+  phrases:    _phrases || {},  // 整个 locale-keyed 对象一起上传
+  confettiOn: getUiField('confettiOn'),
+  theme:      getUiField('theme'),
+};
+```
+
+merge 后显式清理 `PHRASE_VOICE_FIELDS` 中的 8 个 key（删除老版本 v5.13.6 及更早留在 `sync_config.ui` 顶层的扁平 phrase 字段），确保旧数据不持续残留。
+
+#### 2. `cloudPullConfig`：识别 `phrases` 嵌套对象 + 跳过老版本遗留扁平字段
+
+```js
+if (k === 'phrases' && v && typeof v === 'object') {
+  const vc = getVoiceConfig();
+  vc.phrases = v;  // 整个 blob 覆盖本地 voiceConfig.phrases
+  lsSetJSON('yh:v1:config:voice', vc);
+} else if (PHRASE_VOICE_FIELDS.includes(k)) {
+  // 老版本云端遗留扁平 phrase 字段：跳过，避免污染当前 locale
+}
+```
+
+#### 3. 测试
+
+- `tests/yihai_v5.2_voice_test.js` Test 6b 跟随更新：断言 `phrases: _phrases` 析构 + `_phrases || {}` 整体上传 + `mergedUi` 清理；新增 Test 6c 断言 pull 端识别 `phrases` 嵌套对象 + 跳过 PHRASE_VOICE_FIELDS 老字段（+3 断言）
+- `tests/_pw_config_sync.js` 跟随云端 schema 改动：3 处断言从 `cloudUi.phraseQuizPrompt`/`cloudUi.phraseWrong` 改为 `cloudUi.phrases[locale].phraseQuizPrompt`/`cloudUi.phrases[locale].phraseWrong`
+- 单测 13 套件 634 断言全通过；Playwright UI smoke 68、SRS e2e 21、config_sync 23 全通过
+
+### 设计可扩展性
+
+v5.13.7 把 locale 抬升为 first-class 数据维度。未来如需录音也按语言分：
+
+- IDB key：`voice-slot:{slot}:{locale}`（替代当前 `{slot}`）
+- voiceConfig 加 `recordings: { 'zh-CN': { wrong_hint: {duration, mime} }, 'en': {...} }` 子对象（与 `phrases` 同形）
+- 云端 Storage 路径：`voice-slots/{user}/{locale}/{slot}.webm`
+- `sync_config.ui` 加 `recordings_meta` 嵌套字段（与 `phrases` 同形）
+
+二进制录音不走 `sync_config`（走 Supabase Storage），所以 `sync_config.ui` 只需新增 metadata 嵌套字段，与本次 `phrases` 改动的 pattern 完全一致。
+
+### 已知取舍
+
+- 不向后兼容老云端数据：v5.13.7 设备 pull 到 v5.13.6 及更早 push 的扁平 phrase 字段会忽略（设计意图，让用户重新自定义一次后即恢复正常）
+- 因 v5.13.6 刚发布、影响面极小（单用户），按"既然做了就要到位"原则一并改完，不留半年的"半残"feature
+
+---
+
 ## v5.13.6 — 语音提示词按 UI 语言分组存储
 
 ### 动机
