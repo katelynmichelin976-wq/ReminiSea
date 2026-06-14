@@ -141,11 +141,11 @@
     try {
       const db = await openDb();
       const [states, trials, events, logs, easyStates] = await Promise.all([
-        readStore(db, 'card_states'),
-        readStore(db, 'trials'),
+        readStore(db, 'sync_card_states'),
+        readStore(db, 'sync_trials'),
         readStore(db, 'app_events'),
         readStore(db, 'yh_logs'),
-        readStore(db, 'easyCardStates'),
+        readStore(db, 'easy_card_states'),
       ]);
       db.close();
 
@@ -180,9 +180,9 @@
       const errLogs      = logs.filter(l => l.level==='error').length;
       const warnLogs     = logs.filter(l => l.level==='warn').length;
 
-      body.appendChild(kv('card_states', states.length + ' 条'));
-      body.appendChild(kv('easyCardStates', easyStates.length + ' 条'));
-      body.appendChild(kv('trials', trials.length + ' 条'));
+      body.appendChild(kv('sync_card_states', states.length + ' 条'));
+      body.appendChild(kv('easy_card_states', easyStates.length + ' 条'));
+      body.appendChild(kv('sync_trials', trials.length + ' 条'));
       body.appendChild(kv('app_events',
         events.length + ' 条' + (unsyncedEvt ? badge('未同步 ' + unsyncedEvt, '#7c3aed') : badge('全已同步','#15803d'))));
       body.appendChild(kv('yh_logs',
@@ -429,7 +429,7 @@
     body.innerHTML = '<div style="color:#475569;font-size:12px">加载中…</div>';
     try {
       const db = await openDb();
-      const states = await readStore(db, 'card_states');
+      const states = await readStore(db, 'sync_card_states');
       db.close();
 
       body.innerHTML = '';

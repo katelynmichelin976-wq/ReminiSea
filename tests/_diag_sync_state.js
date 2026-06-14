@@ -69,8 +69,8 @@ const URL = 'http://localhost:8080/yihai_v4.10.html?v=' + Date.now();
       const r = indexedDB.open('yihai_srs', 6);
       r.onsuccess = () => {
         const db = r.result;
-        const tx = db.transaction('card_states', 'readonly');
-        const req = tx.objectStore('card_states').getAll();
+        const tx = db.transaction('sync_card_states', 'readonly');
+        const req = tx.objectStore('sync_card_states').getAll();
         req.onsuccess = () => {
           const all = req.target.result;
           const deck = all.filter(s => s.deck_key === key);

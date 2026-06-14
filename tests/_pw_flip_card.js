@@ -174,8 +174,8 @@ async function createFlipYhspack() {
         r.onerror = () => rej(r.error);
       });
       return new Promise(res => {
-        const tx = db.transaction('card_states', 'readonly');
-        const req = tx.objectStore('card_states').getAll();
+        const tx = db.transaction('sync_card_states', 'readonly');
+        const req = tx.objectStore('sync_card_states').getAll();
         req.onsuccess = () => res(req.result.filter(s => s.deck_key === deckId));
       });
     }, DECK_ID);
@@ -201,8 +201,8 @@ async function createFlipYhspack() {
         r.onerror = () => rej(r.error);
       });
       return new Promise(res => {
-        const tx = db.transaction('card_states', 'readonly');
-        const req = tx.objectStore('card_states').getAll();
+        const tx = db.transaction('sync_card_states', 'readonly');
+        const req = tx.objectStore('sync_card_states').getAll();
         req.onsuccess = () => res(req.result.filter(s => s.deck_key === deckId));
       });
     }, DECK_ID);

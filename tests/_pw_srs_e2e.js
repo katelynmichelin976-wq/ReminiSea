@@ -110,8 +110,8 @@ async function createTestYhspack() {
           r.onsuccess = () => res(r.result);
           r.onerror = () => rej(r.error);
         });
-        const tx = db.transaction('card_states', 'readwrite');
-        const sto = tx.objectStore('card_states');
+        const tx = db.transaction('sync_card_states', 'readwrite');
+        const sto = tx.objectStore('sync_card_states');
         await new Promise((res) => {
           const req = sto.getAll();
           req.onsuccess = async () => {
@@ -227,11 +227,11 @@ async function createTestYhspack() {
         r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
       });
       const states = await new Promise(res => {
-        const r = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
+        const r = db.transaction('sync_card_states', 'readonly').objectStore('sync_card_states').getAll();
         r.onsuccess = () => res(r.result);
       });
       const trials = await new Promise(res => {
-        const r = db.transaction('trials', 'readonly').objectStore('trials').getAll();
+        const r = db.transaction('sync_trials', 'readonly').objectStore('sync_trials').getAll();
         r.onsuccess = () => res(r.result);
       });
       const filtered = states.filter(s => s.deck_key === id);
@@ -289,8 +289,8 @@ async function createTestYhspack() {
       const db = await new Promise((res, rej) => {
         const r = indexedDB.open('yihai_srs'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
       });
-      const tx = db.transaction('card_states', 'readwrite');
-      const sto = tx.objectStore('card_states');
+      const tx = db.transaction('sync_card_states', 'readwrite');
+      const sto = tx.objectStore('sync_card_states');
       const all = await new Promise(res => { const r = sto.getAll(); r.onsuccess = () => res(r.result); });
       const deckStates = all.filter(s => s.deck_key === did);
       // 设置不同 due_ts 以验证排序
@@ -350,7 +350,7 @@ async function createTestYhspack() {
         r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
       });
       const all = await new Promise(res => {
-        const r = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
+        const r = db.transaction('sync_card_states', 'readonly').objectStore('sync_card_states').getAll();
         r.onsuccess = () => res(r.result);
       });
       return all.filter(s => s.deck_key === id).map(s => ({ card_id: s.card_id, stage: s.srs_stage }));
@@ -429,7 +429,7 @@ async function createTestYhspack() {
         r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
       });
       const all = await new Promise(res => {
-        const r = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
+        const r = db.transaction('sync_card_states', 'readonly').objectStore('sync_card_states').getAll();
         r.onsuccess = () => res(r.result);
       });
       return all.filter(s => s.deck_key === id).map(s => ({ card_id: s.card_id, stage: s.srs_stage }));

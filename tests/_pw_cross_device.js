@@ -178,7 +178,7 @@ let tStart;
         const r = indexedDB.open('yihai_srs'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
       });
       const states = await new Promise(res => {
-        const r = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
+        const r = db.transaction('sync_card_states', 'readonly').objectStore('sync_card_states').getAll();
         r.onsuccess = () => res(r.result);
       });
       return {

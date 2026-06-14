@@ -165,11 +165,11 @@ async function waitDeckInMeta(page, deckName, maxMs) {
         r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
       });
       const states = await new Promise(res => {
-        const r = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
+        const r = db.transaction('sync_card_states', 'readonly').objectStore('sync_card_states').getAll();
         r.onsuccess = () => res(r.result);
       });
       const trials = await new Promise(res => {
-        const r = db.transaction('trials', 'readonly').objectStore('trials').getAll();
+        const r = db.transaction('sync_trials', 'readonly').objectStore('sync_trials').getAll();
         r.onsuccess = () => res(r.result);
       });
       return { states: states.length, trials: trials.length };
@@ -219,7 +219,7 @@ async function waitDeckInMeta(page, deckName, maxMs) {
         const r = indexedDB.open('yihai_srs'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
       });
       const states = await new Promise(res => {
-        const r = db.transaction('card_states', 'readonly').objectStore('card_states').getAll();
+        const r = db.transaction('sync_card_states', 'readonly').objectStore('sync_card_states').getAll();
         r.onsuccess = () => res(r.result);
       });
       const cloudId = typeof _cloudUserId !== 'undefined' ? _cloudUserId : 'none';

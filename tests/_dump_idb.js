@@ -21,8 +21,8 @@
     r.onerror = () => res([]);
   });
 
-  const states    = await gs('card_states');
-  const trials    = await gs('trials');
+  const states    = await gs('sync_card_states');
+  const trials    = await gs('sync_trials');
   const allEvents = await gs('app_events');
   db.close();
 
