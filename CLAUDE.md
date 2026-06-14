@@ -171,7 +171,7 @@ $env:TEST_PASSWORD="xxx"; node tests/_pw_easy_sync.js
 2. **Surgical changes** — 只改必须改的。不"改进"相邻代码，匹配现有风格。只清理自己改动造成的孤儿引用。
 3. **Goal-driven** — "修 bug" → 先写复现测试；"加功能" → 先定义验收标准。
 4. **No comments** — 不写注释。变量/函数命名足够清晰时，注释是噪音。唯一例外：隐藏约束或反直觉的 workaround，一行以内。
-5. **camelCase only** — 所有变量、函数、localStorage key 一律 camelCase。不用 snake_case、kebab-case（HTML id/class 除外）。**数据库列名用 snake_case**（与 JS 命名独立，不混用）。新增列/key 前先 grep 现有代码确认规范。修改内存中的 deck 元数据后必须调用 `saveDeckIndex()` 持久化。
+5. **camelCase only** — 所有变量、函数、localStorage key 一律 camelCase。不用 snake_case、kebab-case（HTML id/class 除外）。**数据库列名用 snake_case**（与 JS 命名独立，不混用）。新增列/key 前先 grep 现有代码确认规范。修改内存中的 deck 元数据后必须调用 `saveDeckIndex()` 持久化。跨层命名规范完整版见 `docs/naming_convention.md`。
 
 ## Workflow Rules
 
