@@ -2,6 +2,55 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.11 — 答题热路径 IDB 写入容错 + JS 异常自动上报
+
+### 动机
+
+讨论"上线前运营维护方面缺什么"时识别出两项真实风险：
+
+1. **IDB 写入失败会掐断答题流** — 5 个写入函数（`saveCardState` / `saveCardStateLocal` / `writeTrialLog` / `putEasyState` / `_writeSrs`）的 IDB 失败会一路 reject 到调用方，可能掐断"下一题显示"路径
+2. **妈妈不会主动反馈 bug** — 现在只有用户主动 feedback 才知道有崩溃，妈妈遇到问题以为是自己操作有误
+
+其他讨论中识别的项（同步 UX modal、离线 UI、媒体预热）经审视后判定 YAGNI 或 Capacitor 上线后自然解决，明确不做。
+
+### 改动
+
+#### IDB 写入容错（`fix: 2444291`）
+
+5 个写入函数外层加 try-catch：
+
+- `saveCardState` / `saveCardStateLocal` / `putEasyState` / `writeTrialLog`：catch 后 `log.error('idb', 'write_fail', { fn, cardId, err })` + `logAppEvent('idb_write_fail', ...)` 双通道
+- `writeTrialLog`：catch 后 `return;`，避免触发 `syncTrialLog` 上传一个本地未持久化的 ghost trial
+- `_writeSrs`：外层 try-catch 兜底，catch 用 `srs_write_fail` 区分（捕获 IDB 之外的其他异常）
+- 嵌套 `try { logAppEvent } catch {}` 内层包装：`logAppEvent` 自身也写 `appEvents` IDB，hijack 测试时会再次抛错，需隔离
+
+设计 trade-off：宁可丢部分 SRS 进度（内存正确、磁盘旧值）也不掐断答题流。详见 spec `docs/superpowers/specs/2026-06-14-idb-write-resilience-design.md`。
+
+#### JS 异常自动上报（`feat: 1030cac`）
+
+`logAppEvent` 后插入：
+
+- `window.addEventListener('error')` 捕获同步异常
+- `window.addEventListener('unhandledrejection')` 捕获 Promise 拒绝
+- 走 `logAppEvent('js_error', {type, message, filename, lineno, colno, stack, screen, hash})`
+- session 级去重（`_reportedJsErrors` Set，同 `type|message` 只报一次），防 setInterval 类炸表
+- message 限 500 / stack 限 1000 字符 / filename 去掉 `location.origin` 前缀
+
+后续 admin 看板按 `event_type = 'js_error'` 聚合可识别"哪些用户/页面在崩"。
+
+### 测试
+
+- 新增 `tests/_pw_idb_resilience.js`（hijack `idbPut` 抛 QuotaExceededError，验证 5 函数仍 resolve + log 双通道写入，8 断言）
+- 新增 `tests/_pw_js_error_report.js`（触发 sync error / unhandledrejection / 重复 message，验证 appEvents 写入 + session 去重，10 断言）
+
+### 不在本版本
+
+- ❌ Sync UX modal 改造（练习屏没有 sync 入口，无问题）
+- ❌ 离线状态视觉提示（Capacitor 后自然解决）
+- ❌ 媒体预热（emoji 兜底可接受，Capacitor 后媒体持久化）
+- ❌ Service Worker（独立工作，未启动）
+- ❌ Inline CDN（独立工作，后续 Capacitor 铺路）
+
 ## v5.13.10 — IDB 命名规范化 P1-P4 + 测试盲点修复
 
 ### 动机
