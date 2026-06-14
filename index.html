@@ -3337,8 +3337,6 @@ const IDB_STORES = {
 const SRS_DB_NAME    = IDB_DBS.srs.name;
 const SRS_DB_VER     = IDB_DBS.srs.version;
 const EASY_STORE     = IDB_STORES.easyCardStates.name;
-const CS_STORE       = IDB_STORES.syncCardStates.name;
-const TRIAL_STORE    = IDB_STORES.syncTrials.name;
 const EVT_STORE      = IDB_STORES.appEvents.name;
 
 let _srsDb = null;
@@ -4185,22 +4183,24 @@ async function idbTx(storeKeys, mode, callback) {
 async function migrateDeviceRecordsToUser(cloudUserId) {
   var did = lsGet(LS_KEYS.DEVICE_ID);
   if (!did || !cloudUserId || did === cloudUserId) return;
-  var db = await openSrsDb();
-  if (!db) return;
   try {
-    var csTx = db.transaction(CS_STORE, 'readwrite');
-    var csStore = csTx.objectStore(CS_STORE);
-    var csAll = await new Promise(function(r) { csStore.getAll().onsuccess = function(e) { r(e.target.result || []); }; });
+    var csAll = await idbGetAll('syncCardStates');
     var csN = 0;
-    csAll.forEach(function(s) { if (s.user_id === did) { s.user_id = cloudUserId; csStore.put(s); csN++; } });
-    await new Promise(function(resolve, reject) { csTx.oncomplete = resolve; csTx.onerror = reject; });
+    var csToWrite = csAll.filter(function(s) { return s.user_id === did; });
+    csToWrite.forEach(function(s) { s.user_id = cloudUserId; csN++; });
+    if (csToWrite.length) await idbTx(['syncCardStates'], 'readwrite', function(tx) {
+      var st = tx.objectStore(IDB_STORES.syncCardStates.name);
+      csToWrite.forEach(function(s) { st.put(s); });
+    });
 
-    var trTx = db.transaction(TRIAL_STORE, 'readwrite');
-    var trStore = trTx.objectStore(TRIAL_STORE);
-    var trAll = await new Promise(function(r) { trStore.getAll().onsuccess = function(e) { r(e.target.result || []); }; });
+    var trAll = await idbGetAll('syncTrials');
     var trN = 0;
-    trAll.forEach(function(t) { if (t.user_id === did) { t.user_id = cloudUserId; trStore.put(t); trN++; } });
-    await new Promise(function(resolve, reject) { trTx.oncomplete = resolve; trTx.onerror = reject; });
+    var trToWrite = trAll.filter(function(t) { return t.user_id === did; });
+    trToWrite.forEach(function(t) { t.user_id = cloudUserId; trN++; });
+    if (trToWrite.length) await idbTx(['syncTrials'], 'readwrite', function(tx) {
+      var st = tx.objectStore(IDB_STORES.syncTrials.name);
+      trToWrite.forEach(function(t) { st.put(t); });
+    });
   } catch(e) { log.error('storage', 'migrate_device_id_fail', { err: e.message }); }
 }
 
@@ -4346,20 +4346,21 @@ function trimStore(db, storeName, maxCount) {
 // clean expired logs (app_events 30 days)
 async function purgeOldLogs() {
   try {
-    var db = await openSrsDb();
     var cutoff30 = Date.now() - 30 * 86400000;
-    var evtTx = db.transaction(EVT_STORE, 'readwrite');
-    var evtReq = evtTx.objectStore(EVT_STORE).openCursor();
-    evtReq.onsuccess = function(e) { var c = e.target.result; if (c && c.value.timestamp < cutoff30) { c.delete(); c.continue(); } };
-    // TRIAL_STORE：清除 30 天前已同步的条目
-    var trTx = db.transaction(TRIAL_STORE, 'readwrite');
-    var trReq = trTx.objectStore(TRIAL_STORE).openCursor();
-    trReq.onsuccess = function(e) {
-      var c = e.target.result;
-      if (!c) return;
-      if (c.value.synced_at && c.value.synced_at < cutoff30) c.delete();
-      c.continue();
-    };
+    await idbTx(['appEvents'], 'readwrite', function(tx) {
+      var evtReq = tx.objectStore(IDB_STORES.appEvents.name).openCursor();
+      evtReq.onsuccess = function(e) { var c = e.target.result; if (c && c.value.timestamp < cutoff30) { c.delete(); c.continue(); } };
+    });
+    // syncTrials：清除 30 天前已同步的条目
+    await idbTx(['syncTrials'], 'readwrite', function(tx) {
+      var trReq = tx.objectStore(IDB_STORES.syncTrials.name).openCursor();
+      trReq.onsuccess = function(e) {
+        var c = e.target.result;
+        if (!c) return;
+        if (c.value.synced_at && c.value.synced_at < cutoff30) c.delete();
+        c.continue();
+      };
+    });
   } catch(e) { log.warn('storage', 'purge_old_logs_fail', { err: e.message }); }
   if (_syncEnabled && _sb && _cloudUserId) {
     try {
@@ -4402,19 +4403,11 @@ function newCardState(deckKey, cardId) {
 }
 
 async function getCardState(deckKey, cardId) {
-  const db  = await openSrsDb();
   const key = makeStateKey(deckKey, cardId);
   const uid = getCurrentUserId();
-  return new Promise((res, rej) => {
-    const req = db.transaction(CS_STORE, 'readonly')
-                  .objectStore(CS_STORE).get(key);
-    req.onsuccess = e => {
-      const s = e.target.result || null;
-      if (s && s.user_id && s.user_id !== uid) { res(null); return; }
-      res(s);
-    };
-    req.onerror   = e => rej(e.target.error);
-  });
+  const s = await idbGet('syncCardStates', key);
+  if (s && s.user_id && s.user_id !== uid) return null;
+  return s;
 }
 
 async function saveCardState(state) {
@@ -5123,11 +5116,9 @@ function migrateSyncWatermarks() {
 
 async function deleteCardStatesForDeck(deckKey) {
   try {
-    const db = await openSrsDb();
-    await new Promise((res, rej) => {
-      const prefix = deckKey + '::';
-      const tx = db.transaction(CS_STORE, 'readwrite');
-      const store = tx.objectStore(CS_STORE);
+    const prefix = deckKey + '::';
+    await idbTx(['syncCardStates'], 'readwrite', (tx) => {
+      const store = tx.objectStore(IDB_STORES.syncCardStates.name);
       const req = store.openCursor();
       req.onsuccess = e => {
         const cursor = e.target.result;
@@ -5135,8 +5126,6 @@ async function deleteCardStatesForDeck(deckKey) {
         if (cursor.key.startsWith(prefix)) cursor.delete();
         cursor.continue();
       };
-      tx.oncomplete = res;
-      tx.onerror = e => rej(e.target.error);
     });
   } catch(e) { console.warn('[gc] deleteCardStatesForDeck fail:', e.message); }
 }
