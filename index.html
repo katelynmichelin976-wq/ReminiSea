@@ -4259,6 +4259,39 @@ function logAppEvent(type, payload, deckKey) {
   idbPut('appEvents', event).catch(function(){});
 }
 
+// ── 全局 JS 异常自动上报（写 app_events）─────────────────────────
+// session 级去重：同 message + type 只报一次
+const _reportedJsErrors = new Set();
+function _reportJsError(payload) {
+  const key = (payload.type || '') + '|' + (payload.message || '');
+  if (_reportedJsErrors.has(key)) return;
+  _reportedJsErrors.add(key);
+  try { logAppEvent('js_error', payload); } catch (e) { console.warn('[js_error] log fail', e && e.message); }
+}
+window.addEventListener('error', function(e) {
+  var s = document.querySelector('.screen.active');
+  _reportJsError({
+    type: 'error',
+    message: ((e && e.message) || '').slice(0, 500),
+    filename: ((e && e.filename) || '').replace(location.origin, ''),
+    lineno: (e && e.lineno) || 0,
+    colno: (e && e.colno) || 0,
+    stack: ((e && e.error && e.error.stack) || '').slice(0, 1000),
+    screen: (s && s.id) || '',
+    hash: location.hash || ''
+  });
+});
+window.addEventListener('unhandledrejection', function(e) {
+  var r = e && e.reason;
+  var s = document.querySelector('.screen.active');
+  _reportJsError({
+    type: 'unhandledrejection',
+    message: (((r && r.message) || (r && String(r)) || '')).slice(0, 500),
+    stack: ((r && r.stack) || '').slice(0, 1000),
+    screen: (s && s.id) || '',
+    hash: location.hash || ''
+  });
+});
 
 // device registration (non-blocking)
 async function upsertDeviceRegistry() {

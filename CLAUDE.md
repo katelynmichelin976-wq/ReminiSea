@@ -46,6 +46,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_pw_idb_helpers.js` | IDB helper round-trip（IDB_STORES 注册表 + 9 个 helper 函数，~23 断言，无需登录） |
 | `tests/_pw_idb_migration.js` | IDB schema 迁移（v9→v10 srs / v1→v2 media，老 store 删除新建，~17 断言，无需登录） |
 | `tests/_pw_idb_resilience.js` | IDB 写入容错（hijack idbPut 抛错，验证 5 个写入函数不掐断答题流，~9 断言，无需登录） |
+| `tests/_pw_js_error_report.js` | JS 异常自动上报（window.error + unhandledrejection 写 appEvents + session 去重，10 断言，无需登录） |
 | `tests/_pw_sync_guard.js` | runSync 30s watchdog（7 断言） |
 | `tests/_pw_feedback.js` | 意见反馈模块（11 断言） |
 | `tests/_pw_config_sync.js` | 语音参数云同步（~23 断言，需登录） |
