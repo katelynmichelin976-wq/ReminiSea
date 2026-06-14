@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>忆海拾光 · 运营</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #dbeafe;
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --text2: #334155;
+  --text3: #64748b;
+  --border: #e2e8f0;
+  --success: #059669;
+  --success-bg: #d1fae5;
+  --warning: #d97706;
+  --warning-bg: #fef3c7;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --topbar-h: 56px;
+  --transition: 0.2s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+
+.screen { display: none; }
+.screen.active { display: flex; }
+
+#screen-loading {
+  align-items: center; justify-content: center;
+  min-height: 100vh; background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+}
+.loading-card {
+  background: var(--surface); border-radius: 16px; padding: 48px 36px;
+  width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); text-align: center;
+}
+.loading-card h1 { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+.spinner {
+  width: 36px; height: 36px; border: 3px solid var(--border);
+  border-top-color: var(--primary); border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 20px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#screen-login {
+  align-items: center; justify-content: center;
+  min-height: 100vh; background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+}
+.login-card {
+  background: var(--surface); border-radius: 16px; padding: 40px 36px;
+  width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.login-card h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.login-card p { font-size: 13px; color: var(--text3); margin-bottom: 28px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.form-group input {
+  width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; outline: none; transition: border-color var(--transition);
+}
+.form-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+.btn-primary {
+  width: 100%; padding: 11px; background: var(--primary); color: #fff; border: none;
+  border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: background var(--transition);
+}
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.login-error {
+  display: none; background: var(--danger-bg); color: var(--danger); padding: 10px 14px;
+  border-radius: var(--radius-sm); font-size: 13px; margin-top: 16px;
+}
+
+#screen-main { flex-direction: column; height: 100vh; }
+
+.topbar {
+  height: var(--topbar-h); background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+  flex-shrink: 0; gap: 12px;
+}
+.topbar-brand { font-size: 16px; font-weight: 700; white-space: nowrap; }
+.topbar-brand span { color: var(--primary); }
+.tw-selector { display: flex; gap: 4px; }
+.tw-selector button {
+  padding: 5px 12px; border: 1.5px solid var(--border); border-radius: 20px;
+  font-size: 13px; font-weight: 500; cursor: pointer; background: transparent;
+  color: var(--text3); transition: all var(--transition);
+}
+.tw-selector button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.tw-selector button:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.btn-icon {
+  background: none; border: none; cursor: pointer; font-size: 16px; padding: 6px;
+  border-radius: var(--radius-sm); color: var(--text3); transition: all var(--transition);
+}
+.btn-icon:hover { background: var(--bg); }
+#admin-name { font-size: 13px; color: var(--text3); }
+.btn-logout {
+  background: none; border: 1px solid var(--border); color: var(--text3); padding: 5px 12px;
+  border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; transition: all var(--transition);
+}
+.btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+.main-content { flex: 1; overflow-y: auto; padding: 20px; }
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+@media (max-width: 1023px) { .bento-grid { grid-template-columns: 1fr; } }
+
+.quadrant-card {
+  background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border);
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.quadrant-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 10px; border-bottom: 1px solid var(--border);
+}
+.quadrant-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.quadrant-expand {
+  padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 12px; color: var(--text3); cursor: pointer; background: none;
+  transition: all var(--transition); white-space: nowrap;
+}
+.quadrant-expand:hover { border-color: var(--primary); color: var(--primary); }
+
+.kpi-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+.kpi-cell {
+  padding: 12px 14px; border-right: 1px solid var(--border);
+}
+.kpi-cell:last-child { border-right: none; }
+.kpi-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi-value { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
+
+.quadrant-body { padding: 12px 16px; min-height: 120px; }
+
+.error-msg { color: var(--danger); font-size: 13px; }
+
+.mini-list { list-style: none; font-size: 12px; }
+.mini-list li {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 6px 0; border-bottom: 1px solid var(--border); gap: 8px;
+}
+.mini-list li:last-child { border-bottom: none; }
+.mini-list .ml-label { color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-list .ml-value { color: var(--text3); font-weight: 600; flex-shrink: 0; }
+
+.mini-bars { display: flex; align-items: flex-end; gap: 3px; height: 60px; }
+.mini-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.mini-bar { width: 100%; background: var(--primary-light); border-radius: 2px 2px 0 0; min-height: 2px; }
+.mini-bar-col.today .mini-bar { background: var(--primary); }
+
+.fb-item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.fb-item:last-child { border-bottom: none; }
+.fb-item .fb-meta { color: var(--text3); margin-bottom: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
+.fb-item .fb-preview { color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fb-badge { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: 600; background: var(--primary-light); color: var(--primary); }
+
+.deck-item { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+.deck-item:last-child { border-bottom: none; }
+.deck-item .di-name { color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px; }
+.deck-item .di-stats { color: var(--text3); flex-shrink: 0; font-size: 11px; }
+.deck-type-badge { display: inline-block; padding: 1px 5px; border-radius: 8px; font-size: 10px; font-weight: 600; }
+.deck-type-preset { background: var(--success-bg); color: var(--success); }
+.deck-type-personal { background: var(--primary-light); color: var(--primary); }
+.deck-type-unknown { background: #f1f5f9; color: var(--text3); }
+
+.as-of { font-size: 11px; color: var(--text3); text-align: right; padding: 8px 4px 0; max-width: 1400px; margin: 0 auto; }
+
+.drawer-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 200;
+}
+.drawer-overlay.active { display: block; }
+.drawer {
+  position: fixed; top: 0; right: -65vw; width: 60vw; max-width: 800px; min-width: 320px;
+  height: 100vh; background: var(--surface); z-index: 201;
+  transition: right 0.3s ease; overflow-y: auto;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.12);
+}
+.drawer.active { right: 0; }
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--surface); z-index: 2;
+}
+.drawer-title { font-size: 15px; font-weight: 700; }
+.drawer-close {
+  background: none; border: none; font-size: 20px; cursor: pointer;
+  color: var(--text3); padding: 4px; line-height: 1;
+}
+.drawer-close:hover { color: var(--text); }
+.drawer-body { padding: 20px; }
+.drawer-loading { text-align: center; padding: 40px; color: var(--text3); }
+
+.trend-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+.trend-table th {
+  text-align: left; padding: 8px 10px; font-weight: 600; color: var(--text3); font-size: 11px;
+  border-bottom: 2px solid var(--border);
+}
+.trend-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.trend-table tr:hover td { background: #f8fafc; }
+.trend-table .td-mono { font-family: monospace; font-size: 11px; max-width: 300px; overflow-wrap: break-word; }
+
+.trend-section { margin-bottom: 20px; }
+.trend-section h3 { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+
+pre.diag-pre {
+  background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px; font-size: 11px; overflow: auto; max-height: 300px;
+  white-space: pre-wrap; word-break: break-all;
+}
+</style>
+</head>
+<body>
+
+<div id="screen-loading" class="screen active">
+  <div class="loading-card">
+    <h1>忆海拾光 · 运营</h1>
+    <div class="spinner"></div>
+    <p style="font-size:13px;color:var(--text3)">正在验证身份...</p>
+  </div>
+</div>
+
+<div id="screen-login" class="screen">
+  <div class="login-card">
+    <h1>忆海拾光 · 运营</h1>
+    <p>管理员专属，请登录</p>
+    <div class="form-group">
+      <label>邮箱</label>
+      <input type="email" id="login-email" placeholder="admin@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="login-pwd" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="login-btn">登录</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<div id="screen-main" class="screen">
+  <div class="topbar">
+    <div class="topbar-brand">忆海拾光 · <span>运营</span></div>
+    <div class="tw-selector">
+      <button data-tw="24h">24h</button>
+      <button data-tw="7d" class="active">7d</button>
+      <button data-tw="30d">30d</button>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-icon" id="reload-btn" title="刷新">🔄</button>
+      <span id="admin-name"></span>
+      <button class="btn-logout" id="logout-btn">退出</button>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="bento-grid">
+      <div class="quadrant-card" data-quadrant="growth">
+        <div class="quadrant-header">
+          <span class="quadrant-title">📈 增长 / 活跃</span>
+          <button class="quadrant-expand" data-quadrant="growth">展开 →</button>
+        </div>
+        <div class="kpi-strip" id="kpi-growth">
+          <div class="kpi-cell"><div class="kpi-label">DAU 均值</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">新增用户</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">答题数</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">留存率</div><div class="kpi-value">—</div></div>
+        </div>
+        <div class="quadrant-body" id="body-growth">
+          <div style="color:var(--text3);font-size:12px;padding:20px 0;text-align:center">加载中...</div>
+        </div>
+      </div>
+      <div class="quadrant-card" data-quadrant="health">
+        <div class="quadrant-header">
+          <span class="quadrant-title">🩺 系统健康</span>
+          <button class="quadrant-expand" data-quadrant="health">展开 →</button>
+        </div>
+        <div class="kpi-strip" id="kpi-health">
+          <div class="kpi-cell"><div class="kpi-label">JS 错误</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">影响用户</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">session 异常</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">错误率‰</div><div class="kpi-value">—</div></div>
+        </div>
+        <div class="quadrant-body" id="body-health">
+          <div style="color:var(--text3);font-size:12px;padding:20px 0;text-align:center">加载中...</div>
+        </div>
+      </div>
+      <div class="quadrant-card" data-quadrant="feedback">
+        <div class="quadrant-header">
+          <span class="quadrant-title">💬 反馈收件箱</span>
+          <button class="quadrant-expand" data-quadrant="feedback">展开 →</button>
+        </div>
+        <div class="kpi-strip" id="kpi-feedback">
+          <div class="kpi-cell"><div class="kpi-label">窗口未读</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">总计</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">含诊断</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">不同设备</div><div class="kpi-value">—</div></div>
+        </div>
+        <div class="quadrant-body" id="body-feedback">
+          <div style="color:var(--text3);font-size:12px;padding:20px 0;text-align:center">加载中...</div>
+        </div>
+      </div>
+      <div class="quadrant-card" data-quadrant="content">
+        <div class="quadrant-header">
+          <span class="quadrant-title">📚 内容运营</span>
+          <button class="quadrant-expand" data-quadrant="content">展开 →</button>
+        </div>
+        <div class="kpi-strip" id="kpi-content">
+          <div class="kpi-cell"><div class="kpi-label">牌组总数</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">活跃 deck</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">personal 主</div><div class="kpi-value">—</div></div>
+          <div class="kpi-cell"><div class="kpi-label">窗口新建</div><div class="kpi-value">—</div></div>
+        </div>
+        <div class="quadrant-body" id="body-content">
+          <div style="color:var(--text3);font-size:12px;padding:20px 0;text-align:center">加载中...</div>
+        </div>
+      </div>
+    </div>
+    <div class="as-of" id="as-of"></div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <span class="drawer-title" id="drawer-title">详细趋势</span>
+    <button class="drawer-close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer-body" id="drawer-body">
+    <div class="drawer-loading">加载中...</div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
+const ADMIN_VERSION = '2.0.0';
+
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let _currentTw = '7d';
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+async function callEdgeFunction(name, body, querySuffix) {
+  const session = (await _sb.auth.getSession()).data.session;
+  if (!session) throw new Error('not logged in');
+  const url = `${SUPABASE_URL}/functions/v1/${name}${querySuffix || ''}`;
+  const r = await fetch(url, {
+    method: body == null ? 'GET' : 'POST',
+    headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    body: body == null ? undefined : JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return await r.json();
+}
+
+function fmtNum(n) {
+  if (n == null) return '—';
+  if (typeof n !== 'number') return String(n);
+  if (n >= 10000) return (n / 10000).toFixed(1) + 'w';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return String(n);
+}
+
+function fmtTs(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function renderKpiStrip(containerId, cells) {
+  const strip = document.getElementById(containerId);
+  if (!strip) return;
+  strip.innerHTML = cells.map(c =>
+    `<div class="kpi-cell"><div class="kpi-label">${c.label}</div><div class="kpi-value">${c.value}</div></div>`
+  ).join('');
+}
+
+function renderGrowth(data) {
+  const kpi = data.kpi || {};
+  renderKpiStrip('kpi-growth', [
+    { label: 'DAU 均值', value: fmtNum(kpi.dauAvg) },
+    { label: '新增用户', value: fmtNum(kpi.newUsers) },
+    { label: '答题数', value: fmtNum(kpi.totalTrials) },
+    { label: '留存率', value: kpi.retention != null ? kpi.retention + '%' : '—' },
+  ]);
+  const chart = data.miniChart || [];
+  const maxDau = Math.max(1, ...chart.map(p => p.dau));
+  const today = new Date().toISOString().split('T')[0];
+  const bars = chart.slice(-14).map(p => {
+    const pct = Math.round((p.dau / maxDau) * 100);
+    const isToday = p.date === today;
+    return `<div class="mini-bar-col${isToday ? ' today' : ''}"><div class="mini-bar" style="height:${Math.max(4, pct)}%"></div></div>`;
+  }).join('');
+  document.getElementById('body-growth').innerHTML =
+    `<div class="mini-bars">${bars}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">近 ${Math.min(14, chart.length)} 天 DAU</div>`;
+}
+
+function renderHealth(data) {
+  const kpi = data.kpi || {};
+  renderKpiStrip('kpi-health', [
+    { label: 'JS 错误', value: fmtNum(kpi.jsErrors) },
+    { label: '影响用户', value: fmtNum(kpi.affectedUsers) },
+    { label: 'session 异常', value: fmtNum(kpi.sessionAnomalies) },
+    { label: '错误率‰', value: kpi.errorRatePerMille != null ? kpi.errorRatePerMille + '‰' : '—' },
+  ]);
+  const errs = data.topErrors || [];
+  if (!errs.length) {
+    document.getElementById('body-health').innerHTML = '<div style="font-size:12px;color:var(--success);padding:20px 0;text-align:center">✓ 无 JS 错误</div>';
+    return;
+  }
+  const items = errs.map(e =>
+    `<li><span class="ml-label" title="${e.message}">${e.message.slice(0, 70)}</span><span class="ml-value">${e.count}次/${e.affectedUsers}人</span></li>`
+  ).join('');
+  document.getElementById('body-health').innerHTML = `<ul class="mini-list">${items}</ul>`;
+}
+
+function renderFeedback(data) {
+  const kpi = data.kpi || {};
+  const lastSeen = localStorage.getItem('lastSeenFeedbackTs') || '1970-01-01T00:00:00Z';
+  const recent = data.recent || [];
+  const unread = recent.filter(r => r.ts > lastSeen).length;
+  renderKpiStrip('kpi-feedback', [
+    { label: '窗口未读', value: fmtNum(unread) },
+    { label: '总计', value: fmtNum(kpi.totalCount) },
+    { label: '含诊断', value: fmtNum(kpi.withDiagnostics) },
+    { label: '不同设备', value: fmtNum(kpi.uniqueDevices) },
+  ]);
+  if (!recent.length) {
+    document.getElementById('body-feedback').innerHTML = '<div style="font-size:12px;color:var(--text3);padding:20px 0;text-align:center">暂无反馈</div>';
+    return;
+  }
+  const items = recent.map(r =>
+    `<div class="fb-item">
+      <div class="fb-meta">
+        <span>${fmtTs(r.ts)}</span>
+        <span class="fb-badge">${r.feedbackType}</span>
+        <span>${r.deviceHint}</span>
+        <span>${r.appVersion}</span>
+      </div>
+      <div class="fb-preview">${r.contentPreview || '（无文字）'}</div>
+    </div>`
+  ).join('');
+  document.getElementById('body-feedback').innerHTML = items;
+  localStorage.setItem('lastSeenFeedbackTs', new Date().toISOString());
+}
+
+function renderContent(data) {
+  const kpi = data.kpi || {};
+  renderKpiStrip('kpi-content', [
+    { label: '牌组总数', value: fmtNum(kpi.totalDecks) },
+    { label: '活跃 deck', value: fmtNum(kpi.activeDecks) },
+    { label: 'personal 主', value: fmtNum(kpi.personalOwners) },
+    { label: '窗口新建', value: fmtNum(kpi.newPersonalDecks) },
+  ]);
+  const decks = data.topDecks || [];
+  if (!decks.length) {
+    document.getElementById('body-content').innerHTML = '<div style="font-size:12px;color:var(--text3);padding:20px 0;text-align:center">暂无数据</div>';
+    return;
+  }
+  const items = decks.map(d => {
+    const typeClass = d.type === 'preset' ? 'deck-type-preset' : d.type === 'personal' ? 'deck-type-personal' : 'deck-type-unknown';
+    return `<div class="deck-item">
+      <span class="di-name" title="${d.deckKey}">${d.name}</span>
+      <span class="di-stats"><span class="deck-type-badge ${typeClass}">${d.type}</span> ${d.trials}题/${d.users}人</span>
+    </div>`;
+  }).join('');
+  document.getElementById('body-content').innerHTML = items;
+}
+
+function renderQuadrantError(quadrant, errMsg) {
+  const strip = document.getElementById('kpi-' + quadrant);
+  if (strip) {
+    strip.innerHTML =
+      `<div class="kpi-cell"><div class="kpi-label">错误</div><div class="kpi-value" style="font-size:14px;color:var(--danger)">加载失败</div></div>` +
+      `<div class="kpi-cell"></div><div class="kpi-cell"></div><div class="kpi-cell"></div>`;
+  }
+  const body = document.getElementById('body-' + quadrant);
+  if (body) body.innerHTML = `<div class="error-msg">加载失败：${errMsg}</div>`;
+}
+
+async function loadOverview() {
+  try {
+    const res = await callEdgeFunction('get-admin-overview', null, `?timeWindow=${_currentTw}`);
+    if (!res.ok) throw new Error(res.error || 'unknown');
+    document.getElementById('as-of').textContent = `数据截至 ${fmtTs(res.asOf)} · v${ADMIN_VERSION}`;
+    if (res.growth && res.growth.ok) renderGrowth(res.growth);
+    else renderQuadrantError('growth', (res.growth && res.growth.error) || 'unknown');
+    if (res.health && res.health.ok) renderHealth(res.health);
+    else renderQuadrantError('health', (res.health && res.health.error) || 'unknown');
+    if (res.feedback && res.feedback.ok) renderFeedback(res.feedback);
+    else renderQuadrantError('feedback', (res.feedback && res.feedback.error) || 'unknown');
+    if (res.content && res.content.ok) renderContent(res.content);
+    else renderQuadrantError('content', (res.content && res.content.error) || 'unknown');
+  } catch (e) {
+    console.error('loadOverview failed:', e);
+    ['growth', 'health', 'feedback', 'content'].forEach(q => renderQuadrantError(q, e.message));
+  }
+}
+
+function setTw(tw) {
+  _currentTw = tw;
+  document.querySelectorAll('.tw-selector button').forEach(b => {
+    b.classList.toggle('active', b.dataset.tw === tw);
+  });
+  location.hash = `#tw=${tw}`;
+  loadOverview();
+}
+
+function openDrawer(quadrant) {
+  const titles = { growth: '增长 / 活跃 — 趋势', health: '系统健康 — 趋势', feedback: '反馈收件箱 — 详情', content: '内容运营 — 详情' };
+  document.getElementById('drawer-title').textContent = titles[quadrant] || quadrant;
+  document.getElementById('drawer-body').innerHTML = '<div class="drawer-loading">加载中...</div>';
+  document.getElementById('drawer').classList.add('active');
+  document.getElementById('drawer-overlay').classList.add('active');
+  loadTrend(quadrant);
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('active');
+  document.getElementById('drawer-overlay').classList.remove('active');
+}
+
+async function loadTrend(quadrant) {
+  try {
+    const res = await callEdgeFunction('get-admin-trend', null, `?quadrant=${quadrant}&timeWindow=${_currentTw}`);
+    if (!res.ok) throw new Error(res.error || 'unknown');
+    renderTrend(quadrant, res.data);
+  } catch (e) {
+    document.getElementById('drawer-body').innerHTML = `<div class="error-msg">趋势加载失败：${e.message}</div>`;
+  }
+}
+
+function renderTrend(quadrant, data) {
+  const body = document.getElementById('drawer-body');
+  if (!data) { body.innerHTML = '<div class="error-msg">无数据</div>'; return; }
+  if (quadrant === 'growth') {
+    const dauRows = (data.dauWauMau || []).slice(-14).map(r =>
+      `<tr><td>${r.date}</td><td>${r.dau}</td><td>${r.wau}</td><td>${r.mau}</td></tr>`
+    ).join('');
+    const vRows = (data.versionDistribution || []).slice(0, 10).map(r =>
+      `<tr><td>${r.version || 'unknown'}</td><td>${r.users}</td></tr>`
+    ).join('');
+    body.innerHTML =
+      `<div class="trend-section"><h3>DAU / WAU / MAU（近 14 天）</h3>` +
+      `<table class="trend-table"><thead><tr><th>日期</th><th>DAU</th><th>WAU</th><th>MAU</th></tr></thead><tbody>${dauRows}</tbody></table></div>` +
+      `<div class="trend-section"><h3>版本分布</h3>` +
+      `<table class="trend-table"><thead><tr><th>版本</th><th>用户数</th></tr></thead><tbody>${vRows}</tbody></table></div>`;
+  } else if (quadrant === 'health') {
+    const eRows = (data.errorTable || []).slice(0, 20).map(r =>
+      `<tr><td class="td-mono">${r.message.slice(0, 120)}</td><td>${r.count}</td><td>${r.affectedUsers}</td><td>${r.firstAt ? fmtTs(r.firstAt) : ''}</td></tr>`
+    ).join('');
+    body.innerHTML =
+      `<div class="trend-section"><h3>错误聚合表</h3>` +
+      `<table class="trend-table"><thead><tr><th>错误信息</th><th>次数</th><th>影响用户</th><th>首次</th></tr></thead>` +
+      `<tbody>${eRows || '<tr><td colspan="4" style="text-align:center;color:var(--success)">✓ 无错误</td></tr>'}</tbody></table></div>`;
+  } else if (quadrant === 'feedback') {
+    const fbRows = (data.list || []).slice(0, 50).map(r => {
+      const diagHtml = r.diagnostics
+        ? `<details><summary style="cursor:pointer;font-size:11px;color:var(--primary)">诊断数据</summary><pre class="diag-pre">${JSON.stringify(r.diagnostics, null, 2)}</pre></details>`
+        : '';
+      return `<tr><td>${fmtTs(r.ts)}</td><td><span class="fb-badge">${r.feedbackType}</span></td><td>${r.deviceHint}</td><td>${r.appVersion}</td>` +
+        `<td style="max-width:280px;white-space:pre-wrap;word-break:break-word">${r.content || ''}${diagHtml}</td></tr>`;
+    }).join('');
+    const kwRows = (data.keywords || []).slice(0, 15).map(k =>
+      `<tr><td>${k.term}</td><td>${k.count}</td></tr>`
+    ).join('');
+    body.innerHTML =
+      `<div class="trend-section"><h3>反馈列表（最近 50 条）</h3>` +
+      `<table class="trend-table"><thead><tr><th>时间</th><th>类型</th><th>设备</th><th>版本</th><th>内容</th></tr></thead>` +
+      `<tbody>${fbRows || '<tr><td colspan="5" style="text-align:center">暂无</td></tr>'}</tbody></table></div>` +
+      `<div class="trend-section"><h3>关键词 Top 15</h3>` +
+      `<table class="trend-table"><thead><tr><th>词</th><th>频次</th></tr></thead>` +
+      `<tbody>${kwRows || '<tr><td colspan="2">无</td></tr>'}</tbody></table></div>`;
+  } else if (quadrant === 'content') {
+    const dkRows = (data.fullDeckTable || []).slice(0, 30).map(r =>
+      `<tr><td title="${r.deckKey}">${r.name}</td><td>${r.type}</td><td>${r.trials}</td><td>${r.users}</td><td>${r.ownerHint}</td><td>${r.createdAt ? r.createdAt.slice(0, 10) : ''}</td></tr>`
+    ).join('');
+    body.innerHTML =
+      `<div class="trend-section"><h3>牌组使用排行（前 30）</h3>` +
+      `<table class="trend-table"><thead><tr><th>名称</th><th>类型</th><th>答题</th><th>用户</th><th>owner</th><th>创建</th></tr></thead>` +
+      `<tbody>${dkRows || '<tr><td colspan="6" style="text-align:center">暂无</td></tr>'}</tbody></table></div>`;
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pwd = document.getElementById('login-pwd').value;
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = '登录中...';
+  try {
+    const { error } = await _sb.auth.signInWithPassword({ email, password: pwd });
+    if (error) throw error;
+    const authCheck = await callEdgeFunction('admin-auth-check', {});
+    if (!authCheck.ok) throw new Error('非管理员账号');
+    await enterMain();
+  } catch (e) {
+    errEl.textContent = e.message || '登录失败';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '登录';
+    await _sb.auth.signOut();
+  }
+}
+
+async function enterMain() {
+  const { data: { user } } = await _sb.auth.getUser();
+  document.getElementById('admin-name').textContent = user ? user.email : '';
+  showScreen('screen-main');
+  const hash = location.hash.match(/#tw=(24h|7d|30d)/);
+  if (hash) {
+    _currentTw = hash[1];
+    document.querySelectorAll('.tw-selector button').forEach(b => {
+      b.classList.toggle('active', b.dataset.tw === _currentTw);
+    });
+  }
+  loadOverview();
+}
+
+async function doLogout() {
+  await _sb.auth.signOut();
+  showScreen('screen-login');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('login-pwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('logout-btn').addEventListener('click', doLogout);
+  document.getElementById('reload-btn').addEventListener('click', () => loadOverview());
+  document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+  document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
+
+  document.querySelectorAll('.tw-selector button').forEach(btn => {
+    btn.addEventListener('click', () => setTw(btn.dataset.tw));
+  });
+
+  document.querySelectorAll('.quadrant-expand').forEach(btn => {
+    btn.addEventListener('click', () => openDrawer(btn.dataset.quadrant));
+  });
+
+  try {
+    const { data: { session } } = await _sb.auth.getSession();
+    if (session) {
+      const authCheck = await callEdgeFunction('admin-auth-check', {});
+      if (authCheck.ok) {
+        await enterMain();
+        return;
+      }
+    }
+  } catch (_) {}
+  showScreen('screen-login');
+});
+</script>
+</body>
+</html>
