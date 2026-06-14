@@ -3340,7 +3340,6 @@ const EASY_STORE     = IDB_STORES.easyCardStates.name;
 const CS_STORE       = IDB_STORES.syncCardStates.name;
 const TRIAL_STORE    = IDB_STORES.syncTrials.name;
 const EVT_STORE      = IDB_STORES.appEvents.name;
-const VOICE_SLOT_STORE = IDB_STORES.voiceSlots.name;
 
 let _srsDb = null;
 let _srsDbPromise = null;
@@ -5241,7 +5240,7 @@ function saveDeckCards(key, cards) {
 }
 
 // ── IndexedDB media cache ─────────────────────────────────────────
-const IDB_NAME = IDB_DBS.media.name, IDB_VER = IDB_DBS.media.version, IDB_STORE = IDB_STORES.mediaBlobs.name;
+const IDB_NAME = IDB_DBS.media.name, IDB_VER = IDB_DBS.media.version;
 
 function openDB() {
   return new Promise((res, rej) => {
