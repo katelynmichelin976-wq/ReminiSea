@@ -10,14 +10,14 @@
  * 覆盖维度（5 Tab）：
  *   📊 状态  — session/sync 健康指标速览
  *   📋 事件  — app_events 完整查看（过滤 + 未同步高亮）
- *   ⚠️ 日志  — yh_logs warn/error（v4.11.16+）
+ *   ⚠️ 日志  — LOCAL_LOG 内存 ring（v5.13.5+，最近 2000 条）
  *   🃏 卡片  — CardState 分组 + 异常检测
- *   ⚙️ 设置  — SRS 配置 + 日志等级切换
+ *   ⚙️ 设置  — Session backup + 诊断快捷
  */
 (function () {
   if (window._yhDiag) { window._yhDiag.toggle(); return; }
 
-  const DB_NAME = 'yihai_srs', DB_VER = 8;
+  const DB_NAME = 'yihai_srs', DB_VER = (typeof IDB_DBS !== 'undefined' && IDB_DBS.srs ? IDB_DBS.srs.version : 10);
   const TABS = ['📊 状态', '📋 事件', '⚠️ 日志', '🃏 卡片', '⚙️ 设置'];
 
   // ── 面板骨架 ──────────────────────────────────────────────
@@ -140,12 +140,12 @@
     body.innerHTML = '<div style="color:#475569;font-size:12px">加载中…</div>';
     try {
       const db = await openDb();
-      const [states, trials, events, logs, easyStates] = await Promise.all([
+      const [states, trials, events, easyStates, voiceSlots] = await Promise.all([
         readStore(db, 'sync_card_states'),
         readStore(db, 'sync_trials'),
         readStore(db, 'app_events'),
-        readStore(db, 'yh_logs'),
         readStore(db, 'easy_card_states'),
+        readStore(db, 'voice_slots'),
       ]);
       db.close();
 
@@ -160,7 +160,7 @@
       const se  = typeof _syncEnabled    !== 'undefined' ? _syncEnabled    : null;
       const em  = typeof _cloudUserEmail !== 'undefined' ? _cloudUserEmail : null;
       const uid = typeof _cloudUserId    !== 'undefined' ? _cloudUserId    : null;
-      const did = typeof _deviceId       !== 'undefined' ? _deviceId       : localStorage.getItem('yihaiDeviceId');
+      const did = typeof _deviceId       !== 'undefined' ? _deviceId       : localStorage.getItem('yh:v1:user:deviceId');
 
       // v5.1.1: 3-variable model — state derived from _syncEnabled + _cloudUserEmail
       let sText = '未登录', sColor = '#64748b';
@@ -175,23 +175,23 @@
 
       // IDB 计数
       body.appendChild(sec('本地 IDB 数据'));
-      const unsyncedEvt  = events.filter(e => !e.synced_at).length;
-      const unsyncedLogs = logs.filter(l => !l.synced_at && (l.level==='warn'||l.level==='error')).length;
-      const errLogs      = logs.filter(l => l.level==='error').length;
-      const warnLogs     = logs.filter(l => l.level==='warn').length;
+      const unsyncedEvt = events.filter(e => !e.synced_at).length;
+      const errEvt      = events.filter(e => e.event_type === 'js_error' || e.event_type === 'idb_write_fail').length;
+      const localLogLen = (typeof LOCAL_LOG !== 'undefined' ? LOCAL_LOG.length : 0);
 
       body.appendChild(kv('sync_card_states', states.length + ' 条'));
       body.appendChild(kv('easy_card_states', easyStates.length + ' 条'));
       body.appendChild(kv('sync_trials', trials.length + ' 条'));
       body.appendChild(kv('app_events',
-        events.length + ' 条' + (unsyncedEvt ? badge('未同步 ' + unsyncedEvt, '#7c3aed') : badge('全已同步','#15803d'))));
-      body.appendChild(kv('yh_logs',
-        logs.length + ' 条 ' + badge('W'+warnLogs,'#d97706') + badge('E'+errLogs,'#dc2626') +
-        (unsyncedLogs ? badge('未同步 '+unsyncedLogs,'#7c3aed') : '')));
+        events.length + ' 条' + (unsyncedEvt ? badge('未同步 ' + unsyncedEvt, '#7c3aed') : badge('全已同步','#15803d')) +
+        (errEvt ? badge('Err ' + errEvt, '#dc2626') : '')));
+      body.appendChild(kv('voice_slots', voiceSlots.length + ' 条'));
+      body.appendChild(kv('media_blobs', '(media DB 略)'));
+      body.appendChild(kv('LOCAL_LOG（内存）', localLogLen + ' 条'));
 
       // 同步
       body.appendChild(sec('同步'));
-      const gst = localStorage.getItem('yihaiGlobalSyncTs');
+      const gst = localStorage.getItem('yh:v1:sync:globalTs');
       body.appendChild(kv('上次同步', gst ? fmtDt(parseInt(gst)) : '(无记录)'));
 
       // 最近一条 session_restore_start
@@ -302,11 +302,6 @@
         } catch(e) {}
       }
 
-      // 日志等级
-      body.appendChild(sec('日志等级'));
-      const lvl = localStorage.getItem('yihaiLogLevel') || 'warn (默认)';
-      body.appendChild(kv('当前等级', lvl));
-      body.appendChild(kv('调整方式', '⚙️ 设置 Tab，或控制台 yhLog.setLevel("debug")'));
 
     } catch (e) {
       body.innerHTML = '<div style="color:#ef4444">加载失败：' + e.message + '</div>';
@@ -320,7 +315,7 @@
     const SESSION_T = new Set(['session_restore_start','session_restore_l1_ok','session_restore_l1_fail','session_restore_l2_ok','session_restore_l2_offline','session_restore_l2_real_logout','session_restore_l3_ok','session_restore_l3_fail','session_restore_offline_fallback','session_restore_catch','session_restore_token_refreshed','session_restore_sdk_signout','login','logout']);
     const SYNC_T    = new Set(['sync_started','sync_done','cloud_state_merge']);
     const PRAC_T    = new Set(['start_practice','build_queue','go_home','show_finish']);
-    const FILTERS   = [['全部','all'],['Session','session'],['Sync','sync'],['练习','practice'],['未同步','unsynced'],['log:*','logtype']];
+    const FILTERS   = [['全部','all'],['Session','session'],['Sync','sync'],['练习','practice'],['未同步','unsynced'],['错误','errors'],['log:*','logtype']];
 
     let filterKey = 'all';
 
@@ -349,6 +344,7 @@
           if (filterKey === 'sync')     return SYNC_T.has(e.event_type);
           if (filterKey === 'practice') return PRAC_T.has(e.event_type);
           if (filterKey === 'unsynced') return !e.synced_at;
+          if (filterKey === 'errors')   return e.event_type === 'js_error' || e.event_type === 'idb_write_fail';
           if (filterKey === 'logtype')  return e.event_type.startsWith('log:');
           return true;
         });
@@ -384,44 +380,36 @@
     }
   }
 
-  // ── Tab 2：日志 ──────────────────────────────────────────
-  async function renderLogs() {
-    body.innerHTML = '<div style="color:#475569;font-size:12px">加载中…</div>';
-    try {
-      const db = await openDb();
-      const logs = await readStore(db, 'yh_logs');
-      db.close();
+  // ── Tab 2：日志（LOCAL_LOG 内存 ring）─────────────────────
+  function renderLogs() {
+    body.innerHTML = '';
+    const logs = (typeof LOCAL_LOG !== 'undefined') ? LOCAL_LOG : [];
 
-      body.innerHTML = '';
-
-      if (!logs.length) {
-        body.appendChild(el('div','color:#475569;margin-top:8px',
-          'yh_logs 为空。当前日志等级仅 warn/error 写入 IDB。\n如需 info 级别请在「⚙️ 设置」调整等级。'));
-        return;
-      }
-
-      const sorted = [...logs].sort((a,b) => b.timestamp - a.timestamp);
-      body.appendChild(el('div','color:#475569;font-size:11px;margin-bottom:6px',
-        `共 ${sorted.length} 条，显示最近 100 条`));
-
-      sorted.slice(0,100).forEach(l => {
-        const isErr = l.level === 'error';
-        const lc    = isErr ? '#ef4444' : '#f59e0b';
-        const unsync = !l.synced_at && (l.level==='warn'||l.level==='error') ? badge('未同步','#7c3aed') : '';
-
-        const d = el('div','padding:4px 0;border-bottom:1px solid #1e293b');
-        d.innerHTML =
-          `<div style="display:flex;gap:5px;align-items:baseline">` +
-          `<span style="color:${lc};width:38px;flex-shrink:0;font-size:11px">[${l.level}]</span>` +
-          `<span style="color:#475569;min-width:58px;flex-shrink:0;font-size:11px">${fmtTs(l.timestamp)}</span>` +
-          `<span style="color:#94a3b8;min-width:44px;flex-shrink:0">[${l.module||'?'}]</span>` +
-          `<span style="color:#e2e8f0;flex:1">${l.msg||''}</span>${unsync}</div>` +
-          (l.data ? `<div style="color:#475569;font-size:11px;padding-left:12px;word-break:break-all">${l.data}</div>` : '');
-        body.appendChild(d);
-      });
-    } catch (e) {
-      body.innerHTML = '<div style="color:#ef4444">加载失败：' + e.message + '</div>';
+    if (!logs.length) {
+      body.appendChild(el('div','color:#475569;margin-top:8px',
+        'LOCAL_LOG 为空。日志在内存 ring buffer，仅 feedback 提交时携带。'));
+      return;
     }
+
+    const sorted = [...logs].sort((a,b) => b.t - a.t);
+    body.appendChild(el('div','color:#475569;font-size:11px;margin-bottom:6px',
+      `共 ${sorted.length} 条（上限 2000），显示最近 100 条`));
+
+    sorted.slice(0,100).forEach(l => {
+      const isErr = l.lv === 'error';
+      const isWarn = l.lv === 'warn';
+      const lc    = isErr ? '#ef4444' : (isWarn ? '#f59e0b' : '#94a3b8');
+
+      const d = el('div','padding:4px 0;border-bottom:1px solid #1e293b');
+      d.innerHTML =
+        `<div style="display:flex;gap:5px;align-items:baseline">` +
+        `<span style="color:${lc};width:38px;flex-shrink:0;font-size:11px">[${l.lv}]</span>` +
+        `<span style="color:#475569;min-width:58px;flex-shrink:0;font-size:11px">${fmtTs(l.t)}</span>` +
+        `<span style="color:#94a3b8;min-width:44px;flex-shrink:0">[${l.m||'?'}]</span>` +
+        `<span style="color:#e2e8f0;flex:1">${l.e||''}</span></div>` +
+        (l.d ? `<div style="color:#475569;font-size:11px;padding-left:12px;word-break:break-all">${typeof l.d === 'string' ? l.d : JSON.stringify(l.d)}</div>` : '');
+      body.appendChild(d);
+    });
   }
 
   // ── Tab 3：卡片 ──────────────────────────────────────────
@@ -537,7 +525,7 @@
 
     // session_backup
     body.appendChild(sec('Session Backup'));
-    const bk = localStorage.getItem('yihaiSessionBackup');
+    const bk = localStorage.getItem('yh:v1:session:backup');
     if (bk) {
       try {
         const p = JSON.parse(bk);
@@ -548,24 +536,11 @@
       body.appendChild(el('div','color:#475569;font-size:12px','(无备份，未登录过)'));
     }
 
-    // 日志等级控制
-    body.appendChild(sec('日志等级'));
-    const cur = localStorage.getItem('yihaiLogLevel') || 'warn';
-    const lvlRow = el('div','display:flex;gap:6px;margin-bottom:6px');
-    ['debug','info','warn','error'].forEach(lvl => {
-      const b = el('button',
-        `background:${cur===lvl?'#1d4ed8':'#1e293b'};color:${cur===lvl?'#fff':'#94a3b8'};border:1px solid #334155;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px`);
-      b.textContent = lvl;
-      b.onclick = () => {
-        if (typeof yhLog !== 'undefined') yhLog.setLevel(lvl);
-        else localStorage.setItem('yihaiLogLevel', lvl);
-        renderSettings();
-      };
-      lvlRow.appendChild(b);
-    });
-    body.appendChild(lvlRow);
-    body.appendChild(el('div','color:#475569;font-size:11px',
-      'debug/info → 仅 console；warn/error → 写 IDB + 上传 Supabase'));
+    // 日志架构说明（v5.13.5+）
+    body.appendChild(sec('日志架构'));
+    body.appendChild(el('div','color:#94a3b8;font-size:12px;line-height:1.6',
+      'app_events（业务里程碑）→ Supabase 自动上传<br>' +
+      'LOCAL_LOG（技术细节，内存 ring 2000 条）→ 仅 feedback 提交时携带'));
 
     // 复制摘要
     body.appendChild(sec('快速操作'));
@@ -576,9 +551,9 @@
         'APP_VERSION: ' + (typeof APP_VERSION!=='undefined'?APP_VERSION:'?'),
         '_syncEnabled: '    + (typeof _syncEnabled!=='undefined'?_syncEnabled:'?'),
         '_cloudUserEmail: ' + (typeof _cloudUserEmail!=='undefined'?_cloudUserEmail:'?'),
-        'device_id: '       + (typeof _deviceId!=='undefined'?_deviceId:localStorage.getItem('yihaiDeviceId')||'?'),
-        'log_level: '       + (localStorage.getItem('yihaiLogLevel')||'warn(默认)'),
-        'last_sync: '       + (localStorage.getItem('yihaiGlobalSyncTs')?fmtDt(+localStorage.getItem('yihaiGlobalSyncTs')):'无'),
+        'device_id: '       + (typeof _deviceId!=='undefined'?_deviceId:localStorage.getItem('yh:v1:user:deviceId')||'?'),
+        'last_sync: '       + (localStorage.getItem('yh:v1:sync:globalTs')?fmtDt(+localStorage.getItem('yh:v1:sync:globalTs')):'无'),
+        'LOCAL_LOG_len: '   + (typeof LOCAL_LOG!=='undefined'?LOCAL_LOG.length:'?'),
       ];
       navigator.clipboard.writeText(lines.join('\n')).catch(()=>{});
       cpBtn.textContent = '✓ 已复制';
