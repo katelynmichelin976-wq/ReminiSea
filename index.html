@@ -1168,6 +1168,16 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
     max-width: min(90vw, 720px);
   }
   .target-card { max-height: var(--img-max-h, 58vh); }
+  /* flip card: 比 720 略宽，更利用 iPad 横向空间 */
+  #flip-zone { max-width: min(92vw, 800px) !important; }
+  .flip-word       { font-size: clamp(36px, 6vw, 56px); }
+  .flip-definition { font-size: 22px; }
+  .flip-example    { font-size: 16px; }
+  .flip-en-def     { font-size: 14px; }
+  .flip-phonetic   { font-size: 18px; }
+  .flip-pos        { font-size: 14px; }
+  .flip-reveal-btn { height: 64px; font-size: 18px; }
+  .flip-grade-btn  { height: 64px; font-size: 16px; }
 }
 /* ── iPad Pro / large tablet (≥900px) ── */
 @media (min-width: 900px) {
