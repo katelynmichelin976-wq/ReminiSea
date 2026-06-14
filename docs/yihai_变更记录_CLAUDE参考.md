@@ -2,6 +2,75 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.10 — IDB 命名规范化 P1-P4 + 测试盲点修复
+
+### 动机
+
+memory `naming-convention-todo` 列了"IDB store 名 / keyPath / record 字段命名风格不统一"的技术债。继 v5.13.2-5.13.4 完成 localStorage Phase 1-3 之后，本版本完成 IDB 这一层。
+
+### 改动（user 视角零行为变化）
+
+#### Phase 1：注册表 + helper（`f486039 / 29bc20f / 99d2389 / f486039`）
+
+- 新增 `IDB_DBS` / `IDB_STORES` 注册表常量，集中声明所有 DB / store 元数据
+- 新增 helper 函数 `idbGet/Put/Delete/GetAll/Count/Clear/PutWithKey/GetByKey/GetAllKeys/Tx` + 内部 `_idbDbFor/_idbReqAsPromise`
+- `IDB_STORES` entries 加 `indexes` 字段，让 onupgradeneeded 可声明 secondary index（修复 v5.11 `easy_card_states` `deck_key` 索引初次设计漏列）
+
+#### Phase 2：store rename + schema 迁移（`ec300bb / ed0089f / f6ff337` + spec 修正 `72d1ad1`）
+
+- IDB store 名 snake_case 对齐 Supabase 表名：
+  - `trials` → `sync_trials`
+  - `card_states` → `sync_card_states`
+  - `easyCardStates` → `easy_card_states`
+  - `voiceSlots` → `voice_slots`
+  - `blobs` → `media_blobs`
+- IDB schema version bump：`yihai_srs` v9→v10，`yihai_media` v1→v2
+- `openSrsDb` / `openDB` 的 onupgradeneeded 改写为注册表驱动（删老 store + 按 IDB_STORES 重建）
+- **Spec §3.1 关键修正**：扫描发现现状代码 173 处 `entry.snake_field` 业务访问点已经一致用 snake_case 跟 Supabase 列名 1:1 对齐 → record 字段保留 snake_case（不改 camelCase），sync 层零字段名转换，P2 改动量减 90%
+- onupgradeneeded 内 `obsoleteStoreNames` 列表包括 `easyCardStates` 旧名，删后按注册表新建保留索引
+
+**用户升级体验**：冷启动一次触发 schema 升级，已登录用户通过 runSync 自动从 Supabase 拉回 `sync_card_states` / `easy_card_states`；voice slot 数据丢失（确认无录音）；个人牌组媒体从云端重下。
+
+#### Phase 3：调用点改用 helper（`0e92cac / 43ce579 / 390c963 / e231622 / c0febb1`）
+
+- ~30+ 处 `tx.objectStore(NAME).put/get/getAll/delete` 改用 helper
+- SRS 热路径：`_writeSrs / saveCardState / saveCardStateLocal / getCardState / getAllCardStates / writeTrialLog / getTrialLogs / getEasyState / putEasyState`
+- Sync 路径：`uploadTrial / uploadCardState / runSync / syncAppEvents / logAppEvent / backfillAfterPractice`
+- Voice 路径：`saveVoiceSlot / loadVoiceSlot / deleteVoiceSlot / loadAllVoiceSlots`
+- Media 路径：`saveMedia / loadMedia / deleteMediaForDeck / checkMedia / cleanOrphanMedia` + 个人牌组 sync 卡片删除清理
+- Cursor / migration / index 路径走 `idbTx(stores, mode, callback)` 包装，callback 内用 `tx.objectStore(IDB_STORES.xxx.name)` 注册表引用
+- 删除遗留常量 `TRIAL_STORE / CS_STORE / VOICE_SLOT_STORE / IDB_STORE`；保留 `EVT_STORE`（trimStore 参数）、`EASY_STORE`（index API）、`SRS_DB_NAME` / `SRS_DB_VER` / `IDB_NAME` / `IDB_VER`（open*Db 内引用）
+
+#### Phase 4：规范文档定型（`7f4f109`）
+
+- 新增 `docs/naming_convention.md`，汇总 Supabase / IDB / localStorage / JS 四层命名规范 + 跨层映射表 + 不在规范的事
+- `CLAUDE.md` rule 5 加引用
+
+### 测试
+
+- 新增 `tests/yihai_v5.13.10_idb_p1_test.js`（注册表静态校验，33 断言）
+- 新增 `tests/_pw_idb_helpers.js`（10 个 helper round-trip + 批量事务原子性，27 断言）
+- 新增 `tests/_pw_idb_migration.js`（v9 → v10 schema 迁移，18 断言）
+- 新增 `idbGetAllKeys` helper + PHASE 6.5 测试
+
+### 关键发现：测试盲点修复（`cbaf0d6`）
+
+跨设备测试时发现 **P2 store rename 时漏改了 7 个测试文件**（`_pw_srs_e2e / _pw_cloud_sync / _pw_cross_device / _pw_flip_card / yh_diag / _diag_sync_state / _dump_idb`）。这些测试用 `page.evaluate` 内 `db.transaction('card_states', ...)` 等老 store 名，触发 `NotFoundError` 被 Playwright `evaluate` 静默 reject，后续断言全部静默 skip，程序到 `finally` 正常退出，**报告为"全过"实为只跑了 30% 断言**。
+
+修复后真实数字：
+- `_pw_srs_e2e.js` 2 → 21
+- `_pw_cloud_sync.js` 8 → 32
+- `_pw_cross_device.js` 8 → 39
+- `_pw_flip_card.js` 未运行 → 14
+
+修复后 IDB P1-P4 改动实际通过跨设备 + 云端同步端到端验证。
+
+### 关联文档
+
+- 设计：`docs/superpowers/specs/2026-06-13-idb-naming-convention-design.md`（含 §3.1 修正后的论证）
+- 实施 plans：`docs/superpowers/plans/2026-06-13-idb-naming-p1.md` / `2026-06-14-idb-naming-p2.md` / `2026-06-14-idb-naming-p3.md`
+- 规范文档：`docs/naming_convention.md`
+
 ## v5.13.9 — iPad 横屏 overlay 锁定
 
 ### 动机
