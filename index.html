@@ -4424,13 +4424,23 @@ async function saveCardState(state) {
   state.updated_at = Date.now();
   state.synced_at = null;
   state.user_id = state.user_id || getCurrentUserId();
-  await idbPut('syncCardStates', state);
+  try {
+    await idbPut('syncCardStates', state);
+  } catch (e) {
+    log.error('idb', 'write_fail', { fn: 'saveCardState', cardId: state.card_id, err: e && e.message });
+    try { logAppEvent('idb_write_fail', { fn: 'saveCardState', cardId: state.card_id, err: e && e.message }); } catch {}
+  }
 }
 
 // local write only, don't overwrite updated_at, don't upload (merge write for cloud progress backfill)
 async function saveCardStateLocal(state) {
   state.user_id = state.user_id || getCurrentUserId();
-  await idbPut('syncCardStates', state);
+  try {
+    await idbPut('syncCardStates', state);
+  } catch (e) {
+    log.error('idb', 'write_fail', { fn: 'saveCardStateLocal', cardId: state.card_id, err: e && e.message });
+    try { logAppEvent('idb_write_fail', { fn: 'saveCardStateLocal', cardId: state.card_id, err: e && e.message }); } catch {}
+  }
 }
 
 async function saveVoiceSlot(slotName, audioBlob, mimeType, duration) {
@@ -4474,7 +4484,12 @@ async function getEasyState(deckKey, cardId) {
 }
 
 async function putEasyState(s) {
-  await idbPut('easyCardStates', s);
+  try {
+    await idbPut('easyCardStates', s);
+  } catch (e) {
+    log.error('idb', 'write_fail', { fn: 'putEasyState', cardId: s && s.card_id, err: e && e.message });
+    try { logAppEvent('idb_write_fail', { fn: 'putEasyState', cardId: s && s.card_id, err: e && e.message }); } catch {}
+  }
 }
 
 async function getAllEasyStates(deckKey) {
@@ -4537,7 +4552,13 @@ async function getOrCreateCardState(deckKey, cardId) {
 // ── TrialLog write ──────────────────────────────────────────────
 async function writeTrialLog(entry) {
   entry.user_id = entry.user_id || getCurrentUserId();
-  await idbPut('syncTrials', entry);
+  try {
+    await idbPut('syncTrials', entry);
+  } catch (e) {
+    log.error('idb', 'write_fail', { fn: 'writeTrialLog', cardId: entry.card_id, err: e && e.message });
+    try { logAppEvent('idb_write_fail', { fn: 'writeTrialLog', cardId: entry.card_id, err: e && e.message }); } catch {}
+    return;
+  }
   if (_realtimeUpload) syncTrialLog(entry);
 }
 
@@ -9742,6 +9763,7 @@ async function onNext() {
 
 // ── SRS write (practice mode specific) ────────────────────────────
 async function _writeSrs(q, rating, attempt) {
+  try {
   // Use the deck key from the card's SRS state (set at queue build time) to avoid
   // a race where background sync's renderDeckList() resets currentDeck mid-session.
   const state   = q._srsState;
@@ -9893,6 +9915,10 @@ async function _writeSrs(q, rating, attempt) {
     } catch (e) {
       console.warn('[easy] writeEasyState failed', e?.message);
     }
+  }
+  } catch (e) {
+    log.error('idb', 'srs_write_fail', { cardId: q && q.id, err: e && e.message });
+    try { logAppEvent('idb_write_fail', { fn: '_writeSrs', cardId: q && q.id, err: e && e.message }); } catch {}
   }
 }
 
