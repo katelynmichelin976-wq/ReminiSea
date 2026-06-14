@@ -61,6 +61,10 @@ let tStart;
     await wait(pageA, 2000);
 
     pass('设备 A 登录成功', await cloudLogin(pageA, TEST_EMAIL, TEST_PASSWORD));
+    // v5.13.12+: 登录不再自动下载 preset，等登录 sync 完成后显式调用 runSync({ decks: true })
+    await wait(pageA, 500);
+    await waitSyncDone(pageA, 120000);
+    await run(pageA, () => runSync({ decks: true }));
     await waitSyncDone(pageA, 120000);
 
     await run(pageA, () => goHome());
@@ -156,6 +160,10 @@ let tStart;
     await wait(pageB, 2000);
 
     pass('设备 B 登录成功', await cloudLogin(pageB, TEST_EMAIL, TEST_PASSWORD));
+    // v5.13.12+: 登录不再自动下载 preset，等登录 sync 完成后显式调用 runSync({ decks: true })
+    await wait(pageB, 500);
+    await waitSyncDone(pageB, 120000);
+    await run(pageB, () => runSync({ decks: true }));
     await waitSyncDone(pageB, 120000);
     await wait(pageB, 2000);
 

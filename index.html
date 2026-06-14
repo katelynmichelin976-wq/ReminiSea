@@ -2550,7 +2550,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 
     <!-- 精选面板 -->
     <div class="decks-panel" id="decks-panel-featured">
-      <div class="decks-featured-placeholder" data-i18n="decks_featured_coming">精选牌组即将上线</div>
+      <div id="featured-decks-list" style="padding:0 16px"></div>
     </div>
 
   </div>
@@ -6338,7 +6338,7 @@ async function doAccountLogin() {
     updateCloudTabUI();
     logAppEvent('login', { email: email });
     upsertDeviceRegistry();
-    runSync({ modal: true, decks: true, events: true, title: t('sync_syncing_data'), deckKey: currentDeck })
+    runSync({ modal: true, decks: false, events: true, title: t('sync_syncing_data'), deckKey: currentDeck })
       .then(() => syncAllDirtyDecks())
       .catch(e => console.warn('[sync] login sync error:', e.message));
   } catch(e) {
@@ -6597,7 +6597,7 @@ function doAccountSync() {
   const sub = document.querySelector('#account-state-logged-in .account-hero-sub');
   if (btn) btn.disabled = true;
   if (sub) sub.textContent = t('sync_in_progress') + '…';
-  runSync({ modal: true, decks: true, events: true, showToast: true, deckKey: currentDeck })
+  runSync({ modal: true, decks: false, events: true, showToast: true, deckKey: currentDeck })
     .then(function() { return syncAllDirtyDecks(); })
     .catch(function(e){ console.warn('[sync] account sync error:', e.message); })
     .finally(function() {
@@ -6625,6 +6625,7 @@ function switchDecksTab(tab) {
 
   if (tab === 'local') renderLocalDecksTab();
   if (tab === 'cloud') renderCloudDecksTab();
+  if (tab === 'featured') renderFeaturedDecksTab();
 }
 
 function renderLocalDecksTab() {
@@ -6745,6 +6746,101 @@ async function renderCloudDecksTab() {
   } catch(e) {
     listEl.innerHTML = '<div style="color:#c00;padding:32px 16px;text-align:center">加载失败：' + esc(e.message) + '</div>';
   }
+}
+
+function renderFeaturedDecksTab() {
+  showFeaturedDecks();
+}
+
+async function showFeaturedDecks() {
+  const listEl = document.getElementById('featured-decks-list');
+  if (!listEl) return;
+  if (!_syncEnabled || !_sb || !_cloudUserId) {
+    listEl.innerHTML = '<div style="color:#999;padding:32px 0;text-align:center">' + t('featured_login_required') + '</div>';
+    return;
+  }
+  listEl.innerHTML = '<div style="color:#999;padding:32px 0;text-align:center">' + t('featured_loading') + '</div>';
+  try {
+    const { data: presetDecks, error } = await _sb.from('decks')
+      .select('id,name,name_lang,card_count,updated_at')
+      .eq('deck_type', 'preset')
+      .order('updated_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    if (!presetDecks || !presetDecks.length) {
+      listEl.innerHTML = '<div style="color:#999;padding:32px 0;text-align:center">' + t('featured_empty') + '</div>';
+      return;
+    }
+    listEl.innerHTML = presetDecks.map(d => {
+      const dl = _downloading.get(d.id);
+      const job = getActiveSyncJob(d.id);
+      const local = DECKS_META.find(m => m.name === d.name);
+      const state = local ? computeDeckSyncState(local.key) : { status: 'remoteAhead' };
+      const nameArg = `'${d.id}','${esc(d.name).replace(/'/g,'&#39;')}','${d.name_lang||'zh-CN'}'`;
+
+      let badge = '';
+      if (job) badge = `<span style="color:#888">同步中 ${job.progress.done}/${job.progress.total}</span>`;
+      else if (state.status === 'clean') badge = `<span style="color:#888">已同步</span>`;
+      else if (state.status === 'localDirty') badge = `<span style="color:#d97706">待上传 ${state.pushCount}</span>`;
+      else if (state.status === 'remoteAhead') badge = `<span style="color:#2563eb">${state.mediaIncomplete ? '媒体缺失' : '待下载'}</span>`;
+      else if (state.status === 'bothChanged') badge = `<span style="color:#7c3aed">双向 +${state.pushCount}</span>`;
+
+      let btn;
+      if (dl) {
+        const txt = dl.total > 0 ? `${dl.done}/${dl.total}` : '…';
+        const pauseLabel = dl.paused ? '继续' : '暂停';
+        btn = `<div style="display:flex;gap:8px;align-items:center">
+          <span id="dl-prog-${d.id}" style="font-size:13px;color:var(--text-sub);min-width:72px;text-align:right">${txt}</span>
+          <button class="account-sync-btn" onclick="toggleDownloadPause('${d.id}')">${pauseLabel}</button>
+        </div>`;
+      } else if (job) {
+        const pauseLabel = job._paused ? '继续' : '暂停';
+        btn = `<button class="account-sync-btn" onclick="toggleSyncJobPause('${d.id}')">${pauseLabel}</button>`;
+      } else if (local) {
+        btn = `<button class="account-sync-btn" onclick="doSyncPresetDeckAction('${d.id}','${esc(d.name).replace(/'/g,'&#39;')}','${d.name_lang||'zh-CN'}',this)">同步</button>`;
+      } else {
+        btn = `<button class="account-btn account-btn-primary" style="padding:6px 16px;min-height:0;font-size:14px" onclick="doDownloadPresetDeckAction(${nameArg},this)">下载</button>`;
+      }
+
+      const sub = dl ? (dl.paused ? '已暂停' : '下载中…')
+                : `${d.card_count || 0} 张卡片${local ? ' · ' : ''}${badge}`;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-weight:600;color:var(--text)">${esc(d.name)}</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:2px">${sub}</div>
+        </div>
+        ${btn}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = `<div style="color:#c00;padding:32px 0;text-align:center">` + t('featured_load_fail', { msg: esc(e.message) }) + `</div>`;
+  }
+}
+
+async function doDownloadPresetDeckAction(deckId, deckName, nameLang, btnEl) {
+  if (_downloading.has(deckId)) return;
+  _downloading.set(deckId, { done: 0, total: 0, paused: false, pausePromise: null, pauseResolve: null });
+  if (btnEl && btnEl.parentNode) {
+    const subEl = btnEl.parentNode.querySelector('div > div:last-child');
+    if (subEl) subEl.textContent = '下载中…';
+    const progDiv = document.createElement('div');
+    progDiv.style.cssText = 'display:flex;gap:8px;align-items:center';
+    progDiv.innerHTML = `<span id="dl-prog-${deckId}" style="font-size:13px;color:var(--text-sub);min-width:72px;text-align:right">…</span>`
+      + `<button class="account-sync-btn" onclick="toggleDownloadPause('${deckId}')">暂停</button>`;
+    btnEl.parentNode.replaceChild(progDiv, btnEl);
+  }
+  try {
+    await downloadDeckFromCloud(deckId, deckName, null, true, nameLang);
+  } catch(e) { console.warn('[featured] download fail', e && e.message); }
+  _downloading.delete(deckId);
+  if (document.getElementById('screen-decks').classList.contains('active')) showFeaturedDecks();
+}
+
+async function doSyncPresetDeckAction(deckId, deckName, nameLang, btnEl) {
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '同步中…'; }
+  try {
+    await syncDeckFromCloud(deckId, deckName, btnEl, true, nameLang);
+  } catch(e) { console.warn('[featured] sync fail', e && e.message); }
+  if (document.getElementById('screen-decks').classList.contains('active')) showFeaturedDecks();
 }
 
 async function showCloudDecks() {
@@ -7613,6 +7709,10 @@ const I18N = {
     decks_tab_local: 'Local',
     decks_tab_cloud: 'Cloud',
     decks_tab_featured: 'Featured',
+    featured_loading: 'Loading…',
+    featured_empty: 'No featured decks available',
+    featured_load_fail: 'Load failed: {msg}',
+    featured_login_required: 'Please log in to view featured decks',
     decks_local_hint: 'Swipe left to rename, export or delete',
     decks_featured_coming: 'Featured decks coming soon',
   },
@@ -7938,11 +8038,19 @@ const I18N = {
     decks_tab_local: '本地',
     decks_tab_cloud: '云端',
     decks_tab_featured: '精选',
+    featured_loading: '加载中…',
+    featured_empty: '云端暂无精选牌组',
+    featured_load_fail: '加载失败：{msg}',
+    featured_login_required: '请先登录后查看精选牌组',
     decks_local_hint: '左滑牌组可重命名、导出或删除',
     decks_featured_coming: '精选牌组即将上线',
   },
   'zh-Hant': {
     app_title: '憶海拾光',
+    featured_loading: '載入中…',
+    featured_empty: '雲端暫無精選牌組',
+    featured_load_fail: '載入失敗：{msg}',
+    featured_login_required: '請先登入後查看精選牌組',
     app_short_name: '憶海拾光',
     meta_description: '看圖識物 — 快樂學習',
     rotate_to_portrait: '請豎屏使用',
@@ -8253,6 +8361,10 @@ const I18N = {
   },
   'es': {
     app_title: 'Memory Glimmers',
+    featured_loading: 'Cargando…',
+    featured_empty: 'No hay mazos destacados disponibles',
+    featured_load_fail: 'Error al cargar: {msg}',
+    featured_login_required: 'Inicia sesión para ver los mazos destacados',
     app_short_name: 'Glimmers',
     meta_description: 'Reconocimiento visual — aprende con diversion',
     rotate_to_portrait: 'Solo modo vertical',
@@ -8895,6 +9007,10 @@ const I18N = {
     decks_tab_local: 'ローカル',
     decks_tab_cloud: 'クラウド',
     decks_tab_featured: 'おすすめ',
+    featured_loading: '読み込み中…',
+    featured_empty: 'おすすめデッキはありません',
+    featured_load_fail: '読み込み失敗：{msg}',
+    featured_login_required: 'ログイン後におすすめデッキをご覧ください',
     decks_local_hint: '左スワイプでデッキの名前変更・エクスポート・削除',
     decks_featured_coming: 'おすすめデッキは近日公開',
   },

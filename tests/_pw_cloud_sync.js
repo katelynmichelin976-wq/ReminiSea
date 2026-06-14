@@ -79,7 +79,11 @@ async function waitDeckInMeta(page, deckName, maxMs) {
     });
     pass('decks 表有预设牌组', presetsOnServer.length > 0);
 
-    // 登录后自动触发 runSync({ decks: true }) — 等 DECKS_META 出现目标 deck（watchdog 30s 不影响后台下载，最长 120s）
+    // v5.13.12+: 登录不再自动下载 preset，需显式调用 runSync({ decks: true })
+    // 先等登录 sync 完成再发起 deck 下载（等 500ms 让 _syncInFlight 先变 true）
+    await wait(page, 500);
+    await waitSyncDone(page);
+    await run(page, () => runSync({ decks: true }));
     pass('云端 deck 加入 DECKS_META', await waitDeckInMeta(page, TEST_DECK_NAME, 120000));
 
     await run(page, () => goHome());

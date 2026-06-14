@@ -51,6 +51,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_pw_feedback.js` | 意见反馈模块（11 断言） |
 | `tests/_pw_config_sync.js` | 语音参数云同步（~23 断言，需登录） |
 | `tests/_pw_deck_mgmt.js` | 牌组管理页冒烟（Tab Bar/导航/段选/列表，15 断言） |
+| `tests/_pw_featured_tab.js` | 精选 tab 列表 + 同步按钮去耦合（doAccountSync runSync 不再传 decks:true，~10 断言，需登录） |
 | `tests/_pw_flip_card.js` | 翻转卡练习流（自评 SRS） |
 | `tests/_pw_media_upload.js` | 个人牌组媒体上传 |
 | `tests/_playwright_helper.js` | Playwright 公共工具（cloudLogin/cloudLogout/navigateTo） |
