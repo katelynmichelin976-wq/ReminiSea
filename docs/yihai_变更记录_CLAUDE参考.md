@@ -2,6 +2,64 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.12 — 精选牌组 tab + 同步按钮去耦合 + yh_diag 同步重构
+
+### 动机
+
+牌组管理「精选」段一直是占位（"精选牌组即将上线"）。同时「同步」按钮 + 登录后自动 sync 内部会下载所有云端 preset 牌组（`runSync({ decks: true })`），用户感知不到、modal 时间也被拉长。本版本把 preset 下载入口集中到牌组管理「精选」tab，同步按钮专注做 SRS 同步。
+
+诊断面板 `yh_diag.js`（GitHub Pages CDN 加载）因为这几轮重构（P1-P4 IDB rename / LS Phase 3 / 本地日志重设计）落下了，本版本一并同步。
+
+### 改动
+
+#### 精选牌组 tab 实现（`feat: 8f3f03c`）
+
+- `index.html:#decks-panel-featured` 占位 div 替换为 `<div id="featured-decks-list">`
+- 新增函数 `showFeaturedDecks` / `renderFeaturedDecksTab` / `doDownloadPresetDeckAction` / `doSyncPresetDeckAction`
+- 拉 `_sb.from('decks').select(...).eq('deck_type','preset')` 列表
+- 按本地存在状态显示「下载」/「同步」/「已同步」/「待下载」badge，复用现有 `downloadDeckFromCloud` / `syncDeckFromCloud` / `_downloading` 进度机制
+- `switchDecksTab` 加 `featured` 路由
+- 新增 4 个 i18n key × 5 语种（`featured_loading` / `featured_empty` / `featured_load_fail` / `featured_login_required`），废弃 `decks_featured_coming`
+
+#### 同步按钮去耦合
+
+`doAccountLogin` (L6287) + `doAccountSync` (L6546) 两处 `runSync` 调用：`decks: true` → `decks: false`。`runSync` 内 `if (options.decks)` 分支保留代码不动，等几个 release 验证无误后清理。
+
+#### 用户视角变化
+
+| 场景 | v5.13.11 | v5.13.12 |
+|---|---|---|
+| 登录账号 | 自动下载所有 preset + 同步 SRS | 只同步 SRS（更快） |
+| 「同步」按钮 | modal 含 preset 拉取 | modal 只 SRS 同步 |
+| 已下载 preset 牌组 | 在「本地」段 | 不变 |
+| 想下载新 preset | 必须点同步按钮（盲下） | 进牌组管理→精选→点对应牌组下载 |
+
+#### `yh_diag.js` 同步重构（`fix: a8882da`）
+
+诊断面板对齐 v5.13.5-12 几轮重构：
+
+- `DB_VER` 改成动态读 `IDB_DBS.srs.version`
+- 删除全部 `yh_logs` 引用（store v5.13.5 已删）
+- 「⚠️ 日志」tab 改读 `LOCAL_LOG` 内存 ring buffer（v5.13.5+ 架构）
+- 「⚙️ 设置」tab 移除日志等级切换 UI（v5.13.5 后无 level 概念），改成架构说明
+- 4 处 LS key 迁移到 `yh:v1:` 前缀（`device_id` / `globalSyncTs` / `sessionBackup`）
+- 状态 tab 加 `voice_slots` / `media_blobs` / `LOCAL_LOG` 计数
+- 事件 tab 加「错误」filter chip（聚合 `js_error` + `idb_write_fail` 两类 v5.13.11 新事件）
+
+CDN 加载 (`https://katelynmichelin976-wq.github.io/ReminiSea/tests/yh_diag.js`)，push 后自动生效。
+
+### 测试
+
+- 新增 `tests/_pw_featured_tab.js`（10 断言，需登录）：未登录占位、登录后列表渲染、tab 路由、`doAccountSync` 调用 `runSync(decks: false)` 验证
+- `_pw_cloud_sync.js` / `_pw_cross_device.js` 内补显式 `runSync({ decks: true })` 调用作为 workaround（原来依赖登录自动下载 preset）— 测试不走新精选 tab UI 路径，但功能上等价
+
+### 不在本版本
+
+- ❌ 删除 `runSync({ decks: true })` 内部分支（保留代码，几个 release 后清理）
+- ❌ 精选 tab 搜索/排序/标签
+- ❌ 首登引导用户进精选 tab
+- ❌ Service Worker / inline CDN（独立工作，未启动）
+
 ## v5.13.11 — 答题热路径 IDB 写入容错 + JS 异常自动上报
 
 ### 动机
