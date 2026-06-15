@@ -4557,7 +4557,7 @@ async function pullEasyStates() {
       .gt('updated_at', sinceIso)
       .order('updated_at', { ascending: true });
   } catch (e) {
-    console.warn('[easy] pull error:', e?.message);
+    log.warn('easy', 'pull error', { err: e?.message });
     return { pulled: 0 };
   }
   if (resp.error || !resp.data) return { pulled: 0 };
@@ -5443,10 +5443,10 @@ async function restoreDecks() {
           card.img = card.media.img?._blob || '';
           card.audioUrl = card.media.aud?._blob || '';
           cards.push(card);
-        } catch(e) { console.warn('restoreDecks: skipping card', c.id, e.message); }
+        } catch(e) { log.warn('restore', 'skipping card', { card: c.id, err: e.message }); }
       }
       DECKS[key] = cards;
-    } catch(e) { console.warn('restoreDecks: skipping deck', key, e.message); }
+    } catch(e) { log.warn('restore', 'skipping deck', { deck: key, err: e.message }); }
   }
   // always inject built-in test deck
   DECKS[BUILTIN_KEY] = BUILTIN_DECK;
@@ -5567,7 +5567,7 @@ async function importYhspack(file) {
   } catch(e) {
     dismissLoading();
     showCloudToast(t('import_failed', { msg: e.message }), true);
-    console.error(e);
+    log.error('import', 'yhspack import failed', { err: e.message });
   }
 }
 
@@ -6142,7 +6142,7 @@ async function exportDeck() {
   } catch(e) {
     dismissLoading();
     showCloudToast(t('toast_export_fail', { msg: e.message }), true);
-    console.error(e);
+    log.error('export', 'yhspack export failed', { err: e.message });
   }
 }
 
@@ -6202,7 +6202,7 @@ async function shareDeck() {
   } catch(e) {
     if (e.name !== 'AbortError') {
       showCloudToast(t('toast_share_fail', { msg: e.message }), true);
-      console.error(e);
+      log.error('share', 'share/download failed', { err: e.message });
     }
   }
 }
@@ -6243,7 +6243,7 @@ function _launch(mode) {
       render();
       _launchBusy = false;
     }).catch(err => {
-      console.error('[srs] buildSessionQueue 构造失败，回退到完成界面', err?.name, err?.message, err);
+      log.error('srs', 'buildSessionQueue 构造失败，回退到完成界面', { name: err?.name, err: err?.message });
       _launchBusy = false;
       showFinish();
     });
@@ -9614,7 +9614,7 @@ const CARD_RENDERERS = {
             if (SRS_CONFIG.session_mode === 'easy' && rating === 'again') rating = 'hard';
             if (currentMode !== 'browse' && q._srsState) {
               _lastSrsWrite = _writeSrs(q, rating, { attemptNumber: 1, isCorrect: rating !== 'again', distractorId: null })
-                .catch(e => console.warn('_writeSrs flip error', e));
+                .catch(e => log.error('srs', '_writeSrs flip error', { err: e && e.message }));
             }
             onNext();
           });
@@ -9898,7 +9898,7 @@ function revealAnswer() {
     let rating = _cardAnswerRating || 'good';
     // easy mode: wrong answer → hard (no lapse, no demotion); is_correct stays false in TrialLog
     if (SRS_CONFIG.session_mode === 'easy' && rating === 'again') rating = 'hard';
-    _lastSrsWrite = _writeSrs(q, rating, _pendingAttempt).catch(e => console.warn('_writeSrs error', e));
+    _lastSrsWrite = _writeSrs(q, rating, _pendingAttempt).catch(e => log.error('srs', '_writeSrs error', { err: e && e.message }));
     _cardAnswerRating = null;
     _pendingAttempt   = null;
   }
@@ -10116,7 +10116,7 @@ async function _writeSrs(q, rating, attempt) {
       if (q._easyRole === 'warmup') es.last_warmup = Date.now();
       await putEasyState(es);
     } catch (e) {
-      console.warn('[easy] writeEasyState failed', e?.message);
+      log.warn('easy', 'writeEasyState failed', { err: e?.message });
     }
   }
   } catch (e) {
@@ -10170,7 +10170,7 @@ async function showFinish() {
   if (_syncEnabled && currentDeck) {
     try {
       await backfillAfterPractice(currentDeck);
-    } catch(e) { console.warn('[sync] backfillAfterPractice:', e.message); }
+    } catch(e) { log.warn('sync', 'backfillAfterPractice', { err: e.message }); }
   }
 }
 
@@ -10919,7 +10919,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
               card.img = URL.createObjectURL(blob);
               card.media.img = { url: imgUrl, v: c.media?.img?.v ?? 0, _blob: card.img, confirmed: true };
               await saveMedia(`${key}_${card.id}_img`, blob).catch(() => {});
-            }).catch(e => console.warn('[cloud] img failed:', imgUrl, e.message))
+            }).catch(e => log.warn('cloud', 'img failed', { url: imgUrl, err: e.message }))
         );
       }
       if (audUrl) {
@@ -10929,7 +10929,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
               card.audioUrl = URL.createObjectURL(blob);
               card.media.aud = { url: audUrl, v: c.media?.aud?.v ?? 0, _blob: card.audioUrl, confirmed: true };
               await saveMedia(`${key}_${card.id}_aud`, blob).catch(() => {});
-            }).catch(e => console.warn('[cloud] aud failed:', audUrl, e.message))
+            }).catch(e => log.warn('cloud', 'aud failed', { url: audUrl, err: e.message }))
         );
       }
       await Promise.all(tasks);
@@ -10959,7 +10959,7 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
     if (!noToast) showCloudToast(t('toast_import_done', { name: deckName, count: deckCards.length }));
   } catch(e) {
     if (!noToast) showCloudToast(t('sync_download_fail', { msg: e.message }), true);
-    console.error('[cloud] download error:', e);
+    log.error('cloud', 'download error', { err: e.message });
   } finally {
     if (btnEl) { btnEl.disabled = false; btnEl.textContent = t('common_download'); }
   }
@@ -10984,7 +10984,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
       const blobUrl = URL.createObjectURL(blob);
       await saveMedia(`${localKey}_${cardId}_${slot}`, blob).catch(() => {});
       return blobUrl;
-    } catch(e) { console.warn('[sync] media fail:', slot, e.message); return ''; }
+    } catch(e) { log.warn('sync', 'media fail', { slot: slot, err: e.message }); return ''; }
   }
 
   try {
@@ -11114,7 +11114,7 @@ async function syncDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang) {
     if (!noToast) showCloudToast(msg);
   } catch(e) {
     if (!noToast) showCloudToast(t('sync_failed_msg', { msg: e.message }), true);
-    console.error('[sync] error:', e);
+    log.error('sync', 'error', { err: e.message });
   } finally {
     if (btnEl) { btnEl.disabled = false; btnEl.textContent = t('settings_cloud_sync_btn'); }
   }
@@ -11438,7 +11438,7 @@ class SyncJob {
           const ext  = mimeToExt(blob.type, slot);
           const path = buildPath(_cloudUserId, this.deckKey, card.id, slot, s.v ?? 0, ext);
           const { error } = await _sb.storage.from('ReminiSea').upload(path, blob, { upsert: true });
-          if (error) { console.warn('[sync] media upload fail:', card.id, slot, error.message); continue; }
+          if (error) { log.warn('sync', 'media upload fail', { card: card.id, slot: slot, err: error.message }); continue; }
           s.url = path;
           pendingMediaUpsert.add(card);
           uploadedSlots.push({ card, slot });
@@ -11458,7 +11458,7 @@ class SyncJob {
           if (slot === 'aud') card.audioUrl = s._blob;
           continue;
         }
-        const blob = await downloadMediaFromCDNorSupabase(s.url).catch(e => { console.warn('[sync] media download fail:', card.id, slot, e.message); return null; });
+        const blob = await downloadMediaFromCDNorSupabase(s.url).catch(e => { log.warn('sync', 'media download fail', { card: card.id, slot: slot, err: e.message }); return null; });
         if (!blob) continue;
         await saveMedia(idbKey, blob).catch(() => {});
         s._blob = URL.createObjectURL(blob);
@@ -11487,7 +11487,7 @@ class SyncJob {
     // 仅 pull / no-op 时跳过，避免触发器风格的反复 bump 死循环
     if (this._didPush && this.canPush) {
       try { await upsertDeckRow(this.deckKey); }
-      catch(e) { console.warn('[sync] final upsertDeckRow fail:', e.message); }
+      catch(e) { log.warn('sync', 'final upsertDeckRow fail', { err: e.message }); }
     }
   }
 }
@@ -11500,7 +11500,7 @@ async function syncDeck(deckKey, opts = {}) {
   const job = new SyncJob(deckKey, opts);
   _activeSyncJobs.set(deckKey, job);
   try { await job.run(); }
-  catch(e) { console.warn('[sync] syncDeck fail:', deckKey, e.message); throw e; }
+  catch(e) { log.warn('sync', 'syncDeck fail', { deck: deckKey, err: e.message }); throw e; }
   finally { _activeSyncJobs.delete(deckKey); }
   return job;
 }
@@ -11512,7 +11512,7 @@ async function syncAllDirtyDecks() {
     const state = computeDeckSyncState(m.key);
     if (state.status === 'clean' || state.status === 'remoteAhead') continue;
     try { await syncDeck(m.key); }
-    catch(e) { console.warn('[sync] dirty deck fail:', m.key, e.message); }
+    catch(e) { log.warn('sync', 'dirty deck fail', { deck: m.key, err: e.message }); }
   }
 }
 
@@ -11941,7 +11941,7 @@ function showAbout() {
   var _cloudRetries = 0;
   function _tryInitCloud() {
     if (typeof supabase !== 'undefined') {
-      initCloud().catch(function(e) { console.warn('[cloud] init error:', e.message); });
+      initCloud().catch(function(e) { log.warn('cloud', 'init error', { err: e.message }); });
     } else if (++_cloudRetries < 50) {
       setTimeout(_tryInitCloud, 200);
     }
