@@ -5710,8 +5710,9 @@ async function deleteDeck(e, key) {
   saveDeckIndex();
   deleteMediaForDeck(key).catch(() => {});
   if (meta.deck_type === 'personal' && _syncEnabled && _sb) {
-    _sb.from('deck_cards').delete().eq('deck_id', key).then(null, () => {});
-    _sb.from('decks').delete().eq('id', key).then(null, () => {});
+    const serverId = toServerDeckId(key, 'personal', _cloudUserId);
+    _sb.from('deck_cards').delete().eq('deck_id', serverId).then(null, () => {});
+    _sb.from('decks').delete().eq('id', serverId).then(null, () => {});
   }
   lsRemove(LS_DECK(key, 'syncAt'));
   removeDeckSync(key);
@@ -11660,7 +11661,7 @@ async function refreshDeckUpdateBadges() {
     if (error || !data) return;
     let changed = false;
     for (const rd of data) {
-      const meta = DECKS_META.find(m => m.key === rd.id);
+      const meta = DECKS_META.find(m => m.key === fromServerDeckId(rd.id));
       if (!meta) continue;
       if (meta._remoteUpdatedAt !== rd.updated_at) {
         meta._remoteUpdatedAt = rd.updated_at;
