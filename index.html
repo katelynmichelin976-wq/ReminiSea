@@ -11126,8 +11126,9 @@ async function upsertDeckRow(deckKey) {
   const cards = DECKS[deckKey] || [];
   const now = Date.now();
   const updatedAt = new Date(now).toISOString();
+  const serverId = toServerDeckId(deckKey, 'personal', _cloudUserId);
   const { error } = await _sb.from('decks').upsert({
-    id: deckKey,
+    id: serverId,
     user_id: _cloudUserId,
     name: meta.name,
     deck_type: 'personal',
@@ -11147,8 +11148,9 @@ async function upsertDeckRow(deckKey) {
 
 async function upsertCardsBatch(deckKey, cards) {
   if (!cards.length) return;
+  const serverId = toServerDeckId(deckKey, 'personal', _cloudUserId);
   const rows = cards.map((c, i) => ({
-    deck_id: deckKey, card_id: c.id, name: c.name,
+    deck_id: serverId, card_id: c.id, name: c.name,
     media: serializeMediaForCloud(c.media || {}),
     sort_order: i, card_type: c.cardType || 'choice', ext: c.ext || {},
     updated_at: new Date(c.mod || Date.now()).toISOString()
@@ -11180,11 +11182,12 @@ async function upsertCardsMediaBatch(deckKey, cards) {
   if (!cards.length) return { failed: [] };
   // 用 .update() 而非 .upsert()：行不存在时返回 0 rows，不创建残缺行（缺 NOT NULL 列）。
   // N 张卡 N 次 update，Promise.all 并发，wall-clock 与批量 upsert 同量级。
+  const serverId = toServerDeckId(deckKey, 'personal', _cloudUserId);
   const tasks = cards.map(c =>
     _sb.from('deck_cards').update({
       media: serializeMediaForCloud(c.media || {}),
       updated_at: new Date(c.mod || Date.now()).toISOString()
-    }).eq('deck_id', deckKey).eq('card_id', c.id)
+    }).eq('deck_id', serverId).eq('card_id', c.id)
   );
   const results = await Promise.all(tasks);
   const failed = [];
@@ -11196,10 +11199,11 @@ async function upsertCardsMediaBatch(deckKey, cards) {
 
 async function deleteCardsBatch(deckKey, cardIds) {
   if (!cardIds.length) return;
+  const serverId = toServerDeckId(deckKey, 'personal', _cloudUserId);
   for (let b = 0; b < cardIds.length; b += 100) {
     const slice = cardIds.slice(b, b + 100);
     const { error } = await _sb.from('deck_cards')
-      .delete().eq('deck_id', deckKey).in('card_id', slice);
+      .delete().eq('deck_id', serverId).in('card_id', slice);
     if (error) throw new Error('deleteCardsBatch: ' + error.message);
   }
 }
