@@ -74,6 +74,9 @@ async function cloudLogin(page, email, password) {
     const p = document.getElementById('account-password');
     if (e) e.value = em;
     if (p) p.value = pw;
+    // v5.13.13+ 登录门控：必须勾选 #consent-login 才启用登录按钮
+    const cb = document.getElementById('consent-login');
+    if (cb && !cb.checked) { cb.checked = true; if (typeof _updateLoginConsent === 'function') _updateLoginConsent(); }
     const b = document.getElementById('account-login-btn');
     if (b) b.click();
   }, { em: email, pw: password });
