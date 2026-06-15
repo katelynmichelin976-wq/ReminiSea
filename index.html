@@ -2118,6 +2118,10 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       <input class="account-field" type="email" id="reg-email" data-i18n-placeholder="reg_email_ph" placeholder="邮箱地址" autocomplete="email" inputmode="email">
       <input class="account-field" type="password" id="reg-pwd" data-i18n-placeholder="reg_pwd_ph" placeholder="密码（至少 6 位）" autocomplete="new-password">
       <input class="account-field" type="password" id="reg-pwd2" data-i18n-placeholder="reg_pwd_confirm_ph" placeholder="确认密码" autocomplete="new-password">
+      <label class="account-consent-row" style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#475569;margin:10px 0;line-height:1.5;cursor:pointer;-webkit-user-select:none;user-select:none">
+        <input type="checkbox" id="consent-register" onchange="_updateRegisterConsent()" style="margin-top:3px;flex-shrink:0;cursor:pointer">
+        <span><span data-i18n="consent_label">我已阅读并同意</span> <a href="https://katelynmichelin976-wq.github.io/ReminiSea/privacy.html" target="_blank" rel="noopener" data-i18n="consent_privacy" style="color:#0ea5e9;text-decoration:none">《隐私政策》</a> <span data-i18n="consent_and">和</span> <a href="https://katelynmichelin976-wq.github.io/ReminiSea/terms.html" target="_blank" rel="noopener" data-i18n="consent_terms" style="color:#0ea5e9;text-decoration:none">《用户协议》</a></span>
+      </label>
       <button class="account-btn account-btn-primary" id="reg-submit-btn" onclick="doRegister()" data-i18n="reg_btn" style="margin-top:14px">注册</button>
       <div class="account-msg" id="reg-msg" style="display:none;margin-top:10px"></div>
       <div id="reg-pending-block" style="display:none;text-align:center;padding:16px 0 8px">
@@ -2437,6 +2441,10 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <div class="account-desc" data-i18n="account_desc">登录后可同步服务器牌组，学习记录自动上传。未登录仅支持手工导入，数据完全离线。</div>
         <input class="account-field" type="email" id="account-email" data-i18n-placeholder="account_email_ph" placeholder="邮箱" autocomplete="email" inputmode="email">
         <input class="account-field" type="password" id="account-password" data-i18n-placeholder="account_pwd_ph" placeholder="密码" autocomplete="current-password">
+        <label class="account-consent-row" style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#475569;margin:8px 0;line-height:1.5;cursor:pointer;-webkit-user-select:none;user-select:none">
+          <input type="checkbox" id="consent-login" onchange="_updateLoginConsent()" style="margin-top:3px;flex-shrink:0;cursor:pointer">
+          <span><span data-i18n="consent_label">我已阅读并同意</span> <a href="https://katelynmichelin976-wq.github.io/ReminiSea/privacy.html" target="_blank" rel="noopener" data-i18n="consent_privacy" style="color:#0ea5e9;text-decoration:none">《隐私政策》</a> <span data-i18n="consent_and">和</span> <a href="https://katelynmichelin976-wq.github.io/ReminiSea/terms.html" target="_blank" rel="noopener" data-i18n="consent_terms" style="color:#0ea5e9;text-decoration:none">《用户协议》</a></span>
+        </label>
         <button class="account-btn account-btn-primary" id="account-login-btn" onclick="doAccountLogin()" data-i18n="account_login_btn">登 录</button>
         <div class="account-aux-links">
           <a class="account-link" onclick="openRegisterSheet()" data-i18n="account_link_register">注册新账号</a>
@@ -3590,14 +3598,14 @@ async function syncTrialLog(entry) {
         entry.synced_at = Date.now();
         await idbPut('syncTrials', entry).catch(() => {});
       } else {
-        console.warn('[sync] trial upload failed:', error.message);
+        log.warn('sync', 'trial upload failed', { err: error.message });
       }
       return;
     }
     // mark as synced (write back to IndexedDB for offline retry detection)
     entry.synced_at = Date.now();
-    await idbPut('syncTrials', entry).catch(e => console.warn('[sync] trial synced_at writeback failed', e && e.message));
-  } catch(e) { console.warn('[sync] trial upload error:', e.message); }
+    await idbPut('syncTrials', entry).catch(e => log.warn('sync', 'trial synced_at writeback failed', { err: e && e.message }));
+  } catch(e) { log.warn('sync', 'trial upload error', { err: e.message }); }
 }
 
 async function uploadTrialBatch(entries) {
@@ -3625,9 +3633,9 @@ async function uploadTrialBatch(entries) {
     });
     var result = await _sb.from('sync_trials').upsert(payloads, { onConflict: 'trial_id', ignoreDuplicates: true });
     if (!result.error) return true;
-    console.warn('[sync] uploadTrialBatch error:', result.error);
+    log.warn('sync', 'uploadTrialBatch error', { err: result.error });
     return false;
-  } catch(e) { console.warn('[sync] uploadTrialBatch exception:', e.message); return false; }
+  } catch(e) { log.warn('sync', 'uploadTrialBatch exception', { err: e.message }); return false; }
 }
 
 async function syncCardState(state) {
@@ -3656,7 +3664,7 @@ async function syncCardState(state) {
     // upload success → mark synced
     state.synced_at = Date.now();
     await idbPut('syncCardStates', state).catch(() => {});
-  } catch(e) { console.warn('[sync] card state upload error:', e.message); }
+  } catch(e) { log.warn('sync', 'card state upload error', { err: e.message }); }
 }
 
 // download other devices CardState from cloud, merge locally (cross-device sync)
@@ -3719,7 +3727,7 @@ async function syncCardStatesFromCloud(deckKey) {
     if (merged > 0) logAppEvent('cloud_state_merge', { deck_key: deckKey, merged_count: merged }, deckKey);
     return merged;
   } catch(e) {
-    console.warn('[sync] card states download error:', e.message);
+    log.warn('sync', 'card states download error', { err: e.message });
     return 0;
   }
 }
@@ -3733,10 +3741,10 @@ async function syncPendingData(deckKey) {
     const uid = getCurrentUserId();
     const pending = allTrials.filter(t => !t.synced_at && (!t.user_id || t.user_id === uid));
     await parallelMapLimit(pending, 10, async t => {
-      try { await syncTrialLog(t); } catch(e) { console.warn('[sync] backfill trial skip:', t.trial_id); }
+      try { await syncTrialLog(t); } catch(e) { log.warn('sync', 'backfill trial skip', { trial: t.trial_id }); }
     });
 
-  } catch(e) { console.warn('[sync] backfill error:', e.message); }
+  } catch(e) { log.warn('sync', 'backfill error', { err: e.message }); }
 }
 
 // ── config cloud sync (v4.8) ────────────────────────────────────
@@ -3791,8 +3799,8 @@ async function cloudPushConfig() {
       config_json: { srs: mergedSrs, ui: mergedUi },
       updated_at: Date.now(),
     }, { onConflict: 'user_id' });
-    if (error) console.warn('[sync] config push failed:', error.message);
-  } catch(e) { console.warn('[sync] config push error:', e.message); }
+    if (error) log.warn('sync', 'config push failed', { err: error.message });
+  } catch(e) { log.warn('sync', 'config push error', { err: e.message }); }
 }
 
 // pull config from cloud and apply locally
@@ -3861,7 +3869,7 @@ async function cloudPullConfig() {
     }
     return applied;
   } catch(e) {
-    console.warn('[sync] config pull error:', e.message);
+    log.warn('sync', 'config pull error', { err: e.message });
     return 0;
   }
 }
@@ -3942,7 +3950,7 @@ async function runSync(opts) {
       const easy = await pullEasyStates();
       if (easy.pulled > 0) console.log('[sync] easy pulled', easy.pulled);
     } catch (e) {
-      console.warn('[sync] pullEasyStates failed', e?.message);
+      log.warn('sync', 'pullEasyStates failed', { err: e?.message });
     }
     // 4. download cloud CardState (incremental merge)
     updateProg(t('sync_states_prog'),60);
@@ -3962,7 +3970,7 @@ async function runSync(opts) {
           if (_dm) _dm.practiceDays = _ds.practice_days;
         }
       }
-    } catch(e) { console.warn('[sync] practice days fetch error:', e.message); }
+    } catch(e) { log.warn('sync', 'practice days fetch error', { err: e.message }); }
     // 4. deck sync (optional: after login / manual sync)
     var newDecks = 0, syncedDecks = 0;
     if (options.decks) {
@@ -3976,7 +3984,7 @@ async function runSync(opts) {
             meta = DECKS_META.find(function(m) { return m.name === sd.name; });
             if (meta) { await syncDeckFromCloud(sd.id, sd.name, null, true, sd.name_lang); syncedDecks++; }
             else { await downloadDeckFromCloud(sd.id, sd.name, null, true, sd.name_lang); newDecks++; }
-          } catch(e) { console.warn('[sync] skip deck:', sd.name, e.message); }
+          } catch(e) { log.warn('sync', 'skip deck', { name: sd.name, err: e.message }); }
         }
         for (sd of serverDecks) {
           try {
@@ -4025,7 +4033,7 @@ async function runSync(opts) {
     }
   } catch(e) {
     if (options.modal && modalEl) modalEl.style.display = 'none';
-    console.warn('[sync] runSync error:', e.message);
+    log.warn('sync', 'runSync error', { err: e.message });
     if (options.showToast || options.modal) showCloudToast(t('sync_failed'), true);
   } finally {
     clearTimeout(_syncWatchdogId);
@@ -4039,7 +4047,7 @@ function backfillAfterPractice(deckKey) {
   if (!_syncEnabled || !_sb || !deckKey) return Promise.resolve();
   return syncPendingData(deckKey)
     .then(function() { return syncAppEvents(); })
-    .catch(function(e) { console.warn('[sync] backfillAfterPractice:', e.message); });
+    .catch(function(e) { log.warn('sync', 'backfillAfterPractice', { err: e.message }); });
 }
 
 function openSrsDb() {
@@ -5191,7 +5199,7 @@ async function deleteCardStatesForDeck(deckKey) {
         cursor.continue();
       };
     });
-  } catch(e) { console.warn('[gc] deleteCardStatesForDeck fail:', e.message); }
+  } catch(e) { log.warn('gc', 'deleteCardStatesForDeck fail', { err: e.message }); }
 }
 
 function gcOrphanSyncKeys() {
@@ -6337,14 +6345,15 @@ async function doAccountLogin() {
     await migrateDeviceRecordsToUser(_cloudUserId);
     updateCloudTabUI();
     logAppEvent('login', { email: email });
+    _writeConsentLs();
     upsertDeviceRegistry();
     runSync({ modal: true, decks: false, events: true, title: t('sync_syncing_data'), deckKey: currentDeck })
       .then(() => syncAllDirtyDecks())
-      .catch(e => console.warn('[sync] login sync error:', e.message));
+      .catch(e => log.warn('sync', 'login sync error', { err: e.message }));
   } catch(e) {
     _syncEnabled = false;
     msgEl.style.display = ''; msgEl.textContent = t('account_login_fail', { msg: e.message }); msgEl.style.color = '#9B3A2A';
-    console.warn('[sync] login failed:', e.message);
+    log.warn('sync', 'login failed', { err: e.message });
   } finally {
     btnEl.disabled = false; btnEl.textContent = t('account_login_btn');
   }
@@ -6356,7 +6365,7 @@ async function doAccountLogout() {
   _downloading.clear();
   // scope: 'local' 只清当前 client 的 localStorage，不撤销服务端 refresh_token；
   // 否则任何登出（测试 cleanup / 多设备 A 退出）会连带把同账号其他设备的 session 也吹掉
-  try { if (_sb) await _sb.auth.signOut({ scope: 'local' }); } catch(e) { console.warn('[sync] signOut error:', e.message); }
+  try { if (_sb) await _sb.auth.signOut({ scope: 'local' }); } catch(e) { log.warn('sync', 'signOut error', { err: e.message }); }
   _syncEnabled = false; _cloudUserEmail = ''; _sb = null;
   lsRemove(LS_KEYS.GLOBAL_SYNC_TS);
   lsRemove(LS_KEYS.SESSION_BACKUP);
@@ -6367,6 +6376,23 @@ async function doAccountLogout() {
   updateMineProfile();
 }
 
+function _updateLoginConsent() {
+  var cb = document.getElementById('consent-login');
+  var btn = document.getElementById('account-login-btn');
+  if (cb && btn) btn.disabled = !cb.checked;
+}
+function _updateRegisterConsent() {
+  var cb = document.getElementById('consent-register');
+  var btn = document.getElementById('reg-submit-btn');
+  if (cb && btn) btn.disabled = !cb.checked;
+}
+function _writeConsentLs() {
+  try {
+    lsSet('yh:v1:user:consentAt', new Date().toISOString());
+    lsSet('yh:v1:user:consentVersion', 'v1');
+  } catch (e) { console.warn('[consent] LS write fail', e && e.message); }
+}
+
 function openRegisterSheet() {
   var overlay = document.getElementById('register-overlay');
   if (!overlay) return;
@@ -6375,6 +6401,8 @@ function openRegisterSheet() {
   document.getElementById('reg-pwd').value = '';
   document.getElementById('reg-pwd2').value = '';
   document.getElementById('reg-msg').style.display = 'none';
+  var cb = document.getElementById('consent-register');
+  if (cb) { cb.checked = false; _updateRegisterConsent(); }
   document.getElementById('reg-pending-block').style.display = 'none';
   document.getElementById('reg-title').style.display = '';
   document.getElementById('reg-email').style.display = '';
@@ -6425,6 +6453,7 @@ async function doRegister() {
       }
       return;
     }
+    _writeConsentLs();
     document.getElementById('reg-title').style.display = 'none';
     document.getElementById('reg-email').style.display = 'none';
     document.getElementById('reg-pwd').style.display = 'none';
@@ -6599,7 +6628,7 @@ function doAccountSync() {
   if (sub) sub.textContent = t('sync_in_progress') + '…';
   runSync({ modal: true, decks: false, events: true, showToast: true, deckKey: currentDeck })
     .then(function() { return syncAllDirtyDecks(); })
-    .catch(function(e){ console.warn('[sync] account sync error:', e.message); })
+    .catch(function(e){ log.warn('sync', 'account sync error', { err: e.message }); })
     .finally(function() {
       if (btn) btn.disabled = false;
       if (sub) sub.textContent = t('account_logged_in_sub');
@@ -6830,7 +6859,7 @@ async function doDownloadPresetDeckAction(deckId, deckName, nameLang, btnEl) {
   }
   try {
     await downloadDeckFromCloud(deckId, deckName, null, true, nameLang);
-  } catch(e) { console.warn('[featured] download fail', e && e.message); }
+  } catch(e) { log.warn('featured', 'download fail', { err: e && e.message }); }
   _downloading.delete(deckId);
   if (document.getElementById('screen-decks').classList.contains('active')) showFeaturedDecks();
 }
@@ -6839,7 +6868,7 @@ async function doSyncPresetDeckAction(deckId, deckName, nameLang, btnEl) {
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '同步中…'; }
   try {
     await syncDeckFromCloud(deckId, deckName, btnEl, true, nameLang);
-  } catch(e) { console.warn('[featured] sync fail', e && e.message); }
+  } catch(e) { log.warn('featured', 'sync fail', { err: e && e.message }); }
   if (document.getElementById('screen-decks').classList.contains('active')) showFeaturedDecks();
 }
 
@@ -7388,6 +7417,11 @@ const I18N = {
     app_title: 'Memory Glimmers',
     app_short_name: 'Glimmers',
     meta_description: 'Picture-word matching — learn with fun',
+    consent_label: 'I have read and agree to the',
+    consent_privacy: 'Privacy Policy',
+    consent_and: 'and',
+    consent_terms: 'Terms of Service',
+    consent_required_hint: 'Please check the box to agree before continuing',
     rotate_to_portrait: 'Portrait mode only',
     rotate_to_portrait_sub: 'Please rotate your device back to portrait',
     // Common
@@ -7720,6 +7754,11 @@ const I18N = {
     app_title: '忆海拾光',
     app_short_name: '忆海拾光',
     meta_description: '看图识物 — 快乐学习',
+    consent_label: '我已阅读并同意',
+    consent_privacy: '《隐私政策》',
+    consent_and: '和',
+    consent_terms: '《用户协议》',
+    consent_required_hint: '请先勾选同意才能继续',
     rotate_to_portrait: '请竖屏使用',
     rotate_to_portrait_sub: '本应用暂只支持竖屏，请旋转设备',
     common_back: '返回',
@@ -8053,6 +8092,11 @@ const I18N = {
     featured_login_required: '請先登入後查看精選牌組',
     app_short_name: '憶海拾光',
     meta_description: '看圖識物 — 快樂學習',
+    consent_label: '我已閱讀並同意',
+    consent_privacy: '《隱私政策》',
+    consent_and: '和',
+    consent_terms: '《用戶協議》',
+    consent_required_hint: '請先勾選同意才能繼續',
     rotate_to_portrait: '請豎屏使用',
     rotate_to_portrait_sub: '本應用暫只支持豎屏，請旋轉設備',
     common_back: '返回',
@@ -8367,6 +8411,11 @@ const I18N = {
     featured_login_required: 'Inicia sesión para ver los mazos destacados',
     app_short_name: 'Glimmers',
     meta_description: 'Reconocimiento visual — aprende con diversion',
+    consent_label: 'He leído y acepto los',
+    consent_privacy: 'Términos de Privacidad',
+    consent_and: 'y',
+    consent_terms: 'Términos de Servicio',
+    consent_required_hint: 'Por favor marca la casilla para continuar',
     rotate_to_portrait: 'Solo modo vertical',
     rotate_to_portrait_sub: 'Por favor gira tu dispositivo a vertical',
     common_back: 'Volver',
@@ -8686,6 +8735,11 @@ const I18N = {
     app_title: 'メモリーグリマーズ',
     app_short_name: 'グリマーズ',
     meta_description: '写真で学ぶ — 楽しく覚えよう',
+    consent_label: '以下に同意します：',
+    consent_privacy: 'プライバシーポリシー',
+    consent_and: 'と',
+    consent_terms: '利用規約',
+    consent_required_hint: '続行するにはチェックを入れてください',
     rotate_to_portrait: '縦向き専用',
     rotate_to_portrait_sub: 'デバイスを縦向きに戻してください',
     // Common
@@ -11892,6 +11946,12 @@ function showAbout() {
       setTimeout(_tryInitCloud, 200);
     }
   }
+  setTimeout(function() {
+    var loginBtn = document.getElementById('account-login-btn');
+    var regBtn = document.getElementById('reg-submit-btn');
+    if (loginBtn) loginBtn.disabled = true;
+    if (regBtn) regBtn.disabled = true;
+  }, 0);
   setTimeout(_tryInitCloud, 100);
   var _capturedHash = location.hash || '';
   setTimeout(function() { handleAuthHashRoute(_capturedHash); }, 200);
