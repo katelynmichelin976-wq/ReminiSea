@@ -2,6 +2,45 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.14 — 个人牌组 deck id 加盐（修复跨用户导入主键冲突）
+
+### 动机
+
+同一个 `.yhspack` 被不同用户导入后，云端同步报 RLS 错误。根因：`decks.id` 是全局单列主键，而个人牌组 `deck_key` 由内容/名字哈希派生——两个用户导入同一文件得到相同 deck_key，第二个用户 upsert 时触发 `ON CONFLICT UPDATE`，但行 owner 是别人，RLS `user_id = auth.uid()` 拦截。实际触发：开发者账号先上传了「蔬菜水果」（id=`3e85da18`），妈妈导入同名文件同步即冲突。
+
+经查 `sync_trials` / `easy_card_states` 均带 `user_id` 且 `deck_key` 无跨用户唯一约束，本就容忍多用户共用本地 key；Storage 路径已 `personal/{userId}/...` 隔离。**唯一真正撞的只有 `decks.id`**。故不改复合主键（会破坏 `deck_cards.deck_id` 外键 + 需加列回填 + 重写 RLS），改为只在同步边界给个人牌组 server id 加盐。
+
+### 方案（Option B：可逆拼接）
+
+- 新增纯函数 `toServerDeckId(localKey, deckType, userId)`：personal → `localKey + '~' + userId`；preset/shared → 原样。`fromServerDeckId(serverId)`：含 `~` 取第一段还原。本地 key 为 hex/uuid，绝不含 `~`，往返安全自描述。
+- **本地 key / DECKS_META / sync_trials / easy_card_states / Storage 路径 / IDB 全不动**，只在读写 `decks`·`deck_cards` 的同步边界转换。
+- 铁律：传给 `.from('decks'|'deck_cards')` 的 id/deck_id 用 server id；IDB/Storage/DECKS_META/getDeckSync 用本地 key。
+
+### 改动边界
+
+- 上传写：`upsertDeckRow` / `upsertCardsBatch` / `upsertCardsMediaBatch` / `deleteCardsBatch`。
+- `SyncJob`：缓存 `this.serverId`，`runStructurePhase` / `runCardsPhase` / `fetchAllDeckCards` 查询用 server id；`loadMedia` / `buildPath` 仍用本地 key。
+- 下载：`downloadDeckFromCloud`（preset，裸 id 不变）、`downloadPersonalDeckFromCloud`（personal，入参本地 key、内部转 serverId 查云端）、`syncDeckFromCloud`（本就按 name 取本地 key，无需改）。
+- 列表 UI：`renderCloudDecksTab` / `showCloudDecks` / `refreshDeckUpdateBadges` 用 `fromServerDeckId` 映射本地 key。
+- 删除：`deleteDeck` 个人牌组分支用 server id。
+
+### 存量迁移
+
+`sql/migrate_personal_deck_id_salt.sql`：drop FK → 重定向 `deck_cards.deck_id` → 改 `decks.id` → 重建 FK。幂等（`position('~' in id)=0` 守卫）。**须在代码发布同一维护窗口执行**（新旧 id 格式不能长期并存）。`media.url`（含本地 key 的 Storage 路径）与 trials/easy 的 deck_key 不动。
+
+### 测试
+
+- `tests/yihai_v5.17_deckid_test.js`：加盐纯函数 8 断言（从 index.html 抽取真实源码）。
+- `tests/_pw_deck_id_salt.js`：真实 RLS 端到端 7 断言（同步无报错、云端 id=`localKey~userId`、无裸 key 污染、deck_cards 在 salted id 下、清理）。
+- `tests/_pw_media_upload.js`：适配 salt（清理/校验查询用 server id）。
+- 回归：单元 699 + `_pw_ui_smoke`(68) + `_pw_srs_e2e`(21) 全绿。
+
+### 遗留
+
+`downloadDeckFromCloud` 下载 preset 时硬编码 `deck_type='preset'`（既有行为，与本次无关）。
+
+---
+
 ## v5.13.13 — sync/cloud/SRS 错误路径写入 LOCAL_LOG 诊断缓冲
 
 ### 动机
