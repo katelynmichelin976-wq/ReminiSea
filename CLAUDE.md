@@ -15,7 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | File | Purpose |
 |------|---------|
 | `index.html` | 主训练 App（v5.13.5，单 HTML 文件，Supabase 云同步） |
-| `yihai_admin_v1.html` | 管理看板（监控面板，Supabase Edge Functions） |
+| `yihai_admin_v1.html` | 管理看板 v1（旧版"医生/家属"监控定位，自用验证期与 v2 并存，1-2 周后清理） |
+| `yihai_admin_v2.html` | 运营驾驶舱 v2（Bento Grid 单页四象限：增长活跃/系统健康/反馈/内容运营，纯只读，ADMIN_VERSION='2.0.0'） |
 | `index_v49.html` | 制卡工具（暂停）|
 
 ### 测试
@@ -52,6 +53,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_pw_config_sync.js` | 语音参数云同步（~23 断言，需登录） |
 | `tests/_pw_deck_mgmt.js` | 牌组管理页冒烟（Tab Bar/导航/段选/列表，15 断言） |
 | `tests/_pw_featured_tab.js` | 精选 tab 列表 + 同步按钮去耦合（doAccountSync runSync 不再传 decks:true，~10 断言，需登录） |
+| `tests/_pw_admin_v2.js` | admin v2 运营驾驶舱冒烟（登录/四象限 KPI/时间窗 hash/抽屉/非 admin 拦截，19 断言，需登录） |
 | `tests/_pw_flip_card.js` | 翻转卡练习流（自评 SRS） |
 | `tests/_pw_media_upload.js` | 个人牌组媒体上传 |
 | `tests/_playwright_helper.js` | Playwright 公共工具（cloudLogin/cloudLogout/navigateTo） |

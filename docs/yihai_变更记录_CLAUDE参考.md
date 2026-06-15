@@ -2,6 +2,58 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## 管理看板 v2 — 运营驾驶舱（2026-06-15）
+
+### 动机
+
+v1 admin 定位为「医生 / 家属监控平台」（患者 / 月历 / 卡牌状态 / 参数配置 / 日志），与产品转向后的实际运营需求脱节。用户调研后明确：唯一使用者是产品/运营 owner（zyhacl@gmail.com），不查个人用户数据（隐私），不做写操作，关心四块——增长活跃 / 系统健康 / 用户反馈 / 内容运营。
+
+### 设计
+
+详见 `docs/superpowers/specs/2026-06-14-admin-v2-redesign-design.md`。
+
+- 单页 Bento Grid 全览（2×2），无导航分页
+- 顶栏时间窗 24h / 7d / 30d（URL hash 持久化）
+- 每象限：4 KPI strip + 卡内迷你内容 + 「展开 →」抽屉懒加载趋势
+- 沿用 `admin-auth-check` 鉴权；废弃 v1 9 个旧 Edge Functions（自用 1-2 周后单独 PR 删）
+
+### 后端
+
+新增 2 个 Edge Functions：
+- `get-admin-overview?timeWindow=24h|7d|30d` — 一次返回四象限 KPI + 迷你内容；60s 内存 memoize；单象限 SQL 失败隔离不影响其他象限
+- `get-admin-trend?quadrant=growth|health|feedback|content&timeWindow=...` — 抽屉懒加载趋势数据
+
+新增共享工具 `_shared/time-window.ts`（parseTimeWindow / timeWindowStartMs / 等）。
+
+### 前端
+
+- `yihai_admin_v2.html`（679 行单文件 SPA，与 v1 并存）
+- `ADMIN_VERSION='2.0.0'`，独立于主 app `APP_VERSION`
+- 无第三方图表库：迷你图用 CSS 柱状，抽屉详情用表格 + JSON pre
+
+### Phase 0 schema 校验（关键发现）
+
+Plan 初版 3 处假设与真实 schema 不符：
+
+| 假设 | 真实 | 处理 |
+|---|---|---|
+| `decks.is_featured` + `deck_subscriptions` 表 | 都不存在（订阅只在客户端 IDB） | 象限 ④ 改为「牌组使用热度」（按 deck_key trials 量排名） |
+| `feedback.user_id` + `screenshot_path` | 都不存在（feedback 用 device_id；无截图字段） | KPI 改"不同设备数"；砍 sign-private-url |
+| `app_events.app_version` | 顶层无此列；嵌在 `payload->>'app_version'` | 修 SQL 路径 |
+
+详细 schema 笔记：`docs/superpowers/notes/2026-06-14-admin-v2-schema-check.md`
+
+### 测试
+
+- `tests/_pw_admin_v2.js`（19 断言）：admin 登录 / 四象限 KPI / 时间窗切换 hash / 抽屉开关 / 非 admin 拦截
+- 单元测试无新增（admin 是独立 SPA，不影响主 app 单测套件）
+
+### 后续清理（不在本次范围）
+
+自用 1-2 周确认 v2 稳定后单独 PR：删 `yihai_admin_v1.html` + 9 个废弃 Edge Functions（`get-dashboard-summary` · `get-patients-*` × 6 · `get-card-difficulty` · `sign-private-url`）。
+
+---
+
 ## v5.13.12 — 精选牌组 tab + 同步按钮去耦合 + yh_diag 同步重构
 
 ### 动机
