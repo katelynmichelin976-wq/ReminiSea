@@ -10899,11 +10899,13 @@ async function downloadDeckFromCloud(deckId, deckName, btnEl, noToast, nameLang)
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = t('common_downloading'); }
 
   try {
+    // deckId 来自云端 decks 列表，是 server id；本地一切以 localKey 为准
+    const localKey = fromServerDeckId(deckId);
     // 1. get cards from deck_cards (ordered, paginated)
     const ordered = await fetchAllDeckCards(deckId, 'card_id,name,media');
     if (!ordered.length) { showCloudToast(t('sync_deck_empty'), true); return; }
 
-    const key = deckId;
+    const key = localKey;
 
     // 4. download media and assemble cards (concurrency 3, image+audio parallel per card)
     const deckCards = [];
