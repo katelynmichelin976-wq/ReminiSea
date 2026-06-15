@@ -73,8 +73,9 @@ async function waitSyncDone(page, maxWait) {
     }, TEST_DECK_NAME);
     if (oldDeckKey) {
       await run(pageA, async (key) => {
-        try { await _sb.from('deck_cards').delete().eq('deck_id', key); } catch(e) {}
-        try { await _sb.from('decks').delete().eq('id', key); } catch(e) {}
+        const sid = toServerDeckId(key, 'personal', _cloudUserId);
+        try { await _sb.from('deck_cards').delete().eq('deck_id', sid); } catch(e) {}
+        try { await _sb.from('decks').delete().eq('id', sid); } catch(e) {}
       }, oldDeckKey);
     }
 
@@ -124,11 +125,20 @@ async function waitSyncDone(page, maxWait) {
       await run(pageA, async (key) => { await syncDeck(key); }, deckKey);
       await wait(pageA, 2000);
 
-      // 验证 Supabase deck_cards.media 已有 url
+      // 验证云端 decks.id 已加盐（localKey~userId），且可被 fromServerDeckId 还原；本地 key 不变
+      const idCheck = await run(pageA, async (key) => {
+        const sid = toServerDeckId(key, 'personal', _cloudUserId);
+        const { data } = await _sb.from('decks').select('id').eq('id', sid).maybeSingle();
+        return { found: !!data, salted: sid.includes('~') && fromServerDeckId(sid) === key };
+      }, deckKey);
+      pass('加盐: 云端 decks.id = localKey~userId（可被 fromServerDeckId 还原）', idCheck.found && idCheck.salted);
+
+      // 验证 Supabase deck_cards.media 已有 url（查询用 server id）
       const cloudMedia = await run(pageA, async (key) => {
+        const sid = toServerDeckId(key, 'personal', _cloudUserId);
         const { data } = await _sb.from('deck_cards')
           .select('card_id,media')
-          .eq('deck_id', key)
+          .eq('deck_id', sid)
           .limit(3);
         return (data || []).map(r => ({ id: r.card_id, url: r.media?.img?.url || '' }));
       }, deckKey);
@@ -193,8 +203,9 @@ async function waitSyncDone(page, maxWait) {
       // ════ 清理 ════
       section('清理云端测试数据');
       await run(pageA, async (key) => {
-        try { await _sb.from('deck_cards').delete().eq('deck_id', key); } catch(e) {}
-        try { await _sb.from('decks').delete().eq('id', key); } catch(e) {}
+        const sid = toServerDeckId(key, 'personal', _cloudUserId);
+        try { await _sb.from('deck_cards').delete().eq('deck_id', sid); } catch(e) {}
+        try { await _sb.from('decks').delete().eq('id', sid); } catch(e) {}
         // Storage 文件保留（清理较复杂，测试后不影响）
       }, deckKey);
       pass('清理: 完成', true);
