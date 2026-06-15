@@ -6722,15 +6722,17 @@ async function renderCloudDecksTab() {
       return;
     }
     cloudDecks.forEach(function(cd) {
-      var m = DECKS_META.find(function(x) { return x.key === cd.id; });
+      var lk = fromServerDeckId(cd.id);
+      var m = DECKS_META.find(function(x) { return x.key === lk; });
       if (m) m._remoteUpdatedAt = cd.updated_at;
     });
     listEl.innerHTML = cloudDecks.map(function(d) {
-      var dl = _downloading.get(d.id);
-      var job = getActiveSyncJob(d.id);
-      var local = DECKS_META.find(function(m) { return m.key === d.id; });
-      var state = local ? computeDeckSyncState(d.id) : { status: 'remoteAhead', mediaIncomplete: false };
-      var nameArg = "'" + d.id + "','" + esc(d.name).replace(/'/g, '&#39;') + "','" + (d.name_lang || 'zh-CN') + "'";
+      var lk = fromServerDeckId(d.id);
+      var dl = _downloading.get(lk);
+      var job = getActiveSyncJob(lk);
+      var local = DECKS_META.find(function(m) { return m.key === lk; });
+      var state = local ? computeDeckSyncState(lk) : { status: 'remoteAhead', mediaIncomplete: false };
+      var nameArg = "'" + lk + "','" + esc(d.name).replace(/'/g, '&#39;') + "','" + (d.name_lang || 'zh-CN') + "'";
 
       var badgeHtml = '';
       if (job)                               badgeHtml = '<span style="color:var(--text3)">同步中 ' + job.progress.done + '/' + job.progress.total + '</span>';
@@ -6745,16 +6747,16 @@ async function renderCloudDecksTab() {
         var txt = dl.total > 0 ? dl.done + '/' + dl.total : '…';
         var pauseLabel = dl.paused ? '继续' : '暂停';
         btnHtml = '<div class="decks-dl-prog">' +
-          '<span id="dl-prog-' + d.id + '" class="decks-dl-num">' + txt + '</span>' +
-          '<button class="decks-sync-btn" onclick="toggleDownloadPause(\'' + d.id + '\')">' + pauseLabel + '</button>' +
+          '<span id="dl-prog-' + lk + '" class="decks-dl-num">' + txt + '</span>' +
+          '<button class="decks-sync-btn" onclick="toggleDownloadPause(\'' + lk + '\')">' + pauseLabel + '</button>' +
           '</div>';
       } else if (job) {
         var pLabel = job._paused ? '继续' : '暂停';
-        btnHtml = '<button class="decks-sync-btn" onclick="toggleSyncJobPause(\'' + d.id + '\')">' + pLabel + '</button>';
+        btnHtml = '<button class="decks-sync-btn" onclick="toggleSyncJobPause(\'' + lk + '\')">' + pLabel + '</button>';
       } else if (local && state.mediaIncomplete) {
         btnHtml = '<button class="decks-sync-btn" onclick="doCloudDeckAction(' + nameArg + ',this)">补全媒体</button>';
       } else if (local) {
-        btnHtml = '<button class="decks-sync-btn" onclick="doSyncDeckAction(\'' + d.id + '\',this)">同步</button>';
+        btnHtml = '<button class="decks-sync-btn" onclick="doSyncDeckAction(\'' + lk + '\',this)">同步</button>';
       } else {
         btnHtml = '<button class="decks-sync-btn primary" onclick="doCloudDeckAction(' + nameArg + ',this)">下载</button>';
       }
@@ -6889,15 +6891,17 @@ async function showCloudDecks() {
       return;
     }
     for (const cd of cloudDecks) {
-      const m = DECKS_META.find(x => x.key === cd.id);
+      const lk = fromServerDeckId(cd.id);
+      const m = DECKS_META.find(x => x.key === lk);
       if (m) m._remoteUpdatedAt = cd.updated_at;
     }
     listEl.innerHTML = cloudDecks.map(d => {
-      const dl = _downloading.get(d.id);
-      const job = getActiveSyncJob(d.id);
-      const local = DECKS_META.find(m => m.key === d.id);
-      const state = local ? computeDeckSyncState(d.id) : { status: 'remoteAhead' };
-      const nameArg = `'${d.id}','${esc(d.name).replace(/'/g,'&#39;')}','${d.name_lang||'zh-CN'}'`;
+      const lk = fromServerDeckId(d.id);
+      const dl = _downloading.get(lk);
+      const job = getActiveSyncJob(lk);
+      const local = DECKS_META.find(m => m.key === lk);
+      const state = local ? computeDeckSyncState(lk) : { status: 'remoteAhead' };
+      const nameArg = `'${lk}','${esc(d.name).replace(/'/g,'&#39;')}','${d.name_lang||'zh-CN'}'`;
 
       let badge = '';
       if (job) badge = `<span style="color:#888">同步中 ${job.progress.done}/${job.progress.total}</span>`;
@@ -6911,16 +6915,16 @@ async function showCloudDecks() {
         const txt = dl.total > 0 ? `${dl.done}/${dl.total}` : '…';
         const pauseLabel = dl.paused ? '继续' : '暂停';
         btn = `<div style="display:flex;gap:8px;align-items:center">
-          <span id="dl-prog-${d.id}" style="font-size:13px;color:var(--text-sub);min-width:72px;text-align:right">${txt}</span>
-          <button class="account-sync-btn" onclick="toggleDownloadPause('${d.id}')">${pauseLabel}</button>
+          <span id="dl-prog-${lk}" style="font-size:13px;color:var(--text-sub);min-width:72px;text-align:right">${txt}</span>
+          <button class="account-sync-btn" onclick="toggleDownloadPause('${lk}')">${pauseLabel}</button>
         </div>`;
       } else if (job) {
         const pauseLabel = job._paused ? '继续' : '暂停';
-        btn = `<button class="account-sync-btn" onclick="toggleSyncJobPause('${d.id}')">${pauseLabel}</button>`;
+        btn = `<button class="account-sync-btn" onclick="toggleSyncJobPause('${lk}')">${pauseLabel}</button>`;
       } else if (local && state.mediaIncomplete) {
         btn = `<button class="account-sync-btn" onclick="doCloudDeckAction(${nameArg},this)">补全媒体</button>`;
       } else if (local) {
-        btn = `<button class="account-sync-btn" onclick="doSyncDeckAction('${d.id}',this)">同步</button>`;
+        btn = `<button class="account-sync-btn" onclick="doSyncDeckAction('${lk}',this)">同步</button>`;
       } else {
         btn = `<button class="account-btn account-btn-primary" style="padding:6px 16px;min-height:0;font-size:14px" onclick="doCloudDeckAction(${nameArg},this)">下载</button>`;
       }
@@ -11669,9 +11673,11 @@ async function refreshDeckUpdateBadges() {
 
 async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgress) {
   if (!_syncEnabled || !_sb) return;
+  // deckId 是本地 key（UI 层统一传本地 key）；云端 decks/deck_cards 查询用 serverId
+  const serverId = toServerDeckId(deckId, 'personal', _cloudUserId);
   console.log('[diag:dl] start', { deckId, deckName });
   try {
-    const cards = await fetchAllDeckCards(deckId, 'card_id,name,media,card_type,ext,updated_at');
+    const cards = await fetchAllDeckCards(serverId, 'card_id,name,media,card_type,ext,updated_at');
     if (!cards.length) { console.log('[diag:dl] no cards on cloud', deckId); return; }
     const syncNow = new Date().toISOString();
     const total = cards.length;
@@ -11762,7 +11768,7 @@ async function downloadPersonalDeckFromCloud(deckId, deckName, nameLang, onProgr
     saveDeckCards(deckId, DECKS[deckId]);
 
     // 拉云端 decks.updated_at 同步推 pulledAt（消除 cloud.decks.updated_at > max(card.updated_at) 时的 remoteAhead 假象）
-    const { data: deckRow } = await _sb.from('decks').select('updated_at').eq('id', deckId).maybeSingle();
+    const { data: deckRow } = await _sb.from('decks').select('updated_at').eq('id', serverId).maybeSingle();
     const cloudDeckTs = Date.parse(deckRow?.updated_at) || 0;
     const maxMod = (cards || []).reduce((m, c) => Math.max(m, Date.parse(c.updated_at) || 0), 0);
     const finalMark = Math.max(maxMod, cloudDeckTs);
