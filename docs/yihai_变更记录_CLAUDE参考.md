@@ -2,6 +2,38 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.13 — sync/cloud/SRS 错误路径写入 LOCAL_LOG 诊断缓冲
+
+### 动机
+
+妈妈账号导入 `蔬菜水果.yhspack` 后同步报错，但 feedback 上报的 `local_log` 为空，只能翻 Postgres 服务端日志才定位到根因（个人牌组 `deck_key` 与开发者账号已上传的同名牌组冲突，upsert ON CONFLICT 触发 RLS `user_id = auth.uid()` 拦截）。
+
+根因：`LOCAL_LOG`（feedback 携带的诊断 ring buffer）只接收 `log.info/warn/error()` 写入，而所有 sync 错误路径用的是裸 `console.warn` / `console.error`，绕过 `LOCAL_LOG`；异常又被 `try/catch` 吞掉，连 `window.unhandledrejection` 都不触发。结果同步类错误对 feedback 诊断完全不可见。
+
+### 改动
+
+约 30 处裸 `console.warn` / `console.error` 替换为 `log.warn` / `log.error`（行为无损——`_push` 内部仍调用 console，同时追加 `LOCAL_LOG`）：
+
+- **云端同步**：trial/cardState/config 上传下载、backfill、runSync、syncDeck/dirtyDeck、final upsertDeckRow、login/account/logout、featured download/sync、easy state pull/write、sync 顶层 catch
+- **媒体**：upload/download fail、cloud img/aud fail、downloadSlot
+- **数据/操作**：`_writeSrs`（规则 15，静默丢 TrialLog 最该捕获）、import/export .yhspack、buildSessionQueue 构造失败、restoreDecks skipping card/deck、cloud download error、gc deleteCardStates、share/download
+
+**保留**裸 console（有意）：启动迁移（log 未必就绪 + 低价值）、`yh_diag` 诊断面板（本就 verbose 且用户主动触发）、高频 saveMedia（会刷屏 LOCAL_LOG）、js_error 上报兜底（改 log 有递归风险）、次要 UI 渲染（updateDeckStats）。
+
+### 关联数据修复（非代码）
+
+删除开发者账号 `06b9d739` 占用的 `decks.id='3e85da18'` + 33 条 deck_cards，解除妈妈账号 upsert 的 RLS 冲突。妈妈手动同步后牌组（33 卡 + 66 媒体文件）正常上传。
+
+### 遗留
+
+`decks.id` 为全局唯一主键 → 同一 `.yhspack` 被多个用户导入会主键冲突（第二人同步必失败）。根治需将个人牌组 PK 改为 `(id, user_id)` 复合键 + 调整 `syncDeck` upsert conflict target，另立计划。
+
+### 测试
+
+行为无损改动。单元 667 断言 + Playwright `_pw_ui_smoke`(68) / `_pw_srs_e2e`(21) / `_pw_js_error_report`(10) 全绿。
+
+---
+
 ## v5.13.12 — 精选牌组 tab + 同步按钮去耦合 + yh_diag 同步重构
 
 ### 动机
