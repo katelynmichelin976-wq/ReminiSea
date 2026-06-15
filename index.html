@@ -11593,6 +11593,16 @@ function mergeCard(local, remote) {
   }
   return merged;
 }
+// personal 牌组 server id 加盐：localKey~userId（不同用户同名 deck_key 在全局唯一的 decks.id 上撞主键）。
+// preset/shared 不加盐（跨用户共享）。~ 自描述：含 ~ 即加盐 id，split 还原本地 key。本地 key 为 hex/uuid，绝不含 ~。
+function toServerDeckId(localKey, deckType, userId) {
+  if (deckType === 'personal' && userId) return localKey + '~' + userId;
+  return localKey;
+}
+function fromServerDeckId(serverId) {
+  const i = serverId.indexOf('~');
+  return i >= 0 ? serverId.slice(0, i) : serverId;
+}
 function buildPath(userId, deckId, cardId, slot, v, ext) {
   const base = `personal/${userId}/${deckId}/${cardId}_${slot}`;
   return v > 0 ? `${base}_v${v}.${ext}` : `${base}.${ext}`;
