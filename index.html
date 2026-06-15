@@ -11220,6 +11220,7 @@ class SyncJob {
     this._pauseResolve = null;
     this._cancelled = false;
     this._didPush = false;
+    this.serverId = toServerDeckId(deckKey, 'personal', _cloudUserId);
   }
   pause() {
     if (this._paused) return;
@@ -11252,7 +11253,7 @@ class SyncJob {
       this._didPush = true;
     }
     const { data: deckRow } = await _sb.from('decks')
-      .select('updated_at, name, name_lang').eq('id', this.deckKey).maybeSingle();
+      .select('updated_at, name, name_lang').eq('id', this.serverId).maybeSingle();
     if (meta && deckRow?.updated_at) meta._remoteUpdatedAt = deckRow.updated_at;
     // 拉云端 name 到本地（仅本地未改时；本地未上传的 rename 由 push 路径优先）
     if (meta && deckRow?.name && (!meta.mod || meta.mod <= pushedAt)) {
@@ -11261,7 +11262,7 @@ class SyncJob {
       if (deckRow.name_lang && meta.nameLang !== deckRow.name_lang) { meta.nameLang = deckRow.name_lang; changed = true; }
       if (changed) saveDeckIndex();
     }
-    const remote = await fetchAllDeckCards(this.deckKey, 'card_id,updated_at');
+    const remote = await fetchAllDeckCards(this.serverId, 'card_id,updated_at');
     const remoteMeta = (remote || []).map(r => ({
       card_id: r.card_id,
       ts: Date.parse(r.updated_at) || 0,   // epoch ms，统一命名为 ts 避免与 ISO string 混淆
@@ -11316,7 +11317,7 @@ class SyncJob {
       const ids = toPull.slice(b, b + 100).map(r => r.card_id);
       const { data, error } = await _sb.from('deck_cards')
         .select('card_id,name,media,sort_order,card_type,ext,updated_at')
-        .eq('deck_id', this.deckKey).in('card_id', ids);
+        .eq('deck_id', this.serverId).in('card_id', ids);
       if (error) throw new Error('pull cards: ' + error.message);
       const cards = DECKS[this.deckKey] || (DECKS[this.deckKey] = []);
       for (const r of data || []) {
