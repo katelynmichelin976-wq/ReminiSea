@@ -7,6 +7,7 @@ import {
   timeWindowDays,
   type TimeWindow,
 } from "../_shared/time-window.ts";
+import { SESSION_ANOMALY_TYPES } from "../_shared/event-types.ts";
 
 type QuadrantOk<T> = T & { ok: true }
 interface QuadrantErr { ok: false; error: string }
@@ -32,14 +33,7 @@ interface OverviewResponse {
 }
 
 const cache = new Map<string, { at: number; data: OverviewResponse }>();
-
-const SESSION_ANOMALY_TYPES = new Set([
-  "session_restore_l1_fail",
-  "session_restore_l3_fail",
-  "session_restore_l1_timeout",
-  "session_restore_sdk_signout",
-  "session_restore_l2_real_logout",
-]);
+const CACHE_MAX_ENTRIES = 12;
 
 Deno.serve(async (req: Request) => {
   const cors = handleCors(req);
@@ -274,6 +268,10 @@ Deno.serve(async (req: Request) => {
   };
 
   cache.set(cacheKey, { at: nowMs, data: result });
+  if (cache.size > CACHE_MAX_ENTRIES) {
+    const oldest = [...cache.entries()].sort((a, b) => a[1].at - b[1].at)[0];
+    if (oldest) cache.delete(oldest[0]);
+  }
 
   return new Response(
     JSON.stringify(result),

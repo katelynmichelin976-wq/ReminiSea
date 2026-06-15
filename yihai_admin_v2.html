@@ -389,11 +389,20 @@ function fmtTs(ts) {
   return d.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderKpiStrip(containerId, cells) {
   const strip = document.getElementById(containerId);
   if (!strip) return;
   strip.innerHTML = cells.map(c =>
-    `<div class="kpi-cell"><div class="kpi-label">${c.label}</div><div class="kpi-value">${c.value}</div></div>`
+    `<div class="kpi-cell"><div class="kpi-label">${esc(c.label)}</div><div class="kpi-value">${esc(c.value)}</div></div>`
   ).join('');
 }
 
@@ -431,7 +440,7 @@ function renderHealth(data) {
     return;
   }
   const items = errs.map(e =>
-    `<li><span class="ml-label" title="${e.message}">${e.message.slice(0, 70)}</span><span class="ml-value">${e.count}次/${e.affectedUsers}人</span></li>`
+    `<li><span class="ml-label" title="${esc(e.message)}">${esc(e.message.slice(0, 70))}</span><span class="ml-value">${e.count}次/${e.affectedUsers}人</span></li>`
   ).join('');
   document.getElementById('body-health').innerHTML = `<ul class="mini-list">${items}</ul>`;
 }
@@ -454,12 +463,12 @@ function renderFeedback(data) {
   const items = recent.map(r =>
     `<div class="fb-item">
       <div class="fb-meta">
-        <span>${fmtTs(r.ts)}</span>
-        <span class="fb-badge">${r.feedbackType}</span>
-        <span>${r.deviceHint}</span>
-        <span>${r.appVersion}</span>
+        <span>${esc(fmtTs(r.ts))}</span>
+        <span class="fb-badge">${esc(r.feedbackType)}</span>
+        <span>${esc(r.deviceHint)}</span>
+        <span>${esc(r.appVersion)}</span>
       </div>
-      <div class="fb-preview">${r.contentPreview || '（无文字）'}</div>
+      <div class="fb-preview">${r.contentPreview ? esc(r.contentPreview) : '（无文字）'}</div>
     </div>`
   ).join('');
   document.getElementById('body-feedback').innerHTML = items;
@@ -482,8 +491,8 @@ function renderContent(data) {
   const items = decks.map(d => {
     const typeClass = d.type === 'preset' ? 'deck-type-preset' : d.type === 'personal' ? 'deck-type-personal' : 'deck-type-unknown';
     return `<div class="deck-item">
-      <span class="di-name" title="${d.deckKey}">${d.name}</span>
-      <span class="di-stats"><span class="deck-type-badge ${typeClass}">${d.type}</span> ${d.trials}题/${d.users}人</span>
+      <span class="di-name" title="${esc(d.deckKey)}">${esc(d.name)}</span>
+      <span class="di-stats"><span class="deck-type-badge ${typeClass}">${esc(d.type)}</span> ${d.trials}题/${d.users}人</span>
     </div>`;
   }).join('');
   document.getElementById('body-content').innerHTML = items;
@@ -497,7 +506,7 @@ function renderQuadrantError(quadrant, errMsg) {
       `<div class="kpi-cell"></div><div class="kpi-cell"></div><div class="kpi-cell"></div>`;
   }
   const body = document.getElementById('body-' + quadrant);
-  if (body) body.innerHTML = `<div class="error-msg">加载失败：${errMsg}</div>`;
+  if (body) body.innerHTML = `<div class="error-msg">加载失败：${esc(errMsg)}</div>`;
 }
 
 async function loadOverview() {
@@ -548,7 +557,7 @@ async function loadTrend(quadrant) {
     if (!res.ok) throw new Error(res.error || 'unknown');
     renderTrend(quadrant, res.data);
   } catch (e) {
-    document.getElementById('drawer-body').innerHTML = `<div class="error-msg">趋势加载失败：${e.message}</div>`;
+    document.getElementById('drawer-body').innerHTML = `<div class="error-msg">趋势加载失败：${esc(e.message)}</div>`;
   }
 }
 
@@ -557,10 +566,10 @@ function renderTrend(quadrant, data) {
   if (!data) { body.innerHTML = '<div class="error-msg">无数据</div>'; return; }
   if (quadrant === 'growth') {
     const dauRows = (data.dauWauMau || []).slice(-14).map(r =>
-      `<tr><td>${r.date}</td><td>${r.dau}</td><td>${r.wau}</td><td>${r.mau}</td></tr>`
+      `<tr><td>${esc(r.date)}</td><td>${r.dau}</td><td>${r.wau}</td><td>${r.mau}</td></tr>`
     ).join('');
     const vRows = (data.versionDistribution || []).slice(0, 10).map(r =>
-      `<tr><td>${r.version || 'unknown'}</td><td>${r.users}</td></tr>`
+      `<tr><td>${esc(r.version || 'unknown')}</td><td>${r.users}</td></tr>`
     ).join('');
     body.innerHTML =
       `<div class="trend-section"><h3>DAU / WAU / MAU（近 14 天）</h3>` +
@@ -569,7 +578,7 @@ function renderTrend(quadrant, data) {
       `<table class="trend-table"><thead><tr><th>版本</th><th>用户数</th></tr></thead><tbody>${vRows}</tbody></table></div>`;
   } else if (quadrant === 'health') {
     const eRows = (data.errorTable || []).slice(0, 20).map(r =>
-      `<tr><td class="td-mono">${r.message.slice(0, 120)}</td><td>${r.count}</td><td>${r.affectedUsers}</td><td>${r.firstAt ? fmtTs(r.firstAt) : ''}</td></tr>`
+      `<tr><td class="td-mono">${esc(r.message.slice(0, 120))}</td><td>${r.count}</td><td>${r.affectedUsers}</td><td>${r.firstAt ? esc(fmtTs(r.firstAt)) : ''}</td></tr>`
     ).join('');
     body.innerHTML =
       `<div class="trend-section"><h3>错误聚合表</h3>` +
@@ -578,13 +587,13 @@ function renderTrend(quadrant, data) {
   } else if (quadrant === 'feedback') {
     const fbRows = (data.list || []).slice(0, 50).map(r => {
       const diagHtml = r.diagnostics
-        ? `<details><summary style="cursor:pointer;font-size:11px;color:var(--primary)">诊断数据</summary><pre class="diag-pre">${JSON.stringify(r.diagnostics, null, 2)}</pre></details>`
+        ? `<details><summary style="cursor:pointer;font-size:11px;color:var(--primary)">诊断数据</summary><pre class="diag-pre">${esc(JSON.stringify(r.diagnostics, null, 2))}</pre></details>`
         : '';
-      return `<tr><td>${fmtTs(r.ts)}</td><td><span class="fb-badge">${r.feedbackType}</span></td><td>${r.deviceHint}</td><td>${r.appVersion}</td>` +
-        `<td style="max-width:280px;white-space:pre-wrap;word-break:break-word">${r.content || ''}${diagHtml}</td></tr>`;
+      return `<tr><td>${esc(fmtTs(r.ts))}</td><td><span class="fb-badge">${esc(r.feedbackType)}</span></td><td>${esc(r.deviceHint)}</td><td>${esc(r.appVersion)}</td>` +
+        `<td style="max-width:280px;white-space:pre-wrap;word-break:break-word">${esc(r.content || '')}${diagHtml}</td></tr>`;
     }).join('');
     const kwRows = (data.keywords || []).slice(0, 15).map(k =>
-      `<tr><td>${k.term}</td><td>${k.count}</td></tr>`
+      `<tr><td>${esc(k.term)}</td><td>${k.count}</td></tr>`
     ).join('');
     body.innerHTML =
       `<div class="trend-section"><h3>反馈列表（最近 50 条）</h3>` +
@@ -595,7 +604,7 @@ function renderTrend(quadrant, data) {
       `<tbody>${kwRows || '<tr><td colspan="2">无</td></tr>'}</tbody></table></div>`;
   } else if (quadrant === 'content') {
     const dkRows = (data.fullDeckTable || []).slice(0, 30).map(r =>
-      `<tr><td title="${r.deckKey}">${r.name}</td><td>${r.type}</td><td>${r.trials}</td><td>${r.users}</td><td>${r.ownerHint}</td><td>${r.createdAt ? r.createdAt.slice(0, 10) : ''}</td></tr>`
+      `<tr><td title="${esc(r.deckKey)}">${esc(r.name)}</td><td>${esc(r.type)}</td><td>${r.trials}</td><td>${r.users}</td><td>${esc(r.ownerHint)}</td><td>${r.createdAt ? esc(r.createdAt.slice(0, 10)) : ''}</td></tr>`
     ).join('');
     body.innerHTML =
       `<div class="trend-section"><h3>牌组使用排行（前 30）</h3>` +
