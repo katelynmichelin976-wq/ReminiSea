@@ -79,7 +79,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Version & Navigation
 
-**当前版本：v5.13.15**（`index.html`，线上版）。**完整变更日志见 `docs/yihai_变更记录_CLAUDE参考.md`——本文件不再记录版本变更**。
+**当前版本：v5.13.16**（`index.html`，线上版）。**完整变更日志见 `docs/yihai_变更记录_CLAUDE参考.md`——本文件不再记录版本变更**。
 
 **导航结构（v5.10+）：**
 - `screen-home`：首页（默认），底部 `.home-tabbar`

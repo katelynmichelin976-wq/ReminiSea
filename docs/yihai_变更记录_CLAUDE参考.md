@@ -2,6 +2,32 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.16 — 诊断日志按模块配额选取（voice 降采样）
+
+### 动机
+
+妈妈练习后反馈携带的 `local_log` 共 193 条、几乎全是 `voice` 模块的 TTS 链事件（每答一张卡发 ~10-13 条：`slot_tts`/`tts_speak`/`tts_onend`/`correct_click`/…）。`collectDiagnostics` 只带最近 500 条，voice 一多就把 `sync`/`srs` 等关键日志挤出反馈载荷，排查同步问题时反而看不到。
+
+### 改动
+
+- 新增纯函数 `selectDiagnosticLog(logs, opts)` 替换 `LOCAL_LOG.slice(-500)`：
+  - **warn/error 全保**（任何模块，不限量）——异常永不丢
+  - voice info 最近 `voiceMax`（默认 60）
+  - 其余 info 最近 `otherMax`（默认 240）
+  - 按时间戳升序归并
+- 只改 `collectDiagnostics` 一处 + 新增纯函数，**不碰 TTS 链热路径**（`log.info` 调用零改动）。
+
+### 未做（留待按需）
+
+第二层"发射端降冗余"（去 `tts_onend` / 合并 `slot_tts`+`tts_speak`）暂不做——`LOCAL_LOG` 2000 缓冲对日常 easy 局（15/19/23 卡）足够，且去 `tts_onend` 会损失 TTS 链时间线排查能力。
+
+### 测试
+
+- `tests/yihai_v5.18_diaglog_test.js`：7 断言（warn/error 全保、各类配额截断、voice 刷屏不挤掉非 voice、时序、默认值、空输入）
+- 回归：单元 706 + `_pw_ui_smoke`(68) + `_pw_srs_e2e`(21) + `_pw_feedback`(11) 全绿
+
+---
+
 ## v5.13.15 — 同意状态云同步 + 协议版本升级弹窗（P2 #1+#2+#3）
 
 ### 动机
