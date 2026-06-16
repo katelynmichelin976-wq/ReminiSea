@@ -229,8 +229,9 @@ let tStart;
     pass('增量: 首次同步成功', firstSyncErr === null);
 
     const remote1 = await run(pageA, async (key) => {
+      const sid = toServerDeckId(key, 'personal', _cloudUserId);
       const { data } = await _sb.from('deck_cards')
-        .select('card_id,updated_at').eq('deck_id', key).order('card_id');
+        .select('card_id,updated_at').eq('deck_id', sid).order('card_id');
       return data || [];
     }, incDeckKey);
     pass('增量: 云端有 3 张卡', remote1.length === 3);
@@ -249,8 +250,9 @@ let tStart;
     pass('增量: 第二次 syncDeck 成功', editErr === null);
 
     const remote2 = await run(pageA, async (key) => {
+      const sid = toServerDeckId(key, 'personal', _cloudUserId);
       const { data } = await _sb.from('deck_cards')
-        .select('card_id,name,updated_at').eq('deck_id', key).order('card_id');
+        .select('card_id,name,updated_at').eq('deck_id', sid).order('card_id');
       return data || [];
     }, incDeckKey);
     const c2New = remote2.find(r => r.card_id === 'c2') || {};
@@ -320,8 +322,9 @@ let tStart;
       pass('续传: resume 后完成', finished);
 
       const cloudCount = await run(pageA, async (key) => {
+        const sid = toServerDeckId(key, 'personal', _cloudUserId);
         const { count } = await _sb.from('deck_cards')
-          .select('card_id', { count: 'exact', head: true }).eq('deck_id', key);
+          .select('card_id', { count: 'exact', head: true }).eq('deck_id', sid);
         return count;
       }, pauseDeckKey);
       pass('续传: 云端最终有 250 张卡', cloudCount === 250);
@@ -540,8 +543,9 @@ let tStart;
     section('清理云端测试数据');
     await run(pageA, async (keys) => {
       for (const k of keys) {
-        try { await _sb.from('deck_cards').delete().eq('deck_id', k); } catch(e) {}
-        try { await _sb.from('decks').delete().eq('id', k); } catch(e) {}
+        const sid = toServerDeckId(k, 'personal', _cloudUserId);
+        try { await _sb.from('deck_cards').delete().eq('deck_id', sid); } catch(e) {}
+        try { await _sb.from('decks').delete().eq('id', sid); } catch(e) {}
       }
     }, [incDeckKey, pauseDeckKey, migDeckKey, mediaDeckKey]);
     pass('清理: 完成', true);
