@@ -5511,7 +5511,7 @@ async function restoreDecks() {
   // always inject built-in test deck
   DECKS[BUILTIN_KEY] = BUILTIN_DECK;
   if (!DECKS_META.find(m => m.key === BUILTIN_KEY)) {
-    DECKS_META.push({ key: BUILTIN_KEY, name: '测试牌组', builtin: true, source: 'builtin' });
+    DECKS_META.push({ key: BUILTIN_KEY, name: '示例·看图识物', builtin: true, source: 'builtin' });
   }
   // restore cloud practice days cache
   try {
@@ -7789,7 +7789,7 @@ const I18N = {
     // Deck
     deck_not_found: 'Deck not found',
     deck_no_selected: 'Please select a deck first',
-    deck_builtin_label: '── Test Deck (Read-only) ──',
+    deck_builtin_label: '── Sample Deck (Read-only) ──',
     deck_new_option: '+ New Deck...',
     // Toast
     toast_importing: 'Importing…',
@@ -8127,7 +8127,7 @@ const I18N = {
     // Deck
     deck_not_found: '牌组不存在',
     deck_no_selected: '请先选择一个牌组',
-    deck_builtin_label: '── 测试牌组（只读）──',
+    deck_builtin_label: '── 示例牌组（只读）──',
     deck_new_option: '＋ 新建牌组…',
     // Toast
     toast_importing: '正在导入…',
@@ -8466,7 +8466,7 @@ const I18N = {
     media_clean_done: '已清理 {count} 個孤立檔案',
     deck_not_found: '牌組不存在',
     deck_no_selected: '請先選擇一個牌組',
-    deck_builtin_label: '── 測試牌組（唯讀）──',
+    deck_builtin_label: '── 範例牌組（唯讀）──',
     deck_new_option: '＋ 新增牌組…',
     toast_importing: '正在匯入…',
     toast_deleting: '正在刪除…',
@@ -8792,7 +8792,7 @@ const I18N = {
     // Deck
     deck_not_found: 'Mazo no encontrado',
     deck_no_selected: 'Selecciona un mazo primero',
-    deck_builtin_label: '── Mazo de prueba (solo lectura) ──',
+    deck_builtin_label: '── Mazo de ejemplo (solo lectura) ──',
     deck_new_option: '+ Nuevo mazo...',
     // Toast
     toast_importing: 'Importando…',
@@ -9123,7 +9123,7 @@ const I18N = {
     // Deck
     deck_not_found: 'デッキが見つかりません',
     deck_no_selected: '先にデッキを選択してください',
-    deck_builtin_label: '── テストデッキ（読み取り専用）──',
+    deck_builtin_label: '── サンプルデッキ（読み取り専用）──',
     deck_new_option: '＋ 新規デッキ...',
     // Toast
     toast_importing: 'インポート中…',
