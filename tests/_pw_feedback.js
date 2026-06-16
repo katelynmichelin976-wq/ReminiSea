@@ -8,13 +8,14 @@
  * 11 断言
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 
 (async () => {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
 
   try {
     section('PHASE 1: 页面加载');
@@ -87,6 +88,7 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
   } finally {
     const { total, passed, failed } = getCounts();
     console.log(`\n结果：${passed}/${total} 通过，${failed} 失败`);
+    await stopAndCollectCoverage(page, '_pw_feedback');
     await browser.close();
     process.exit(failed > 0 ? 1 : 0);
   }

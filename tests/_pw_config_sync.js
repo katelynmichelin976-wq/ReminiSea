@@ -66,6 +66,7 @@ async function waitSyncDone(page, maxMs) {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page    = await browser.newPage({ viewport: { width: 390, height: 844 } });
   page.on('pageerror', e => console.log(`  [PAGE ERROR] ${e.message}`));
+  await helper.startCoverage(page);
 
   let ctxB, pageB;
 
@@ -273,6 +274,7 @@ async function waitSyncDone(page, maxMs) {
     const { passed, failed } = getCounts();
     section('结果');
     console.log(`  通过: ${passed}  失败: ${failed}`);
+    await helper.stopAndCollectCoverage(page, '_pw_config_sync');
     await browser.close();
     process.exit(failed > 0 ? 1 : 0);
   }

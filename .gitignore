@@ -39,3 +39,6 @@ tests/test_data/4000*.yhspack
 tests/test_data/家人.apkg
 tests/test_data/家人.yhspack
 tests/test_data/蔬菜水果本地版.yhspack
+
+# test coverage (一次性 baseline，不入 git)
+coverage/

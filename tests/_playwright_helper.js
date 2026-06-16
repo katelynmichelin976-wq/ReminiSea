@@ -6,6 +6,9 @@
  */
 const fs = require('fs'), path = require('path');
 
+const COVERAGE_ENABLED = !!process.env.YIHAI_COVERAGE;
+const COVERAGE_RAW_DIR = path.join(__dirname, '..', 'coverage', 'raw');
+
 // ── 测试 URL ──
 // 优先读 TEST_URL 环境变量；否则自动扫描根目录找最新 yihai_v*.html（按版本号排序）
 function getBaseUrl() {
@@ -147,6 +150,40 @@ async function navigateTo(page, screenId) {
   await wait(page, 400);
 }
 
+async function startCoverage(page) {
+  if (!COVERAGE_ENABLED) return;
+  await page.coverage.startJSCoverage({
+    reportAnonymousScripts: true,
+    resetOnNavigation: false,
+  });
+}
+
+async function stopAndCollectCoverage(page, suiteName) {
+  if (!COVERAGE_ENABLED) return;
+  let coverage;
+  try {
+    coverage = await page.coverage.stopJSCoverage();
+  } catch (e) {
+    console.warn(`[coverage] stop failed for ${suiteName}: ${e.message}`);
+    return;
+  }
+  const filtered = coverage
+    .filter(entry => {
+      if (!entry.url) return false;
+      if (entry.url.includes('/index.html')) return true;
+      if (entry.url.includes('localhost:8080') && /\.js(\?|$)/.test(entry.url)) return true;
+      return false;
+    })
+    .map(entry => ({ ...entry, url: entry.url.split('?')[0] }));
+  try {
+    fs.mkdirSync(COVERAGE_RAW_DIR, { recursive: true });
+    const outPath = path.join(COVERAGE_RAW_DIR, `${suiteName}.json`);
+    fs.writeFileSync(outPath, JSON.stringify(filtered, null, 2));
+  } catch (e) {
+    console.warn(`[coverage] write failed for ${suiteName}: ${e.message}`);
+  }
+}
+
 module.exports = {
   resetCounters, pass, check, section, wait, run, getCounts,
   getBaseUrl,
@@ -154,4 +191,5 @@ module.exports = {
   openSettingsTab, closeSettings,
   cloudLogin, cloudLogout, waitSyncModal,
   getDeckOverviewStats,
+  startCoverage, stopAndCollectCoverage,
 };

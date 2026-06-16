@@ -134,6 +134,20 @@ $env:TEST_PASSWORD="xxx"; node tests/_pw_easy_sync.js
 - **跨设备/同步改动** → 加跑 `_pw_cross_device.js`
 - **全量回归** → 仅用户明确要求时跑全部 Playwright
 
+**测试覆盖率：**
+
+baseline 已采集（参 `docs/superpowers/specs/2026-06-16-test-coverage-baseline-design.md` §12）。跑法：
+
+```powershell
+$env:YIHAI_COVERAGE = "1"
+$env:TEST_PASSWORD = "667788"
+node scripts/run-all-pw.js
+node scripts/build-coverage-report.js
+start coverage/index.html
+```
+
+`YIHAI_COVERAGE` 不设时 helper noop，平时测试无开销。报告输出到 `coverage/` 不入 git。
+
 ## SRS Architecture
 
 `processAnswer` 实现 SM-2 变体，三阶段：`learning` → `review` ← `relearning`。完整状态机见 `docs/srs_design_v6.9.md`。

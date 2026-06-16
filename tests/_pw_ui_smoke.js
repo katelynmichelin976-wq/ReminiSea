@@ -8,13 +8,14 @@
  * 68 断言
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 
 (async () => {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
 
   try {
     // ════ PHASE 1: 页面加载 ════
@@ -281,6 +282,7 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     const { passed, failed } = getCounts();
     section('结果');
     console.log(`  通过: ${passed}  失败: ${failed}`);
+    await stopAndCollectCoverage(page, '_pw_ui_smoke');
     await browser.close();
     process.exit(failed > 0 ? 1 : 0);
   }

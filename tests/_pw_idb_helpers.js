@@ -9,13 +9,14 @@
  *       idbTx 批量事务原子性
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const URL = getBaseUrl() + '?v=' + Date.now();
 
 (async () => {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
 
   try {
     await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
@@ -127,6 +128,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     });
 
   } finally {
+    await stopAndCollectCoverage(page, '_pw_idb_helpers');
     await browser.close();
   }
 

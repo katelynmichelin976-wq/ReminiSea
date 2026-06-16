@@ -7,7 +7,7 @@
  * 覆盖：window.error / unhandledrejection 自动写入 appEvents 表 + session 级去重
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const URL = getBaseUrl() + '?v=' + Date.now();
 
@@ -21,6 +21,7 @@ async function getJsErrorEvents(page) {
 (async () => {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
 
   try {
     await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
@@ -83,6 +84,7 @@ async function getJsErrorEvents(page) {
     });
 
   } finally {
+    await stopAndCollectCoverage(page, '_pw_js_error_report');
     await browser.close();
   }
 

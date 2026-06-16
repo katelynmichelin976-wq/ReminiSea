@@ -5,7 +5,7 @@
  * 不发真实邮件：mock _sb.auth.* 调用
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 
@@ -33,6 +33,7 @@ async function installAuthMock(page, scen) {
 (async () => {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
   page.on('pageerror', err => console.log(`  [PAGE ERROR] ${err.message}`));
 
   try {
@@ -149,6 +150,7 @@ async function installAuthMock(page, scen) {
     console.log('  结果');
     console.log('═'.repeat(60));
     console.log(`  通过: ${counts.passed}  失败: ${counts.failed}`);
+    await stopAndCollectCoverage(page, '_pw_user_mgmt');
     await browser.close();
     process.exit(counts.failed > 0 ? 1 : 0);
   }

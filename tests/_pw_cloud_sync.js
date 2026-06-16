@@ -46,6 +46,7 @@ async function waitDeckInMeta(page, deckName, maxMs) {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   page.on('pageerror', err => console.log(`  [PAGE ERROR] ${err.message}`));
+  await helper.startCoverage(page);
 
   try {
     // ════ PHASE 1: 清空存储 ════
@@ -345,6 +346,7 @@ async function waitDeckInMeta(page, deckName, maxMs) {
     const { passed, failed } = getCounts();
     section('结果');
     console.log(`  通过: ${passed}  失败: ${failed}`);
+    await helper.stopAndCollectCoverage(page, '_pw_cloud_sync');
     await browser.close();
     process.exit(failed > 0 ? 1 : 0);
   }

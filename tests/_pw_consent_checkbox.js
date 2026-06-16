@@ -8,13 +8,14 @@
  *       checkbox 链接 target/_blank + href 正确；i18n 切换；提交后 LS 落地。
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const URL = getBaseUrl() + '?v=' + Date.now();
 
 (async () => {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
 
   try {
     await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
@@ -117,6 +118,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     pass('LS yh:v1:user:consentVersion == v1', consentVer === 'v1');
 
   } finally {
+    await stopAndCollectCoverage(page, '_pw_consent_checkbox');
     await browser.close();
   }
 

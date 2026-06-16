@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
 const JSZip = require('jszip');
 const fs = require('fs');
 const path = require('path');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 const YHPACK_PATH = path.join(__dirname, 'test_data', '_easy_test.yhspack');
@@ -124,6 +124,7 @@ async function runEasySessionFirstWrong(page, expectedSize) {
 
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
   page.on('pageerror', err => console.log(`  [PAGE ERROR] ${err.message}`));
 
   try {
@@ -389,6 +390,7 @@ async function runEasySessionFirstWrong(page, expectedSize) {
     console.log('  结果');
     console.log('═'.repeat(60));
     console.log(`  通过: ${counts.passed}  失败: ${counts.failed}`);
+    await stopAndCollectCoverage(page, '_pw_easy');
     await browser.close();
     process.exit(counts.failed > 0 ? 1 : 0);
   }

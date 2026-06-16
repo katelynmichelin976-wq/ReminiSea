@@ -8,7 +8,7 @@
  *       es/ja 回落到英文版；showConsentUpgradeDialog 内链接随 locale。
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const URL = getBaseUrl() + '?v=' + Date.now();
 
@@ -28,6 +28,7 @@ async function getLoginTermsHref(page) {
 (async () => {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
 
   try {
     await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
@@ -100,6 +101,7 @@ async function getLoginTermsHref(page) {
     await wait(page, 300);
 
   } finally {
+    await stopAndCollectCoverage(page, '_pw_consent_lang_url');
     await browser.close();
   }
 

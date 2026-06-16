@@ -256,3 +256,65 @@ start coverage/index.html  # 默认浏览器打开
 - 代码：`scripts/build-coverage-report.js` / `scripts/run-all-pw.js` / `_playwright_helper.js` 改动 / 20 套件改动 / `package.json` dep
 - 数据：`coverage/raw/*.json`（不入 git）/ `coverage/html/index.html`（不入 git）/ `coverage/lcov.info`（不入 git）
 - 文档：本 spec 末尾 append 「baseline 数据」章节
+
+---
+
+## 12. Baseline 数据
+
+**采集日期**：2026-06-16
+**APP_VERSION 时点**：v5.13.17
+**Playwright 套件**：15 / 23（已改造，余 8 个复杂模式套件未改）
+**总耗时**：~5.5 分钟（含 cloud_sync 70s + config_sync 36s 两个登录套件）
+
+### 总体覆盖率（15 套件 baseline）
+
+| 维度 | % | 数字 |
+|---|---|---|
+| Bytes | 60.14% | 258,373 / 429,624 |
+| Statements | **48.48%** | 3,118 / 6,431 |
+| Branches | 34.15% | 1,399 / 4,097 |
+| Functions | 46.51% | 466 / 1,002 |
+| Lines | **56.10%** | 5,072 / 9,041 |
+
+### 已覆盖套件清单
+
+无登录（11）：`_pw_ui_smoke` `_pw_srs_e2e` `_pw_consent_lang_url` `_pw_consent_checkbox` `_pw_easy` `_pw_featured_tab` `_pw_feedback` `_pw_flip_card` `_pw_idb_helpers` `_pw_idb_migration` `_pw_idb_resilience` `_pw_js_error_report` `_pw_user_mgmt`
+
+需登录（2）：`_pw_cloud_sync` `_pw_config_sync`
+
+### 未改造套件（8 个，需后续手工）
+
+| 套件 | 模式 | 触及代码区域 |
+|---|---|---|
+| `_pw_cross_device` | 双 ctxA/ctxB + pageA/pageB | 跨设备同步、增量上传、暂停续传、水位迁移 |
+| `_pw_easy_sync` | 双 page | Easy 模式跨设备 EasyState 传播 |
+| `_pw_media_upload` | 双 page | 个人牌组媒体上传、Storage 路径 |
+| `_pw_sync_scenarios` | 双 page | 同步场景综合 |
+| `_pw_consent_sync` | 6 嵌套 newPage/close | consent push/pull 跨设备 |
+| `_pw_session_restore` | 循环 ctx newPage/close | SDK 失败 / token 失效 / backup 损坏路径 |
+| `_pw_orientation_lock` | 循环 page | iPad 横竖屏 overlay |
+| `_pw_sync_guard` | 双 page2 | runSync 30s watchdog |
+| `_pw_deck_id_salt` | 单 ctx page | v5.17 个人牌组 id 加盐边界 |
+| `_pw_deck_mgmt` | 单 ctx page | 牌组管理页 |
+| `_pw_media_recovery` | 单 ctx page | 媒体 upsert 失败回滚 + crash 恢复 |
+
+实际是 11 个未改（plan 估 17 个但实际 23 套件减 15 = 8，加上初步漏算 3 个 = 11）。补全后预期 baseline 涨到 ~60-65%。
+
+### 主要未覆盖区域（待补全后定位）
+
+15 套件 baseline 中 Branches 34% 偏低，说明很多 `if/else` 分支只走了 truthy 路径。补全 8 个复杂套件应该能显著提升 branches。
+
+具体未覆盖函数 / 行号清单：见 `coverage/index.html` HTML 报告（不入 git）。
+
+### 关键发现
+
+1. **URL 规范化必须**：V8 V8 coverage 把 `index.html?v=1` 和 `index.html?v=2` 视为独立 entry，monocart 不 dedup。helper.js 写 raw 前 `.split('?')[0]` 修复后 baseline 数字才正确（修复前显示 17% statements 而实际是 48%）。
+2. **monocart 配合 inline `<script>` in HTML**：原生支持，行号正确映射到 HTML 原始位置。spec §8 列出的「monocart 对 inline `<script>` 支持需实测」风险已验证通过。
+3. **单元套件不贡献覆盖**：本次 baseline 仅来自 Playwright；单元从 index.html eval 函数路径 V8 不归属 index.html，故 0% 贡献。
+
+### 后续 TODO
+
+- [ ] 补 11 个复杂模式套件改造（手工 ~30 min）
+- [ ] 全量 baseline 后重新生成 spec §12 数字
+- [ ] 分析 Functions 53.5% 未覆盖的 535 个函数清单（HTML 报告 → grep）
+- [ ] 决定是否补测试 / 是否设 CI 门槛（推 P3）

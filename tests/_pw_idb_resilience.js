@@ -7,13 +7,14 @@
  * 覆盖：mock idbPut 抛错时，5 个写入函数仍 resolve + log.error/logAppEvent 被写
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const URL = getBaseUrl() + '?v=' + Date.now();
 
 (async () => {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
 
   try {
     await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
@@ -95,6 +96,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     await run(page, () => { window.idbPut = window._origIdbPut; });
 
   } finally {
+    await stopAndCollectCoverage(page, '_pw_idb_resilience');
     await browser.close();
   }
 

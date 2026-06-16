@@ -7,7 +7,7 @@
  * 覆盖：精选 tab 列表渲染、登录占位、未登录占位、同步按钮不再下载 preset
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl, cloudLogin } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, cloudLogin, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const URL = getBaseUrl() + '?v=' + Date.now();
 const TEST_EMAIL = 'zyhaff@gmail.com';
@@ -20,6 +20,7 @@ const TEST_PASSWORD = process.env.TEST_PASSWORD;
   }
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
 
   try {
     await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
@@ -92,6 +93,7 @@ const TEST_PASSWORD = process.env.TEST_PASSWORD;
     pass('runSync(modal: true)', lastOpts && lastOpts.modal === true);
 
   } finally {
+    await stopAndCollectCoverage(page, '_pw_featured_tab');
     await browser.close();
   }
 

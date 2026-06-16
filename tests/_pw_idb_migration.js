@@ -10,7 +10,7 @@
  *   - 验证老 store 已删，新 store 已建，schema version 已 bump
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const URL = getBaseUrl() + '?v=' + Date.now();
 
@@ -64,6 +64,7 @@ async function seedOldSchema(page) {
 (async () => {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
 
   try {
     // ════ PHASE 1: 清空 IDB ════
@@ -162,6 +163,7 @@ async function seedOldSchema(page) {
     await run(page, async () => { await idbDelete('appEvents', 'mig_p2_evt_1'); });
 
   } finally {
+    await stopAndCollectCoverage(page, '_pw_idb_migration');
     await browser.close();
   }
 

@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
 const JSZip = require('jszip');
 const fs = require('fs');
 const path = require('path');
-const { pass, check, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, check, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage } = require('./_playwright_helper');
 
 const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 const YHPACK_PATH = path.join(__dirname, 'test_data', '_flip_card_test.yhspack');
@@ -62,6 +62,7 @@ async function createFlipYhspack() {
 
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await startCoverage(page);
   page.on('pageerror', err => console.log(`  [PAGE ERROR] ${err.message}`));
   page.on('console', msg => {
     if (msg.type() === 'warn' || msg.text().startsWith('[srs]')) {
@@ -222,6 +223,7 @@ async function createFlipYhspack() {
     const { passed, failed } = getCounts();
     section('结果');
     console.log(`  通过: ${passed}  失败: ${failed}`);
+    await stopAndCollectCoverage(page, '_pw_flip_card');
     await browser.close();
     process.exit(failed > 0 ? 1 : 0);
   }
