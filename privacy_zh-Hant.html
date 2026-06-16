@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>隱私政策 - 憶海拾光</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;line-height:1.7;color:#1a2a3a;background:#f5f7fa;padding:24px 16px;max-width:760px;margin:0 auto}
+  h1{font-size:28px;font-weight:700;margin-bottom:8px;color:#0e6585}
+  .meta{color:#64748b;font-size:13px;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+  h2{font-size:20px;font-weight:700;margin:28px 0 12px;color:#1a3a5c}
+  h3{font-size:16px;font-weight:600;margin:16px 0 8px;color:#334155}
+  p{margin-bottom:12px;color:#334155}
+  ul,ol{margin:8px 0 12px 24px;color:#334155}
+  li{margin-bottom:6px}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+  th,td{padding:8px 12px;border:1px solid #cbd5e1;text-align:left;vertical-align:top}
+  th{background:#e0f2fe;color:#0e6585;font-weight:600}
+  a{color:#0ea5e9;text-decoration:none}
+  a:hover{text-decoration:underline}
+  strong{color:#0e6585}
+  .back-link{display:inline-block;margin-top:32px;padding:8px 16px;background:#0ea5e9;color:#fff;border-radius:6px}
+  @media (max-width:640px){body{padding:16px 12px}h1{font-size:24px}h2{font-size:18px}}
+</style>
+</head>
+<body>
+<nav class="lang-nav" style="margin-bottom:18px;padding:8px 0;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b">
+  <a href="privacy.html" style="color:#0ea5e9;text-decoration:none">简体中文</a>
+  · <a href="privacy_en.html" style="color:#0ea5e9;text-decoration:none">English</a>
+  · <strong style="color:#0e6585">繁體中文</strong>
+</nav>
+
+<h1>憶海拾光 - 隱私政策</h1>
+<div class="meta">
+  <strong>生效日期：</strong>2026-06-15<br>
+  <strong>版本：</strong>v1.0
+</div>
+
+<h2>一、控制者資訊</h2>
+<p>「憶海拾光」（以下簡稱「本應用」或「我們」）由個人開發者<strong>[開發者姓名待填]</strong>開發並營運。</p>
+<p>聯絡郵箱：<a href="mailto:zyhaff@gmail.com">zyhaff@gmail.com</a></p>
+
+<h2>二、我們收集的資訊</h2>
+<p>為提供訓練記憶與學習卡片服務，我們收集以下資訊：</p>
+
+<h3>1. 帳號資訊</h3>
+<ul>
+  <li>註冊郵箱</li>
+  <li>加密密碼（僅雜湊儲存於 Supabase Auth，我們無法檢視明文）</li>
+</ul>
+
+<h3>2. 學習資料</h3>
+<ul>
+  <li>您建立/匯入的牌組資料（卡片名稱、圖片、音訊）</li>
+  <li>答題紀錄（時間、正確率、SRS 狀態）</li>
+  <li>練習設定（語言、模式、提示偏好）</li>
+</ul>
+
+<h3>3. 裝置資訊</h3>
+<ul>
+  <li>裝置唯一識別碼（device_id，本機產生）</li>
+  <li>作業系統、瀏覽器類型、螢幕解析度（用於診斷與適配）</li>
+  <li>IP 位址（由 Supabase 後端紀錄，用於安全稽核與配額管理）</li>
+</ul>
+
+<h3>4. 應用程式事件紀錄</h3>
+<ul>
+  <li>業務里程碑事件（登入、同步、錯誤等）</li>
+  <li>JS 例外回報（崩潰資訊，用於排查 bug）</li>
+</ul>
+
+<h3>5. 您主動提交的意見回饋</h3>
+<ul>
+  <li>文字回饋內容、附帶的診斷資訊</li>
+</ul>
+
+<h3>我們不收集：</h3>
+<ul>
+  <li>位置資訊、通訊錄、相機/麥克風（除您主動錄製語音外）、瀏覽歷史</li>
+</ul>
+
+<h2>三、資訊用途</h2>
+<p>僅用於：</p>
+<ol>
+  <li>提供並改進訓練服務</li>
+  <li>跨裝置同步學習進度</li>
+  <li>安全稽核與防作弊</li>
+  <li>修復缺陷（崩潰報告 / 同步異常）</li>
+  <li>在您提交回饋時進行答覆</li>
+</ol>
+<p>我們<strong>不會</strong>：</p>
+<ul>
+  <li>用於廣告投放</li>
+  <li>出售給第三方</li>
+  <li>分享給與服務無關的第三方</li>
+</ul>
+
+<h2>四、第三方服務</h2>
+<table>
+<tr><th>服務</th><th>用途</th><th>資料範圍</th></tr>
+<tr><td>Supabase（Supabase Inc.，美國/新加坡）</td><td>資料庫、身分認證、檔案儲存</td><td>全部帳號與學習資料</td></tr>
+<tr><td>GitHub Pages（GitHub Inc.，美國）</td><td>靜態資源託管</td><td>不儲存使用者資料，僅頁面存取紀錄</td></tr>
+</table>
+<p>第三方均與我們簽訂有資料處理義務，並遵守各自隱私政策：</p>
+<ul>
+  <li><a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase Privacy Policy</a></li>
+  <li><a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">GitHub Privacy Statement</a></li>
+</ul>
+
+<h2>五、資料儲存位置（事實揭露）</h2>
+<p>我們使用 Supabase Inc.（美國註冊公司）提供的雲端服務，資料庫位於<strong>新加坡（ap-southeast-1）</strong>，檔案儲存在同一區域。我們對此區域的選擇基於服務可用性、延遲與成本考量，並非針對任何特定地區使用者。</p>
+<p>本服務面向<strong>全球華人社群</strong>，主要受眾為海外使用者，未在中國大陸開展主動推廣或營運。如您是中國大陸居民並自願使用本服務，您同意您的資料將儲存於上述境外位置。</p>
+
+<h2>六、資料保留期限</h2>
+<ul>
+  <li><strong>活躍帳號</strong>：服務期間持續保留</li>
+  <li><strong>登出帳號</strong>：自您提交登出請求起 30 天內刪除（保留期用於撤銷請求與法定保留義務）</li>
+  <li><strong>崩潰報告/事件紀錄</strong>：90 天後自動清除</li>
+  <li><strong>回饋紀錄</strong>：3 年（用於追蹤問題改進）</li>
+</ul>
+
+<h2>七、您的權利（參考 CCPA / 通用隱私原則）</h2>
+<p>不論您所在地區，我們承諾以下權利：</p>
+<table>
+<tr><th>權利</th><th>行使方式</th></tr>
+<tr><td><strong>知悉</strong> 我們如何處理您的資訊</td><td>閱讀本政策</td></tr>
+<tr><td><strong>存取</strong> 您的資料</td><td>App 內「我的」→ 匯出資料 / 郵件 zyhaff@gmail.com</td></tr>
+<tr><td><strong>更正</strong> 不準確資訊</td><td>App 內編輯 / 郵件請求</td></tr>
+<tr><td><strong>刪除</strong> 您的資料</td><td>郵件 zyhaff@gmail.com，主旨「資料刪除請求」，30 天內執行</td></tr>
+<tr><td><strong>撤回同意 / 登出</strong> 帳號</td><td>郵件請求登出帳號</td></tr>
+<tr><td><strong>匯出</strong> 資料副本</td><td>郵件請求，10 個工作日內提供</td></tr>
+<tr><td><strong>不受歧視</strong> 行使上述權利後服務不降級</td><td>自動保障</td></tr>
+</table>
+<p>加州居民另享 CCPA 項下權利（不出售資料 / 不分享資料），由於本服務不出售或分享使用者個人資訊於第三方，CCPA "Do Not Sell" 權利對您自動適用。</p>
+
+<h2>八、Cookie 與本機儲存</h2>
+<p>我們使用瀏覽器 localStorage 與 IndexedDB 儲存：</p>
+<ul>
+  <li>您的登入權杖（用於自動登入）</li>
+  <li>牌組資料快取（用於離線練習）</li>
+  <li>應用程式設定</li>
+</ul>
+<p>不使用第三方 Cookie，不進行廣告追蹤。</p>
+
+<h2>九、安全措施</h2>
+<ul>
+  <li>密碼採用業界標準雜湊演算法（由 Supabase 實作）</li>
+  <li>資料傳輸使用 HTTPS/TLS 1.2+</li>
+  <li>資料庫存取受 Supabase RLS 策略限制（僅您本人可存取您的資料）</li>
+  <li>應用程式層例外自動回報便於安全監控</li>
+</ul>
+<p>我們盡力保障資料安全，但無法保證絕對安全。如發生資料外洩，我們將於發現後 72 小時內通知受影響使用者。</p>
+
+<h2>十、未成年人保護（COPPA）</h2>
+<p>本應用<strong>不針對未滿 13 周歲的兒童</strong>（COPPA 閾值）。如您未滿 13 周歲，請勿使用本應用。如我們發現已收集了未滿 13 周歲兒童的資訊，將立即刪除。</p>
+<p>家長如發現孩子誤用了本應用，可透過 <a href="mailto:zyhaff@gmail.com">zyhaff@gmail.com</a> 聯絡我們刪除相關資料。</p>
+
+<h2>十一、政策更新</h2>
+<p>本政策可能隨服務功能調整或法律變更而修訂。重大變更我們將透過以下方式通知：</p>
+<ul>
+  <li>App 內顯著位置公告</li>
+  <li>您註冊郵箱的電子郵件</li>
+</ul>
+<p>如您不同意更新後的政策，請停止使用本應用。</p>
+
+<h2>十二、聯絡方式</h2>
+<p>如有隱私相關問題或請求，請聯絡：</p>
+<ul>
+  <li>郵箱：<a href="mailto:zyhaff@gmail.com">zyhaff@gmail.com</a></li>
+  <li>我們將在 15 個工作日內回覆</li>
+</ul>
+
+<h2>十三、適用法律</h2>
+<p>本政策適用<strong>美國加利福尼亞州法律</strong>，與所有聯邦法律及 Apple App Store 平台規則一致。涉及任何爭議，依美國加州法律解釋與解決。</p>
+
+<a class="back-link" href="./">← 返回應用</a>
+</body>
+</html>

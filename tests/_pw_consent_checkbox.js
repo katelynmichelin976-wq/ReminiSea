@@ -50,11 +50,13 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     pass('取消勾选后登录按钮 redisabled', loginBtnRedisabled === true);
 
     section('PHASE 3: 链接属性');
+    await run(page, () => setLocale('zh-CN'));
+    await wait(page, 200);
     const privacyHref = await run(page, () => {
       const a = document.querySelector('label.account-consent-row a[data-i18n="consent_privacy"]');
       return a ? a.href : null;
     });
-    pass('隐私政策链接 href 正确', privacyHref && privacyHref.endsWith('/privacy.html'));
+    pass('隐私政策链接 href 正确（zh-CN）', privacyHref && privacyHref.endsWith('/privacy.html'));
 
     const privacyTarget = await run(page, () => {
       const a = document.querySelector('label.account-consent-row a[data-i18n="consent_privacy"]');
@@ -66,7 +68,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
       const a = document.querySelector('label.account-consent-row a[data-i18n="consent_terms"]');
       return a ? a.href : null;
     });
-    pass('用户协议链接 href 正确', termsHref && termsHref.endsWith('/terms.html'));
+    pass('用户协议链接 href 正确（zh-CN）', termsHref && termsHref.endsWith('/terms.html'));
 
     section('PHASE 4: i18n 切换');
     await run(page, () => setLocale('en'));

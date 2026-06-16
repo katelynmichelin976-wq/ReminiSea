@@ -52,6 +52,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_pw_feedback.js` | 意见反馈模块（11 断言） |
 | `tests/_pw_consent_checkbox.js` | 隐私同意 checkbox（登录/注册 form 强制勾选 + LS 落地 + i18n + 链接，14 断言，无需登录） |
 | `tests/_pw_consent_sync.js` | 同意状态云同步 + 协议版本升级弹窗（push/pull/接受/拒绝 6 phase，13 断言，需登录） |
+| `tests/_pw_consent_lang_url.js` | PP/ToS 链接 i18n 路由（zh-CN/en/zh-Hant/es-fallback/ja-fallback + dialog 内链接随 locale，13 断言，无需登录） |
 | `tests/_pw_config_sync.js` | 语音参数云同步（~23 断言，需登录） |
 | `tests/_pw_deck_mgmt.js` | 牌组管理页冒烟（Tab Bar/导航/段选/列表，15 断言） |
 | `tests/_pw_featured_tab.js` | 精选 tab 列表 + 同步按钮去耦合（doAccountSync runSync 不再传 decks:true，~10 断言，需登录） |

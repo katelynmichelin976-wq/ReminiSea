@@ -2120,7 +2120,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
       <input class="account-field" type="password" id="reg-pwd2" data-i18n-placeholder="reg_pwd_confirm_ph" placeholder="确认密码" autocomplete="new-password">
       <label class="account-consent-row" style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#475569;margin:10px 0;line-height:1.5;cursor:pointer;-webkit-user-select:none;user-select:none">
         <input type="checkbox" id="consent-register" onchange="_updateRegisterConsent()" style="margin-top:3px;flex-shrink:0;cursor:pointer">
-        <span><span data-i18n="consent_label">我已阅读并同意</span> <a href="https://katelynmichelin976-wq.github.io/ReminiSea/privacy.html" target="_blank" rel="noopener" data-i18n="consent_privacy" style="color:#0ea5e9;text-decoration:none">《隐私政策》</a> <span data-i18n="consent_and">和</span> <a href="https://katelynmichelin976-wq.github.io/ReminiSea/terms.html" target="_blank" rel="noopener" data-i18n="consent_terms" style="color:#0ea5e9;text-decoration:none">《用户协议》</a></span>
+        <span><span data-i18n="consent_label">我已阅读并同意</span> <a id="consent-register-privacy-a" href="https://katelynmichelin976-wq.github.io/ReminiSea/privacy.html" target="_blank" rel="noopener" data-i18n="consent_privacy" style="color:#0ea5e9;text-decoration:none">《隐私政策》</a> <span data-i18n="consent_and">和</span> <a id="consent-register-terms-a" href="https://katelynmichelin976-wq.github.io/ReminiSea/terms.html" target="_blank" rel="noopener" data-i18n="consent_terms" style="color:#0ea5e9;text-decoration:none">《用户协议》</a></span>
       </label>
       <button class="account-btn account-btn-primary" id="reg-submit-btn" onclick="doRegister()" data-i18n="reg_btn" style="margin-top:14px">注册</button>
       <div class="account-msg" id="reg-msg" style="display:none;margin-top:10px"></div>
@@ -2443,7 +2443,7 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
         <input class="account-field" type="password" id="account-password" data-i18n-placeholder="account_pwd_ph" placeholder="密码" autocomplete="current-password">
         <label class="account-consent-row" style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#475569;margin:8px 0;line-height:1.5;cursor:pointer;-webkit-user-select:none;user-select:none">
           <input type="checkbox" id="consent-login" onchange="_updateLoginConsent()" style="margin-top:3px;flex-shrink:0;cursor:pointer">
-          <span><span data-i18n="consent_label">我已阅读并同意</span> <a href="https://katelynmichelin976-wq.github.io/ReminiSea/privacy.html" target="_blank" rel="noopener" data-i18n="consent_privacy" style="color:#0ea5e9;text-decoration:none">《隐私政策》</a> <span data-i18n="consent_and">和</span> <a href="https://katelynmichelin976-wq.github.io/ReminiSea/terms.html" target="_blank" rel="noopener" data-i18n="consent_terms" style="color:#0ea5e9;text-decoration:none">《用户协议》</a></span>
+          <span><span data-i18n="consent_label">我已阅读并同意</span> <a id="consent-login-privacy-a" href="https://katelynmichelin976-wq.github.io/ReminiSea/privacy.html" target="_blank" rel="noopener" data-i18n="consent_privacy" style="color:#0ea5e9;text-decoration:none">《隐私政策》</a> <span data-i18n="consent_and">和</span> <a id="consent-login-terms-a" href="https://katelynmichelin976-wq.github.io/ReminiSea/terms.html" target="_blank" rel="noopener" data-i18n="consent_terms" style="color:#0ea5e9;text-decoration:none">《用户协议》</a></span>
         </label>
         <button class="account-btn account-btn-primary" id="account-login-btn" onclick="doAccountLogin()" data-i18n="account_login_btn">登 录</button>
         <div class="account-aux-links">
@@ -6448,6 +6448,33 @@ function _updateRegisterConsent() {
   var btn = document.getElementById('reg-submit-btn');
   if (cb && btn) btn.disabled = !cb.checked;
 }
+function _localizedUrl(filename) {
+  const base = 'https://katelynmichelin976-wq.github.io/ReminiSea/';
+  const locale = (typeof getLocale === 'function') ? getLocale() : 'zh-CN';
+  if (locale === 'en' || locale === 'es' || locale === 'ja') {
+    return base + filename.replace('.html', '_en.html');
+  }
+  if (locale === 'zh-Hant') {
+    return base + filename.replace('.html', '_zh-Hant.html');
+  }
+  return base + filename;
+}
+function getPrivacyUrl() { return _localizedUrl('privacy.html'); }
+function getTermsUrl()   { return _localizedUrl('terms.html'); }
+
+function _refreshConsentLinks() {
+  const ids = {
+    'consent-login-privacy-a':    getPrivacyUrl,
+    'consent-login-terms-a':      getTermsUrl,
+    'consent-register-privacy-a': getPrivacyUrl,
+    'consent-register-terms-a':   getTermsUrl,
+  };
+  for (const id in ids) {
+    const a = document.getElementById(id);
+    if (a) a.href = ids[id]();
+  }
+}
+
 function _writeConsentLs() {
   try {
     lsSet('yh:v1:user:consentAt', new Date().toISOString());
@@ -6469,9 +6496,8 @@ async function checkConsentUpgrade() {
 }
 
 async function showConsentUpgradeDialog() {
-  const baseUrl = 'https://katelynmichelin976-wq.github.io/ReminiSea/';
-  const privacyLink = `<a href="${baseUrl}privacy.html" target="_blank" rel="noopener" style="color:#0ea5e9;text-decoration:none">${esc(t('consent_privacy'))}</a>`;
-  const termsLink   = `<a href="${baseUrl}terms.html" target="_blank" rel="noopener" style="color:#0ea5e9;text-decoration:none">${esc(t('consent_terms'))}</a>`;
+  const privacyLink = `<a href="${getPrivacyUrl()}" target="_blank" rel="noopener" style="color:#0ea5e9;text-decoration:none">${esc(t('consent_privacy'))}</a>`;
+  const termsLink   = `<a href="${getTermsUrl()}" target="_blank" rel="noopener" style="color:#0ea5e9;text-decoration:none">${esc(t('consent_terms'))}</a>`;
   const body = `
     <div style="font-weight:600;font-size:16px;margin-bottom:8px;color:#0e6585">${esc(t('consent_upgrade_title'))}</div>
     <div style="margin-bottom:8px">${esc(t('consent_upgrade_msg'))}</div>
@@ -9233,6 +9259,7 @@ function setLocale(loc) {
   PHRASE_SELECT   = getVoiceField('phraseQuizPrompt') || t('quiz_select_hint');
   PHRASE_OPT_HINT = getVoiceField('phraseOptHint')    || t('default_opt_hint');
   if (typeof _updateSettingsLangVal === 'function') _updateSettingsLangVal();
+  if (typeof _refreshConsentLinks === 'function') _refreshConsentLinks();
 }
 
 // ── Language Picker ────────────────────────────────────────────
@@ -12098,6 +12125,9 @@ function showAbout() {
     var regBtn = document.getElementById('reg-submit-btn');
     if (loginBtn) loginBtn.disabled = true;
     if (regBtn) regBtn.disabled = true;
+  }, 0);
+  setTimeout(function() {
+    if (typeof _refreshConsentLinks === 'function') _refreshConsentLinks();
   }, 0);
   setTimeout(function() {
     if (lsGet('yh:v1:user:consentVersion')) {
