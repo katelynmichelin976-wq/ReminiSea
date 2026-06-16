@@ -3372,6 +3372,7 @@ function getCurrentUserId() {
 const SUPABASE_URL = 'https://juzkonrzfyvchqxzmlpr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_gKEnRcaiEI9eP00jJivbOA_xQ2Z1cCD';
 const APP_VERSION = '5.13.14';
+const CONSENT_PROTOCOL_VERSION = 'v1';
 document.title = '忆海拾光 v' + APP_VERSION;
 document.getElementById('home-version').textContent = 'v' + APP_VERSION;
 
@@ -3750,6 +3751,24 @@ async function syncPendingData(deckKey) {
 // ── config cloud sync (v4.8) ────────────────────────────────────
 // collect all SRS + UI params as JSON, upsert to cloud
 // pull cloud config first, then merge local changes (avoid overwriting cross-device config)
+function _compareConsentVersion(a, b) {
+  const na = (a && /^v\d+/.test(a)) ? parseInt(a.slice(1), 10) : 0;
+  const nb = (b && /^v\d+/.test(b)) ? parseInt(b.slice(1), 10) : 0;
+  return na - nb;
+}
+
+function _mergeConsent(local, cloud) {
+  if (!local && !cloud) return null;
+  if (!local) return cloud;
+  if (!cloud) return local;
+  const vcmp = _compareConsentVersion(local.version, cloud.version);
+  if (vcmp > 0) return local;
+  if (vcmp < 0) return cloud;
+  const tl = Date.parse(local.at) || 0;
+  const tc = Date.parse(cloud.at) || 0;
+  return tl >= tc ? local : cloud;
+}
+
 async function cloudPushConfig() {
   if (!_syncEnabled || !_sb) return;
   try {
@@ -3794,9 +3813,17 @@ async function cloudPushConfig() {
     [...PHRASE_VOICE_FIELDS, 'phrase_quiz_prompt','phrase_quiz_prompt_recognize','phrase_opt_hint','phraseSelect']
       .forEach(k => delete mergedUi[k]);
 
+    const lsConsentAt = lsGet('yh:v1:user:consentAt');
+    const lsConsentVer = lsGet('yh:v1:user:consentVersion');
+    const localConsent = (lsConsentAt && lsConsentVer) ? { version: lsConsentVer, at: lsConsentAt } : null;
+    const mergedConsent = _mergeConsent(localConsent, cloudCfg?.consent || null);
+
+    const newConfig = { srs: mergedSrs, ui: mergedUi };
+    if (mergedConsent) newConfig.consent = mergedConsent;
+
     const { error } = await _sb.from('sync_config').upsert({
       user_id: _cloudUserId,
-      config_json: { srs: mergedSrs, ui: mergedUi },
+      config_json: newConfig,
       updated_at: Date.now(),
     }, { onConflict: 'user_id' });
     if (error) log.warn('sync', 'config push failed', { err: error.message });
@@ -3855,6 +3882,17 @@ async function cloudPullConfig() {
       });
     }
 
+    if (cfg.consent || lsGet('yh:v1:user:consentAt')) {
+      const lsAt = lsGet('yh:v1:user:consentAt');
+      const lsVer = lsGet('yh:v1:user:consentVersion');
+      const local = (lsAt && lsVer) ? { version: lsVer, at: lsAt } : null;
+      const merged = _mergeConsent(local, cfg.consent || null);
+      if (merged) {
+        if (merged.at !== lsAt) lsSet('yh:v1:user:consentAt', merged.at);
+        if (merged.version !== lsVer) lsSet('yh:v1:user:consentVersion', merged.version);
+      }
+    }
+
     // trigger UI refresh
     syncSrsSettingsUI();
     loadSettings();
@@ -3867,6 +3905,11 @@ async function cloudPullConfig() {
       var tog = document.getElementById('dark-toggle');
       if (tog) tog.checked = th === 'dark';
     }
+
+    setTimeout(function() {
+      if (typeof checkConsentUpgrade === 'function') checkConsentUpgrade();
+    }, 0);
+
     return applied;
   } catch(e) {
     log.warn('sync', 'config pull error', { err: e.message });
@@ -6347,6 +6390,7 @@ async function doAccountLogin() {
     updateCloudTabUI();
     logAppEvent('login', { email: email });
     _writeConsentLs();
+    cloudPushConfig();
     upsertDeviceRegistry();
     runSync({ modal: true, decks: false, events: true, title: t('sync_syncing_data'), deckKey: currentDeck })
       .then(() => syncAllDirtyDecks())
@@ -6390,8 +6434,49 @@ function _updateRegisterConsent() {
 function _writeConsentLs() {
   try {
     lsSet('yh:v1:user:consentAt', new Date().toISOString());
-    lsSet('yh:v1:user:consentVersion', 'v1');
+    lsSet('yh:v1:user:consentVersion', CONSENT_PROTOCOL_VERSION);
   } catch (e) { console.warn('[consent] LS write fail', e && e.message); }
+}
+
+let _consentUpgradeInFlight = false;
+async function checkConsentUpgrade() {
+  if (_consentUpgradeInFlight) return;
+  const lsVer = lsGet('yh:v1:user:consentVersion');
+  if (lsVer === CONSENT_PROTOCOL_VERSION) return;
+  _consentUpgradeInFlight = true;
+  try {
+    await showConsentUpgradeDialog();
+  } finally {
+    _consentUpgradeInFlight = false;
+  }
+}
+
+async function showConsentUpgradeDialog() {
+  const baseUrl = 'https://katelynmichelin976-wq.github.io/ReminiSea/';
+  const privacyLink = `<a href="${baseUrl}privacy.html" target="_blank" rel="noopener" style="color:#0ea5e9;text-decoration:none">${esc(t('consent_privacy'))}</a>`;
+  const termsLink   = `<a href="${baseUrl}terms.html" target="_blank" rel="noopener" style="color:#0ea5e9;text-decoration:none">${esc(t('consent_terms'))}</a>`;
+  const body = `
+    <div style="font-weight:600;font-size:16px;margin-bottom:8px;color:#0e6585">${esc(t('consent_upgrade_title'))}</div>
+    <div style="margin-bottom:8px">${esc(t('consent_upgrade_msg'))}</div>
+    <div>${privacyLink} ${esc(t('consent_and'))} ${termsLink}</div>
+  `;
+  const ok = await showConfirmDialog(body, {
+    html: true,
+    confirmText: t('consent_upgrade_accept'),
+    cancelText: t('consent_upgrade_decline'),
+    dismissable: false,
+  });
+  if (ok) {
+    _writeConsentLs();
+    if (_syncEnabled) cloudPushConfig();
+  } else {
+    if (_syncEnabled) {
+      await doAccountLogout();
+      showScreen('screen-account');
+    } else {
+      showToastMsg(t('consent_required_hint'));
+    }
+  }
 }
 
 function openRegisterSheet() {
@@ -6455,6 +6540,7 @@ async function doRegister() {
       return;
     }
     _writeConsentLs();
+    cloudPushConfig();
     document.getElementById('reg-title').style.display = 'none';
     document.getElementById('reg-email').style.display = 'none';
     document.getElementById('reg-pwd').style.display = 'none';
@@ -7427,6 +7513,10 @@ const I18N = {
     consent_and: 'and',
     consent_terms: 'Terms of Service',
     consent_required_hint: 'Please check the box to agree before continuing',
+    consent_upgrade_title: 'Policy Updated',
+    consent_upgrade_msg: 'Our Privacy Policy and Terms of Service have been updated. Please review and agree to continue using the app.',
+    consent_upgrade_accept: 'I Agree',
+    consent_upgrade_decline: 'Decline',
     rotate_to_portrait: 'Portrait mode only',
     rotate_to_portrait_sub: 'Please rotate your device back to portrait',
     // Common
@@ -7764,6 +7854,10 @@ const I18N = {
     consent_and: '和',
     consent_terms: '《用户协议》',
     consent_required_hint: '请先勾选同意才能继续',
+    consent_upgrade_title: '协议已更新',
+    consent_upgrade_msg: '《隐私政策》和《用户协议》已更新，请重新阅读并同意后继续使用本应用。',
+    consent_upgrade_accept: '我已阅读并同意',
+    consent_upgrade_decline: '拒绝',
     rotate_to_portrait: '请竖屏使用',
     rotate_to_portrait_sub: '本应用暂只支持竖屏，请旋转设备',
     common_back: '返回',
@@ -8102,6 +8196,10 @@ const I18N = {
     consent_and: '和',
     consent_terms: '《用戶協議》',
     consent_required_hint: '請先勾選同意才能繼續',
+    consent_upgrade_title: '協議已更新',
+    consent_upgrade_msg: '《隱私政策》和《用戶協議》已更新，請重新閱讀並同意後繼續使用本應用。',
+    consent_upgrade_accept: '我已閱讀並同意',
+    consent_upgrade_decline: '拒絕',
     rotate_to_portrait: '請豎屏使用',
     rotate_to_portrait_sub: '本應用暫只支持豎屏，請旋轉設備',
     common_back: '返回',
@@ -8421,6 +8519,10 @@ const I18N = {
     consent_and: 'y',
     consent_terms: 'Términos de Servicio',
     consent_required_hint: 'Por favor marca la casilla para continuar',
+    consent_upgrade_title: 'Política Actualizada',
+    consent_upgrade_msg: 'Nuestra Política de Privacidad y Términos de Servicio se han actualizado. Por favor revísalos y acepta para continuar.',
+    consent_upgrade_accept: 'Acepto',
+    consent_upgrade_decline: 'Rechazar',
     rotate_to_portrait: 'Solo modo vertical',
     rotate_to_portrait_sub: 'Por favor gira tu dispositivo a vertical',
     common_back: 'Volver',
@@ -8745,6 +8847,10 @@ const I18N = {
     consent_and: 'と',
     consent_terms: '利用規約',
     consent_required_hint: '続行するにはチェックを入れてください',
+    consent_upgrade_title: 'ポリシーが更新されました',
+    consent_upgrade_msg: 'プライバシーポリシーと利用規約が更新されました。続行するには、再度ご確認のうえ同意してください。',
+    consent_upgrade_accept: '同意します',
+    consent_upgrade_decline: '拒否',
     rotate_to_portrait: '縦向き専用',
     rotate_to_portrait_sub: 'デバイスを縦向きに戻してください',
     // Common
@@ -11976,6 +12082,11 @@ function showAbout() {
     if (loginBtn) loginBtn.disabled = true;
     if (regBtn) regBtn.disabled = true;
   }, 0);
+  setTimeout(function() {
+    if (lsGet('yh:v1:user:consentVersion')) {
+      checkConsentUpgrade();
+    }
+  }, 500);
   setTimeout(_tryInitCloud, 100);
   var _capturedHash = location.hash || '';
   setTimeout(function() { handleAuthHashRoute(_capturedHash); }, 200);
@@ -12810,23 +12921,30 @@ async function updateDeckStats() {
 
 
 // ── custom confirm dialog (replaces iOS PWA blocked confirm) ────
-function showConfirmDialog(msg) {
+function showConfirmDialog(msg, opts) {
+  opts = opts || {};
   return new Promise(resolve => {
     const mask = document.createElement('div');
     mask.className = 'yh-dialog-mask';
+    const confirmText = opts.confirmText || t('common_confirm');
+    const cancelText  = opts.cancelText  || t('common_cancel');
+    const bodyHtml    = opts.html ? msg : esc(msg);
+    const dismissable = opts.dismissable !== false;
     mask.innerHTML = `
       <div class="yh-dialog">
-        <div class="yh-dialog-msg">${esc(msg)}</div>
+        <div class="yh-dialog-msg">${bodyHtml}</div>
         <div class="yh-dialog-btns">
-          <button class="yh-dialog-btn cancel" id="yh-dlg-no">${t('common_cancel')}</button>
-          <button class="yh-dialog-btn confirm" id="yh-dlg-yes">${t('common_confirm')}</button>
+          <button class="yh-dialog-btn cancel" id="yh-dlg-no">${esc(cancelText)}</button>
+          <button class="yh-dialog-btn confirm" id="yh-dlg-yes">${esc(confirmText)}</button>
         </div>
       </div>`;
     document.body.appendChild(mask);
     const close = ok => { mask.remove(); resolve(ok); };
     mask.querySelector('#yh-dlg-yes').onclick = () => close(true);
     mask.querySelector('#yh-dlg-no').onclick  = () => close(false);
-    mask.onclick = e => { if (e.target === mask) close(false); };
+    if (dismissable) {
+      mask.onclick = e => { if (e.target === mask) close(false); };
+    }
   });
 }
 

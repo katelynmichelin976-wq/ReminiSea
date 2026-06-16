@@ -35,7 +35,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/yihai_v5.14_ls_test.js` | LS_KEYS 注册表 + helper + 工厂 + 聚合迁移 + yh:v1: prefix rename 单测（109 cases） |
 | `tests/yihai_v5.15_log_test.js` | 本地日志 ring buffer 单测（12 cases） |
 | `tests/yihai_v5.13.10_idb_p1_test.js` | IDB_DBS / IDB_STORES 注册表静态校验（33 断言） |
-| `tests/run_all.js` | 单元测试统一入口（14 套件，667 断言） |
+| `tests/yihai_v5.13.13_consent_test.js` | consent 合并 / 版本比较纯函数单测（24 cases） |
+| `tests/run_all.js` | 单元测试统一入口（15 套件，691 断言） |
 | `tests/_pw_ui_smoke.js` | UI 冒烟（导航/账户/设置/i18n/语言/语音/IDB/练习模式，65 断言，无需登录） |
 | `tests/_pw_srs_e2e.js` | SRS 端到端 + Easy 模式 EasyState IDB（21 断言，无需登录） |
 | `tests/_pw_easy.js` | Easy 模式综合（设置 UI/单局/retry/多局 confident 池/诊断面板，28 断言，无需登录） |
@@ -50,6 +51,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_pw_sync_guard.js` | runSync 30s watchdog（7 断言） |
 | `tests/_pw_feedback.js` | 意见反馈模块（11 断言） |
 | `tests/_pw_consent_checkbox.js` | 隐私同意 checkbox（登录/注册 form 强制勾选 + LS 落地 + i18n + 链接，14 断言，无需登录） |
+| `tests/_pw_consent_sync.js` | 同意状态云同步 + 协议版本升级弹窗（push/pull/接受/拒绝 6 phase，13 断言，需登录） |
 | `tests/_pw_config_sync.js` | 语音参数云同步（~23 断言，需登录） |
 | `tests/_pw_deck_mgmt.js` | 牌组管理页冒烟（Tab Bar/导航/段选/列表，15 断言） |
 | `tests/_pw_featured_tab.js` | 精选 tab 列表 + 同步按钮去耦合（doAccountSync runSync 不再传 decks:true，~10 断言，需登录） |
