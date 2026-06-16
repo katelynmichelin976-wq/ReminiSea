@@ -69,6 +69,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `docs/功能特性.md` | 功能特性清单（从代码整理的功能全景图） |
 | `docs/初心与演化反思.md` | 初心 vs 演化对照反思（产品意图与实现是否一致） |
 | `docs/上架就绪清单.md` | 上架就绪清单（P0/P1/P2 分级的发布前事项） |
+| `docs/手工回归测试手册.md` | 手工回归测试手册（_pw_* 套件逐节对应的人工验证步骤） |
 | `docs/忆海拾光_训练App_README.md` | 训练 App 版本历史 |
 | `docs/yihai_变更记录_CLAUDE参考.md` | 完整变更历史（AI 参考） |
 
