@@ -11,7 +11,7 @@
  * 无需登录凭证（状态注入方式触发 runSync）。
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage, stopAndCollectFromBrowser } = require('./_playwright_helper');
 
 const BASE_URL = getBaseUrl();
 
@@ -23,6 +23,7 @@ const BASE_URL = getBaseUrl();
 
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();
+    await startCoverage(page);
 
     await page.goto(BASE_URL + '?v=' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 15000 });
     await wait(page, 2000);
@@ -82,6 +83,7 @@ const BASE_URL = getBaseUrl();
 
     const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const page2 = await ctx2.newPage();
+    await startCoverage(page2);
 
     await page2.goto(BASE_URL + '?v=' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 15000 });
     await wait(page2, 2000);
@@ -120,6 +122,7 @@ const BASE_URL = getBaseUrl();
     await ctx2.close();
 
   } finally {
+    await stopAndCollectFromBrowser(browser, '_pw_sync_guard');
     await browser.close();
   }
 

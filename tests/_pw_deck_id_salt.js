@@ -32,6 +32,7 @@ async function waitSyncDone(page, maxWait) {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
+  await helper.startCoverage(page);
   page.on('pageerror', e => console.log(`  [PAGE ERROR] ${e.message}`));
 
   try {
@@ -98,6 +99,7 @@ async function waitSyncDone(page, maxWait) {
     const { passed, failed } = getCounts();
     section('结果');
     console.log(`  通过: ${passed}  失败: ${failed}`);
+    await helper.stopAndCollectFromBrowser(browser, '_pw_deck_id_salt');
     await browser.close();
     if (failed > 0) process.exit(1);
   }

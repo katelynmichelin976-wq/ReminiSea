@@ -9,7 +9,7 @@
  *       接受/拒绝分流（已登录 → signOut + 切屏；未登录 → toast）。
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl, cloudLogin, cloudLogout } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, cloudLogin, cloudLogout, startCoverage, stopAndCollectCoverage, stopAndCollectFromBrowser } = require('./_playwright_helper');
 
 if (!process.env.TEST_PASSWORD) {
   console.error('[consent_sync] 需要 TEST_PASSWORD 环境变量');
@@ -26,6 +26,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     section('PHASE 1: 未登录 同版本 → 无弹窗');
     {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await startCoverage(page);
       await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
       await run(page, () => {
         localStorage.setItem('yh:v1:user:consentVersion', 'v1');
@@ -41,6 +42,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     section('PHASE 2: 未登录 旧版本 → 拒绝 toast 不切屏');
     {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await startCoverage(page);
       await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
       await run(page, () => {
         localStorage.setItem('yh:v1:user:consentVersion', 'v0');
@@ -63,6 +65,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     section('PHASE 3: 登录 push consent 到云');
     {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await startCoverage(page);
       await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
       await run(page, () => {
         localStorage.removeItem('yh:v1:user:consentVersion');
@@ -85,6 +88,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     section('PHASE 4: 跨设备 pull consent');
     {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await startCoverage(page);
       await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
       await run(page, () => { localStorage.clear(); });
       await page.reload({ waitUntil: 'networkidle' });
@@ -104,6 +108,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     section('PHASE 5: 已登录 旧版本 → 接受 → LS 升级');
     {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await startCoverage(page);
       await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
       await cloudLogin(page, TEST_EMAIL, PWD);
       await wait(page, 4000);
@@ -130,6 +135,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     section('PHASE 6: 已登录 旧版本 → 拒绝 → signOut');
     {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await startCoverage(page);
       await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
       await cloudLogin(page, TEST_EMAIL, PWD);
       await wait(page, 4000);
@@ -155,6 +161,7 @@ const URL = getBaseUrl() + '?v=' + Date.now();
     }
 
   } finally {
+    await stopAndCollectFromBrowser(browser, '_pw_consent_sync');
     await browser.close();
   }
 

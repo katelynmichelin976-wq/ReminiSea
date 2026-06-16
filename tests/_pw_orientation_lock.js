@@ -11,7 +11,7 @@
  *   - 横屏切换不破坏 home/quiz 状态
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, run, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, run, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage, stopAndCollectFromBrowser } = require('./_playwright_helper');
 
 const URL = getBaseUrl() + '?v=' + Date.now();
 
@@ -41,6 +41,7 @@ async function isOverlayVisible(page) {
     section('PHASE 2: 触屏设备竖屏（iPad portrait）');
     ctx = await browser.newContext({ viewport: { width: 810, height: 1080 }, hasTouch: true, isMobile: false });
     page = await ctx.newPage();
+    await startCoverage(page);
     await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 800);
     pass('触屏竖屏 overlay 隐藏', !(await isOverlayVisible(page)));
@@ -50,6 +51,7 @@ async function isOverlayVisible(page) {
     section('PHASE 3: 触屏设备横屏（iPad landscape）');
     ctx = await browser.newContext({ viewport: { width: 1080, height: 810 }, hasTouch: true, isMobile: false });
     page = await ctx.newPage();
+    await startCoverage(page);
     await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 800);
     pass('触屏横屏 overlay 显示', await isOverlayVisible(page));
@@ -88,6 +90,7 @@ async function isOverlayVisible(page) {
     section('PHASE 5: 横竖屏切换不破坏状态');
     ctx = await browser.newContext({ viewport: { width: 810, height: 1080 }, hasTouch: true, isMobile: false });
     page = await ctx.newPage();
+    await startCoverage(page);
     await page.goto(URL, { waitUntil: 'networkidle', timeout: 30000 });
     await wait(page, 800);
     // 修改首页一个 DOM 标记
@@ -114,6 +117,7 @@ async function isOverlayVisible(page) {
     await ctx.close();
 
   } finally {
+    await stopAndCollectFromBrowser(browser, '_pw_orientation_lock');
     await browser.close();
   }
 

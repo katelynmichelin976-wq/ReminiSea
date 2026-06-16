@@ -11,7 +11,7 @@
  *     修复实施后这些断言应当转为通过。
  */
 const { chromium } = require('playwright');
-const { pass, section, wait, getCounts, getBaseUrl } = require('./_playwright_helper');
+const { pass, section, wait, getCounts, getBaseUrl, startCoverage, stopAndCollectCoverage, stopAndCollectFromBrowser } = require('./_playwright_helper');
 
 const BASE_URL = getBaseUrl();
 
@@ -65,6 +65,8 @@ async function getAccountState(page) {
     }, FAKE_BACKUP);
 
     const page1 = await ctx1.newPage();
+
+    await startCoverage(page1);
 
     // 阻断 Supabase SDK CDN（模拟 CDN 不可达）
     await page1.route('**/@supabase/supabase-js**', route => route.abort());
@@ -101,6 +103,7 @@ async function getAccountState(page) {
 
     const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const page2 = await ctx2.newPage();
+    await startCoverage(page2);
 
     await page2.goto(BASE_URL + '?v=' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page2.waitForTimeout(2000);
@@ -131,6 +134,8 @@ async function getAccountState(page) {
     }, FAKE_BACKUP);
 
     const page3 = await ctx3.newPage();
+
+    await startCoverage(page3);
 
     // SDK 正常加载，但 Supabase auth 端点返回 401（token 过期/无效）
     // 模拟 getSession() 走 path C（返回 null session）
@@ -172,6 +177,8 @@ async function getAccountState(page) {
     });
 
     const page4 = await ctx4.newPage();
+
+    await startCoverage(page4);
     await page4.goto(BASE_URL + '?v=' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 15000 });
 
     // 等 SDK 加载 + restoreSession 走完 path A（快速 return，无网络请求）
@@ -208,6 +215,7 @@ async function getAccountState(page) {
 
     const ctx5 = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const page5 = await ctx5.newPage();
+    await startCoverage(page5);
 
     // 无 backup 启动 → path A（clean），SDK 正常加载，_cloudUserEmail = ''
     await page5.goto(BASE_URL + '?v=' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -255,6 +263,7 @@ async function getAccountState(page) {
 
     const ctx6 = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const page6 = await ctx6.newPage();
+    await startCoverage(page6);
 
     // 正常加载，无 backup，等 SDK 完成初始化
     await page6.goto(BASE_URL + '?v=' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -305,6 +314,7 @@ async function getAccountState(page) {
     await ctx6.close();
 
   } finally {
+    await stopAndCollectFromBrowser(browser, '_pw_session_restore');
     await browser.close();
   }
 

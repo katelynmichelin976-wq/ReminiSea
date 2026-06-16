@@ -98,9 +98,11 @@ async function runEasySessionAllCorrect(page, expected) {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const ctxA = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pageA = await ctxA.newPage();
+  await helper.startCoverage(pageA);
   pageA.on('pageerror', e => console.log(`  [A PAGE ERROR] ${e.message}`));
   const ctxB = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pageB = await ctxB.newPage();
+  await helper.startCoverage(pageB);
   pageB.on('pageerror', e => console.log(`  [B PAGE ERROR] ${e.message}`));
 
   try {
@@ -260,6 +262,7 @@ async function runEasySessionAllCorrect(page, expected) {
     console.log('  结果');
     console.log('═'.repeat(60));
     console.log(`  通过: ${counts.passed}  失败: ${counts.failed}`);
+    await helper.stopAndCollectFromBrowser(browser, '_pw_easy_sync');
     await browser.close();
     process.exit(counts.failed > 0 ? 1 : 0);
   }

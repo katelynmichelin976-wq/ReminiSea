@@ -94,9 +94,11 @@ async function buildYhspack(deckId, deckName, cards) {
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const ctxA = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pageA = await ctxA.newPage();
+  await helper.startCoverage(pageA);
   pageA.on('pageerror', e => console.log(`  [A PAGE ERROR] ${e.message}`));
   const ctxB = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pageB = await ctxB.newPage();
+  await helper.startCoverage(pageB);
   pageB.on('pageerror', e => console.log(`  [B PAGE ERROR] ${e.message}`));
 
   try {
@@ -346,6 +348,7 @@ async function buildYhspack(deckId, deckName, cards) {
       console.log('\n  失败项:');
       counts.errors.forEach(e => console.log('  ' + e));
     }
+    await helper.stopAndCollectFromBrowser(browser, '_pw_sync_scenarios');
     await browser.close();
     process.exit(counts.failed > 0 ? 1 : 0);
   }

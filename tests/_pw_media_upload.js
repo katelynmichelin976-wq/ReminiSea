@@ -43,12 +43,14 @@ async function waitSyncDone(page, maxWait) {
   // 设备 A
   const ctxA = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pageA = await ctxA.newPage();
+  await helper.startCoverage(pageA);
   pageA.on('pageerror', e => console.log(`  [A PAGE ERROR] ${e.message}`));
   pageA.on('console', m => { if (m.type() === 'warn' || (m.text().includes('[sync]') && m.type() !== 'debug')) console.log(`  [A] ${m.text()}`); });
 
   // 设备 B
   const ctxB = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pageB = await ctxB.newPage();
+  await helper.startCoverage(pageB);
   pageB.on('pageerror', e => console.log(`  [B PAGE ERROR] ${e.message}`));
 
   try {
@@ -217,6 +219,7 @@ async function waitSyncDone(page, maxWait) {
     const { passed, failed } = getCounts();
     section('结果');
     console.log(`  通过: ${passed}  失败: ${failed}`);
+    await helper.stopAndCollectFromBrowser(browser, '_pw_media_upload');
     await browser.close();
     process.exit(failed > 0 ? 1 : 0);
   }

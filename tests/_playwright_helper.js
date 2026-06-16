@@ -158,6 +158,20 @@ async function startCoverage(page) {
   });
 }
 
+async function stopAndCollectFromBrowser(browser, suiteName) {
+  if (!COVERAGE_ENABLED) return;
+  let idx = 0;
+  for (const ctx of browser.contexts()) {
+    for (const page of ctx.pages()) {
+      if (page.isClosed && page.isClosed()) continue;
+      try {
+        await stopAndCollectCoverage(page, `${suiteName}_${idx}`);
+      } catch (e) { /* skip */ }
+      idx++;
+    }
+  }
+}
+
 async function stopAndCollectCoverage(page, suiteName) {
   if (!COVERAGE_ENABLED) return;
   let coverage;
@@ -191,5 +205,5 @@ module.exports = {
   openSettingsTab, closeSettings,
   cloudLogin, cloudLogout, waitSyncModal,
   getDeckOverviewStats,
-  startCoverage, stopAndCollectCoverage,
+  startCoverage, stopAndCollectCoverage, stopAndCollectFromBrowser,
 };

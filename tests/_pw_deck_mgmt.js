@@ -13,6 +13,7 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
+  await helper.startCoverage(page);
   page.on('pageerror', e => console.log('  [PAGE ERROR]', e.message));
 
   try {
@@ -107,6 +108,7 @@ const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
     const { passed, failed } = getCounts();
     section('结果');
     console.log('  通过: ' + passed + '  失败: ' + failed);
+    await helper.stopAndCollectFromBrowser(browser, '_pw_deck_mgmt');
     await browser.close();
     process.exit(failed > 0 ? 1 : 0);
   }

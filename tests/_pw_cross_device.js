@@ -38,11 +38,13 @@ let tStart;
   // 设备 A（独立 BrowserContext）
   const ctxA = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pageA = await ctxA.newPage();
+  await helper.startCoverage(pageA);
   pageA.on('pageerror', e => console.log(`  [A PAGE ERROR] ${e.message}`));
 
   // 设备 B（独立 BrowserContext）
   const ctxB = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pageB = await ctxB.newPage();
+  await helper.startCoverage(pageB);
   pageB.on('pageerror', e => console.log(`  [B PAGE ERROR] ${e.message}`));
 
   try {
@@ -556,6 +558,7 @@ let tStart;
     const { passed, failed } = getCounts();
     section('结果');
     console.log(`  通过: ${passed}  失败: ${failed}`);
+    await helper.stopAndCollectFromBrowser(browser, '_pw_cross_device');
     await browser.close();
     process.exit(failed > 0 ? 1 : 0);
   }

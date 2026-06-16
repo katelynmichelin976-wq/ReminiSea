@@ -23,6 +23,7 @@ const DECK_KEY = '__media_recovery_test__';
   const browser = await chromium.launch({ headless: !process.env.HEADED });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
+  await helper.startCoverage(page);
   page.on('pageerror', e => console.log(`  [PAGE ERROR] ${e.message}`));
 
   try {
@@ -197,6 +198,7 @@ const DECK_KEY = '__media_recovery_test__';
     console.error('FATAL:', e);
     process.exit(1);
   } finally {
+    await helper.stopAndCollectFromBrowser(browser, '_pw_media_recovery');
     await browser.close();
   }
 })();
