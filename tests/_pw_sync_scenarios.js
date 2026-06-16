@@ -109,8 +109,8 @@ async function buildYhspack(deckId, deckName, cards) {
 
     const cleanErr = await run(pageA, async (deckId) => {
       try {
-        await _sb.from('deck_cards').delete().eq('deck_id', deckId);
-        await _sb.from('decks').delete().eq('id', deckId);
+        await _sb.from('deck_cards').delete().eq('deck_id', toServerDeckId(deckId, 'personal', _cloudUserId));
+        await _sb.from('decks').delete().eq('id', toServerDeckId(deckId, 'personal', _cloudUserId));
         return null;
       } catch (e) { return e.message; }
     }, DECK_ID);
@@ -152,7 +152,7 @@ async function buildYhspack(deckId, deckName, cards) {
 
     const cloudDeck = await run(pageA, async (key) => {
       try {
-        const { data } = await _sb.from('decks').select('id,name,card_count').eq('id', key);
+        const { data } = await _sb.from('decks').select('id,name,card_count').eq('id', toServerDeckId(key, 'personal', _cloudUserId));
         return data && data[0] ? data[0] : null;
       } catch (e) { return null; }
     }, DECK_ID);
@@ -197,7 +197,7 @@ async function buildYhspack(deckId, deckName, cards) {
 
     const cloudDeckName = await run(pageA, async (key) => {
       try {
-        const { data } = await _sb.from('decks').select('name').eq('id', key);
+        const { data } = await _sb.from('decks').select('name').eq('id', toServerDeckId(key, 'personal', _cloudUserId));
         return data && data[0] ? data[0].name : null;
       } catch (e) { return null; }
     }, DECK_ID);
@@ -253,7 +253,7 @@ async function buildYhspack(deckId, deckName, cards) {
     const cloudMediaUrl = await run(pageA, async (args) => {
       try {
         const { data } = await _sb.from('deck_cards')
-          .select('card_id,media').eq('deck_id', args.key).eq('card_id', 'sc1');
+          .select('card_id,media').eq('deck_id', toServerDeckId(args.key, 'personal', _cloudUserId)).eq('card_id', 'sc1');
         if (!data || !data[0]) return null;
         return data[0].media?.img?.url || null;
       } catch (e) { return null; }
@@ -306,7 +306,7 @@ async function buildYhspack(deckId, deckName, cards) {
 
     const cloudCountP4 = await run(pageA, async (key) => {
       try {
-        const { data } = await _sb.from('deck_cards').select('card_id').eq('deck_id', key);
+        const { data } = await _sb.from('deck_cards').select('card_id').eq('deck_id', toServerDeckId(key, 'personal', _cloudUserId));
         return data ? data.length : -1;
       } catch (e) { return -1; }
     }, DECK_ID);
@@ -328,8 +328,8 @@ async function buildYhspack(deckId, deckName, cards) {
     section('PHASE 5: 清理云端测试数据');
     const cleanErr5 = await run(pageA, async (key) => {
       try {
-        await _sb.from('deck_cards').delete().eq('deck_id', key);
-        await _sb.from('decks').delete().eq('id', key);
+        await _sb.from('deck_cards').delete().eq('deck_id', toServerDeckId(key, 'personal', _cloudUserId));
+        await _sb.from('decks').delete().eq('id', toServerDeckId(key, 'personal', _cloudUserId));
         return null;
       } catch (e) { return e.message; }
     }, DECK_ID);

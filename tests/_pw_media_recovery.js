@@ -44,8 +44,8 @@ const DECK_KEY = '__media_recovery_test__';
     if (!loginOk) throw new Error('登录失败，终止测试');
 
     await run(page, async (key) => {
-      try { await _sb.from('deck_cards').delete().eq('deck_id', key); } catch (e) {}
-      try { await _sb.from('decks').delete().eq('id', key); } catch (e) {}
+      try { await _sb.from('deck_cards').delete().eq('deck_id', toServerDeckId(key, 'personal', _cloudUserId)); } catch (e) {}
+      try { await _sb.from('decks').delete().eq('id', toServerDeckId(key, 'personal', _cloudUserId)); } catch (e) {}
     }, DECK_KEY);
 
     section('PHASE 1: 造一张带图卡 + stub upsert 失败');
@@ -110,7 +110,7 @@ const DECK_KEY = '__media_recovery_test__';
 
     const dbState = await run(page, async (key) => {
       const { data } = await _sb.from('deck_cards')
-        .select('media').eq('deck_id', key).eq('card_id', 'tc1').maybeSingle();
+        .select('media').eq('deck_id', toServerDeckId(key, 'personal', _cloudUserId)).eq('card_id', 'tc1').maybeSingle();
       return data && data.media && data.media.img ? data.media.img.url : null;
     }, DECK_KEY);
     pass(`DB row 应有 media.img.url（实际：${dbState}）`, !!dbState);
@@ -121,8 +121,8 @@ const DECK_KEY = '__media_recovery_test__';
 
     // 清云端可能残留
     await run(page, async (key) => {
-      try { await _sb.from('deck_cards').delete().eq('deck_id', key); } catch (e) {}
-      try { await _sb.from('decks').delete().eq('id', key); } catch (e) {}
+      try { await _sb.from('deck_cards').delete().eq('deck_id', toServerDeckId(key, 'personal', _cloudUserId)); } catch (e) {}
+      try { await _sb.from('decks').delete().eq('id', toServerDeckId(key, 'personal', _cloudUserId)); } catch (e) {}
     }, STALE_KEY);
 
     // 在本地灌一个 "crash 后状态"：DECKS 有 s.url + _blob，confirmed undefined；Storage 已有文件；DB 无 media
@@ -149,13 +149,13 @@ const DECK_KEY = '__media_recovery_test__';
       await upsertCardsBatch(key, [card]);
 
       // 强制清空 DB media，模拟 crash 前 DB 写没成功
-      await _sb.from('deck_cards').update({ media: {} }).eq('deck_id', key).eq('card_id', 'stale1');
+      await _sb.from('deck_cards').update({ media: {} }).eq('deck_id', toServerDeckId(key, 'personal', _cloudUserId)).eq('card_id', 'stale1');
     }, STALE_KEY);
 
     // 验证起点：DB 无 media + 本地 s.url 有 + 无 confirmed
     const before = await run(page, async (key) => {
       const card = DECKS[key][0];
-      const { data } = await _sb.from('deck_cards').select('media').eq('deck_id', key).eq('card_id', 'stale1').maybeSingle();
+      const { data } = await _sb.from('deck_cards').select('media').eq('deck_id', toServerDeckId(key, 'personal', _cloudUserId)).eq('card_id', 'stale1').maybeSingle();
       return { localUrl: card.media.img.url, localConfirmed: !!card.media.img.confirmed, dbMedia: data?.media };
     }, STALE_KEY);
     pass('起点：本地有 stale s.url', before.localUrl !== '');
@@ -172,7 +172,7 @@ const DECK_KEY = '__media_recovery_test__';
     // 验证终点：DB 有 media + 本地 confirmed=true + URL 一致
     const after = await run(page, async (key) => {
       const card = DECKS[key][0];
-      const { data } = await _sb.from('deck_cards').select('media').eq('deck_id', key).eq('card_id', 'stale1').maybeSingle();
+      const { data } = await _sb.from('deck_cards').select('media').eq('deck_id', toServerDeckId(key, 'personal', _cloudUserId)).eq('card_id', 'stale1').maybeSingle();
       return { localUrl: card.media.img.url, localConfirmed: !!card.media.img.confirmed, dbUrl: data?.media?.img?.url };
     }, STALE_KEY);
     pass(`恢复后 DB media.img.url 已写: ${after.dbUrl}`, !!after.dbUrl);
@@ -181,14 +181,14 @@ const DECK_KEY = '__media_recovery_test__';
 
     // PHASE 5 cleanup
     await run(page, async (key) => {
-      try { await _sb.from('deck_cards').delete().eq('deck_id', key); } catch (e) {}
-      try { await _sb.from('decks').delete().eq('id', key); } catch (e) {}
+      try { await _sb.from('deck_cards').delete().eq('deck_id', toServerDeckId(key, 'personal', _cloudUserId)); } catch (e) {}
+      try { await _sb.from('decks').delete().eq('id', toServerDeckId(key, 'personal', _cloudUserId)); } catch (e) {}
     }, STALE_KEY);
 
     section('PHASE 4: cleanup');
     await run(page, async (key) => {
-      try { await _sb.from('deck_cards').delete().eq('deck_id', key); } catch (e) {}
-      try { await _sb.from('decks').delete().eq('id', key); } catch (e) {}
+      try { await _sb.from('deck_cards').delete().eq('deck_id', toServerDeckId(key, 'personal', _cloudUserId)); } catch (e) {}
+      try { await _sb.from('decks').delete().eq('id', toServerDeckId(key, 'personal', _cloudUserId)); } catch (e) {}
     }, DECK_KEY);
 
     const counts = getCounts();

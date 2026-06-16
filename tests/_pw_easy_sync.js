@@ -44,6 +44,9 @@ async function setupDevice(page, label) {
   await wait(page, 2000);
   pass(`${label} 登录成功`, await cloudLogin(page, TEST_EMAIL, TEST_PASSWORD));
   await waitSyncDone(page, 120000);
+  // v5.13.12+ 登录不自动拉 preset，显式 runSync({ decks: true })
+  await run(page, () => runSync({ decks: true }));
+  await waitSyncDone(page, 120000);
   await run(page, () => goHome());
   await wait(page, 500);
 }

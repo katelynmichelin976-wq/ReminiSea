@@ -264,18 +264,18 @@ start coverage/index.html  # 默认浏览器打开
 **采集日期**：2026-06-16
 **APP_VERSION 时点**：v5.13.17
 **Playwright 套件**：23 / 23（全部改造完成）
-**通过 / 失败**：22 / 4（4 个失败均预先存在环境问题，与 coverage 改造无关；其 coverage 也成功采集）
-**总耗时**：~13 分钟（777s，含登录套件）
+**通过 / 失败**：25 / 1（前轮 4 失败修复 3 个；剩 `_pw_media_upload` 1 个 UI 渲染时机问题 pre-existing）
+**总耗时**：~17 分钟（998s，含 cross_device 109s / easy_sync 126s 等长跑套件）
 
-### 总体覆盖率（23 套件 baseline）
+### 总体覆盖率（25 套件最终 baseline）
 
 | 维度 | % | 数字 |
 |---|---|---|
-| Bytes | **65.62%** | 281,931 / 429,624 |
-| Statements | **55.09%** | 3,543 / 6,431 |
-| Branches | **40.93%** | 1,677 / 4,097 |
-| Functions | **53.49%** | 536 / 1,002 |
-| Lines | **61.17%** | 5,530 / 9,041 |
+| Bytes | **66.29%** | 284,856 / 429,690 |
+| Statements | **55.89%** | 3,596 / 6,434 |
+| Branches | **42.33%** | 1,735 / 4,099 |
+| Functions | **54.29%** | 544 / 1,002 |
+| Lines | **61.81%** | 5,589 / 9,042 |
 
 ### 演化轨迹
 
@@ -283,12 +283,10 @@ start coverage/index.html  # 默认浏览器打开
 |---|---|---|---|---|---|
 | Mini baseline | 3 | 18.09% | 33.02% | 10.16% | 17.66% |
 | 简单套件补全 | 15 | 48.48% | 56.10% | 34.15% | 46.51% |
-| 复杂模式补全 | 23 | **55.09%** | **61.17%** | **40.93%** | **53.49%** |
+| 复杂模式补全（4 失败）| 23 | 55.09% | 61.17% | 40.93% | 53.49% |
+| 4 失败修复 3 个 | 25 raw | **55.89%** | **61.81%** | **42.33%** | **54.29%** |
 
-补全 8 个复杂套件后：
-- Statements +6.6 / Lines +5.1 / Branches +6.8 / Functions +7.0
-
-Branches 提升最显著（更多 if/else 分支被两侧覆盖）。
+修 3 个失败套件后 Branches 又涨 +1.4，total +1 个点（小但实质）。
 
 ### 已覆盖套件清单
 
@@ -300,16 +298,16 @@ Branches 提升最显著（更多 if/else 分支被两侧覆盖）。
 
 所有 23 个 Playwright 套件均已改造（newPage 后 startCoverage + browser.close 前 stopAndCollectFromBrowser）。
 
-**4 个失败套件**（与 coverage 改造无关，预先环境问题）：
+**4 个失败套件根因 + 修复**：
 
-| 套件 | 失败原因 |
-|---|---|
-| `_pw_media_upload` | 缺测试文件 `C:\code\家人.yhspack`（gitignored，本地需手工放置） |
-| `_pw_easy_sync` | 测试账号 zyhaff@gmail.com 缺「家人」测试牌组 |
-| `_pw_media_recovery` | 云端 media.img.url 状态不一致 |
-| `_pw_sync_scenarios` | 云端 decks 行清理状态不一致 |
+| 套件 | 根因 | 修复 |
+|---|---|---|
+| `_pw_media_upload` | 路径写错 `C:\code\家人.yhspack` | 改 `tests/test_data/家人.yhspack` ✓（仍剩 1 UI 渲染 flaky） |
+| `_pw_easy_sync` | setupDevice 缺 `runSync({ decks: true })`（v5.13.12+ 登录不再自动拉 preset）| 加显式 runSync ✓ |
+| `_pw_media_recovery` | v5.17 deckid salt 未适配（11 处用裸 key 查 `decks.id` / `deck_cards.deck_id`）| 替换为 `toServerDeckId(key, 'personal', _cloudUserId)` ✓ |
+| `_pw_sync_scenarios` | 同上（多处） | 替换 5 种 patterns ✓ |
 
-这些套件的 coverage 仍部分采集到了（_pw_easy_sync_0 / _pw_sync_scenarios_0+_1 等 raw 文件存在），因此 23 套件 baseline 包含了它们触及的代码路径。
+`_pw_media_upload` PHASE 3「首页卡片列表 `<img src="blob:...">` 渲染」是 pre-existing DOM 时机 flaky（相邻断言 card.img 有 blob URL / media.img._blob 有值均通过，仅 DOM 渲染时机问题），与 coverage 改造无关。
 
 ### 主要未覆盖区域
 

@@ -21,7 +21,7 @@ const { pass, section, wait, run, getCounts, getBaseUrl, cloudLogin, cloudLogout
 const CFG = { url: getBaseUrl() + '?v=' + Date.now() };
 const TEST_EMAIL    = 'zyhaff@gmail.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || '';
-const YHSPACK_PATH  = path.join(__dirname, '..', '家人.yhspack');
+const YHSPACK_PATH  = path.join(__dirname, 'test_data', '家人.yhspack');
 const TEST_DECK_NAME = '家人';
 
 async function waitSyncDone(page, maxWait) {
