@@ -2,6 +2,45 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.17 — 多语种 PP/ToS（英文 + 繁体）+ locale 链接路由（P2 #4）
+
+### 动机
+
+v5.13.13 P1 只提供中文 PP/ToS，登录/注册 form consent 链接硬编码中文 URL。本版本补全英文 + 繁体版本（覆盖海外华人社区主要需求），同时让主 app 中 PP/ToS 链接根据当前 locale 自动路由。
+
+### 方案
+
+文件命名约定 `{name}_{locale}.html`：
+- `privacy.html` / `terms.html`（zh-CN，P1 不动 URL）
+- `privacy_en.html` / `terms_en.html`（新建，英文全文 13 章节）
+- `privacy_zh-Hant.html` / `terms_zh-Hant.html`（新建，简→繁转换 + 词汇本地化「軟體/網路/影片/品質/實施」等台湾习惯）
+
+每个 PP/ToS 顶部加 lang-nav 互相跳转。
+
+### 改动边界
+
+- 新增 `_localizedUrl(filename)` / `getPrivacyUrl()` / `getTermsUrl()` 函数：locale === 'en'/'es'/'ja' → `_en.html`；'zh-Hant' → `_zh-Hant.html`；其他 → `*.html`（默认 zh-CN）。es/ja fallback 到英文版（人工翻译质量未保证，先以英文兜底）。
+- 新增 `_refreshConsentLinks()`：刷新 4 个 `<a id>`（`consent-login-privacy-a` / `consent-login-terms-a` / `consent-register-privacy-a` / `consent-register-terms-a`）的 href。
+- `setLocale` 末尾调用 `_refreshConsentLinks`；启动序列加 `setTimeout(_refreshConsentLinks, 0)` 初次刷新。
+- 登录/注册 form 4 处 `<a>` 加 id（href 仍保留 zh-CN 兜底，JS 启动后即刷新）。
+- `showConsentUpgradeDialog` body 改用 `getPrivacyUrl()` / `getTermsUrl()` 动态拼接。
+
+### 测试
+
+- `tests/_pw_consent_lang_url.js`：13 断言 7 phase（zh-CN / en / zh-Hant / es-fallback / ja-fallback / 还原 / dialog 内链接随 locale）。无需登录。
+- `tests/_pw_consent_checkbox.js`：Phase 3 加 `setLocale('zh-CN')` 前置（Playwright 默认 navigator.language='en-US' 会让启动初次刷新把链接路由到 `_en.html`，破坏 P1 假设）。
+- 回归：单元 17×706 + `_pw_ui_smoke`(68) + `_pw_srs_e2e`(21) + `_pw_consent_checkbox`(14) + `_pw_consent_lang_url`(13) 全绿。
+
+### 部署前 ops
+
+- grep 6 个 HTML 占位符必须替换：`[开发者姓名待填]` / `[Developer Name TBD]` / `[開發者姓名待填]`。
+- 翻译为 AI 生成，未经律师 review，正文按 v1.0 上线，待 P2 #6 律师复核后修订。
+
+### 遗留
+
+- es / ja 完整翻译推后；fallback 到英文版的设计已稳定，未来加翻译只需新建文件 + 修 `_localizedUrl` 路由。
+- App Store 隐私标签 JSON（P2 #5）。
+
 ## v5.13.16 — 诊断日志按模块配额选取（voice 降采样）
 
 ### 动机
