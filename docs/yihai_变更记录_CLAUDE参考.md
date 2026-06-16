@@ -2,6 +2,53 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.18 — 内置牌组改名 + Playwright 覆盖率 baseline + 上架文档三件套
+
+### 内置示例牌组改名
+
+「测试牌组」→「示例·看图识物」（5 语种 `deck_builtin_label` i18n key）。上架前用户面向命名规范化，避免「测试」字样在 App Store 评审看到。
+
+### 产品文档三件套
+
+- `docs/功能特性.md`：功能全景图（从代码反推产品视角）
+- `docs/初心与演化反思.md`：初心 vs 演化对照（产品意图与实现一致性 review）
+- `docs/上架就绪清单.md`：P0/P1/P2 发布前事项（含 9.4/9.5 测试工具栏/调试行核查标记已完成）
+
+### Playwright 测试覆盖率 baseline（工程基础设施）
+
+新增 `monocart-coverage-reports` 集成 + 23 个 Playwright 套件全部改造采集 V8 coverage：
+
+- 脚手架：`_playwright_helper.js` 加 `startCoverage` / `stopAndCollectCoverage` / `stopAndCollectFromBrowser`（`YIHAI_COVERAGE=1` 门控，平时 noop 零开销）
+- `scripts/build-coverage-report.js`：合并 V8 raw → HTML + lcov + console summary（含 inline `<script>` 行号映射）
+- `scripts/run-all-pw.js`：批量跑所有 _pw_*.js + 容错继续
+- CLAUDE.md 加「测试覆盖率」章节
+- spec `docs/superpowers/specs/2026-06-16-test-coverage-baseline-design.md` §12 含完整 baseline 数据
+
+**baseline 数据**（25 raw / 23 套件 / 25 通过 1 flaky）：
+- Statements 55.89% / Branches 42.33% / Functions 54.29% / Lines 61.81% / Bytes 66.29%
+
+**关键发现**：
+- V8 把 `index.html?v=<ts>` 视为独立 entry → helper 写 raw 前 `.split('?')[0]` 规范化（否则数字虚低 17%）
+- monocart 原生支持 inline `<script>` in HTML，行号正确映射
+
+### 修测试套件适配 v5.17 deckid salt
+
+- `_pw_media_recovery` / `_pw_sync_scenarios`：查询用 `toServerDeckId(key, 'personal', _cloudUserId)` 拼 server id（v5.17 加盐后云端 `decks.id` = `localKey~userId`）
+- `_pw_easy_sync.setupDevice`：加显式 `runSync({ decks: true })`（v5.13.12+ 登录不再自动拉 preset）
+- `_pw_media_upload`：测试文件路径 `../家人.yhspack` → `tests/test_data/家人.yhspack`
+
+### 测试
+
+- 单元：17 套件 / 706 断言全过
+- 最小回归：`_pw_ui_smoke`(68) / `_pw_srs_e2e`(21) 全过
+- 全 23 Playwright 套件 with coverage: 25/1（`_pw_media_upload` PHASE 3 UI 渲染时机 flaky，pre-existing）
+
+### 遗留
+
+- `_pw_media_upload` PHASE 3 「首页卡片列表 `<img src="blob:...">` 渲染」flaky 待修
+- HTML 报告 → 未覆盖业务核心函数清单分析（推 P3）
+- 覆盖率 CI 集成 / 门槛（推 P3）
+
 ## v5.13.17 — 多语种 PP/ToS（英文 + 繁体）+ locale 链接路由（P2 #4）
 
 ### 动机
