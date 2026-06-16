@@ -2,6 +2,46 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.15 — 同意状态云同步 + 协议版本升级弹窗（P2 #1+#2+#3）
+
+### 动机
+
+v5.13.13 P1 在登录/注册 form 加了同意 checkbox + 本地 LS 记录同意状态，但不跨设备同步——A 设备勾过的同意状态在 B 设备登录后还要再勾一遍；PP/ToS 文本变更后无法触发已登录用户重新征同意。本版本补全云同步 + 版本升级流程。
+
+### 方案
+
+复用现有 `sync_config.config_json jsonb` 加顶层 `consent: { version, at }` 段（零 DB schema migration）。新增代码常量 `CONSENT_PROTOCOL_VERSION = 'v1'`——bump 此常量驱动全用户重新征同意。
+
+### 改动边界
+
+- 常量 `CONSENT_PROTOCOL_VERSION` + 纯函数 `_compareConsentVersion` / `_mergeConsent`：同版本取较晚 at；跨版本取高位 version。
+- `cloudPushConfig` 收尾段从 LS 读 consentAt+consentVersion，与云端 cloudCfg.consent merge 后随 ui/srs 一并 upsert。
+- `cloudPullConfig` 拉取后 merge 写回 LS；末尾 `setTimeout(checkConsentUpgrade, 0)` 异步检查协议版本。
+- `checkConsentUpgrade`：LS consentVersion ≠ CONSENT_PROTOCOL_VERSION → 弹 `showConsentUpgradeDialog`；`_consentUpgradeInFlight` 防重入。
+- `showConsentUpgradeDialog`：复用 `showConfirmDialog`（扩展签名 opts: confirmText/cancelText/html/dismissable），含 PP/ToS 链接。接受 → `_writeConsentLs` + `cloudPushConfig`；拒绝 → 已登录 `doAccountLogout` + `screen-account`；未登录 → toast。
+- `doAccountLogin` / `doRegister` 成功后追加 `cloudPushConfig()`，让本设备勾的同意立刻同步到云。
+- 启动序列加未登录 P1 用户的升级检查（LS 已有 consentVersion 才检查，避免拦新装用户）。
+- `_writeConsentLs` 硬编码 `'v1'` → `CONSENT_PROTOCOL_VERSION` 常量。
+- i18n 4 key × 5 语种：`consent_upgrade_title` / `consent_upgrade_msg` / `consent_upgrade_accept` / `consent_upgrade_decline`。
+- `tests/_playwright_helper.js cloudLogin`：保留 master 已有的 `_updateLoginConsent()` 写法（v5.13.13 后登录门控）。
+
+### 测试
+
+- `tests/yihai_v5.13.13_consent_test.js`：纯函数单测 24 cases（_compareConsentVersion 跨版本/null/容错；_mergeConsent 同版本/跨版本/对称/边界）。
+- `tests/_pw_consent_sync.js`：E2E 6 phase 13 断言（未登录同/旧版本启动检查、push/pull 跨设备传播、已登录接受/拒绝分流），需登录账号。
+- 回归：单元 699 + `_pw_ui_smoke`(68) + `_pw_srs_e2e`(21) + `_pw_config_sync`(23) 全绿。
+
+### 兼容性
+
+- 老 P1 用户首次启动 v5.13.15 时 LS 已有 consentVersion=v1，与 CONSENT_PROTOCOL_VERSION 一致，无弹窗。
+- 老 sync_config.config_json 无 consent 字段时 `cloudCfg?.consent` 取 undefined，merge 函数允许 cloud=null，向后兼容。
+- 未来 PP/ToS 实质性条款变更时，bump `CONSENT_PROTOCOL_VERSION` 到 `'v2'`，发布后所有用户登录/启动时弹升级框。
+
+### 遗留
+
+- App Store 隐私标签 JSON 配置（P2 #5）、英文/zh-Hant/es/ja PP/ToS HTML 翻译版（P2 #4）、consent_records append-only 历史表（P3）均推后。
+- `daily_progress` / `last_warmup` 仍仅本地（dev rule #14）。
+
 ## v5.13.14 — 个人牌组 deck id 加盐（修复跨用户导入主键冲突）
 
 ### 动机
