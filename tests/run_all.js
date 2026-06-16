@@ -27,6 +27,7 @@ const UNIT_SUITES = [
   'yihai_v5.16_lang_phrases_test.js',
   'yihai_v5.13.10_idb_p1_test.js',
   'yihai_v5.17_deckid_test.js',
+  'yihai_v5.18_diaglog_test.js',
   'yihai_v5.13.13_consent_test.js',
 ];
 

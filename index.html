@@ -4284,6 +4284,23 @@ const log = {
   error: (m, e, d) => _push('error', m, e, d),
 };
 
+// 诊断载荷按模块配额选取：warn/error 全保（异常永不丢），voice info 与其余 info 各设上限，
+// 避免高频 voice TTS 日志把 sync/srs 挤出 feedback 载荷。按时间戳升序返回。
+function selectDiagnosticLog(logs, opts) {
+  const voiceMax = (opts && opts.voiceMax != null) ? opts.voiceMax : 60;
+  const otherMax = (opts && opts.otherMax != null) ? opts.otherMax : 240;
+  const severe = [], voiceInfo = [], otherInfo = [];
+  for (const l of logs) {
+    if (l.lv === 'warn' || l.lv === 'error') severe.push(l);
+    else if (l.m === 'voice') voiceInfo.push(l);
+    else otherInfo.push(l);
+  }
+  return severe
+    .concat(voiceInfo.slice(-voiceMax))
+    .concat(otherInfo.slice(-otherMax))
+    .sort((a, b) => (a.t || 0) - (b.t || 0));
+}
+
 // ── telemetry: app event logs ──────────────────────────────────────
 function isMember() {
   return lsGet(LS_KEYS.HAS_EVER_LOGGED_IN) === '1';
@@ -7396,7 +7413,7 @@ async function collectDiagnostics() {
     last_sync_ts:       Number(lsGet(LS_KEYS.GLOBAL_SYNC_TS)) || null,
     deck_count:         (typeof DECKS_META !== 'undefined' ? DECKS_META.length : null),
     user_id:            _cloudUserId || null,
-    local_log:          LOCAL_LOG.slice(-500),
+    local_log:          selectDiagnosticLog(LOCAL_LOG),
   };
 }
 
