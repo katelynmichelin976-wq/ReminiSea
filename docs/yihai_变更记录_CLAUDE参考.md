@@ -2,6 +2,27 @@
 
 v4.9.1–v4.10.0 详细变更，供 AI 理解版本演进的上下文。用户面向的版本历史见 `docs/忆海拾光_训练App_README.md`。
 
+## v5.13.19 — 二级页返回来源页 + 删除浏览引导/每日学习目标 + 语音默认文案/清理废弃参数
+
+### 导航：二级页返回回到来源页（修复）
+
+theme/about/account → 我的、reset-password → 账户、create-card → 牌组详情、deck-detail 来源追踪（新增 `_deckDetailOrigin` + `backFromDeckDetail()`），不再一律 `goHome()` 回首页。`screen-quiz`/`screen-finish` 回首页是练习流程正常设计，未动。
+
+### 语音/参数清理
+
+- **删除浏览引导**：移除 `idle_browse` 语音槽 + 定时器全套（`startIdleBrowseTimer`/`clearIdleTimers`/`_idleBrowseTimer`/`IDLE_BROWSE_SEC`/`IDLE_COOLDOWN`）+ 调用点 + 5 语种 i18n（`voice_slot_idle_browse`/`voice_default_idle_browse`）+ `phraseIdleBrowse` 字段（`VOICE_FIELDS`/`PHRASE_VOICE_FIELDS`/云端字段列表）。
+- **答对鼓励默认** → 「回答正确」（5 语种 `voice_default_correct_hint`）。
+- **读出选项默认** → 「请在{A}.{B}.{C}中选择一个符合图片上的东西」（5 语种 `default_opt_hint`，`.` 为停顿标记，日文由 `・` 统一为 `.`）。
+- **删除「每日学习目标」**：该控件实为 `maximum_reviews_per_day` 的重复滑块、无独立引用 → 删整个「目标」设置分区 + `onDailyGoalChange`/`loadDailyGoalUI` + 2 处调用 + 5 语种 i18n。
+- **移除废弃 SRS 参数**：`hard_step_multiplier`（已标 deprecated）、`t1_review_before_mix`、`t1_mix_before_t7`（定义后从未被读），同步从 `SRS_PRESETS` 移除。
+
+### 测试
+
+- 新增 `tests/_pw_nav_back.js`（14 断言）：6 个二级页返回目标 + deck-detail 双来源追踪。
+- 新增 `tests/_pw_voice_cleanup.js`（14 断言）：idle_browse 删除 / 默认文案 / 每日学习目标 UI / 废弃参数。
+- `yihai_v5.14_ls_test.js` / `yihai_v5.16_lang_phrases_test.js` 同步去 `phraseIdleBrowse`。
+- 回归：单元 706 + ui_smoke 68 + srs_e2e 21 + easy 28 + config_sync 23 + nav_back 14 + voice_cleanup 14 全绿。
+
 ## v5.13.18 — 内置牌组改名 + Playwright 覆盖率 baseline + 上架文档三件套
 
 ### 内置示例牌组改名
