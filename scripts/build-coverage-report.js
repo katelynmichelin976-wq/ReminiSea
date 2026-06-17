@@ -2,7 +2,8 @@ const path = require('path');
 const fs = require('fs');
 
 const rawDir = path.join(__dirname, '..', 'coverage', 'raw');
-const outDir = path.join(__dirname, '..', 'coverage');
+// 输出到子目录，避免 monocart generate() 清掉同级的 coverage/raw
+const outDir = path.join(__dirname, '..', 'coverage', 'report');
 
 if (!fs.existsSync(rawDir)) {
   console.error(`coverage/raw 不存在：先跑 $env:YIHAI_COVERAGE='1'; node scripts/run-all-pw.js`);

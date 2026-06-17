@@ -57,6 +57,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_pw_deck_mgmt.js` | 牌组管理页冒烟（Tab Bar/导航/段选/列表，15 断言） |
 | `tests/_pw_nav_back.js` | 二级页返回目标（theme/about/account/reset-password/create-card→各自父页 + deck-detail 来源追踪，14 断言，无需登录） |
 | `tests/_pw_voice_cleanup.js` | 语音/参数清理（idle_browse 删除 + 答对鼓励/读出选项默认文案 + 每日学习目标 UI 删除 + 废弃 SRS 参数移除，14 断言，无需登录） |
+| `tests/_pw_settings.js` | 设置面板参数 onChange（通用/语音/SRS 3 tab 滑块/开关/预设 + 主题/模式切换，22 断言，无需登录） |
 | `tests/_pw_featured_tab.js` | 精选 tab 列表 + 同步按钮去耦合（doAccountSync runSync 不再传 decks:true，~10 断言，需登录） |
 | `tests/_pw_flip_card.js` | 翻转卡练习流（自评 SRS） |
 | `tests/_pw_media_upload.js` | 个人牌组媒体上传 |
@@ -149,7 +150,7 @@ $env:YIHAI_COVERAGE = "1"
 $env:TEST_PASSWORD = "667788"
 node scripts/run-all-pw.js
 node scripts/build-coverage-report.js
-start coverage/index.html
+start coverage/report/index.html
 ```
 
 `YIHAI_COVERAGE` 不设时 helper noop，平时测试无开销。报告输出到 `coverage/` 不入 git。
