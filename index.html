@@ -2910,11 +2910,6 @@ html[data-theme="dark"] .tr-again { background: #2d0707; color: #fca5a5; }
 // ════════════════════════════════════════════════════════════════
 
 // ── utility functions ────────────────────────────────────────────
-function simpleHash(s) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = Math.imul(31, h) + s.charCodeAt(i) | 0; }
-  return (h >>> 0).toString(16).padStart(8, '0');
-}
 
 // ── localStorage 注册表 + helper (v5.13.2 Phase 1) ────────────────
 const LS_KEYS = {
@@ -3238,7 +3233,7 @@ const SRS_CONFIG = {
   // default 1200s = 20 min, matches Anki default
   learn_ahead_limit        : 1200,
 
-  // practice modes: 'normal'=SRS full queue + applyCurve (was 'survival') | 'easy'=companion mode (full deck, consolidate, no lapse on wrong)
+  // practice modes: 'normal'=SRS full queue | 'easy'=companion mode (full deck, consolidate)
   session_mode             : 'normal',
   easy_session_size        : 19,             // user-configurable; preset 15/19/23
   easy_confident_window    : 3,              // fixed (not UI-exposed)
@@ -4628,15 +4623,6 @@ async function pullEasyStates() {
 }
 
 // Playwright test seam (_playwright_multi_user_sync_test.js called via page.evaluate)
-async function getOrCreateCardState(deckKey, cardId) {
-  let state = await getCardState(deckKey, cardId);
-  if (!state) {
-    state = newCardState(deckKey, cardId);
-    await saveCardState(state);
-  }
-  return state;
-}
-
 // ── TrialLog write ──────────────────────────────────────────────
 async function writeTrialLog(entry) {
   entry.user_id = entry.user_id || getCurrentUserId();
@@ -4833,30 +4819,6 @@ function saveDailyProgress(dp) {
 }
 
 // ── practice mode: difficulty curve utilities ────────────────────────
-
-function difficultyScore(s) {
-  if (!s) return 0;
-  const efScore    = Math.max(0, 2.5 - (s.ease_factor || 2.5));   // 0~1.2
-  const lapseScore = Math.min(s.lapses_total || 0, 20) / 20;        // 0~1
-  // learning/relearning: unknown difficulty or in-relearning, place in middle
-  const stagBonus  = (s.srs_stage === 'relearning' || s.srs_stage === 'learning') ? 0.5 : 0;
-  return efScore + lapseScore + stagBonus;
-}
-
-// reorder queue as "easy→hard→easy" dome curve
-function applyCurve(queue) {
-  if (queue.length < 4) return queue;
-  const sorted = [...queue].sort((a, b) =>
-    difficultyScore(a._srsState) - difficultyScore(b._srsState)
-  );
-  const result = new Array(sorted.length);
-  let lo = 0, hi = sorted.length - 1;
-  for (let i = 0; i < sorted.length; i++) {
-    if (i % 2 === 0) result[lo++] = sorted[i];
-    else             result[hi--] = sorted[i];
-  }
-  return result;
-}
 
 function computeEasyStructure(T) {
   if (T < 7) return { kind: 'flat', size: T, warmup: 0, k: 0, r: 0 };
@@ -5860,13 +5822,6 @@ function browseTTS() {
   const q = _browseCards[_browseIdx];
   if (q) playAnswer(q, () => {});
 }
-function startQuiz() {
-  if (_launchBusy) return;
-  if (!currentDeck) return;
-  _launchBusy = true;
-  warmupSpeech();
-  _launch('quiz');
-}
 // ── WakeLock (prevent screen lock) ──────────────────────────────
 let wakeLock = null;
 async function requestWakeLock() {
@@ -6114,7 +6069,6 @@ async function createEmptyDeck() {
   updateDeckStats();
   showCloudToast(t('home_deck_created', { name: name.trim() }));
 }
-function importFromUrl()   { showConfirmDialog(t('import_url_coming')); }
 // ── .yhspack export ──────────────────────────────────────────────
 async function exportDeck() {
   if (!currentDeck) { showToastMsg(t('deck_no_selected')); return; }
