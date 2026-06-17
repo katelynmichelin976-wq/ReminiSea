@@ -27,7 +27,7 @@ function getLocale() { return _uiLocale; }
 // ── 被测代码（从 index.html 复制实现后填入）─────────────────────────
 const PHRASE_VOICE_FIELDS = [
   'phraseWrong', 'phraseCorrect', 'phraseStreakCorrect', 'phraseSessionFinish',
-  'phraseIdleBrowse', 'phraseOptHint', 'phraseQuizPrompt', 'phraseQuizPromptRecognize'
+  'phraseOptHint', 'phraseQuizPrompt', 'phraseQuizPromptRecognize'
 ];
 
 function getVoiceConfig() { return lsGetJSON('yh:v1:config:voice', {}); }
@@ -200,7 +200,7 @@ function migrateLangPhrases() {
   _store.clear(); _uiLocale = 'zh-CN';
   const allPhraseFields = [
     'phraseWrong', 'phraseCorrect', 'phraseStreakCorrect', 'phraseSessionFinish',
-    'phraseIdleBrowse', 'phraseOptHint', 'phraseQuizPrompt', 'phraseQuizPromptRecognize'
+    'phraseOptHint', 'phraseQuizPrompt', 'phraseQuizPromptRecognize'
   ];
   allPhraseFields.forEach(k => setVoiceField(k, 'test-' + k));
   const cfg = getVoiceConfig();

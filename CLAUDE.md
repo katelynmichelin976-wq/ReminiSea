@@ -55,6 +55,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `tests/_pw_consent_lang_url.js` | PP/ToS 链接 i18n 路由（zh-CN/en/zh-Hant/es-fallback/ja-fallback + dialog 内链接随 locale，13 断言，无需登录） |
 | `tests/_pw_config_sync.js` | 语音参数云同步（~23 断言，需登录） |
 | `tests/_pw_deck_mgmt.js` | 牌组管理页冒烟（Tab Bar/导航/段选/列表，15 断言） |
+| `tests/_pw_nav_back.js` | 二级页返回目标（theme/about/account/reset-password/create-card→各自父页 + deck-detail 来源追踪，14 断言，无需登录） |
+| `tests/_pw_voice_cleanup.js` | 语音/参数清理（idle_browse 删除 + 答对鼓励/读出选项默认文案 + 每日学习目标 UI 删除 + 废弃 SRS 参数移除，14 断言，无需登录） |
 | `tests/_pw_featured_tab.js` | 精选 tab 列表 + 同步按钮去耦合（doAccountSync runSync 不再传 decks:true，~10 断言，需登录） |
 | `tests/_pw_flip_card.js` | 翻转卡练习流（自评 SRS） |
 | `tests/_pw_media_upload.js` | 个人牌组媒体上传 |

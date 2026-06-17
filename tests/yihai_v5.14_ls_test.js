@@ -273,7 +273,7 @@ function migrateDeckSync() {
 
 const VOICE_FIELDS = [
   'phraseCorrect','phraseWrong','phraseStreakCorrect','phraseSessionFinish',
-  'phraseIdleBrowse','phraseOptHint','phraseQuizPrompt','phraseQuizPromptRecognize',
+  'phraseOptHint','phraseQuizPrompt','phraseQuizPromptRecognize',
   'ttsRate','ttsPitch','ttsVoiceName','voiceMuted','voiceAssistEnabled',
   'ansReadDelay','optReadDelay','browseAnsDelay','optCount','optTouchDelay','ndur','bdur',
 ];
