@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>忆海拾光 iOS 发布评审 HyperFrames</title>
+</head>
+<body>
+  <div data-composition-id="ios-review-2026-06-18" data-width="1920" data-height="1080">
+    <section id="scene-title" class="scene scene-title" data-start="0" data-duration="12" data-track-index="1">
+      <div class="ripple r1" data-layout-ignore></div>
+      <div class="ripple r2" data-layout-ignore></div>
+      <div class="scene-content title-layout">
+        <p class="eyebrow">HYPERFRAMES REVIEW OUTPUT</p>
+        <h1>iOS 发布评审<br>不是上架完成</h1>
+        <p class="lede">本片基于 6 份 review 结果文档，整理当前 iOS 打包、合规、真机验证和 UI 设计状态。</p>
+        <div class="source-strip">
+          <span>6 份来源文档</span>
+          <span>5 项推进顺序</span>
+          <span>0 项代码改动</span>
+        </div>
+      </div>
+    </section>
+
+    <div id="wipe-1" class="wipe" data-start="11.2" data-duration="0.8" data-track-index="8"></div>
+
+    <section id="scene-sources" class="scene" data-start="12" data-duration="14" data-track-index="1">
+      <div class="scene-content">
+        <p class="eyebrow">SOURCE DOCUMENTS</p>
+        <h2>来源应是 6 份 review 文档</h2>
+        <div class="doc-list">
+          <article><strong>01</strong><span>ios_packaging_review</span><em>主评审与 5 项状态</em></article>
+          <article><strong>02</strong><span>ios_release_readiness</span><em>App Store 合规与阻断项</em></article>
+          <article><strong>03</strong><span>ios_real_device_regression_matrix</span><em>真机手工测试矩阵</em></article>
+          <article><strong>04</strong><span>ios_storage_diagnostics_review</span><em>媒体隔离与诊断策略</em></article>
+          <article><strong>05</strong><span>ios_review_output_summary</span><em>输出汇总和边界</em></article>
+          <article><strong>06</strong><span>ios-ui-redesign-design</span><em>iOS 专属 UI 规格</em></article>
+        </div>
+      </div>
+    </section>
+
+    <div id="wipe-2" class="wipe" data-start="25.2" data-duration="0.8" data-track-index="8"></div>
+
+    <section id="scene-five" class="scene" data-start="26" data-duration="15" data-track-index="1">
+      <div class="scene-content split-layout">
+        <div>
+          <p class="eyebrow">FIVE-STEP STATUS</p>
+          <h2>5 个顺序已在文档层面闭环</h2>
+          <p class="body">闭环指的是“输出文档完整”，不是“iOS 已经可提交 App Store”。</p>
+        </div>
+        <div class="status-stack">
+          <div><b>1</b><span>路线：Capacitor / WKWebView</span></div>
+          <div><b>2</b><span>P0：工程草案存在，法务和签名仍阻断</span></div>
+          <div><b>3</b><span>P1：CDN、媒体隔离、诊断、真机矩阵</span></div>
+          <div><b>4</b><span>UI：已输出 iOS 专属规格</span></div>
+          <div><b>5</b><span>验证：Web 基线已记录，真机未完成</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div id="wipe-3" class="wipe" data-start="40.2" data-duration="0.8" data-track-index="8"></div>
+
+    <section id="scene-evidence" class="scene" data-start="41" data-duration="14" data-track-index="1">
+      <div class="scene-content">
+        <p class="eyebrow">CURRENT EVIDENCE</p>
+        <h2>工作区已有 iOS 草案证据</h2>
+        <div class="evidence-grid">
+          <article><span>配置</span><strong>capacitor.config.json</strong><p>存在草案，Bundle ID 仍需确认。</p></article>
+          <article><span>工程</span><strong>ios/App/App.xcodeproj</strong><p>存在草案，未完成签名和 Archive。</p></article>
+          <article><span>图标</span><strong>192 / 512 / 180</strong><p>已有图片文件，仍需正式视觉验收。</p></article>
+          <article><span>权限</span><strong>Info.plist</strong><p>包含麦克风和照片说明，需真机验证。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <div id="wipe-4" class="wipe" data-start="54.2" data-duration="0.8" data-track-index="8"></div>
+
+    <section id="scene-blockers" class="scene" data-start="55" data-duration="16" data-track-index="1">
+      <div class="scene-content split-layout">
+        <div>
+          <p class="eyebrow danger-label">BLOCKERS</p>
+          <h2>不能由 Codex 凭空决定的事</h2>
+          <p class="body">完全访问授权允许读写文件，但不代表可以替代发布主体作法务、隐私和 Apple 账号决策。</p>
+        </div>
+        <div class="blocker-list">
+          <div>Apple Developer Team / 证书 / Provisioning Profile</div>
+          <div>真实开发者或公司主体、联系邮箱</div>
+          <div>App Store Connect 隐私标签</div>
+          <div>TestFlight / 真机 iOS 验证</div>
+          <div>私有媒体隔离和诊断入口实现</div>
+        </div>
+      </div>
+    </section>
+
+    <div id="wipe-5" class="wipe" data-start="70.2" data-duration="0.8" data-track-index="8"></div>
+
+    <section id="scene-validation" class="scene" data-start="71" data-duration="13" data-track-index="1">
+      <div class="scene-content">
+        <p class="eyebrow">VALIDATION RECORDED</p>
+        <h2>已记录 Web 自动化基线</h2>
+        <div class="metric-row">
+          <div><strong>717</strong><span>unit assertions</span></div>
+          <div><strong>68</strong><span>UI smoke pass</span></div>
+          <div><strong>21</strong><span>SRS E2E pass</span></div>
+          <div><strong>28</strong><span>Easy mode pass</span></div>
+        </div>
+        <p class="note">这些结果不等价于 iOS Safari、主屏 PWA、WKWebView 或 TestFlight 验证。</p>
+      </div>
+    </section>
+
+    <div id="wipe-6" class="wipe" data-start="83.2" data-duration="0.8" data-track-index="8"></div>
+
+    <section id="scene-ui" class="scene" data-start="84" data-duration="14" data-track-index="1">
+      <div class="scene-content split-layout">
+        <div>
+          <p class="eyebrow">IOS UI DIRECTION</p>
+          <h2>温和医疗 + 家庭相册</h2>
+          <p class="body">iOS 版本应让家属和记忆训练对象快速进入“今天练什么、怎么继续、声音/图片是否可用”。</p>
+        </div>
+        <div class="ui-points">
+          <div><strong>44pt</strong><span>最小触控目标</span></div>
+          <div><strong>4 tabs</strong><span>今日 / 牌组 / 记录 / 我的</span></div>
+          <div><strong>Dynamic Type</strong><span>大字号不截断核心操作</span></div>
+          <div><strong>VoiceOver</strong><span>顺序、标签、状态可读</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div id="wipe-7" class="wipe" data-start="97.2" data-duration="0.8" data-track-index="8"></div>
+
+    <section id="scene-close" class="scene scene-close" data-start="98" data-duration="12" data-track-index="1">
+      <div class="scene-content close-layout">
+        <p class="eyebrow">FINAL STATE</p>
+        <h2>文档输出完成。<br>真实 iOS 发布未完成。</h2>
+        <p class="lede">下一步若继续工程实现，应先处理 CDN 本地化、私有媒体隔离、生产诊断入口、Xcode/TestFlight 和真机矩阵。</p>
+      </div>
+    </section>
+
+    <style>
+      [data-composition-id="ios-review-2026-06-18"] {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        position: relative;
+        background: #ecfeff;
+        color: #164e63;
+        font-family: Aptos, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 84% 14%, rgba(8, 145, 178, 0.18), transparent 360px),
+          radial-gradient(circle at 18% 86%, rgba(217, 119, 6, 0.16), transparent 360px),
+          #ecfeff;
+      }
+
+      #scene-title {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .scene::before {
+        content: "";
+        position: absolute;
+        inset: 72px;
+        border: 1px solid rgba(8, 145, 178, 0.22);
+        border-radius: 44px;
+        pointer-events: none;
+      }
+
+      .scene-content {
+        width: 100%;
+        height: 100%;
+        padding: 130px 150px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 34px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .title-layout,
+      .close-layout {
+        max-width: 1420px;
+      }
+
+      .split-layout {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        align-items: center;
+        gap: 90px;
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-family: "Roboto Mono", ui-monospace, monospace;
+        font-size: 24px;
+        letter-spacing: 0.18em;
+        color: #0891b2;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .danger-label {
+        color: #dc2626;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        font-family: Fraunces, Georgia, serif;
+        font-weight: 900;
+        line-height: 0.96;
+        letter-spacing: -0.045em;
+        color: #164e63;
+      }
+
+      h1 {
+        font-size: 138px;
+      }
+
+      h2 {
+        font-size: 92px;
+      }
+
+      .lede,
+      .body,
+      .note {
+        margin: 0;
+        max-width: 980px;
+        font-size: 34px;
+        line-height: 1.42;
+        color: #2c6476;
+        font-weight: 350;
+      }
+
+      .note {
+        font-size: 28px;
+        color: #64748b;
+      }
+
+      .source-strip,
+      .metric-row,
+      .doc-list,
+      .evidence-grid,
+      .status-stack,
+      .blocker-list,
+      .ui-points {
+        display: grid;
+        gap: 20px;
+      }
+
+      .source-strip {
+        grid-template-columns: repeat(3, max-content);
+      }
+
+      .source-strip span {
+        padding: 18px 26px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid #a5f3fc;
+        font-size: 24px;
+        color: #164e63;
+      }
+
+      .doc-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .doc-list article,
+      .evidence-grid article,
+      .status-stack div,
+      .blocker-list div,
+      .ui-points div,
+      .metric-row div {
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(8, 145, 178, 0.24);
+        box-shadow: 0 22px 70px rgba(8, 79, 99, 0.08);
+      }
+
+      .doc-list article {
+        border-radius: 28px;
+        padding: 28px 34px;
+        display: grid;
+        grid-template-columns: 82px 1fr;
+        column-gap: 24px;
+        row-gap: 8px;
+        align-items: baseline;
+      }
+
+      .doc-list strong {
+        grid-row: span 2;
+        font-family: "Roboto Mono", monospace;
+        font-size: 42px;
+        color: #d97706;
+      }
+
+      .doc-list span {
+        font-size: 34px;
+        font-weight: 800;
+      }
+
+      .doc-list em {
+        font-size: 24px;
+        color: #64748b;
+        font-style: normal;
+      }
+
+      .status-stack div,
+      .blocker-list div,
+      .ui-points div {
+        min-height: 88px;
+        border-radius: 26px;
+        padding: 26px 32px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        font-size: 30px;
+      }
+
+      .status-stack b {
+        width: 54px;
+        height: 54px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #0891b2;
+        color: #fff;
+        font-family: "Roboto Mono", monospace;
+      }
+
+      .blocker-list div {
+        border-color: rgba(220, 38, 38, 0.28);
+        color: #7f1d1d;
+      }
+
+      .evidence-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .evidence-grid article {
+        border-radius: 34px;
+        min-height: 260px;
+        padding: 34px;
+      }
+
+      .evidence-grid span {
+        display: block;
+        color: #d97706;
+        font-family: "Roboto Mono", monospace;
+        font-size: 20px;
+        letter-spacing: 0.12em;
+        margin-bottom: 22px;
+      }
+
+      .evidence-grid strong {
+        display: block;
+        font-size: 34px;
+        line-height: 1.08;
+        margin-bottom: 20px;
+      }
+
+      .evidence-grid p {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.38;
+        color: #64748b;
+      }
+
+      .metric-row {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .metric-row div {
+        border-radius: 36px;
+        padding: 38px 30px;
+        text-align: center;
+      }
+
+      .metric-row strong {
+        display: block;
+        font-family: Fraunces, Georgia, serif;
+        font-size: 82px;
+        line-height: 0.9;
+        color: #0891b2;
+      }
+
+      .metric-row span,
+      .ui-points span {
+        display: block;
+        margin-top: 12px;
+        font-size: 23px;
+        color: #64748b;
+      }
+
+      .ui-points {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .ui-points div {
+        min-height: 160px;
+        display: block;
+      }
+
+      .ui-points strong {
+        display: block;
+        font-size: 44px;
+        color: #0891b2;
+      }
+
+      .ripple {
+        position: absolute;
+        border-radius: 50%;
+        border: 2px solid rgba(8, 145, 178, 0.22);
+        pointer-events: none;
+      }
+
+      .r1 {
+        width: 560px;
+        height: 560px;
+        right: 140px;
+        top: 120px;
+      }
+
+      .r2 {
+        width: 780px;
+        height: 780px;
+        right: 40px;
+        top: 20px;
+        border-color: rgba(217, 119, 6, 0.16);
+      }
+
+      .wipe {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        background: linear-gradient(90deg, rgba(8, 145, 178, 0), #0891b2 24%, #ffffff 52%, rgba(217, 119, 6, 0));
+        transform: translateX(-110%);
+      }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      if (!window.gsap) {
+        window.__timelines["ios-review-2026-06-18"] = { play() {}, seek() {} };
+      } else {
+      const tl = gsap.timeline({ paused: true });
+      const scenes = [
+        "#scene-title",
+        "#scene-sources",
+        "#scene-five",
+        "#scene-evidence",
+        "#scene-blockers",
+        "#scene-validation",
+        "#scene-ui",
+        "#scene-close"
+      ];
+
+      scenes.forEach((scene, index) => {
+        const start = Number(document.querySelector(scene).dataset.start);
+        if (index > 0) {
+          tl.set(scene, { opacity: 1 }, start);
+        }
+      });
+
+      scenes.forEach((scene) => {
+        const start = Number(document.querySelector(scene).dataset.start);
+        tl.from(scene + " .eyebrow", { y: 24, opacity: 0, duration: 0.42, ease: "power3.out", immediateRender: false }, start + 0.25);
+        tl.from(scene + " h1, " + scene + " h2", { y: 52, opacity: 0, duration: 0.58, ease: "expo.out", immediateRender: false }, start + 0.46);
+        tl.from(scene + " .lede, " + scene + " .body, " + scene + " .note", { y: 34, opacity: 0, duration: 0.5, ease: "power2.out", immediateRender: false }, start + 0.82);
+        tl.from(scene + " article, " + scene + " .status-stack div, " + scene + " .blocker-list div, " + scene + " .ui-points div, " + scene + " .metric-row div, " + scene + " .source-strip span", {
+          y: 28,
+          opacity: 0,
+          scale: 0.98,
+          duration: 0.42,
+          stagger: 0.06,
+          ease: "back.out(1.2)",
+          immediateRender: false
+        }, start + 1.05);
+      });
+
+      ["#wipe-1", "#wipe-2", "#wipe-3", "#wipe-4", "#wipe-5", "#wipe-6", "#wipe-7"].forEach((wipe) => {
+        const start = Number(document.querySelector(wipe).dataset.start);
+        tl.fromTo(wipe, { xPercent: -110 }, { xPercent: 110, duration: 0.78, ease: "power2.inOut" }, start);
+      });
+
+      tl.to("#scene-close .scene-content", { opacity: 0, y: -24, duration: 0.6, ease: "power2.in" }, 109.1);
+      window.__timelines["ios-review-2026-06-18"] = tl;
+      if (window.location.protocol === "file:") {
+        setTimeout(() => tl.play(0), 1000);
+      }
+      }
+    </script>
+  </div>
+</body>
+</html>

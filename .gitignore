@@ -27,6 +27,7 @@ node_modules/
 C*codetests_debug_stats.js
 
 # Tool & agent ephemeral directories
+.codex/
 .agents/
 .cache/
 .codegraph/
@@ -42,3 +43,6 @@ tests/test_data/蔬菜水果本地版.yhspack
 
 # test coverage (一次性 baseline，不入 git)
 coverage/
+
+# Capacitor prepared web bundle
+build/

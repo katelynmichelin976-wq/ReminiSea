@@ -1,235 +1,158 @@
-﻿/**
- * App Events æ—¥å¿—è¯Šæ–­è„šæœ¬
- * ç”¨é€”ï¼šæŸ¥çœ‹ã€è¿‡æ»¤ã€åˆ†æžåº”ç”¨äº‹ä»¶æ—¥å¿—
- * ä½¿ç”¨ï¼šç²˜è´´åˆ°æµè§ˆå™¨ F12 > Console ä¸­æ‰§è¡Œ
+/**
+ * App Events diagnostic script.
+ * Paste this file into the browser console to inspect app_events in IndexedDB.
  *
- * ç»éªŒæ€»ç»“ï¼ˆ2026-05-21ï¼‰ï¼š
- * 1. logAppEvent() åªå†™ IndexedDBï¼Œä¸ç«‹å³ä¸Šä¼ 
- * 2. æ—¥å¿—éœ€è¦é€šè¿‡ syncAppEvents() ä¸Šä¼ åˆ° Supabaseï¼ˆæ‰‹åŠ¨è°ƒç”¨æˆ–åŒæ­¥æ—¶è‡ªåŠ¨ï¼‰
- * 3. ä¸Šä¼ æˆåŠŸåŽåº”æ ‡è®° synced_atï¼Œä½†æœ‰æ—¶æ ‡è®°å¯èƒ½ä¸æŒä¹…åŒ–ï¼ˆIndexedDB äº‹åŠ¡æ—¶åºé—®é¢˜ï¼‰
- * 4. æŸ¥çœ‹ sync_done æ—¥å¿—ä¸­çš„ stats.events å¯ä»¥éªŒè¯ä¸Šä¼ æ•°é‡
+ * Notes:
+ * 1. logAppEvent() only writes to IndexedDB and does not upload immediately.
+ * 2. Events are uploaded by syncAppEvents(), either manually or during sync flows.
+ * 3. synced_at should be written after a successful upload.
+ * 4. sync_done payload.stats.events is the main upload-count sanity check.
  */
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 1. æŸ¥çœ‹æ‰€æœ‰æ—¥å¿—ï¼ˆåˆ†é¡µæ˜¾ç¤ºï¼‰
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-async function showAllAppEvents() {
-  const db = await new Promise((resolve, reject) => {
+async function openAppEventsDb() {
+  return new Promise((resolve, reject) => {
     const req = indexedDB.open('yihai_srs', 6);
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
+}
 
+async function readAllAppEvents() {
+  const db = await openAppEventsDb();
   const tx = db.transaction('app_events', 'readonly');
-  const logs = await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const req = tx.objectStore('app_events').getAll();
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
+}
 
-  console.log(`ðŸ“‹ Total events: ${logs.length}`);
-  console.table(logs.map(log => ({
-    'ID': log.event_id.substring(0, 15),
-    'æ—¶é—´': new Date(log.timestamp).toLocaleTimeString('zh-CN'),
-    'äº‹ä»¶': log.event_type,
-    'ç‰Œç»„': log.deck_key || '-',
-    'è®¾å¤‡': (log.device_id || '').substring(0, 10),
-    'ä¸Šä¼ ': log.synced_at ? 'âœ…' : 'â³'
+function formatTime(ts) {
+  return new Date(ts).toLocaleTimeString('zh-CN');
+}
+
+function shortId(value, length) {
+  return (value || '').substring(0, length);
+}
+
+async function showAllAppEvents() {
+  const logs = await readAllAppEvents();
+  console.log(`Total events: ${logs.length}`);
+  console.table(logs.map((log) => ({
+    id: shortId(log.event_id, 15),
+    time: formatTime(log.timestamp),
+    type: log.event_type,
+    deck: log.deck_key || '-',
+    device: shortId(log.device_id, 10),
+    uploaded: log.synced_at ? 'yes' : 'pending',
   })));
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 2. æŸ¥çœ‹æœªä¸Šä¼ çš„æ—¥å¿—
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function showUnsyncedEvents() {
-  const db = await new Promise((resolve, reject) => {
-    const req = indexedDB.open('yihai_srs', 6);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+  const logs = await readAllAppEvents();
+  const unsynced = logs.filter((log) => !log.synced_at).sort((a, b) => a.timestamp - b.timestamp);
 
-  const tx = db.transaction('app_events', 'readonly');
-  const logs = await new Promise((resolve, reject) => {
-    const req = tx.objectStore('app_events').getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+  console.log(`\nUnsynced events\n${'='.repeat(60)}`);
+  console.log(`Count: ${unsynced.length}\n`);
 
-  const unsynced = logs.filter(log => !log.synced_at).sort((a, b) => a.timestamp - b.timestamp);
-
-  console.log(`\nðŸ“Š æœªä¸Šä¼ æ—¥å¿—ç»Ÿè®¡\n${'='.repeat(60)}`);
-  console.log(`æ€»æ•°: ${unsynced.length} æ¡\n`);
-
-  // æŒ‰äº‹ä»¶ç±»åž‹åˆ†ç»„ç»Ÿè®¡
   const grouped = {};
-  unsynced.forEach(log => {
-    if (!grouped[log.event_type]) grouped[log.event_type] = [];
+  unsynced.forEach((log) => {
+    grouped[log.event_type] = grouped[log.event_type] || [];
     grouped[log.event_type].push(log);
   });
 
-  console.log('æŒ‰ç±»åž‹åˆ†å¸ƒ:');
-  Object.entries(grouped).sort((a, b) => b[1].length - a[1].length).forEach(([type, items]) => {
-    console.log(`  ${type}: ${items.length} æ¡`);
-  });
+  console.log('By type:');
+  Object.entries(grouped)
+    .sort((a, b) => b[1].length - a[1].length)
+    .forEach(([type, items]) => console.log(`  ${type}: ${items.length}`));
 
-  console.log(`\nè¯¦ç»†åˆ—è¡¨:\n${'='.repeat(60)}`);
-  console.table(unsynced.map(log => ({
-    'æ—¶é—´': new Date(log.timestamp).toLocaleTimeString('zh-CN'),
-    'äº‹ä»¶': log.event_type,
-    'ç‰Œç»„': log.deck_key || '-',
-    'è®¾å¤‡': (log.device_id || '').substring(0, 10),
-    'æ•°æ®': JSON.stringify(log.payload).substring(0, 30)
+  console.log(`\nDetails\n${'='.repeat(60)}`);
+  console.table(unsynced.map((log) => ({
+    time: formatTime(log.timestamp),
+    type: log.event_type,
+    deck: log.deck_key || '-',
+    device: shortId(log.device_id, 10),
+    payload: JSON.stringify(log.payload).substring(0, 30),
   })));
 
-  console.log(`\nðŸ’¾ æ€»è®¡: ${unsynced.length} æ¡æ—¥å¿—å¾…ä¸Šä¼ `);
-  if (unsynced.length > 0) {
-    console.log('ä¸Šä¼ å‘½ä»¤: await syncAppEvents()');
-  }
+  console.log(`\nPending uploads: ${unsynced.length}`);
+  if (unsynced.length > 0) console.log('Upload command: await syncAppEvents()');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 3. æŸ¥çœ‹åŒæ­¥åŽ†å²ï¼ˆsync_done æ—¥å¿—ç»Ÿè®¡ï¼‰
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function showSyncHistory() {
-  const db = await new Promise((resolve, reject) => {
-    const req = indexedDB.open('yihai_srs', 6);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+  const logs = await readAllAppEvents();
+  const syncDones = logs.filter((log) => log.event_type === 'sync_done').sort((a, b) => a.timestamp - b.timestamp);
 
-  const tx = db.transaction('app_events', 'readonly');
-  const logs = await new Promise((resolve, reject) => {
-    const req = tx.objectStore('app_events').getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-
-  const syncDones = logs.filter(l => l.event_type === 'sync_done').sort((a, b) => a.timestamp - b.timestamp);
-
-  console.log(`\nðŸ“ˆ åŒæ­¥åŽ†å² (${syncDones.length} æ¬¡)\n${'='.repeat(70)}`);
-
-  const stats = {};
-  syncDones.forEach((log, i) => {
-    const time = new Date(log.timestamp).toLocaleTimeString('zh-CN');
-    const { trials, events, states_merged, config, decks } = log.payload.stats || {};
-    console.log(`[${i}] ${time} | ç­”é¢˜:${trials} æ—¥å¿—:${events} å¡çŠ¶æ€åˆå¹¶:${states_merged} é…ç½®:${config} ç‰Œç»„:${decks}`);
+  console.log(`\nSync history (${syncDones.length})\n${'='.repeat(70)}`);
+  syncDones.forEach((log, index) => {
+    const stats = log.payload.stats || {};
+    console.log(
+      `[${index}] ${formatTime(log.timestamp)} | trials:${stats.trials} events:${stats.events} states_merged:${stats.states_merged} config:${stats.config} decks:${stats.decks}`
+    );
   });
 
   const totalEvents = syncDones.reduce((sum, log) => sum + (log.payload.stats?.events || 0), 0);
-  console.log(`\næ€»ä¸Šä¼ æ—¥å¿—æ•°: ${totalEvents}`);
+  console.log(`\nTotal uploaded events: ${totalEvents}`);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 4. æŸ¥çœ‹ç‰¹å®šäº‹ä»¶ç±»åž‹çš„æ—¥å¿—
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function filterEventsByType(eventType) {
-  const db = await new Promise((resolve, reject) => {
-    const req = indexedDB.open('yihai_srs', 6);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+  const logs = await readAllAppEvents();
+  const filtered = logs.filter((log) => log.event_type.includes(eventType)).sort((a, b) => a.timestamp - b.timestamp);
 
-  const tx = db.transaction('app_events', 'readonly');
-  const logs = await new Promise((resolve, reject) => {
-    const req = tx.objectStore('app_events').getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-
-  const filtered = logs.filter(log => log.event_type.includes(eventType)).sort((a, b) => a.timestamp - b.timestamp);
-
-  console.log(`\nðŸ” äº‹ä»¶ç±»åž‹: "${eventType}" (${filtered.length} æ¡)\n${'='.repeat(70)}`);
-  console.table(filtered.map(log => ({
-    'æ—¶é—´': new Date(log.timestamp).toLocaleTimeString('zh-CN'),
-    'äº‹ä»¶': log.event_type,
-    'ç‰Œç»„': log.deck_key || '-',
-    'ä¸Šä¼ ': log.synced_at ? 'âœ…' : 'â³',
-    'æ•°æ®': JSON.stringify(log.payload)
+  console.log(`\nEvent type "${eventType}" (${filtered.length})\n${'='.repeat(70)}`);
+  console.table(filtered.map((log) => ({
+    time: formatTime(log.timestamp),
+    type: log.event_type,
+    deck: log.deck_key || '-',
+    uploaded: log.synced_at ? 'yes' : 'pending',
+    payload: JSON.stringify(log.payload),
   })));
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 5. æŸ¥çœ‹ä»Šå¤©çš„æ—¥å¿—
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function showTodayEvents() {
-  const db = await new Promise((resolve, reject) => {
-    const req = indexedDB.open('yihai_srs', 6);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-
-  const tx = db.transaction('app_events', 'readonly');
-  const logs = await new Promise((resolve, reject) => {
-    const req = tx.objectStore('app_events').getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-
+  const logs = await readAllAppEvents();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayTs = today.getTime();
+  const todayLogs = logs.filter((log) => log.timestamp >= today.getTime()).sort((a, b) => a.timestamp - b.timestamp);
 
-  const todayLogs = logs.filter(log => log.timestamp >= todayTs).sort((a, b) => a.timestamp - b.timestamp);
-
-  console.log(`\nðŸ“… ä»Šå¤©çš„æ—¥å¿— (${todayLogs.length} æ¡)\n${'='.repeat(70)}`);
-  console.log(`æ—¥æœŸ: ${today.toLocaleDateString('zh-CN')}`);
-  console.table(todayLogs.map(log => ({
-    'æ—¶é—´': new Date(log.timestamp).toLocaleTimeString('zh-CN'),
-    'äº‹ä»¶': log.event_type,
-    'ç‰Œç»„': log.deck_key || '-',
-    'ä¸Šä¼ ': log.synced_at ? 'âœ…' : 'â³'
+  console.log(`\nToday events (${todayLogs.length})\n${'='.repeat(70)}`);
+  console.log(`Date: ${today.toLocaleDateString('zh-CN')}`);
+  console.table(todayLogs.map((log) => ({
+    time: formatTime(log.timestamp),
+    type: log.event_type,
+    deck: log.deck_key || '-',
+    uploaded: log.synced_at ? 'yes' : 'pending',
   })));
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 6. ç»Ÿè®¡ä¿¡æ¯
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function showEventStats() {
-  const db = await new Promise((resolve, reject) => {
-    const req = indexedDB.open('yihai_srs', 6);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-
-  const tx = db.transaction('app_events', 'readonly');
-  const logs = await new Promise((resolve, reject) => {
-    const req = tx.objectStore('app_events').getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-
-  const synced = logs.filter(log => log.synced_at).length;
-  const unsynced = logs.filter(log => !log.synced_at).length;
-
+  const logs = await readAllAppEvents();
+  const synced = logs.filter((log) => log.synced_at).length;
+  const unsynced = logs.filter((log) => !log.synced_at).length;
   const typeCount = {};
-  logs.forEach(log => {
+
+  logs.forEach((log) => {
     typeCount[log.event_type] = (typeCount[log.event_type] || 0) + 1;
   });
 
-  console.log(`\nðŸ“Š æ—¥å¿—ç»Ÿè®¡\n${'='.repeat(60)}`);
-  console.log(`æ€»æ•°: ${logs.length}`);
-  console.log(`âœ… å·²ä¸Šä¼ : ${synced}`);
-  console.log(`â³ å¾…ä¸Šä¼ : ${unsynced}`);
-  console.log(`\näº‹ä»¶ç±»åž‹åˆ†å¸ƒ:`);
-  Object.entries(typeCount).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
-    console.log(`  ${type}: ${count}`);
-  });
+  console.log(`\nEvent stats\n${'='.repeat(60)}`);
+  console.log(`Total: ${logs.length}`);
+  console.log(`Uploaded: ${synced}`);
+  console.log(`Pending: ${unsynced}`);
+  console.log('\nBy type:');
+  Object.entries(typeCount)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([type, count]) => console.log(`  ${type}: ${count}`));
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// å¿«é€Ÿå‘½ä»¤å‚è€ƒ
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 console.log(`
-âœ… å¿«é€Ÿè¯Šæ–­å‘½ä»¤ï¼š
+Quick commands:
 
-showAllAppEvents()           // æ˜¾ç¤ºæ‰€æœ‰æ—¥å¿—
-showUnsyncedEvents()          // æ˜¾ç¤ºæœªä¸Šä¼ çš„æ—¥å¿—ï¼ˆé‡ç‚¹ï¼‰
-showSyncHistory()             // æ˜¾ç¤ºåŒæ­¥åŽ†å²ç»Ÿè®¡
-filterEventsByType('session') // æŒ‰ç±»åž‹è¿‡æ»¤ï¼ˆå¦‚: session_restoreï¼‰
-showTodayEvents()             // æ˜¾ç¤ºä»Šå¤©çš„æ—¥å¿—
-showEventStats()              // æ˜¾ç¤ºç»Ÿè®¡ä¿¡æ¯
-await syncAppEvents()         // æ‰‹åŠ¨ä¸Šä¼ å¾…åŒæ­¥æ—¥å¿—
-
-ä¾‹å¦‚: filterEventsByType('session_restore')
+showAllAppEvents()            // list all events
+showUnsyncedEvents()          // list unsynced events
+showSyncHistory()             // summarize sync_done history
+filterEventsByType('session') // filter by type substring
+showTodayEvents()             // show today's events
+showEventStats()              // summarize counts
+await syncAppEvents()         // manually upload pending events
 `);
-
