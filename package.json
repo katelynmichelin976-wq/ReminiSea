@@ -1,12 +1,31 @@
 {
   "scripts": {
-    "test": "node tests/run_all.js"
+    "test": "node tests/run_all.js",
+    "serve": "python3 -m http.server 8080 --directory .",
+    "setup:hooks": "git config core.hooksPath .githooks",
+    "setup:playwright": "npx playwright install chromium",
+    "test:ui-smoke": "node tests/_pw_ui_smoke.js",
+    "test:srs-e2e": "node tests/_pw_srs_e2e.js",
+    "test:easy": "node tests/_pw_easy.js",
+    "test:cloud-sync": "node tests/_pw_cloud_sync.js",
+    "test:cross-device": "node tests/_pw_cross_device.js",
+    "test:easy-sync": "node tests/_pw_easy_sync.js",
+    "coverage:pw": "node scripts/run-all-pw.js",
+    "coverage:report": "node scripts/build-coverage-report.js",
+    "ios:icons": "node scripts/generate-ios-icons.js",
+    "ios:prepare": "node scripts/prepare-ios-web.js",
+    "ios:add": "npm run ios:prepare && npx cap add ios",
+    "ios:sync": "npm run ios:prepare && npx cap sync ios",
+    "ios:open": "npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
     "jszip": "^3.10.1",
     "playwright": "^1.59.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.0",
     "@supabase/supabase-js": "^2.105.4",
     "monocart-coverage-reports": "^2.12.12"
   }

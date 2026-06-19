@@ -1,0 +1,14 @@
+{
+  "appId": "app.memoryglimmers.yihai",
+  "appName": "忆海拾光",
+  "webDir": "build/ios-web",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "never",
+    "scheme": "MemoryGlimmers",
+    "webContentsDebuggingEnabled": false
+  },
+  "server": {
+    "iosScheme": "https"
+  }
+}
